@@ -26,7 +26,7 @@ func NewBundleControlFlags() BundleControlFlags {
 	return 0
 }
 
-func flagCheck(flag BundleControlFlags) error {
+func bundleControlFlagsCheck(flag BundleControlFlags) error {
 	if (flag & BndlCFReservedFields) != 0 {
 		return NewBPAError("Given flag contains reserved bits")
 	}
@@ -43,7 +43,7 @@ func flagCheck(flag BundleControlFlags) error {
 // An error is returned if more or less than one flag is altered or changes were
 // made to a reserved field.
 func (bcf *BundleControlFlags) Set(flag BundleControlFlags) error {
-	if err := flagCheck(flag); err != nil {
+	if err := bundleControlFlagsCheck(flag); err != nil {
 		return err
 	}
 
@@ -56,7 +56,7 @@ func (bcf *BundleControlFlags) Set(flag BundleControlFlags) error {
 // error is returned if more or less than one flag is altered or changes were
 // made to a reserved field.
 func (bcf *BundleControlFlags) Unset(flag BundleControlFlags) error {
-	if err := flagCheck(flag); err != nil {
+	if err := bundleControlFlagsCheck(flag); err != nil {
 		return err
 	}
 
