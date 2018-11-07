@@ -101,3 +101,64 @@ func TestBundleControlFlagsHas(t *testing.T) {
 		t.Error("cf has BndlCFBundleDeletionStatusReportsAreRequested-flag which was not set")
 	}
 }
+
+func TestBundleControlFlagsImplications(t *testing.T) {
+	var (
+		cf     BundleControlFlags = NewBundleControlFlags()
+		status bool
+		errs   []error
+
+		reportReqs []BundleControlFlags = []BundleControlFlags{
+			BndlCFBundleReceptionStatusReportsAreRequested,
+			BndlCFBundleForwardingStatusReportsAreRequested,
+			BndlCFBundleDeliveryStatusReportsAreRequested,
+			BndlCFBundleDeletionStatusReportsAreRequested}
+	)
+
+	cf.Set(BndlCFPayloadIsAnAdministrativeRecord)
+	status, errs = cf.IsValid()
+	if !status {
+		t.Errorf("Initial set resulted in an invalid state: %v", errs)
+	}
+
+	cf.Set(BndlCFBundleIsAFragment)
+	status, errs = cf.IsValid()
+	if !status {
+		t.Errorf("Unrelated set resulted in an invalid state: %v", errs)
+	}
+
+	for _, flg := range reportReqs {
+		cf.Set(flg)
+
+		status, errs = cf.IsValid()
+		if status {
+			t.Errorf("Setting %d does not resulted in an failed state", flg)
+		} else {
+			errFlag := false
+			for _, err := range errs {
+				if strings.Contains(err.Error(), "administrative record") {
+					errFlag = true
+				}
+			}
+
+			if !errFlag {
+				t.Errorf("No error contained a correct message")
+			}
+		}
+
+		cf.Unset(flg)
+		status, errs = cf.IsValid()
+		if !status {
+			t.Errorf("Resetting %d does not resolved in a valid state: %v", flg, errs)
+		}
+	}
+
+	for _, flg := range reportReqs {
+		cf.Set(flg)
+	}
+
+	status, errs = cf.IsValid()
+	if status {
+		t.Errorf("Setting all report flags should result in an invalid state")
+	}
+}

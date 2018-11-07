@@ -68,3 +68,27 @@ func (bcf *BundleControlFlags) Unset(flag BundleControlFlags) error {
 func (bcf *BundleControlFlags) Has(flag BundleControlFlags) bool {
 	return (*bcf & flag) != 0
 }
+
+// IsValid checks if this BundleControlFlags is a valid representation and
+// returns an optional slice of errors.
+func (bcf *BundleControlFlags) IsValid() (status bool, errs []error) {
+	status = true
+	errs = make([]error, 0)
+
+	// payload is administrative record => no status report request flags
+	impl0 := !bcf.Has(BndlCFPayloadIsAnAdministrativeRecord) ||
+		(!bcf.Has(BndlCFBundleReceptionStatusReportsAreRequested) &&
+			!bcf.Has(BndlCFBundleForwardingStatusReportsAreRequested) &&
+			!bcf.Has(BndlCFBundleDeliveryStatusReportsAreRequested) &&
+			!bcf.Has(BndlCFBundleDeletionStatusReportsAreRequested))
+
+	// TODO: Check if the source node ID is the null endpoint's ID
+
+	if !impl0 {
+		status = false
+		errs = append(errs, NewBPAError(
+			"\"payload is administrative record => no status report request flags\" failed."))
+	}
+
+	return
+}
