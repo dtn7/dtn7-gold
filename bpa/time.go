@@ -27,3 +27,11 @@ func DTNTimeFromTime(t time.Time) DTNTime {
 func DTNTimeNow() DTNTime {
 	return DTNTimeFromTime(time.Now())
 }
+
+// CreationTimestamp is a tuple of a DTNTime and a sequence number to differ
+// bundles with the same DTNTime (seconds) from the same endpoint. It is
+// specified in section 4.1.7.
+type CreationTimestamp struct {
+	time           DTNTime
+	sequenceNumber uint
+}
