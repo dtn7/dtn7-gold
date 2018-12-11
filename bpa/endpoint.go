@@ -12,6 +12,9 @@ const (
 	URISchemeIPN uint = 2
 )
 
+// DtnNone is a instance of the `dtn:none` endpoint id.
+var DtnNone, _ = NewEndpointID("dtn", "none")
+
 // EndpointID represents an Endpoint ID as defined in section 4.1.5.1. The
 // "scheme name" is represented by an uint (vide supra) and the "scheme-specific
 // part" (SSP) by an interface{}. Based on the characteristic of the name, the
