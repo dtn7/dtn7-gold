@@ -1,6 +1,9 @@
 package bpa
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // DTNTime is an integer indicating the time like the Unix time, just starting
 // from the year 2000 instead of 1970. This is specified in section 4.1.6.
@@ -37,4 +40,8 @@ type CreationTimestamp [2]uint
 // and a sequence number, resulting in a hopefully unique tuple.
 func NewCreationTimestamp(time DTNTime, sequence uint) CreationTimestamp {
 	return [2]uint{uint(time), sequence}
+}
+
+func (ct CreationTimestamp) String() string {
+	return fmt.Sprintf("(%d, %d)", ct[0], ct[1])
 }

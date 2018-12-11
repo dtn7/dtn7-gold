@@ -9,3 +9,16 @@ const (
 	CRC16 CRCType = 1
 	CRC32 CRCType = 2
 )
+
+func (c CRCType) String() string {
+	switch c {
+	case CRCNo:
+		return "no"
+	case CRC16:
+		return "16"
+	case CRC32:
+		return "32"
+	default:
+		return "unknown"
+	}
+}
