@@ -50,7 +50,7 @@ func (pb PrimaryBlock) HasFragmentation() bool {
 	return pb.BundleControlFlags.Has(BndlCFBundleIsAFragment)
 }
 
-// HasCRC retruns if the CRCType indicates a CRC present for this bundle. In
+// HasCRC retruns if the CRCType indicates a CRC present for this block. In
 // this case the CRC field of this struct should become relevant.
 func (pb PrimaryBlock) HasCRC() bool {
 	return pb.CRCType != CRCNo
