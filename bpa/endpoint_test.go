@@ -3,6 +3,8 @@ package bpa
 import (
 	"reflect"
 	"testing"
+
+	"github.com/ugorji/go/codec"
 )
 
 func TestEndpointDtnNone(t *testing.T) {
@@ -111,5 +113,97 @@ func TestEndpointInvalid(t *testing.T) {
 		if err == nil {
 			t.Errorf("%v:%v does not resulted in an error", testCase.name, testCase.ssp)
 		}
+	}
+}
+
+func TestEndpointCborDtnNone(t *testing.T) {
+	var b []byte = make([]byte, 0, 64)
+	var h codec.Handle = new(codec.CborHandle)
+	var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+
+	ep, _ := NewEndpointID("dtn", "none")
+
+	err := enc.Encode(ep)
+	if err != nil {
+		t.Errorf("CBOR encoding failed: %v", err)
+	}
+
+	var dec interface{}
+	err = codec.NewDecoderBytes(b, new(codec.CborHandle)).Decode(&dec)
+	if err != nil {
+		t.Errorf("CBOR decoding failed: %v", err)
+	}
+
+	if ty := reflect.TypeOf(dec); ty.Kind() != reflect.Slice {
+		t.Errorf("Decoded CBOR has wrong type: %v instead of slice", ty.Kind())
+	}
+
+	var arr []interface{} = dec.([]interface{})
+	if arr[0].(uint64) != 1 || arr[1].(uint64) != 0 {
+		t.Errorf("Decoded CBOR values are wrong: %d instead of 1, %d instead of 0",
+			arr[0].(uint64), arr[1].(uint64))
+	}
+}
+
+func TestEndpointCborDtn(t *testing.T) {
+	var b []byte = make([]byte, 0, 64)
+	var h codec.Handle = new(codec.CborHandle)
+	var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+
+	ep, _ := NewEndpointID("dtn", "foobar")
+
+	err := enc.Encode(ep)
+	if err != nil {
+		t.Errorf("CBOR encoding failed: %v", err)
+	}
+
+	var dec interface{}
+	err = codec.NewDecoderBytes(b, new(codec.CborHandle)).Decode(&dec)
+	if err != nil {
+		t.Errorf("CBOR decoding failed: %v", err)
+	}
+
+	if ty := reflect.TypeOf(dec); ty.Kind() != reflect.Slice {
+		t.Errorf("Decoded CBOR has wrong type: %v instead of slice", ty.Kind())
+	}
+
+	var arr []interface{} = dec.([]interface{})
+	if arr[0].(uint64) != 1 || arr[1].(string) != "foobar" {
+		t.Errorf("Decoded CBOR values are wrong: %d instead of 1, %s instead of \"foobar\"",
+			arr[0].(uint64), arr[1].(string))
+	}
+}
+
+func TestEndpointCborIpn(t *testing.T) {
+	var b []byte = make([]byte, 0, 64)
+	var h codec.Handle = new(codec.CborHandle)
+	var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+
+	ep, _ := NewEndpointID("ipn", "23.42")
+
+	err := enc.Encode(ep)
+	if err != nil {
+		t.Errorf("CBOR encoding failed: %v", err)
+	}
+
+	var dec interface{}
+	err = codec.NewDecoderBytes(b, new(codec.CborHandle)).Decode(&dec)
+	if err != nil {
+		t.Errorf("CBOR decoding failed: %v", err)
+	}
+
+	if ty := reflect.TypeOf(dec); ty.Kind() != reflect.Slice {
+		t.Errorf("Decoded CBOR has wrong type: %v instead of slice", ty.Kind())
+	}
+
+	var arr []interface{} = dec.([]interface{})
+	if arr[0].(uint64) != 2 {
+		t.Errorf("Decoded CBOR values are wrong: %d instead of 2", arr[0].(uint64))
+	}
+
+	var subarr []interface{} = arr[1].([]interface{})
+	if subarr[0].(uint64) != 23 || subarr[1].(uint64) != 42 {
+		t.Errorf("Decoded CBOR values are wrong: %d instead of 23, %d instead of 42",
+			subarr[0].(uint64), subarr[1].(uint64))
 	}
 }

@@ -20,6 +20,8 @@ var DtnNone, _ = NewEndpointID("dtn", "none")
 // part" (SSP) by an interface{}. Based on the characteristic of the name, the
 // underlying type of the SSP may vary.
 type EndpointID struct {
+	_struct struct{} `codec:",toarray"`
+
 	SchemeName         uint
 	SchemeSpecificPort interface{}
 }
