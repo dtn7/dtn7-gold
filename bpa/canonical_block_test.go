@@ -23,14 +23,26 @@ func TestNewCanonicalBlock(t *testing.T) {
 }
 
 func TestCanonicalBlockCbor(t *testing.T) {
+	ep, _ := NewEndpointID("dtn", "foo/bar")
+
 	tests := []struct {
 		cb1 CanonicalBlock
 		len int
 	}{
-		// No CRC
-		{CanonicalBlock{1, 0, 0, CRCNo, "hello world", 0}, 5},
-		// CRC
-		{CanonicalBlock{1, 0, 0, CRC16, "hello world", 0}, 6},
+		// Generic CanonicalBlock: No CRC
+		{CanonicalBlock{1, 0, 0, CRCNo, []byte("hello world"), 0}, 5},
+		// Generic CanonicalBlock: CRC
+		{CanonicalBlock{1, 0, 0, CRC16, []byte("hello world"), 0}, 6},
+		// Payload block
+		{NewPayloadBlock(0, []byte("test")), 5},
+		// Previous Node block (dtn:none)
+		{NewPreviousNodeBlock(23, 0, *DtnNone), 5},
+		// Previous Node block (dtn:foo/bar)
+		{NewPreviousNodeBlock(23, 0, *ep), 5},
+		// Bundle Age block
+		{NewBundleAgeBlock(23, 0, 100000), 5},
+		// Hop Count block
+		{NewHopCountBlock(23, 0, HopCount{Limit: 100, Count: 0}), 5},
 	}
 
 	for _, test := range tests {
@@ -89,6 +101,61 @@ func TestCanonicalBlockCbor(t *testing.T) {
 				t.Errorf("String representation of value no %d differs: %v and %v",
 					i, s1, s2)
 			}
+		}
+	}
+}
+
+func TestExtensionBlockTypes(t *testing.T) {
+	tests := []struct {
+		name      string
+		block     CanonicalBlock
+		blockType uint
+		typeLike  reflect.Kind
+	}{
+		{"Payload", NewPayloadBlock(0, []byte("foobar")), 1, reflect.Slice},
+		{"Previous Node", NewPreviousNodeBlock(23, 0, *DtnNone), 7, reflect.Slice},
+		{"Bundle Age", NewBundleAgeBlock(23, 0, 42000), 8, reflect.Uint64},
+		{"Hop Count", NewHopCountBlock(23, 0, HopCount{Limit: 42, Count: 23}), 9, reflect.Slice},
+	}
+
+	for _, test := range tests {
+		if test.block.BlockType != test.blockType {
+			t.Errorf("%s Block has wrong Block Type:  %d instead of %d",
+				test.name, test.block.BlockType, test.blockType)
+		}
+
+		var b []byte = make([]byte, 0, 64)
+		var h codec.Handle = new(codec.CborHandle)
+		var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+
+		err := enc.Encode(test.block)
+		if err != nil {
+			t.Errorf("CBOR encoding fo %s Block failed: %v", test.name, err)
+		}
+
+		var decGeneric interface{}
+		err = codec.NewDecoderBytes(b, h).Decode(&decGeneric)
+		if err != nil {
+			t.Errorf("CBOR decoding of %s Block failed: %v", test.name, err)
+		}
+
+		if ty := reflect.TypeOf(decGeneric); ty.Kind() != reflect.Slice {
+			t.Errorf("CBOR for %s Block has wrong type: %v instead of slice",
+				test.name, ty.Kind())
+		}
+
+		var decArr []interface{} = decGeneric.([]interface{})
+		var blockType uint = uint(decArr[0].(uint64))
+		var blockData = decArr[4]
+
+		if blockType != test.blockType {
+			t.Errorf("%s Block has wrong Block Type after CBOR:  %d instead of %d",
+				test.name, blockType, test.blockType)
+		}
+
+		if ty := reflect.TypeOf(blockData); ty.Kind() != test.typeLike {
+			t.Errorf("%s Block's CBOR data has wrong type: %v instead of %v",
+				test.name, ty.Kind(), test.typeLike)
 		}
 	}
 }

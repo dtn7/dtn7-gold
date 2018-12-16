@@ -2,6 +2,7 @@ package bpa
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -83,6 +84,21 @@ func NewEndpointID(name, ssp string) (*EndpointID, error) {
 		return newEndpointIDIPN(ssp)
 	default:
 		return nil, NewBPAError("Unknown scheme type")
+	}
+}
+
+// setEndpointIDFromCborArray sets the fields of the EndpointID addressed by
+// the EndpointID-pointer based on the given array. This function is used for
+// the CBOR decoding of the PrimaryBlock and some Extension Blocks.
+func setEndpointIDFromCborArray(ep *EndpointID, arr []interface{}) {
+	(*ep).SchemeName = uint(arr[0].(uint64))
+	(*ep).SchemeSpecificPort = arr[1]
+
+	// The codec library uses uint64 internally but our `dtn:none` is defined by
+	// a more generic uint. In case of an `dtn:none` endpoint we have to switch
+	// the type.
+	if ty := reflect.TypeOf((*ep).SchemeSpecificPort); ty.Kind() == reflect.Uint64 {
+		(*ep).SchemeSpecificPort = uint((*ep).SchemeSpecificPort.(uint64))
 	}
 }
 

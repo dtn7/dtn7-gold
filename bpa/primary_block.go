@@ -2,7 +2,6 @@ package bpa
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/ugorji/go/codec"
@@ -95,16 +94,7 @@ func (pb *PrimaryBlock) decodeEndpoints(blockArr []interface{}) {
 
 	for _, ep := range endpoints {
 		var arr []interface{} = blockArr[ep.pos].([]interface{})
-
-		(*ep.pointer).SchemeName = uint(arr[0].(uint64))
-		(*ep.pointer).SchemeSpecificPort = arr[1]
-
-		// The codec library uses uint64 internally but our `dtn:none` is defined
-		// by a more generic uint. In case of an `dtn:none` endpoint we have to
-		// switch the type.
-		if ty := reflect.TypeOf((*ep.pointer).SchemeSpecificPort); ty.Kind() == reflect.Uint64 {
-			(*ep.pointer).SchemeSpecificPort = uint((*ep.pointer).SchemeSpecificPort.(uint64))
-		}
+		setEndpointIDFromCborArray(ep.pointer, arr)
 	}
 }
 

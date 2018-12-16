@@ -84,6 +84,29 @@ func (cb CanonicalBlock) CodecEncodeSelf(enc *codec.Encoder) {
 	enc.MustEncode(blockArr)
 }
 
+func (cb *CanonicalBlock) codecDecodeData(data interface{}) {
+	switch cb.BlockType {
+	case BlockTypePreviousNode:
+		var ep *EndpointID = new(EndpointID)
+		setEndpointIDFromCborArray(ep, data.([]interface{}))
+		cb.Data = *ep
+
+	case BlockTypeBundleAge:
+		cb.Data = uint(data.(uint64))
+
+	case BlockTypeHopCount:
+		tuple := data.([]interface{})
+		cb.Data = HopCount{
+			Limit: uint(tuple[0].(uint64)),
+			Count: uint(tuple[1].(uint64)),
+		}
+
+	// BlockTypePayload is also a byte array and can be treated like the default.
+	default:
+		cb.Data = data.([]byte)
+	}
+}
+
 func (cb *CanonicalBlock) CodecDecodeSelf(dec *codec.Decoder) {
 	var blockArrPt = new([]interface{})
 	dec.MustDecode(blockArrPt)
@@ -98,7 +121,8 @@ func (cb *CanonicalBlock) CodecDecodeSelf(dec *codec.Decoder) {
 	cb.BlockNumber = uint(blockArr[1].(uint64))
 	cb.BlockControlFlags = BlockControlFlags(blockArr[2].(uint64))
 	cb.CRCType = CRCType(blockArr[3].(uint64))
-	cb.Data = blockArr[4]
+
+	cb.codecDecodeData(blockArr[4])
 
 	if len(blockArr) == 6 {
 		cb.CRC = uint(blockArr[5].(uint64))
