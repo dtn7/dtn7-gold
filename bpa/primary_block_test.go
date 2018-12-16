@@ -52,7 +52,7 @@ func TestPrimaryBlockFragmentation(t *testing.T) {
 	}
 }
 
-func TestPrimaryBlockCborSimple(t *testing.T) {
+func TestPrimaryBlockCbor(t *testing.T) {
 	ep, _ := NewEndpointID("dtn", "test")
 	ts := NewCreationTimestamp(DTNTimeNow(), 23)
 
