@@ -52,10 +52,24 @@ func (pb PrimaryBlock) HasFragmentation() bool {
 	return pb.BundleControlFlags.Has(BndlCFBundleIsAFragment)
 }
 
-// HasCRC retruns if the CRCType indicates a CRC present for this block. In
-// this case the CRC field of this struct should become relevant.
 func (pb PrimaryBlock) HasCRC() bool {
-	return pb.CRCType != CRCNo
+	return pb.GetCRCType() != CRCNo
+}
+
+func (pb PrimaryBlock) GetCRCType() CRCType {
+	return pb.CRCType
+}
+
+func (pb PrimaryBlock) GetCRC() uint {
+	return pb.CRC
+}
+
+func (pb *PrimaryBlock) ResetCRC() {
+	pb.CRC = 0
+}
+
+func (pb *PrimaryBlock) SetCRC(crc uint) {
+	pb.CRC = crc
 }
 
 func (pb PrimaryBlock) CodecEncodeSelf(enc *codec.Encoder) {

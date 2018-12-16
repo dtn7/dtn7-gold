@@ -63,10 +63,24 @@ func NewCanonicalBlock(blockType uint, blockNumber uint,
 	}
 }
 
-// HasCRC retruns if the CRCType indicates a CRC present for this block. In
-// this case the CRC field of this struct should become relevant.
 func (cb CanonicalBlock) HasCRC() bool {
-	return cb.CRCType != CRCNo
+	return cb.GetCRCType() != CRCNo
+}
+
+func (cb CanonicalBlock) GetCRCType() CRCType {
+	return cb.CRCType
+}
+
+func (cb CanonicalBlock) GetCRC() uint {
+	return cb.CRC
+}
+
+func (cb *CanonicalBlock) ResetCRC() {
+	cb.CRC = 0
+}
+
+func (cb *CanonicalBlock) SetCRC(crc uint) {
+	cb.CRC = crc
 }
 
 func (cb CanonicalBlock) CodecEncodeSelf(enc *codec.Encoder) {
