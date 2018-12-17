@@ -79,5 +79,9 @@ func SetCRC(block Block) {
 
 // CheckCRC returns true if the stored CRC value matches the calculated one.
 func CheckCRC(block Block) bool {
+	if !block.HasCRC() {
+		return true
+	}
+
 	return block.GetCRC() == CalculateCRC(block)
 }

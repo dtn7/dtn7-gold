@@ -2,7 +2,6 @@ package bpa
 
 import (
 	"bytes"
-	_ "fmt"
 
 	"github.com/ugorji/go/codec"
 )
@@ -10,8 +9,6 @@ import (
 // Bundle represents a Bundle as defined in section 4.2.1. Each Bundle contains
 // one Primary Block and multiple Canonical Blocks.
 type Bundle struct {
-	_struct struct{} `codec:",toarray"`
-
 	PrimaryBlock    PrimaryBlock
 	CanonicalBlocks []CanonicalBlock
 }
@@ -45,7 +42,7 @@ func (b *Bundle) ApplyCRC(crcType CRCType) {
 func (b Bundle) ToCbor() []byte {
 	// It seems to be tricky using both definite-length and indefinite-length
 	// arays with the codec library. However, an indefinite-length array is just
-	// a byte array wrapped inside the start and "break" codes, which are
+	// a byte array wrapped between the start and "break" code, which are
 	// exported as consts from the codec library.
 
 	var buf bytes.Buffer
@@ -62,19 +59,32 @@ func (b Bundle) ToCbor() []byte {
 	return buf.Bytes()
 }
 
-/*
-// TODO
-func NewBundleFromCbor(data []byte) Bundle {
-	var bundle Bundle
-	var dataArr interface{}
+// decodeBundleBlock decodes an already generic decoded block to its
+// determinated data structure.
+// The NewBundleFromCbor function decodes an array of interface{} which results
+// in an array of arrays, as codec tries to decode the whole data. This method
+// will re-encode this "anonymous" array to CBOR and will decode it to its
+// struct, which is referenced as the target pointer.
+func decodeBundleBlock(data interface{}, target interface{}) {
+	var b []byte = make([]byte, 0, 64)
+	var cborHandle *codec.CborHandle = new(codec.CborHandle)
 
-	var cborHandle = codec.CborHandle{IndefiniteLength: true}
-	var dec *codec.Decoder = codec.NewDecoderBytes(data, &cborHandle)
-
-	dec.MustDecode(&dataArr)
-
-	fmt.Printf("%v\n", dataArr)
-
-	return bundle
+	codec.NewEncoderBytes(&b, cborHandle).MustEncode(data)
+	codec.NewDecoderBytes(b, cborHandle).MustDecode(target)
 }
-*/
+
+// NewBundleFromCbor decodes the given data to a new Bundle.
+func NewBundleFromCbor(data []byte) Bundle {
+	var dataArr []interface{}
+	codec.NewDecoderBytes(data, new(codec.CborHandle)).MustDecode(&dataArr)
+
+	var pb PrimaryBlock
+	decodeBundleBlock(dataArr[0], &pb)
+
+	var cb []CanonicalBlock = make([]CanonicalBlock, len(dataArr)-1)
+	for i := 0; i < len(cb); i++ {
+		decodeBundleBlock(dataArr[i+1], &cb[i])
+	}
+
+	return Bundle{pb, cb}
+}
