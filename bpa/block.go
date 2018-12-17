@@ -13,6 +13,9 @@ type Block interface {
 	// Retruns the CRC value.
 	GetCRC() uint
 
+	// SetCRCType sets the CRC type.
+	SetCRCType(CRCType)
+
 	// ResetCRC resets the CRC value to zero. This should be called before
 	// calculating the CRC value of this Block.
 	ResetCRC()

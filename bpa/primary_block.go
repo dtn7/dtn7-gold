@@ -64,6 +64,10 @@ func (pb PrimaryBlock) GetCRC() uint {
 	return pb.CRC
 }
 
+func (pb *PrimaryBlock) SetCRCType(crcType CRCType) {
+	pb.CRCType = crcType
+}
+
 func (pb *PrimaryBlock) ResetCRC() {
 	pb.CRC = 0
 }

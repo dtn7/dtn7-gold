@@ -75,6 +75,10 @@ func (cb CanonicalBlock) GetCRC() uint {
 	return cb.CRC
 }
 
+func (cb *CanonicalBlock) SetCRCType(crcType CRCType) {
+	cb.CRCType = crcType
+}
+
 func (cb *CanonicalBlock) ResetCRC() {
 	cb.CRC = 0
 }
