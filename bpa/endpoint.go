@@ -94,11 +94,19 @@ func setEndpointIDFromCborArray(ep *EndpointID, arr []interface{}) {
 	(*ep).SchemeName = uint(arr[0].(uint64))
 	(*ep).SchemeSpecificPort = arr[1]
 
-	// The codec library uses uint64 internally but our `dtn:none` is defined by
-	// a more generic uint. In case of an `dtn:none` endpoint we have to switch
-	// the type.
-	if ty := reflect.TypeOf((*ep).SchemeSpecificPort); ty.Kind() == reflect.Uint64 {
+	// The codec library uses uint64 for uints and []interface{} for arrays
+	// internally. However, our `dtn:none` is defined by an uint and each "ipn"
+	// endpoint by an uint64 array. That's why we have to re-cast some types..
+
+	switch ty := reflect.TypeOf((*ep).SchemeSpecificPort); ty.Kind() {
+	case reflect.Uint64:
 		(*ep).SchemeSpecificPort = uint((*ep).SchemeSpecificPort.(uint64))
+
+	case reflect.Slice:
+		(*ep).SchemeSpecificPort = [2]uint64{
+			(*ep).SchemeSpecificPort.([]interface{})[0].(uint64),
+			(*ep).SchemeSpecificPort.([]interface{})[1].(uint64),
+		}
 	}
 }
 
