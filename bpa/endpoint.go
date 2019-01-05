@@ -14,7 +14,7 @@ const (
 )
 
 // DtnNone is a instance of the `dtn:none` endpoint id.
-var DtnNone, _ = NewEndpointID("dtn", "none")
+var DtnNone = EndpointID{SchemeName: URISchemeDTN, SchemeSpecificPort: uint(0)}
 
 // EndpointID represents an Endpoint ID as defined in section 4.1.5.1. The
 // "scheme name" is represented by an uint (vide supra) and the "scheme-specific
@@ -50,7 +50,7 @@ func newEndpointIDIPN(ssp string) (*EndpointID, error) {
 	re := regexp.MustCompile(`^(\d+)\.(\d+)$`)
 	matches := re.FindStringSubmatch(ssp)
 	if len(matches) != 3 {
-		return nil, NewBPAError("IPN does not satisfy given regex")
+		return nil, newBPAError("IPN does not satisfy given regex")
 	}
 
 	nodeNo, err := strconv.ParseUint(matches[1], 10, 64)
@@ -64,7 +64,7 @@ func newEndpointIDIPN(ssp string) (*EndpointID, error) {
 	}
 
 	if nodeNo < 1 || serviceNo < 1 {
-		return nil, NewBPAError("IPN's node and service number must be >= 1")
+		return nil, newBPAError("IPN's node and service number must be >= 1")
 	}
 
 	return &EndpointID{
@@ -83,7 +83,7 @@ func NewEndpointID(name, ssp string) (*EndpointID, error) {
 	case "ipn":
 		return newEndpointIDIPN(ssp)
 	default:
-		return nil, NewBPAError("Unknown scheme type")
+		return nil, newBPAError("Unknown scheme type")
 	}
 }
 

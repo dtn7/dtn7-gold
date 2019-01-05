@@ -5,8 +5,8 @@ type BPAError struct {
 	msg string
 }
 
-// NewBPAError creates a new BPAError with the given message.
-func NewBPAError(msg string) error {
+// newBPAError creates a new BPAError with the given message.
+func newBPAError(msg string) *BPAError {
 	return &BPAError{msg}
 }
 

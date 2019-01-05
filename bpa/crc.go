@@ -40,15 +40,15 @@ var (
 // blockToBytes encodes a Block to a byte array based on the CBOR encoding. It
 // temporary sets the present CRC value to zero. Therefore this function is not
 // thread safe.
-func blockToBytes(block Block) []byte {
+func blockToBytes(blck block) []byte {
 	var b []byte = make([]byte, 0, 64)
 	var enc *codec.Encoder = codec.NewEncoderBytes(&b, new(codec.CborHandle))
 
-	var blockCRC = block.GetCRC()
+	var blockCRC = blck.getCRC()
 
-	block.ResetCRC()
-	enc.MustEncode(block)
-	block.SetCRC(blockCRC)
+	blck.resetCRC()
+	enc.MustEncode(blck)
+	blck.setCRC(blockCRC)
 
 	return b
 }
@@ -58,11 +58,11 @@ func blockToBytes(block Block) []byte {
 // function is not thread safe.
 // The returned value is a byte array containing the CRC in network byte order
 // (big endian) and its length is 4 for CRC32 or 2 for CRC16.
-func calculateCRC(block Block) []byte {
-	var data = blockToBytes(block)
-	var arr = emptyCRC(block.GetCRCType())
+func calculateCRC(blck block) []byte {
+	var data = blockToBytes(blck)
+	var arr = emptyCRC(blck.GetCRCType())
 
-	switch block.GetCRCType() {
+	switch blck.GetCRCType() {
 	case CRCNo:
 
 	case CRC16:
@@ -98,16 +98,16 @@ func emptyCRC(crcType CRCType) (arr []byte) {
 }
 
 // setCRC sets the CRC value of the given block.
-func setCRC(block Block) {
-	block.SetCRC(calculateCRC(block))
+func setCRC(blck block) {
+	blck.setCRC(calculateCRC(blck))
 }
 
 // checkCRC returns true if the stored CRC value matches the calculated one or
 // the CRC Type is none.
-func checkCRC(block Block) bool {
-	if !block.HasCRC() {
+func checkCRC(blck block) bool {
+	if !blck.HasCRC() {
 		return true
 	}
 
-	return bytes.Equal(block.GetCRC(), calculateCRC(block))
+	return bytes.Equal(blck.getCRC(), calculateCRC(blck))
 }

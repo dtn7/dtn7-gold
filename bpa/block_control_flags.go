@@ -26,11 +26,11 @@ func NewBlockControlFlags() BlockControlFlags {
 
 func blockControlFlagsCheck(flag BlockControlFlags) error {
 	if (flag & BlckCFReservedFields) != 0 {
-		return NewBPAError("Given flag contains reserved bits")
+		return newBPAError("Given flag contains reserved bits")
 	}
 
 	if bits.OnesCount8(uint8(flag)) != 1 {
-		return NewBPAError("Given flag does not contain one bit")
+		return newBPAError("Given flag does not contain one bit")
 	}
 
 	return nil

@@ -28,11 +28,11 @@ func NewBundleControlFlags() BundleControlFlags {
 
 func bundleControlFlagsCheck(flag BundleControlFlags) error {
 	if (flag & BndlCFReservedFields) != 0 {
-		return NewBPAError("Given flag contains reserved bits")
+		return newBPAError("Given flag contains reserved bits")
 	}
 
 	if bits.OnesCount16(uint16(flag)) != 1 {
-		return NewBPAError("Given flag does not contain one bit")
+		return newBPAError("Given flag does not contain one bit")
 	}
 
 	return nil
@@ -86,7 +86,7 @@ func (bcf *BundleControlFlags) IsValid() (status bool, errs []error) {
 
 	if !impl0 {
 		status = false
-		errs = append(errs, NewBPAError(
+		errs = append(errs, newBPAError(
 			"\"payload is administrative record => no status report request flags\" failed."))
 	}
 

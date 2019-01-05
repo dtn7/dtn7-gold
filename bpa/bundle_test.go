@@ -120,11 +120,11 @@ func TestBundleUpcn(t *testing.T) {
 			dest, destExpected)
 	}
 
-	if src := pb.SourceNode; src != *DtnNone {
+	if src := pb.SourceNode; src != DtnNone {
 		t.Errorf("Primary Block's source node is not dtn:none: %v", src)
 	}
 
-	if rprtTo := pb.ReportTo; rprtTo != *DtnNone {
+	if rprtTo := pb.ReportTo; rprtTo != DtnNone {
 		t.Errorf("Primary Block's report to is not dtn:none: %v", rprtTo)
 	}
 
@@ -166,7 +166,7 @@ func TestBundleUpcn(t *testing.T) {
 		case BlockTypeHopCount:
 			chkHopCount = true
 
-			hopExpected := HopCount{Limit: 30, Count: 0}
+			hopExpected := NewHopCount(30, 0)
 			if hop := cb.Data.(HopCount); hop != hopExpected {
 				t.Errorf("Hop Count Block mismatches: %v instead of %v",
 					hop, hopExpected)

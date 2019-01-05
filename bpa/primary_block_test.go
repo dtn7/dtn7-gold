@@ -61,13 +61,13 @@ func TestPrimaryBlockCbor(t *testing.T) {
 		len int
 	}{
 		// No CRC, No Fragmentation
-		{PrimaryBlock{7, 0, CRCNo, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, nil}, 8},
+		{PrimaryBlock{7, 0, CRCNo, *ep, *ep, DtnNone, ts, 1000000, 0, 0, nil}, 8},
 		// CRC, No Fragmentation
-		{PrimaryBlock{7, 0, CRC16, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, nil}, 9},
+		{PrimaryBlock{7, 0, CRC16, *ep, *ep, DtnNone, ts, 1000000, 0, 0, nil}, 9},
 		// No CRC, Fragmentation
-		{PrimaryBlock{7, BndlCFBundleIsAFragment, CRCNo, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, nil}, 10},
+		{PrimaryBlock{7, BndlCFBundleIsAFragment, CRCNo, *ep, *ep, DtnNone, ts, 1000000, 0, 0, nil}, 10},
 		// CRC, Fragmentation
-		{PrimaryBlock{7, BndlCFBundleIsAFragment, CRC16, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, nil}, 11},
+		{PrimaryBlock{7, BndlCFBundleIsAFragment, CRC16, *ep, *ep, DtnNone, ts, 1000000, 0, 0, nil}, 11},
 	}
 
 	for _, test := range tests {

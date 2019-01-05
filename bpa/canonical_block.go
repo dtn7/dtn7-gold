@@ -71,19 +71,19 @@ func (cb CanonicalBlock) GetCRCType() CRCType {
 	return cb.CRCType
 }
 
-func (cb CanonicalBlock) GetCRC() []byte {
+func (cb CanonicalBlock) getCRC() []byte {
 	return cb.CRC
 }
 
-func (cb *CanonicalBlock) SetCRCType(crcType CRCType) {
+func (cb *CanonicalBlock) setCRCType(crcType CRCType) {
 	cb.CRCType = crcType
 }
 
-func (cb *CanonicalBlock) ResetCRC() {
+func (cb *CanonicalBlock) resetCRC() {
 	cb.CRC = emptyCRC(cb.GetCRCType())
 }
 
-func (cb *CanonicalBlock) SetCRC(crc []byte) {
+func (cb *CanonicalBlock) setCRC(crc []byte) {
 	cb.CRC = crc
 }
 
@@ -170,6 +170,14 @@ type HopCount struct {
 
 	Limit uint
 	Count uint
+}
+
+// NewHopCount returns a new Hop Count block as defined in section 4.3.3.
+func NewHopCount(limit, count uint) HopCount {
+	return HopCount{
+		Limit: limit,
+		Count: count,
+	}
 }
 
 func (hc HopCount) String() string {

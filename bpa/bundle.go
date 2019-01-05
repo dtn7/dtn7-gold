@@ -22,7 +22,7 @@ func NewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) Bundle {
 }
 
 // forEachBlock applies the given function for each of this Bundle's blocks.
-func (b *Bundle) forEachBlock(f func(Block)) {
+func (b *Bundle) forEachBlock(f func(block)) {
 	f(&b.PrimaryBlock)
 	for i := 0; i < len(b.CanonicalBlocks); i++ {
 		f(&b.CanonicalBlocks[i])
@@ -31,9 +31,9 @@ func (b *Bundle) forEachBlock(f func(Block)) {
 
 // ApplyCRC sets the given CRCType to each block and calculates the CRC values.
 func (b *Bundle) ApplyCRC(crcType CRCType) {
-	b.forEachBlock(func(block Block) {
-		block.SetCRCType(crcType)
-		setCRC(block)
+	b.forEachBlock(func(blck block) {
+		blck.setCRCType(crcType)
+		setCRC(blck)
 	})
 }
 
@@ -41,8 +41,8 @@ func (b *Bundle) ApplyCRC(crcType CRCType) {
 func (b *Bundle) CheckCRC() bool {
 	var flag = true
 
-	b.forEachBlock(func(block Block) {
-		if !checkCRC(block) {
+	b.forEachBlock(func(blck block) {
+		if !checkCRC(blck) {
 			flag = false
 		}
 	})
@@ -63,8 +63,8 @@ func (b Bundle) ToCbor() []byte {
 
 	buf.WriteByte(codec.CborStreamArray)
 
-	b.forEachBlock(func(block Block) {
-		codec.NewEncoder(&buf, cborHandle).MustEncode(block)
+	b.forEachBlock(func(blck block) {
+		codec.NewEncoder(&buf, cborHandle).MustEncode(blck)
 	})
 
 	buf.WriteByte(codec.CborStreamBreak)

@@ -18,7 +18,7 @@ func TestCRCBackAndForth(t *testing.T) {
 	cbCRC32 := CanonicalBlock{1, 0, 0, CRC32, []byte("hello world"), nil}
 
 	tests := []struct {
-		block   Block
+		blck    block
 		crcType CRCType
 	}{
 		{&pbCRCNo, CRCNo},
@@ -30,19 +30,19 @@ func TestCRCBackAndForth(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if test.block.GetCRCType() != test.crcType {
+		if test.blck.GetCRCType() != test.crcType {
 			t.Errorf("Wrong CRC Type: %d instead of %d for %v",
-				test.block.GetCRCType(), test.crcType, test.block)
+				test.blck.GetCRCType(), test.crcType, test.blck)
 		}
 
-		setCRC(test.block)
-		if !checkCRC(test.block) {
-			t.Errorf("Setting and checking CRC failed for %v", test.block)
+		setCRC(test.blck)
+		if !checkCRC(test.blck) {
+			t.Errorf("Setting and checking CRC failed for %v", test.blck)
 		}
 
-		test.block.ResetCRC()
-		if test.block.HasCRC() && checkCRC(test.block) {
-			t.Errorf("CRC check succeeded after resetting for %v", test.block)
+		test.blck.resetCRC()
+		if test.blck.HasCRC() && checkCRC(test.blck) {
+			t.Errorf("CRC check succeeded after resetting for %v", test.blck)
 		}
 	}
 }

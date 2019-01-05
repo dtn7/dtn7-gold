@@ -36,7 +36,7 @@ func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
 		CRCType:            CRCNo,
 		Destination:        destination,
 		SourceNode:         sourceNode,
-		ReportTo:           *DtnNone,
+		ReportTo:           DtnNone,
 		CreationTimestamp:  creationTimestamp,
 		Lifetime:           lifetime,
 		FragmentOffset:     0,
@@ -60,19 +60,19 @@ func (pb PrimaryBlock) GetCRCType() CRCType {
 	return pb.CRCType
 }
 
-func (pb PrimaryBlock) GetCRC() []byte {
+func (pb PrimaryBlock) getCRC() []byte {
 	return pb.CRC
 }
 
-func (pb *PrimaryBlock) SetCRCType(crcType CRCType) {
+func (pb *PrimaryBlock) setCRCType(crcType CRCType) {
 	pb.CRCType = crcType
 }
 
-func (pb *PrimaryBlock) ResetCRC() {
+func (pb *PrimaryBlock) resetCRC() {
 	pb.CRC = emptyCRC(pb.GetCRCType())
 }
 
-func (pb *PrimaryBlock) SetCRC(crc []byte) {
+func (pb *PrimaryBlock) setCRC(crc []byte) {
 	pb.CRC = crc
 }
 
