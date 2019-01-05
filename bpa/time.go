@@ -9,7 +9,12 @@ import (
 // from the year 2000 instead of 1970. This is specified in section 4.1.6.
 type DTNTime uint
 
-const seconds1970To2k = 946684800
+const (
+	seconds1970To2k = 946684800
+
+	// DTNTimeEpoch represents the zero timestamp/epoch.
+	DTNTimeEpoch DTNTime = 0
+)
 
 // Unix returns the Unix timestamp for this DTNTime.
 func (t *DTNTime) Unix() int64 {

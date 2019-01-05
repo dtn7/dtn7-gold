@@ -128,7 +128,7 @@ func TestBundleUpcn(t *testing.T) {
 		t.Errorf("Primary Block's report to is not dtn:none: %v", rprtTo)
 	}
 
-	creaTsExpected := NewCreationTimestamp(0, 0)
+	creaTsExpected := NewCreationTimestamp(DTNTimeEpoch, 0)
 	if creaTs := pb.CreationTimestamp; creaTs != creaTsExpected {
 		t.Errorf("Primary Block's creation timestamp mismatches: %v instead of %v",
 			creaTs, creaTsExpected)
