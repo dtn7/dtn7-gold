@@ -80,6 +80,25 @@ func CalculateCRC(block Block) (arr []byte) {
 	return
 }
 
+// EmptyCRC returns the "default" CRC value for the given CRC Type.
+func EmptyCRC(crcType CRCType) (arr []byte) {
+	switch crcType {
+	case CRCNo:
+		arr = nil
+
+	case CRC16:
+		arr = make([]byte, 2)
+
+	case CRC32:
+		arr = make([]byte, 4)
+
+	default:
+		panic("Unknown CRCType")
+	}
+
+	return
+}
+
 // SetCRC sets the CRC value of the given block.
 func SetCRC(block Block) {
 	block.SetCRC(CalculateCRC(block))

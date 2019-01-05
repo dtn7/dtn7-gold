@@ -37,6 +37,19 @@ func (b *Bundle) ApplyCRC(crcType CRCType) {
 	})
 }
 
+// CheckCRC checks the CRC value of each block.
+func (b *Bundle) CheckCRC() bool {
+	var flag = true
+
+	b.forEachBlock(func(block Block) {
+		if !CheckCRC(block) {
+			flag = false
+		}
+	})
+
+	return flag
+}
+
 // ToCbor creates a byte array representing a CBOR indefinite-length array of
 // this Bundle with all its blocks.
 func (b Bundle) ToCbor() []byte {
