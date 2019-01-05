@@ -3,6 +3,8 @@ package bpa
 import (
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 func TestBundleControlFlagsHas(t *testing.T) {
@@ -46,7 +48,7 @@ func TestBundleControlFlagsImplications(t *testing.T) {
 			t.Errorf("Setting %d does not resulted in an failed state", flg)
 		} else {
 			errFlag := false
-			for _, err := range errs {
+			for _, err := range errs.(*multierror.Error).WrappedErrors() {
 				if strings.Contains(err.Error(), "administrative record") {
 					errFlag = true
 				}

@@ -21,7 +21,7 @@ type EndpointID struct {
 	_struct struct{} `codec:",toarray"`
 
 	SchemeName         uint
-	SchemeSpecificPort interface{}
+	SchemeSpecificPart interface{}
 }
 
 func newEndpointIDDTN(ssp string) (EndpointID, error) {
@@ -34,7 +34,7 @@ func newEndpointIDDTN(ssp string) (EndpointID, error) {
 
 	return EndpointID{
 		SchemeName:         URISchemeDTN,
-		SchemeSpecificPort: sspRaw,
+		SchemeSpecificPart: sspRaw,
 	}, nil
 }
 
@@ -68,7 +68,7 @@ func newEndpointIDIPN(ssp string) (ep EndpointID, err error) {
 
 	ep = EndpointID{
 		SchemeName:         URISchemeIPN,
-		SchemeSpecificPort: [2]uint64{nodeNo, serviceNo},
+		SchemeSpecificPart: [2]uint64{nodeNo, serviceNo},
 	}
 	return
 }
@@ -92,21 +92,54 @@ func NewEndpointID(name, ssp string) (EndpointID, error) {
 // the CBOR decoding of the PrimaryBlock and some Extension Blocks.
 func setEndpointIDFromCborArray(ep *EndpointID, arr []interface{}) {
 	(*ep).SchemeName = uint(arr[0].(uint64))
-	(*ep).SchemeSpecificPort = arr[1]
+	(*ep).SchemeSpecificPart = arr[1]
 
 	// The codec library uses uint64 for uints and []interface{} for arrays
 	// internally. However, our `dtn:none` is defined by an uint and each "ipn"
 	// endpoint by an uint64 array. That's why we have to re-cast some types..
 
-	switch ty := reflect.TypeOf((*ep).SchemeSpecificPort); ty.Kind() {
+	switch ty := reflect.TypeOf((*ep).SchemeSpecificPart); ty.Kind() {
 	case reflect.Uint64:
-		(*ep).SchemeSpecificPort = uint((*ep).SchemeSpecificPort.(uint64))
+		(*ep).SchemeSpecificPart = uint((*ep).SchemeSpecificPart.(uint64))
 
 	case reflect.Slice:
-		(*ep).SchemeSpecificPort = [2]uint64{
-			(*ep).SchemeSpecificPort.([]interface{})[0].(uint64),
-			(*ep).SchemeSpecificPort.([]interface{})[1].(uint64),
+		(*ep).SchemeSpecificPart = [2]uint64{
+			(*ep).SchemeSpecificPart.([]interface{})[0].(uint64),
+			(*ep).SchemeSpecificPart.([]interface{})[1].(uint64),
 		}
+	}
+}
+
+func (eid EndpointID) checkValidDtn() error {
+	switch eid.SchemeSpecificPart.(type) {
+	case string:
+		if eid.SchemeSpecificPart.(string) == "none" {
+			return newBPAError("Endpoint ID is dtn:none, where none is a string")
+		}
+	}
+
+	return nil
+}
+
+func (eid EndpointID) checkValidIpn() error {
+	ssp := eid.SchemeSpecificPart.([2]uint64)
+	if ssp[0] < 1 || ssp[1] < 1 {
+		return newBPAError("IPN's node and service number must be >= 1")
+	}
+
+	return nil
+}
+
+func (eid EndpointID) checkValid() error {
+	switch eid.SchemeName {
+	case URISchemeDTN:
+		return eid.checkValidDtn()
+
+	case URISchemeIPN:
+		return eid.checkValidIpn()
+
+	default:
+		return newBPAError("Endpoint ID has unknown scheme name")
 	}
 }
 
@@ -123,19 +156,19 @@ func (eid EndpointID) String() string {
 	}
 	b.WriteRune(':')
 
-	switch t := eid.SchemeSpecificPort.(type) {
+	switch t := eid.SchemeSpecificPart.(type) {
 	case uint:
-		if eid.SchemeName == URISchemeDTN && eid.SchemeSpecificPort.(uint) == 0 {
+		if eid.SchemeName == URISchemeDTN && eid.SchemeSpecificPart.(uint) == 0 {
 			b.WriteString("none")
 		} else {
-			fmt.Fprintf(&b, "%d", eid.SchemeSpecificPort.(uint))
+			fmt.Fprintf(&b, "%d", eid.SchemeSpecificPart.(uint))
 		}
 
 	case string:
-		b.WriteString(eid.SchemeSpecificPort.(string))
+		b.WriteString(eid.SchemeSpecificPart.(string))
 
 	case [2]uint64:
-		var ssp [2]uint64 = eid.SchemeSpecificPort.([2]uint64)
+		var ssp [2]uint64 = eid.SchemeSpecificPart.([2]uint64)
 		if eid.SchemeName == URISchemeIPN {
 			fmt.Fprintf(&b, "%d.%d", ssp[0], ssp[1])
 		} else {
@@ -143,7 +176,7 @@ func (eid EndpointID) String() string {
 		}
 
 	default:
-		fmt.Fprintf(&b, "unkown %T: %v", t, eid.SchemeSpecificPort)
+		fmt.Fprintf(&b, "unkown %T: %v", t, eid.SchemeSpecificPart)
 	}
 
 	return b.String()
@@ -153,6 +186,6 @@ func (eid EndpointID) String() string {
 func DtnNone() EndpointID {
 	return EndpointID{
 		SchemeName:         URISchemeDTN,
-		SchemeSpecificPort: uint(0),
+		SchemeSpecificPart: uint(0),
 	}
 }

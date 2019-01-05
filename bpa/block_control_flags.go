@@ -26,9 +26,9 @@ func (bcf BlockControlFlags) Has(flag BlockControlFlags) bool {
 	return (bcf & flag) != 0
 }
 
-func (bcf BlockControlFlags) checkValid() []error {
+func (bcf BlockControlFlags) checkValid() error {
 	if bcf.Has(blckCFReservedFields) {
-		return []error{newBPAError("Given flag contains reserved bits")}
+		return newBPAError("Given flag contains reserved bits")
 	}
 
 	return nil

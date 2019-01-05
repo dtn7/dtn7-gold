@@ -1,5 +1,7 @@
 package bpa
 
+import "github.com/hashicorp/go-multierror"
+
 // BundleControlFlags is an uint16 which represents the Bundle Processing
 // Control Flags as specified in section 4.1.3.
 type BundleControlFlags uint16
@@ -25,11 +27,12 @@ func (bcf BundleControlFlags) Has(flag BundleControlFlags) bool {
 	return (bcf & flag) != 0
 }
 
-func (bcf BundleControlFlags) checkValid() []error {
-	var errs []error
+func (bcf BundleControlFlags) checkValid() error {
+	var errs error
 
 	if bcf.Has(bndlCFReservedFields) {
-		errs = append(errs, newBPAError("Given flag contains reserved bits"))
+		errs = multierror.Append(
+			errs, newBPAError("Given flag contains reserved bits"))
 	}
 
 	// payload is administrative record => no status report request flags
@@ -38,9 +41,8 @@ func (bcf BundleControlFlags) checkValid() []error {
 			!bcf.Has(BndlCFBundleForwardingStatusReportsAreRequested) &&
 			!bcf.Has(BndlCFBundleDeliveryStatusReportsAreRequested) &&
 			!bcf.Has(BndlCFBundleDeletionStatusReportsAreRequested))
-
 	if !adminRecCheck {
-		errs = append(errs, newBPAError(
+		errs = multierror.Append(errs, newBPAError(
 			"\"payload is administrative record => no status report request flags\" failed"))
 	}
 

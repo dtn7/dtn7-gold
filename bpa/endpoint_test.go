@@ -17,10 +17,10 @@ func TestEndpointDtnNone(t *testing.T) {
 	if dtnNone.SchemeName != URISchemeDTN {
 		t.Errorf("dtn:none has wrong scheme name: %d", dtnNone.SchemeName)
 	}
-	if ty := reflect.TypeOf(dtnNone.SchemeSpecificPort); ty.Kind() != reflect.Uint {
+	if ty := reflect.TypeOf(dtnNone.SchemeSpecificPart); ty.Kind() != reflect.Uint {
 		t.Errorf("dtn:none's SSP has wrong type: %T instead of uint", ty)
 	}
-	if v := dtnNone.SchemeSpecificPort.(uint); v != 0 {
+	if v := dtnNone.SchemeSpecificPart.(uint); v != 0 {
 		t.Errorf("dtn:none's SSP is not 0, %d", v)
 	}
 
@@ -39,10 +39,10 @@ func TestEndpointDtn(t *testing.T) {
 	if dtnEP.SchemeName != URISchemeDTN {
 		t.Errorf("dtn:foobar has wrong scheme name: %d", dtnEP.SchemeName)
 	}
-	if ty := reflect.TypeOf(dtnEP.SchemeSpecificPort); ty.Kind() != reflect.String {
+	if ty := reflect.TypeOf(dtnEP.SchemeSpecificPart); ty.Kind() != reflect.String {
 		t.Errorf("dtn:foobar's SSP has wrong type: %T instead of string", ty)
 	}
-	if v := dtnEP.SchemeSpecificPort.(string); v != "foobar" {
+	if v := dtnEP.SchemeSpecificPart.(string); v != "foobar" {
 		t.Errorf("dtn:foobar's SSP is not 'foobar', %v", v)
 	}
 
@@ -61,14 +61,14 @@ func TestEndpointIpn(t *testing.T) {
 	if ipnEP.SchemeName != URISchemeIPN {
 		t.Errorf("ipn:23.42 has wrong scheme name: %d", ipnEP.SchemeName)
 	}
-	if ty := reflect.TypeOf(ipnEP.SchemeSpecificPort); ty.Kind() == reflect.Array {
+	if ty := reflect.TypeOf(ipnEP.SchemeSpecificPart); ty.Kind() == reflect.Array {
 		if te := ty.Elem(); te.Kind() != reflect.Uint64 {
 			t.Errorf("ipn:23.42's SSP array has wrong elem-type: %T instead of uint64", te)
 		}
 	} else {
 		t.Errorf("ipn:23.42's SSP has wrong type: %T instead of array", ty)
 	}
-	if v := ipnEP.SchemeSpecificPort.([2]uint64); len(v) == 2 {
+	if v := ipnEP.SchemeSpecificPart.([2]uint64); len(v) == 2 {
 		if v[0] != 23 && v[1] != 42 {
 			t.Errorf("ipn:23.42's SSP != (23, 42); (%d, %d)", v[0], v[1])
 		}
@@ -205,5 +205,26 @@ func TestEndpointCborIpn(t *testing.T) {
 	if subarr[0].(uint64) != 23 || subarr[1].(uint64) != 42 {
 		t.Errorf("Decoded CBOR values are wrong: %d instead of 23, %d instead of 42",
 			subarr[0].(uint64), subarr[1].(uint64))
+	}
+}
+
+func TestEndpointCheckValid(t *testing.T) {
+	tests := []struct {
+		ep    EndpointID
+		valid bool
+	}{
+		{EndpointID{SchemeName: URISchemeDTN, SchemeSpecificPart: "none"}, false},
+		{EndpointID{SchemeName: URISchemeDTN, SchemeSpecificPart: 0}, true},
+		{EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 1}}, false},
+		{EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{1, 0}}, false},
+		{EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}}, false},
+		{EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{1, 1}}, true},
+		{EndpointID{SchemeName: 23, SchemeSpecificPart: 0}, false},
+	}
+
+	for _, test := range tests {
+		if err := test.ep.checkValid(); (err == nil) != test.valid {
+			t.Errorf("Endpoint ID %v resulted in error: %v", test.ep, err)
+		}
 	}
 }
