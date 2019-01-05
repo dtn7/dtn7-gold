@@ -11,11 +11,11 @@ func TestCRCBackAndForth(t *testing.T) {
 	pbCRC32 := pbCRCNo
 	pbCRC32.CRCType = CRC32
 
-	cbCRCNo := CanonicalBlock{1, 0, 0, CRCNo, []byte("hello world"), 0}
+	cbCRCNo := CanonicalBlock{1, 0, 0, CRCNo, []byte("hello world"), nil}
 
-	cbCRC16 := CanonicalBlock{1, 0, 0, CRC16, []byte("hello world"), 0}
+	cbCRC16 := CanonicalBlock{1, 0, 0, CRC16, []byte("hello world"), nil}
 
-	cbCRC32 := CanonicalBlock{1, 0, 0, CRC32, []byte("hello world"), 0}
+	cbCRC32 := CanonicalBlock{1, 0, 0, CRC32, []byte("hello world"), nil}
 
 	tests := []struct {
 		block   Block

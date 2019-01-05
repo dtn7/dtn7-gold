@@ -61,19 +61,25 @@ func TestPrimaryBlockCbor(t *testing.T) {
 		len int
 	}{
 		// No CRC, No Fragmentation
-		{PrimaryBlock{7, 0, CRCNo, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, 0}, 8},
+		{PrimaryBlock{7, 0, CRCNo, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, nil}, 8},
 		// CRC, No Fragmentation
-		{PrimaryBlock{7, 0, CRC16, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, 0}, 9},
+		{PrimaryBlock{7, 0, CRC16, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, nil}, 9},
 		// No CRC, Fragmentation
-		{PrimaryBlock{7, BndlCFBundleIsAFragment, CRCNo, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, 0}, 10},
+		{PrimaryBlock{7, BndlCFBundleIsAFragment, CRCNo, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, nil}, 10},
 		// CRC, Fragmentation
-		{PrimaryBlock{7, BndlCFBundleIsAFragment, CRC16, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, 0}, 11},
+		{PrimaryBlock{7, BndlCFBundleIsAFragment, CRC16, *ep, *ep, *DtnNone, ts, 1000000, 0, 0, nil}, 11},
 	}
 
 	for _, test := range tests {
 		var b []byte = make([]byte, 0, 64)
 		var h codec.Handle = new(codec.CborHandle)
 		var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+
+		// If we are going to test block's with a CRC value, we also have to
+		// calculate it.
+		if test.pb1.HasCRC() {
+			SetCRC(&test.pb1)
+		}
 
 		err := enc.Encode(test.pb1)
 		if err != nil {

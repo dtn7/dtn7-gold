@@ -22,7 +22,7 @@ type PrimaryBlock struct {
 	Lifetime           uint
 	FragmentOffset     uint
 	TotalDataLength    uint
-	CRC                uint
+	CRC                []byte
 }
 
 // NewPrimaryBlock creates a new PrimaryBlock with the given parameters. All
@@ -41,7 +41,7 @@ func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
 		Lifetime:           lifetime,
 		FragmentOffset:     0,
 		TotalDataLength:    0,
-		CRC:                0,
+		CRC:                nil,
 	}
 }
 
@@ -60,7 +60,7 @@ func (pb PrimaryBlock) GetCRCType() CRCType {
 	return pb.CRCType
 }
 
-func (pb PrimaryBlock) GetCRC() uint {
+func (pb PrimaryBlock) GetCRC() []byte {
 	return pb.CRC
 }
 
@@ -69,10 +69,10 @@ func (pb *PrimaryBlock) SetCRCType(crcType CRCType) {
 }
 
 func (pb *PrimaryBlock) ResetCRC() {
-	pb.CRC = 0
+	pb.CRC = nil
 }
 
-func (pb *PrimaryBlock) SetCRC(crc uint) {
+func (pb *PrimaryBlock) SetCRC(crc []byte) {
 	pb.CRC = crc
 }
 
@@ -145,7 +145,7 @@ func (pb *PrimaryBlock) CodecDecodeSelf(dec *codec.Decoder) {
 	switch len(blockArr) {
 	case 9:
 		// CRC, No Fragmentation
-		pb.CRC = uint(blockArr[8].(uint64))
+		pb.CRC = blockArr[8].([]byte)
 
 	case 10:
 		// No CRC, Fragmentation
@@ -156,7 +156,7 @@ func (pb *PrimaryBlock) CodecDecodeSelf(dec *codec.Decoder) {
 		// CRC, Fragmentation
 		pb.FragmentOffset = uint(blockArr[8].(uint64))
 		pb.TotalDataLength = uint(blockArr[9].(uint64))
-		pb.CRC = uint(blockArr[10].(uint64))
+		pb.CRC = blockArr[10].([]byte)
 	}
 }
 

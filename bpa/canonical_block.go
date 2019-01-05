@@ -47,7 +47,7 @@ type CanonicalBlock struct {
 	BlockControlFlags BlockControlFlags
 	CRCType           CRCType
 	Data              interface{}
-	CRC               uint
+	CRC               []byte
 }
 
 // NewCanonicalBlock creates a new CanonicalBlock with the given parameters.
@@ -59,7 +59,7 @@ func NewCanonicalBlock(blockType uint, blockNumber uint,
 		BlockControlFlags: blockControlFlags,
 		CRCType:           CRCNo,
 		Data:              data,
-		CRC:               0,
+		CRC:               nil,
 	}
 }
 
@@ -71,7 +71,7 @@ func (cb CanonicalBlock) GetCRCType() CRCType {
 	return cb.CRCType
 }
 
-func (cb CanonicalBlock) GetCRC() uint {
+func (cb CanonicalBlock) GetCRC() []byte {
 	return cb.CRC
 }
 
@@ -80,10 +80,10 @@ func (cb *CanonicalBlock) SetCRCType(crcType CRCType) {
 }
 
 func (cb *CanonicalBlock) ResetCRC() {
-	cb.CRC = 0
+	cb.CRC = nil
 }
 
-func (cb *CanonicalBlock) SetCRC(crc uint) {
+func (cb *CanonicalBlock) SetCRC(crc []byte) {
 	cb.CRC = crc
 }
 
@@ -143,7 +143,7 @@ func (cb *CanonicalBlock) CodecDecodeSelf(dec *codec.Decoder) {
 	cb.codecDecodeData(blockArr[4])
 
 	if len(blockArr) == 6 {
-		cb.CRC = uint(blockArr[5].(uint64))
+		cb.CRC = blockArr[5].([]byte)
 	}
 }
 

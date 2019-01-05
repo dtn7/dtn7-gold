@@ -11,7 +11,7 @@ type Block interface {
 	GetCRCType() CRCType
 
 	// Retruns the CRC value.
-	GetCRC() uint
+	GetCRC() []byte
 
 	// SetCRCType sets the CRC type.
 	SetCRCType(CRCType)
@@ -21,5 +21,5 @@ type Block interface {
 	ResetCRC()
 
 	// SetCRC sets the CRC value to the given value.
-	SetCRC(uint)
+	SetCRC([]byte)
 }

@@ -1,6 +1,8 @@
 package bpa
 
 import (
+	"bytes"
+	"encoding/binary"
 	"hash/crc32"
 
 	"github.com/howeyc/crc16"
@@ -54,22 +56,28 @@ func blockToBytes(block Block) []byte {
 // CalculateCRC calculates a Block's CRC value based on its CRCType. The CRC
 // value will be set to zero temporary during calcuation. Thereforce this
 // function is not thread safe.
-func CalculateCRC(block Block) uint {
+// The returned value is a byte array containing the CRC in network byte order
+// (big endian) and its length is 4 for CRC32 or 2 for CRC16.
+func CalculateCRC(block Block) (arr []byte) {
 	var data = blockToBytes(block)
 
 	switch block.GetCRCType() {
 	case CRCNo:
-		return 0
+		arr = nil
 
 	case CRC16:
-		return uint(crc16.Checksum(data, crc16table))
+		arr = make([]byte, 2)
+		binary.BigEndian.PutUint16(arr, crc16.Checksum(data, crc16table))
 
 	case CRC32:
-		return uint(crc32.Checksum(data, crc32table))
+		arr = make([]byte, 4)
+		binary.BigEndian.PutUint32(arr, crc32.Checksum(data, crc32table))
 
 	default:
 		panic("Unknown CRCType")
 	}
+
+	return
 }
 
 // SetCRC sets the CRC value of the given block.
@@ -77,11 +85,12 @@ func SetCRC(block Block) {
 	block.SetCRC(CalculateCRC(block))
 }
 
-// CheckCRC returns true if the stored CRC value matches the calculated one.
+// CheckCRC returns true if the stored CRC value matches the calculated one or
+// the CRC Type is none.
 func CheckCRC(block Block) bool {
 	if !block.HasCRC() {
 		return true
 	}
 
-	return block.GetCRC() == CalculateCRC(block)
+	return bytes.Equal(block.GetCRC(), CalculateCRC(block))
 }

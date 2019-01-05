@@ -30,9 +30,9 @@ func TestCanonicalBlockCbor(t *testing.T) {
 		len int
 	}{
 		// Generic CanonicalBlock: No CRC
-		{CanonicalBlock{1, 0, 0, CRCNo, []byte("hello world"), 0}, 5},
+		{CanonicalBlock{1, 0, 0, CRCNo, []byte("hello world"), nil}, 5},
 		// Generic CanonicalBlock: CRC
-		{CanonicalBlock{1, 0, 0, CRC16, []byte("hello world"), 0}, 6},
+		{CanonicalBlock{1, 0, 0, CRC16, []byte("hello world"), nil}, 6},
 		// Payload block
 		{NewPayloadBlock(0, []byte("test")), 5},
 		// Previous Node block (dtn:none)
@@ -49,6 +49,12 @@ func TestCanonicalBlockCbor(t *testing.T) {
 		var b []byte = make([]byte, 0, 64)
 		var h codec.Handle = new(codec.CborHandle)
 		var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+
+		// If we are going to test block's with a CRC value, we also have to
+		// calculate it.
+		if test.cb1.HasCRC() {
+			SetCRC(&test.cb1)
+		}
 
 		err := enc.Encode(test.cb1)
 		if err != nil {
@@ -74,7 +80,7 @@ func TestCanonicalBlockCbor(t *testing.T) {
 		var cb2 CanonicalBlock
 		err = codec.NewDecoderBytes(b, h).Decode(&cb2)
 		if err != nil {
-			t.Errorf("CBOR decoding failed: %v", err)
+			t.Errorf("CBOR decoding failed for %v: %v", test, err)
 		}
 
 		v1 := reflect.ValueOf(test.cb1)
