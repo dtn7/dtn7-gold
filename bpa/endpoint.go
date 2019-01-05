@@ -13,9 +13,6 @@ const (
 	URISchemeIPN uint = 2
 )
 
-// DtnNone is a instance of the `dtn:none` endpoint id.
-var DtnNone = EndpointID{SchemeName: URISchemeDTN, SchemeSpecificPort: uint(0)}
-
 // EndpointID represents an Endpoint ID as defined in section 4.1.5.1. The
 // "scheme name" is represented by an uint (vide supra) and the "scheme-specific
 // part" (SSP) by an interface{}. Based on the characteristic of the name, the
@@ -27,7 +24,7 @@ type EndpointID struct {
 	SchemeSpecificPort interface{}
 }
 
-func newEndpointIDDTN(ssp string) (*EndpointID, error) {
+func newEndpointIDDTN(ssp string) (EndpointID, error) {
 	var sspRaw interface{}
 	if ssp == "none" {
 		sspRaw = uint(0)
@@ -35,13 +32,13 @@ func newEndpointIDDTN(ssp string) (*EndpointID, error) {
 		sspRaw = string(ssp)
 	}
 
-	return &EndpointID{
+	return EndpointID{
 		SchemeName:         URISchemeDTN,
 		SchemeSpecificPort: sspRaw,
 	}, nil
 }
 
-func newEndpointIDIPN(ssp string) (*EndpointID, error) {
+func newEndpointIDIPN(ssp string) (ep EndpointID, err error) {
 	// As definied in RFC 6260, section 2.1:
 	// - node number: ASCII numeric digits between 1 and (2^64-1)
 	// - an ASCII dot
@@ -50,40 +47,43 @@ func newEndpointIDIPN(ssp string) (*EndpointID, error) {
 	re := regexp.MustCompile(`^(\d+)\.(\d+)$`)
 	matches := re.FindStringSubmatch(ssp)
 	if len(matches) != 3 {
-		return nil, newBPAError("IPN does not satisfy given regex")
+		err = newBPAError("IPN does not satisfy given regex")
+		return
 	}
 
 	nodeNo, err := strconv.ParseUint(matches[1], 10, 64)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	serviceNo, err := strconv.ParseUint(matches[2], 10, 64)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	if nodeNo < 1 || serviceNo < 1 {
-		return nil, newBPAError("IPN's node and service number must be >= 1")
+		err = newBPAError("IPN's node and service number must be >= 1")
+		return
 	}
 
-	return &EndpointID{
+	ep = EndpointID{
 		SchemeName:         URISchemeIPN,
 		SchemeSpecificPort: [2]uint64{nodeNo, serviceNo},
-	}, nil
+	}
+	return
 }
 
 // NewEndpointID creates a new EndpointID by a given "scheme name" and a
 // "scheme-specific part" (SSP). Currently the "dtn" and "ipn"-scheme names
 // are supported.
-func NewEndpointID(name, ssp string) (*EndpointID, error) {
+func NewEndpointID(name, ssp string) (EndpointID, error) {
 	switch name {
 	case "dtn":
 		return newEndpointIDDTN(ssp)
 	case "ipn":
 		return newEndpointIDIPN(ssp)
 	default:
-		return nil, newBPAError("Unknown scheme type")
+		return EndpointID{}, newBPAError("Unknown scheme type")
 	}
 }
 
@@ -147,4 +147,12 @@ func (eid EndpointID) String() string {
 	}
 
 	return b.String()
+}
+
+// DtnNone returns the "dtn:none" endpoint.
+func DtnNone() EndpointID {
+	return EndpointID{
+		SchemeName:         URISchemeDTN,
+		SchemeSpecificPort: uint(0),
+	}
 }

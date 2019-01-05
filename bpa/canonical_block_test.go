@@ -36,9 +36,9 @@ func TestCanonicalBlockCbor(t *testing.T) {
 		// Payload block
 		{NewPayloadBlock(0, []byte("test")), 5},
 		// Previous Node block (dtn:none)
-		{NewPreviousNodeBlock(23, 0, DtnNone), 5},
+		{NewPreviousNodeBlock(23, 0, DtnNone()), 5},
 		// Previous Node block (dtn:foo/bar)
-		{NewPreviousNodeBlock(23, 0, *ep), 5},
+		{NewPreviousNodeBlock(23, 0, ep), 5},
 		// Bundle Age block
 		{NewBundleAgeBlock(23, 0, 100000), 5},
 		// Hop Count block
@@ -119,7 +119,7 @@ func TestExtensionBlockTypes(t *testing.T) {
 		typeLike  reflect.Kind
 	}{
 		{"Payload", NewPayloadBlock(0, []byte("foobar")), 1, reflect.Slice},
-		{"Previous Node", NewPreviousNodeBlock(23, 0, DtnNone), 7, reflect.Slice},
+		{"Previous Node", NewPreviousNodeBlock(23, 0, DtnNone()), 7, reflect.Slice},
 		{"Bundle Age", NewBundleAgeBlock(23, 0, 42000), 8, reflect.Uint64},
 		{"Hop Count", NewHopCountBlock(23, 0, NewHopCount(42, 23)), 9, reflect.Slice},
 	}

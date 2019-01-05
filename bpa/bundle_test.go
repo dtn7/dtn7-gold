@@ -12,10 +12,10 @@ func TestBundleApplyCRC(t *testing.T) {
 
 	var primary = NewPrimaryBlock(
 		BndlCFBundleDeliveryStatusReportsAreRequested,
-		*epPrim, *epPrim, creationTs, 42000)
+		epPrim, epPrim, creationTs, 42000)
 
 	var epPrev, _ = NewEndpointID("ipn", "23.42")
-	var prevNode = NewPreviousNodeBlock(1, 0, *epPrev)
+	var prevNode = NewPreviousNodeBlock(1, 0, epPrev)
 
 	var payload = NewPayloadBlock(
 		BlckCFBundleMustBeDeletedIfBlockCannotBeProcessed, []byte("GuMo"))
@@ -44,10 +44,10 @@ func TestBundleCbor(t *testing.T) {
 
 	var primary = NewPrimaryBlock(
 		BndlCFBundleDeliveryStatusReportsAreRequested,
-		*epDest, *epSource, creationTs, 42000)
+		epDest, epSource, creationTs, 42000)
 
 	var epPrev, _ = NewEndpointID("ipn", "23.42")
-	var prevNode = NewPreviousNodeBlock(23, 0, *epPrev)
+	var prevNode = NewPreviousNodeBlock(23, 0, epPrev)
 
 	var payload = NewPayloadBlock(
 		BlckCFBundleMustBeDeletedIfBlockCannotBeProcessed,
@@ -115,16 +115,16 @@ func TestBundleUpcn(t *testing.T) {
 	}
 
 	destExpected, _ := NewEndpointID("dtn", "GS2")
-	if dest := pb.Destination; dest != *destExpected {
+	if dest := pb.Destination; dest != destExpected {
 		t.Errorf("Primary Block's destination mismatches: %v instead of %v",
 			dest, destExpected)
 	}
 
-	if src := pb.SourceNode; src != DtnNone {
+	if src := pb.SourceNode; src != DtnNone() {
 		t.Errorf("Primary Block's source node is not dtn:none: %v", src)
 	}
 
-	if rprtTo := pb.ReportTo; rprtTo != DtnNone {
+	if rprtTo := pb.ReportTo; rprtTo != DtnNone() {
 		t.Errorf("Primary Block's report to is not dtn:none: %v", rprtTo)
 	}
 
@@ -158,7 +158,7 @@ func TestBundleUpcn(t *testing.T) {
 			chkPreviousNode = true
 
 			prevExpected, _ := NewEndpointID("dtn", "GS4")
-			if prev := cb.Data.(EndpointID); prev != *prevExpected {
+			if prev := cb.Data.(EndpointID); prev != prevExpected {
 				t.Errorf("Previous Node Block's EID mismatches: %v instead of %v",
 					prev, prevExpected)
 			}
