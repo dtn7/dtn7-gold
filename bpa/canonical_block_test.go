@@ -53,7 +53,7 @@ func TestCanonicalBlockCbor(t *testing.T) {
 		// If we are going to test block's with a CRC value, we also have to
 		// calculate it.
 		if test.cb1.HasCRC() {
-			SetCRC(&test.cb1)
+			setCRC(&test.cb1)
 		}
 
 		err := enc.Encode(test.cb1)

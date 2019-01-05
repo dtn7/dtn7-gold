@@ -35,13 +35,13 @@ func TestCRCBackAndForth(t *testing.T) {
 				test.block.GetCRCType(), test.crcType, test.block)
 		}
 
-		SetCRC(test.block)
-		if !CheckCRC(test.block) {
+		setCRC(test.block)
+		if !checkCRC(test.block) {
 			t.Errorf("Setting and checking CRC failed for %v", test.block)
 		}
 
 		test.block.ResetCRC()
-		if test.block.HasCRC() && CheckCRC(test.block) {
+		if test.block.HasCRC() && checkCRC(test.block) {
 			t.Errorf("CRC check succeeded after resetting for %v", test.block)
 		}
 	}

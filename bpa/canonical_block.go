@@ -80,7 +80,7 @@ func (cb *CanonicalBlock) SetCRCType(crcType CRCType) {
 }
 
 func (cb *CanonicalBlock) ResetCRC() {
-	cb.CRC = EmptyCRC(cb.GetCRCType())
+	cb.CRC = emptyCRC(cb.GetCRCType())
 }
 
 func (cb *CanonicalBlock) SetCRC(crc []byte) {

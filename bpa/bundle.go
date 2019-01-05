@@ -33,7 +33,7 @@ func (b *Bundle) forEachBlock(f func(Block)) {
 func (b *Bundle) ApplyCRC(crcType CRCType) {
 	b.forEachBlock(func(block Block) {
 		block.SetCRCType(crcType)
-		SetCRC(block)
+		setCRC(block)
 	})
 }
 
@@ -42,7 +42,7 @@ func (b *Bundle) CheckCRC() bool {
 	var flag = true
 
 	b.forEachBlock(func(block Block) {
-		if !CheckCRC(block) {
+		if !checkCRC(block) {
 			flag = false
 		}
 	})

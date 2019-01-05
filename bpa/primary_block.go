@@ -69,7 +69,7 @@ func (pb *PrimaryBlock) SetCRCType(crcType CRCType) {
 }
 
 func (pb *PrimaryBlock) ResetCRC() {
-	pb.CRC = EmptyCRC(pb.GetCRCType())
+	pb.CRC = emptyCRC(pb.GetCRCType())
 }
 
 func (pb *PrimaryBlock) SetCRC(crc []byte) {

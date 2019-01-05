@@ -53,35 +53,33 @@ func blockToBytes(block Block) []byte {
 	return b
 }
 
-// CalculateCRC calculates a Block's CRC value based on its CRCType. The CRC
+// calculateCRC calculates a Block's CRC value based on its CRCType. The CRC
 // value will be set to zero temporary during calcuation. Thereforce this
 // function is not thread safe.
 // The returned value is a byte array containing the CRC in network byte order
 // (big endian) and its length is 4 for CRC32 or 2 for CRC16.
-func CalculateCRC(block Block) (arr []byte) {
+func calculateCRC(block Block) []byte {
 	var data = blockToBytes(block)
+	var arr = emptyCRC(block.GetCRCType())
 
 	switch block.GetCRCType() {
 	case CRCNo:
-		arr = nil
 
 	case CRC16:
-		arr = make([]byte, 2)
 		binary.BigEndian.PutUint16(arr, crc16.Checksum(data, crc16table))
 
 	case CRC32:
-		arr = make([]byte, 4)
 		binary.BigEndian.PutUint32(arr, crc32.Checksum(data, crc32table))
 
 	default:
 		panic("Unknown CRCType")
 	}
 
-	return
+	return arr
 }
 
-// EmptyCRC returns the "default" CRC value for the given CRC Type.
-func EmptyCRC(crcType CRCType) (arr []byte) {
+// emptyCRC returns the "default" CRC value for the given CRC Type.
+func emptyCRC(crcType CRCType) (arr []byte) {
 	switch crcType {
 	case CRCNo:
 		arr = nil
@@ -99,17 +97,17 @@ func EmptyCRC(crcType CRCType) (arr []byte) {
 	return
 }
 
-// SetCRC sets the CRC value of the given block.
-func SetCRC(block Block) {
-	block.SetCRC(CalculateCRC(block))
+// setCRC sets the CRC value of the given block.
+func setCRC(block Block) {
+	block.SetCRC(calculateCRC(block))
 }
 
-// CheckCRC returns true if the stored CRC value matches the calculated one or
+// checkCRC returns true if the stored CRC value matches the calculated one or
 // the CRC Type is none.
-func CheckCRC(block Block) bool {
+func checkCRC(block Block) bool {
 	if !block.HasCRC() {
 		return true
 	}
 
-	return bytes.Equal(block.GetCRC(), CalculateCRC(block))
+	return bytes.Equal(block.GetCRC(), calculateCRC(block))
 }

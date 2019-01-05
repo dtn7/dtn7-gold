@@ -31,14 +31,8 @@ func TestBundleApplyCRC(t *testing.T) {
 				ty, crcTest)
 		}
 
-		if !CheckCRC(&bundle.PrimaryBlock) {
-			t.Errorf("For %v the primary block's CRC mismatchs", crcTest)
-		}
-
-		for _, cb := range bundle.CanonicalBlocks {
-			if !CheckCRC(&cb) {
-				t.Errorf("For %v a canonical block's CRC mismatchs", crcTest)
-			}
+		if !bundle.CheckCRC() {
+			t.Errorf("For %v the CRC mismatchs", crcTest)
 		}
 	}
 }
