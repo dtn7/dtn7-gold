@@ -20,8 +20,12 @@ func TestBundleApplyCRC(t *testing.T) {
 	var payload = NewPayloadBlock(
 		BlckCFBundleMustBeDeletedIfBlockCannotBeProcessed, []byte("GuMo"))
 
-	var bundle = NewBundle(
+	var bundle, err = NewBundle(
 		primary, []CanonicalBlock{prevNode, payload})
+
+	if err != nil {
+		t.Error(err)
+	}
 
 	for _, crcTest := range []CRCType{CRCNo, CRC16, CRC32, CRCNo} {
 		bundle.SetCRCType(crcTest)
@@ -54,8 +58,12 @@ func TestBundleCbor(t *testing.T) {
 		BlckCFBundleMustBeDeletedIfBlockCannotBeProcessed,
 		[]byte("GuMo meine Kernel"))
 
-	bundle1 := NewBundle(
+	bundle1, err := NewBundle(
 		primary, []CanonicalBlock{prevNode, payload})
+	if err != nil {
+		t.Error(err)
+	}
+
 	bundle1.SetCRCType(CRC32)
 	bundle1.CalculateCRC()
 
@@ -201,27 +209,36 @@ func TestBundleUpcn(t *testing.T) {
 	}
 }
 
+// createNewBundle is used in the TestBundleCheckValid function and returns
+// the Bundle with an ignored error. The error will be checked in this
+// test case.
+func createNewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) Bundle {
+	b, _ := NewBundle(primary, canonicals)
+
+	return b
+}
+
 func TestBundleCheckValid(t *testing.T) {
 	tests := []struct {
 		b     Bundle
 		valid bool
 	}{
 		// Administrative record
-		{NewBundle(
+		{createNewBundle(
 			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
 				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
 			[]CanonicalBlock{
 				NewPayloadBlock(BlckCFStatusReportMustBeTransmittedIfBlockCannotBeProcessed, nil)}),
 			false},
 
-		{NewBundle(
+		{createNewBundle(
 			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
 				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
 			[]CanonicalBlock{NewPayloadBlock(0, nil)}),
 			true},
 
 		// Block number (0) occures twice
-		{NewBundle(
+		{createNewBundle(
 			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
 				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
 			[]CanonicalBlock{
@@ -229,7 +246,7 @@ func TestBundleCheckValid(t *testing.T) {
 			false},
 
 		// Two Hop Count blocks
-		{NewBundle(
+		{createNewBundle(
 			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
 				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
 			[]CanonicalBlock{
@@ -239,14 +256,14 @@ func TestBundleCheckValid(t *testing.T) {
 			false},
 
 		// Creation Time = 0, no Bundle Age block
-		{NewBundle(
+		{createNewBundle(
 			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
 				DtnNone(), DtnNone(), NewCreationTimestamp(0, 0), 3600),
 			[]CanonicalBlock{
 				NewBundleAgeBlock(1, 0, 42000),
 				NewPayloadBlock(0, nil)}),
 			true},
-		{NewBundle(
+		{createNewBundle(
 			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
 				DtnNone(), DtnNone(), NewCreationTimestamp(0, 0), 3600),
 			[]CanonicalBlock{

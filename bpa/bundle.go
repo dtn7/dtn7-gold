@@ -16,11 +16,14 @@ type Bundle struct {
 }
 
 // NewBundle creates a new Bundle.
-func NewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) Bundle {
-	return Bundle{
+func NewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) (b Bundle, err error) {
+	b = Bundle{
 		PrimaryBlock:    primary,
 		CanonicalBlocks: canonicals,
 	}
+	err = b.checkValid()
+
+	return
 }
 
 // forEachBlock applies the given function for each of this Bundle's blocks.
