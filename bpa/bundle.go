@@ -159,6 +159,14 @@ func decodeBundleBlock(data interface{}, target interface{}) {
 // NewBundleFromCbor tries to decodes the given data from CBOR into a Bundle.
 // It also checks the Bundle's validity and each bundle's CRC value.
 func NewBundleFromCbor(data []byte) (b Bundle, err error) {
+	// The decoding might panic and would be recovered in the following function,
+	// which returns an error.
+	defer func() {
+		if r := recover(); r != nil {
+			err = newBPAError(fmt.Sprintf("Bundle: Decoding CBOR failed, %v", r))
+		}
+	}()
+
 	var dataArr []interface{}
 	codec.NewDecoderBytes(data, new(codec.CborHandle)).MustDecode(&dataArr)
 
