@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/ugorji/go/codec"
 )
 
-const DTNVersion uint = 7
+const dtnVersion uint = 7
 
 // PrimaryBlock is a representation of a Primary Bundle Block as defined in
 // section 4.2.2.
@@ -31,7 +32,7 @@ func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
 	destination EndpointID, sourceNode EndpointID,
 	creationTimestamp CreationTimestamp, lifetime uint) PrimaryBlock {
 	return PrimaryBlock{
-		Version:            DTNVersion,
+		Version:            dtnVersion,
 		BundleControlFlags: bundleControlFlags,
 		CRCType:            CRCNo,
 		Destination:        destination,
@@ -158,6 +159,32 @@ func (pb *PrimaryBlock) CodecDecodeSelf(dec *codec.Decoder) {
 		pb.TotalDataLength = uint(blockArr[9].(uint64))
 		pb.CRC = blockArr[10].([]byte)
 	}
+}
+
+func (pb PrimaryBlock) checkValid() (errs error) {
+	if pb.Version != dtnVersion {
+		errs = multierror.Append(errs,
+			newBPAError(fmt.Sprintf("PrimaryBlock: Wrong Version, %d instead of %d",
+				pb.Version, dtnVersion)))
+	}
+
+	if bcfErr := pb.BundleControlFlags.checkValid(); bcfErr != nil {
+		errs = multierror.Append(errs, bcfErr)
+	}
+
+	if destErr := pb.Destination.checkValid(); destErr != nil {
+		errs = multierror.Append(errs, destErr)
+	}
+
+	if srcErr := pb.SourceNode.checkValid(); srcErr != nil {
+		errs = multierror.Append(errs, srcErr)
+	}
+
+	if rprtToErr := pb.ReportTo.checkValid(); rprtToErr != nil {
+		errs = multierror.Append(errs, rprtToErr)
+	}
+
+	return
 }
 
 func (pb PrimaryBlock) String() string {

@@ -114,7 +114,7 @@ func (eid EndpointID) checkValidDtn() error {
 	switch eid.SchemeSpecificPart.(type) {
 	case string:
 		if eid.SchemeSpecificPart.(string) == "none" {
-			return newBPAError("Endpoint ID is dtn:none, where none is a string")
+			return newBPAError("EndpointID: equals dtn:none, with none as a string")
 		}
 	}
 
@@ -124,7 +124,7 @@ func (eid EndpointID) checkValidDtn() error {
 func (eid EndpointID) checkValidIpn() error {
 	ssp := eid.SchemeSpecificPart.([2]uint64)
 	if ssp[0] < 1 || ssp[1] < 1 {
-		return newBPAError("IPN's node and service number must be >= 1")
+		return newBPAError("EndpointID: IPN's node and service number must be >= 1")
 	}
 
 	return nil
@@ -139,7 +139,7 @@ func (eid EndpointID) checkValid() error {
 		return eid.checkValidIpn()
 
 	default:
-		return newBPAError("Endpoint ID has unknown scheme name")
+		return newBPAError("EndpointID: unknown scheme name")
 	}
 }
 

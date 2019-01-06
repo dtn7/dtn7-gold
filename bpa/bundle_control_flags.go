@@ -27,12 +27,10 @@ func (bcf BundleControlFlags) Has(flag BundleControlFlags) bool {
 	return (bcf & flag) != 0
 }
 
-func (bcf BundleControlFlags) checkValid() error {
-	var errs error
-
+func (bcf BundleControlFlags) checkValid() (errs error) {
 	if bcf.Has(bndlCFReservedFields) {
 		errs = multierror.Append(
-			errs, newBPAError("Given flag contains reserved bits"))
+			errs, newBPAError("BundleControlFlags: Given flag contains reserved bits"))
 	}
 
 	// payload is administrative record => no status report request flags
@@ -43,8 +41,8 @@ func (bcf BundleControlFlags) checkValid() error {
 			!bcf.Has(BndlCFBundleDeletionStatusReportsAreRequested))
 	if !adminRecCheck {
 		errs = multierror.Append(errs, newBPAError(
-			"\"payload is administrative record => no status report request flags\" failed"))
+			"BundleControlFlags: \"payload is administrative record => no status report request flags\" failed"))
 	}
 
-	return errs
+	return
 }

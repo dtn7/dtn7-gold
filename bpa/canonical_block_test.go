@@ -111,6 +111,27 @@ func TestCanonicalBlockCbor(t *testing.T) {
 	}
 }
 
+func TestCanonicalBlockCheckValid(t *testing.T) {
+	tests := []struct {
+		cb    CanonicalBlock
+		valid bool
+	}{
+		// Payload block with a block number != zero
+		{CanonicalBlock{blockTypePayload, 23, 0, CRCNo, nil, nil}, false},
+		{CanonicalBlock{blockTypePayload, 0, 0, CRCNo, nil, nil}, true},
+
+		// Reserved bits in block control flags
+		{CanonicalBlock{blockTypePayload, 0, 0x80, CRCNo, nil, nil}, false},
+	}
+
+	for _, test := range tests {
+		if err := test.cb.checkValid(); (err == nil) != test.valid {
+			t.Errorf("CanonicalBlock validation failed: %v resulted in %v",
+				test.cb, err)
+		}
+	}
+}
+
 func TestExtensionBlockTypes(t *testing.T) {
 	tests := []struct {
 		name      string

@@ -135,3 +135,44 @@ func TestPrimaryBlockCbor(t *testing.T) {
 		}
 	}
 }
+
+func TestPrimaryBlockCheckValid(t *testing.T) {
+	tests := []struct {
+		pb    PrimaryBlock
+		valid bool
+	}{
+		// Wrong version
+		{PrimaryBlock{
+			23, 0, CRCNo, DtnNone(), DtnNone(), DtnNone(),
+			NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil}, false},
+		{PrimaryBlock{
+			7, 0, CRCNo, DtnNone(), DtnNone(), DtnNone(),
+			NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil}, true},
+
+		// Reserved bits in bundle control flags
+		{PrimaryBlock{
+			7, 0xFF00, CRCNo, DtnNone(), DtnNone(), DtnNone(),
+			NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil}, false},
+
+		// Illegal EndpointID
+		{PrimaryBlock{
+			7, 0, CRCNo,
+			EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}},
+			DtnNone(), DtnNone(), NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil},
+			false},
+
+		// Everything from above
+		{PrimaryBlock{
+			23, 0xFF00, CRCNo,
+			EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}},
+			DtnNone(), DtnNone(), NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil},
+			false},
+	}
+
+	for _, test := range tests {
+		if err := test.pb.checkValid(); (err == nil) != test.valid {
+			t.Errorf("PrimaryBlock validation failed: %v resulted in %v",
+				test.pb, err)
+		}
+	}
+}

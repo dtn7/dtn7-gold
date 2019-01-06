@@ -101,7 +101,7 @@ func TestBundleUpcn(t *testing.T) {
 
 	// Check PrimaryBlock fields
 	pb := bndl.PrimaryBlock
-	if ver := pb.Version; ver != DTNVersion {
+	if ver := pb.Version; ver != dtnVersion {
 		t.Errorf("Primary Block's version is not 7: %d", ver)
 	}
 
@@ -145,7 +145,7 @@ func TestBundleUpcn(t *testing.T) {
 
 	for _, cb := range bndl.CanonicalBlocks {
 		switch cb.BlockType {
-		case BlockTypePayload:
+		case blockTypePayload:
 			chkPayload = true
 
 			payloadExpected := []byte("Hello world!")
@@ -154,7 +154,7 @@ func TestBundleUpcn(t *testing.T) {
 					payload, payloadExpected)
 			}
 
-		case BlockTypePreviousNode:
+		case blockTypePreviousNode:
 			chkPreviousNode = true
 
 			prevExpected, _ := NewEndpointID("dtn", "GS4")
@@ -163,7 +163,7 @@ func TestBundleUpcn(t *testing.T) {
 					prev, prevExpected)
 			}
 
-		case BlockTypeHopCount:
+		case blockTypeHopCount:
 			chkHopCount = true
 
 			hopExpected := NewHopCount(30, 0)
@@ -172,7 +172,7 @@ func TestBundleUpcn(t *testing.T) {
 					hop, hopExpected)
 			}
 
-		case BlockTypeBundleAge:
+		case blockTypeBundleAge:
 			chkBundleAge = true
 
 			ageExpected := uint(0)
