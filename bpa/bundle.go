@@ -156,8 +156,9 @@ func decodeBundleBlock(data interface{}, target interface{}) {
 	codec.NewDecoderBytes(b, cborHandle).MustDecode(target)
 }
 
-// NewBundleFromCbor decodes the given data to a new Bundle.
-func NewBundleFromCbor(data []byte) Bundle {
+// NewBundleFromCbor tries to decodes the given data from CBOR into a Bundle.
+// It also checks the Bundle's validity and each bundle's CRC value.
+func NewBundleFromCbor(data []byte) (b Bundle, err error) {
 	var dataArr []interface{}
 	codec.NewDecoderBytes(data, new(codec.CborHandle)).MustDecode(&dataArr)
 
@@ -169,5 +170,15 @@ func NewBundleFromCbor(data []byte) Bundle {
 		decodeBundleBlock(dataArr[i+1], &cb[i])
 	}
 
-	return Bundle{pb, cb}
+	b = Bundle{pb, cb}
+
+	if chkVldErr := b.checkValid(); chkVldErr != nil {
+		err = multierror.Append(err, chkVldErr)
+	}
+
+	if !b.CheckCRC() {
+		err = multierror.Append(err, newBPAError("CRC failed"))
+	}
+
+	return
 }
