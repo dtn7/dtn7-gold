@@ -2,7 +2,9 @@ package bpa
 
 import (
 	"bytes"
+	"fmt"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/ugorji/go/codec"
 )
 
@@ -48,6 +50,63 @@ func (b *Bundle) CheckCRC() bool {
 	})
 
 	return flag
+}
+
+func (b Bundle) checkValid() (errs error) {
+	// Check blocks for errors
+	b.forEachBlock(func(blck block) {
+		if blckErr := blck.checkValid(); blckErr != nil {
+			errs = multierror.Append(errs, blckErr)
+		}
+	})
+
+	// Check CanonicalBlocks for errors
+	if b.PrimaryBlock.BundleControlFlags.Has(BndlCFPayloadIsAnAdministrativeRecord) ||
+		b.PrimaryBlock.SourceNode == DtnNone() {
+		for _, cb := range b.CanonicalBlocks {
+			if cb.BlockControlFlags.Has(BlckCFStatusReportMustBeTransmittedIfBlockCannotBeProcessed) {
+				errs = multierror.Append(errs,
+					newBPAError("Bundle: Bundle Processing Control Flags indicate that "+
+						"this bundle's payload is an administrative record or the source "+
+						"node is omitted, but the \"Transmit status report if block canot "+
+						"be processed\" Block Processing Control Flag was set in a "+
+						"Canonical Block"))
+			}
+		}
+	}
+
+	// Check uniqueness of block numbers
+	var cbBlockNumbers = make(map[uint]bool)
+	// Check max 1 occurrence of extension blocks
+	var cbBlockTypes = make(map[uint]bool)
+
+	for _, cb := range b.CanonicalBlocks {
+		if _, ok := cbBlockNumbers[cb.BlockNumber]; ok {
+			errs = multierror.Append(errs,
+				newBPAError(fmt.Sprintf(
+					"Bundle: Block number %d occured multiple times", cb.BlockNumber)))
+		}
+		cbBlockNumbers[cb.BlockNumber] = true
+
+		switch cb.BlockType {
+		case blockTypePreviousNode, blockTypeBundleAge, blockTypeHopCount:
+			if _, ok := cbBlockTypes[cb.BlockType]; ok {
+				errs = multierror.Append(errs,
+					newBPAError(fmt.Sprintf(
+						"Bundle: Block type %d occured multiple times", cb.BlockType)))
+			}
+			cbBlockTypes[cb.BlockType] = true
+		}
+	}
+
+	if b.PrimaryBlock.CreationTimestamp[0] == 0 {
+		if _, ok := cbBlockTypes[blockTypeBundleAge]; !ok {
+			errs = multierror.Append(errs, newBPAError(
+				"Bundle: Creation Timestamp is zero, but no Bundle Age block is present"))
+		}
+	}
+
+	return
 }
 
 // ToCbor creates a byte array representing a CBOR indefinite-length array of

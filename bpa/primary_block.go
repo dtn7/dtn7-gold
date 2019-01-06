@@ -184,6 +184,24 @@ func (pb PrimaryBlock) checkValid() (errs error) {
 		errs = multierror.Append(errs, rprtToErr)
 	}
 
+	// 4.1.3 says that "if the bundle's source node is omitted [src = dtn:none]
+	// [...] the "Bundle must not be fragmented" flag value must be 1 and all
+	// status report request flag values must be zero.
+	// SourceNode == dtn:none => (
+	//    BndlCFBundleMustNotBeFragmented
+	//  & !"all status report flags")
+	bpcfImpl := !(pb.SourceNode == DtnNone()) ||
+		(pb.BundleControlFlags.Has(BndlCFBundleMustNotBeFragmented) &&
+			!pb.BundleControlFlags.Has(BndlCFBundleReceptionStatusReportsAreRequested) &&
+			!pb.BundleControlFlags.Has(BndlCFBundleForwardingStatusReportsAreRequested) &&
+			!pb.BundleControlFlags.Has(BndlCFBundleDeliveryStatusReportsAreRequested) &&
+			!pb.BundleControlFlags.Has(BndlCFBundleDeletionStatusReportsAreRequested))
+	if !bpcfImpl {
+		errs = multierror.Append(errs,
+			newBPAError("PrimaryBlock: Source Node is dtn:none, but Bundle could be "+
+				"fragmented or status report flags are not zero"))
+	}
+
 	return
 }
 

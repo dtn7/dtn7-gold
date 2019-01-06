@@ -6,8 +6,6 @@ import "github.com/hashicorp/go-multierror"
 // Control Flags as specified in section 4.1.3.
 type BundleControlFlags uint16
 
-// TODO: Check if the source node ID is the null endpoint's ID
-
 const (
 	BndlCFBundleDeletionStatusReportsAreRequested   BundleControlFlags = 0x1000
 	BndlCFBundleDeliveryStatusReportsAreRequested   BundleControlFlags = 0x0800
@@ -33,6 +31,12 @@ func (bcf BundleControlFlags) checkValid() (errs error) {
 			errs, newBPAError("BundleControlFlags: Given flag contains reserved bits"))
 	}
 
+	if bcf.Has(BndlCFBundleIsAFragment) && bcf.Has(BndlCFBundleMustNotBeFragmented) {
+		errs = multierror.Append(errs,
+			newBPAError("BundleControlFlags: both 'bundle is a fragment' and "+
+				"'bundle must not be fragmented' flags are set"))
+	}
+
 	// payload is administrative record => no status report request flags
 	adminRecCheck := !bcf.Has(BndlCFPayloadIsAnAdministrativeRecord) ||
 		(!bcf.Has(BndlCFBundleReceptionStatusReportsAreRequested) &&
@@ -41,7 +45,8 @@ func (bcf BundleControlFlags) checkValid() (errs error) {
 			!bcf.Has(BndlCFBundleDeletionStatusReportsAreRequested))
 	if !adminRecCheck {
 		errs = multierror.Append(errs, newBPAError(
-			"BundleControlFlags: \"payload is administrative record => no status report request flags\" failed"))
+			"BundleControlFlags: \"payload is administrative record => "+
+				"no status report request flags\" failed"))
 	}
 
 	return

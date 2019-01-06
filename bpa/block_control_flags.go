@@ -4,10 +4,6 @@ package bpa
 // Flags as specified in 4.1.4.
 type BlockControlFlags uint8
 
-// TODO: There should be a check against the block's Bundle Processing Control
-// Flags if the data is an administrative record or the endpoint is the null
-// endpoint.
-
 const (
 	BlckCFBundleMustBeDeletedIfBlockCannotBeProcessed           BlockControlFlags = 0x08
 	BlckCFStatusReportMustBeTransmittedIfBlockCannotBeProcessed BlockControlFlags = 0x04

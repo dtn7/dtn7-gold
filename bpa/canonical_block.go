@@ -151,7 +151,10 @@ func (cb *CanonicalBlock) CodecDecodeSelf(dec *codec.Decoder) {
 func (cb CanonicalBlock) checkValidExtensionBlocks() error {
 	switch cb.BlockType {
 	case blockTypePayload:
-		// The payload block is not an extension block
+		if cb.BlockNumber != 0 {
+			return newBPAError("CanonicalBlock: Payload Block's block number is not zero")
+		}
+
 		return nil
 
 	case blockTypeIntegrity, blockTypeConfidentiality, blockTypeManifest, blockTypeFlowLabel:
@@ -177,11 +180,6 @@ func (cb CanonicalBlock) checkValidExtensionBlocks() error {
 }
 
 func (cb CanonicalBlock) checkValid() (errs error) {
-	if cb.BlockType == blockTypePayload && cb.BlockNumber != 0 {
-		errs = multierror.Append(errs,
-			newBPAError("CanonicalBlock: Payload Block's block number is not zero"))
-	}
-
 	if bcfErr := cb.BlockControlFlags.checkValid(); bcfErr != nil {
 		errs = multierror.Append(errs, bcfErr)
 	}

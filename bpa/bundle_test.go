@@ -198,3 +198,64 @@ func TestBundleUpcn(t *testing.T) {
 			upcnBytes, recreatedBytes)
 	}
 }
+
+func TestBundleCheckValid(t *testing.T) {
+	tests := []struct {
+		b     Bundle
+		valid bool
+	}{
+		// Administrative record
+		{NewBundle(
+			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
+			[]CanonicalBlock{
+				NewPayloadBlock(BlckCFStatusReportMustBeTransmittedIfBlockCannotBeProcessed, nil)}),
+			false},
+
+		{NewBundle(
+			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
+			[]CanonicalBlock{NewPayloadBlock(0, nil)}),
+			true},
+
+		// Block number (0) occures twice
+		{NewBundle(
+			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
+			[]CanonicalBlock{
+				NewPayloadBlock(0, nil), NewPayloadBlock(0, nil)}),
+			false},
+
+		// Two Hop Count blocks
+		{NewBundle(
+			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
+			[]CanonicalBlock{
+				NewHopCountBlock(23, 0, NewHopCount(23, 2)),
+				NewHopCountBlock(24, 0, NewHopCount(23, 2)),
+				NewPayloadBlock(0, nil)}),
+			false},
+
+		// Creation Time = 0, no Bundle Age block
+		{NewBundle(
+			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+				DtnNone(), DtnNone(), NewCreationTimestamp(0, 0), 3600),
+			[]CanonicalBlock{
+				NewBundleAgeBlock(1, 0, 42000),
+				NewPayloadBlock(0, nil)}),
+			true},
+		{NewBundle(
+			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+				DtnNone(), DtnNone(), NewCreationTimestamp(0, 0), 3600),
+			[]CanonicalBlock{
+				NewPayloadBlock(0, nil)}),
+			false},
+	}
+
+	for _, test := range tests {
+		if err := test.b.checkValid(); (err == nil) != test.valid {
+			t.Errorf("Block validation failed: %v resulted in %v",
+				test.b, err)
+		}
+	}
+}

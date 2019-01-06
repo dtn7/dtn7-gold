@@ -143,10 +143,10 @@ func TestPrimaryBlockCheckValid(t *testing.T) {
 	}{
 		// Wrong version
 		{PrimaryBlock{
-			23, 0, CRCNo, DtnNone(), DtnNone(), DtnNone(),
+			23, BndlCFBundleMustNotBeFragmented, CRCNo, DtnNone(), DtnNone(), DtnNone(),
 			NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil}, false},
 		{PrimaryBlock{
-			7, 0, CRCNo, DtnNone(), DtnNone(), DtnNone(),
+			7, BndlCFBundleMustNotBeFragmented, CRCNo, DtnNone(), DtnNone(), DtnNone(),
 			NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil}, true},
 
 		// Reserved bits in bundle control flags
@@ -166,6 +166,17 @@ func TestPrimaryBlockCheckValid(t *testing.T) {
 			23, 0xFF00, CRCNo,
 			EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}},
 			DtnNone(), DtnNone(), NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil},
+			false},
+
+		// Source Node = dtn:none, "Must Not Be Fragmented"-flag is zero
+		{PrimaryBlock{
+			7, 0, CRCNo, DtnNone(), DtnNone(), DtnNone(),
+			NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil}, false},
+
+		// Source Node = dtn:none, a status flag is one
+		{PrimaryBlock{
+			7, BndlCFBundleMustNotBeFragmented | BndlCFBundleReceptionStatusReportsAreRequested,
+			CRCNo, DtnNone(), DtnNone(), DtnNone(), NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil},
 			false},
 	}
 
