@@ -31,20 +31,28 @@ func (b *Bundle) forEachBlock(f func(block)) {
 	}
 }
 
-// ApplyCRC sets the given CRCType to each block and calculates the CRC values.
-func (b *Bundle) ApplyCRC(crcType CRCType) {
+// SetCRCType sets the given CRCType for each block.
+func (b *Bundle) SetCRCType(crcType CRCType) {
 	b.forEachBlock(func(blck block) {
-		blck.setCRCType(crcType)
-		setCRC(blck)
+		blck.SetCRCType(crcType)
 	})
 }
 
-// CheckCRC checks the CRC value of each block.
+// CalculateCRC calculates and sets the CRC value for each block.
+func (b *Bundle) CalculateCRC() {
+	b.forEachBlock(func(blck block) {
+		blck.CalculateCRC()
+	})
+}
+
+// CheckCRC checks the CRC value of each block and returns false if some
+// values do not match.
+// This method changes the block's CRC value temporary and is not thread safe.
 func (b *Bundle) CheckCRC() bool {
 	var flag = true
 
 	b.forEachBlock(func(blck block) {
-		if !checkCRC(blck) {
+		if !blck.CheckCRC() {
 			flag = false
 		}
 	})

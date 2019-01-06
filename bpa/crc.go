@@ -97,13 +97,9 @@ func emptyCRC(crcType CRCType) (arr []byte) {
 	return
 }
 
-// setCRC sets the CRC value of the given block.
-func setCRC(blck block) {
-	blck.setCRC(calculateCRC(blck))
-}
-
 // checkCRC returns true if the stored CRC value matches the calculated one or
 // the CRC Type is none.
+// This method changes the block's CRC value temporary and is not thread safe.
 func checkCRC(blck block) bool {
 	if !blck.HasCRC() {
 		return true

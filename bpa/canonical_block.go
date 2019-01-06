@@ -64,26 +64,47 @@ func NewCanonicalBlock(blockType uint, blockNumber uint,
 	}
 }
 
+// HasCRC retruns true if the CRCType indicates a CRC present for this block.
+// In this case the CRC value should become relevant.
 func (cb CanonicalBlock) HasCRC() bool {
 	return cb.GetCRCType() != CRCNo
 }
 
+// GetCRCType returns the CRCType of this Block.
 func (cb CanonicalBlock) GetCRCType() CRCType {
 	return cb.CRCType
 }
 
+// getCRC retruns the CRC value.
 func (cb CanonicalBlock) getCRC() []byte {
 	return cb.CRC
 }
 
-func (cb *CanonicalBlock) setCRCType(crcType CRCType) {
+// SetCRCType sets the CRC type.
+func (cb *CanonicalBlock) SetCRCType(crcType CRCType) {
 	cb.CRCType = crcType
 }
 
+// CalculateCRC calculates and writes the CRC-value for this block.
+// This method changes the block's CRC value temporary and is not thread safe.
+func (cb *CanonicalBlock) CalculateCRC() {
+	cb.setCRC(calculateCRC(cb))
+}
+
+// CheckCRC returns true if the CRC value matches to its CRCType or the
+// CRCType is CRCNo.
+// This method changes the block's CRC value temporary and is not thread safe.
+func (cb *CanonicalBlock) CheckCRC() bool {
+	return checkCRC(cb)
+}
+
+// resetCRC resets the CRC value to zero. This should be called before
+// calculating the CRC value of this Block.
 func (cb *CanonicalBlock) resetCRC() {
 	cb.CRC = emptyCRC(cb.GetCRCType())
 }
 
+// setCRC sets the CRC value to the given value.
 func (cb *CanonicalBlock) setCRC(crc []byte) {
 	cb.CRC = crc
 }

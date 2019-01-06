@@ -78,7 +78,7 @@ func TestPrimaryBlockCbor(t *testing.T) {
 		// If we are going to test block's with a CRC value, we also have to
 		// calculate it.
 		if test.pb1.HasCRC() {
-			setCRC(&test.pb1)
+			test.pb1.CalculateCRC()
 		}
 
 		err := enc.Encode(test.pb1)

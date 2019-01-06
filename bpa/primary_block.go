@@ -53,26 +53,47 @@ func (pb PrimaryBlock) HasFragmentation() bool {
 	return pb.BundleControlFlags.Has(BndlCFBundleIsAFragment)
 }
 
+// HasCRC retruns true if the CRCType indicates a CRC present for this block.
+// In this case the CRC value should become relevant.
 func (pb PrimaryBlock) HasCRC() bool {
 	return pb.GetCRCType() != CRCNo
 }
 
+// GetCRCType returns the CRCType of this Block.
 func (pb PrimaryBlock) GetCRCType() CRCType {
 	return pb.CRCType
 }
 
+// getCRC retruns the CRC value.
 func (pb PrimaryBlock) getCRC() []byte {
 	return pb.CRC
 }
 
-func (pb *PrimaryBlock) setCRCType(crcType CRCType) {
+// SetCRCType sets the CRC type.
+func (pb *PrimaryBlock) SetCRCType(crcType CRCType) {
 	pb.CRCType = crcType
 }
 
+// CalculateCRC calculates and writes the CRC-value for this block.
+// This method changes the block's CRC value temporary and is not thread safe.
+func (pb *PrimaryBlock) CalculateCRC() {
+	pb.setCRC(calculateCRC(pb))
+}
+
+// CheckCRC returns true if the CRC value matches to its CRCType or the
+// CRCType is CRCNo.
+// This method changes the block's CRC value temporary and is not thread safe.
+func (pb *PrimaryBlock) CheckCRC() bool {
+	return checkCRC(pb)
+}
+
+// resetCRC resets the CRC value to zero. This should be called before
+// calculating the CRC value of this Block.
 func (pb *PrimaryBlock) resetCRC() {
 	pb.CRC = emptyCRC(pb.GetCRCType())
 }
 
+// setCRC sets the CRC value to the given value.
 func (pb *PrimaryBlock) setCRC(crc []byte) {
 	pb.CRC = crc
 }

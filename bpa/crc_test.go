@@ -35,7 +35,7 @@ func TestCRCBackAndForth(t *testing.T) {
 				test.blck.GetCRCType(), test.crcType, test.blck)
 		}
 
-		setCRC(test.blck)
+		test.blck.CalculateCRC()
 		if !checkCRC(test.blck) {
 			t.Errorf("Setting and checking CRC failed for %v", test.blck)
 		}

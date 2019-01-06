@@ -24,7 +24,8 @@ func TestBundleApplyCRC(t *testing.T) {
 		primary, []CanonicalBlock{prevNode, payload})
 
 	for _, crcTest := range []CRCType{CRCNo, CRC16, CRC32, CRCNo} {
-		bundle.ApplyCRC(crcTest)
+		bundle.SetCRCType(crcTest)
+		bundle.CalculateCRC()
 
 		if ty := bundle.PrimaryBlock.GetCRCType(); ty != crcTest {
 			t.Errorf("Bundle's primary block has wrong CRCType, %v instead of %v",
@@ -55,7 +56,8 @@ func TestBundleCbor(t *testing.T) {
 
 	bundle1 := NewBundle(
 		primary, []CanonicalBlock{prevNode, payload})
-	bundle1.ApplyCRC(CRC32)
+	bundle1.SetCRCType(CRC32)
+	bundle1.CalculateCRC()
 
 	bundle1Cbor := bundle1.ToCbor()
 
