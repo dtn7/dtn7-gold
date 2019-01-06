@@ -148,6 +148,34 @@ func (cb *CanonicalBlock) CodecDecodeSelf(dec *codec.Decoder) {
 	}
 }
 
+func (cb CanonicalBlock) checkValidExtensionBlocks() error {
+	switch cb.BlockType {
+	case blockTypePayload:
+		// The payload block is not an extension block
+		return nil
+
+	case blockTypeIntegrity, blockTypeConfidentiality, blockTypeManifest, blockTypeFlowLabel:
+		// These extension blocks are defined in other specifications
+		return nil
+
+	case blockTypePreviousNode:
+		return cb.Data.(EndpointID).checkValid()
+
+	case blockTypeBundleAge, blockTypeHopCount:
+		// Nothing to check here
+		return nil
+
+	default:
+		// "Block type codes 192 through 255 are not reserved and are available for
+		// private and/or experimental use.", draft-ietf-dtn-bpbis-12#section-4.2.3
+		if !(192 <= cb.BlockType && cb.BlockType <= 255) {
+			return newBPAError("CanonicalBlock: Unknown block type")
+		}
+	}
+
+	return nil
+}
+
 func (cb CanonicalBlock) checkValid() (errs error) {
 	if cb.BlockType == blockTypePayload && cb.BlockNumber != 0 {
 		errs = multierror.Append(errs,
@@ -156,6 +184,10 @@ func (cb CanonicalBlock) checkValid() (errs error) {
 
 	if bcfErr := cb.BlockControlFlags.checkValid(); bcfErr != nil {
 		errs = multierror.Append(errs, bcfErr)
+	}
+
+	if extErr := cb.checkValidExtensionBlocks(); extErr != nil {
+		errs = multierror.Append(errs, extErr)
 	}
 
 	return

@@ -122,6 +122,18 @@ func TestCanonicalBlockCheckValid(t *testing.T) {
 
 		// Reserved bits in block control flags
 		{CanonicalBlock{blockTypePayload, 0, 0x80, CRCNo, nil, nil}, false},
+
+		// Illegal EndpointID in Previous Node Block
+		{NewPreviousNodeBlock(23, 0,
+			EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}}),
+			false},
+		{NewPreviousNodeBlock(23, 0, DtnNone()), true},
+
+		// Reserved block type
+		{CanonicalBlock{191, 0, 0, CRCNo, nil, nil}, false},
+		{CanonicalBlock{192, 0, 0, CRCNo, nil, nil}, true},
+		{CanonicalBlock{255, 0, 0, CRCNo, nil, nil}, true},
+		{CanonicalBlock{256, 0, 0, CRCNo, nil, nil}, false},
 	}
 
 	for _, test := range tests {
