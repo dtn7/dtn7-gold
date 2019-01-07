@@ -9,9 +9,9 @@ import (
 )
 
 func setupPrimaryBlock() PrimaryBlock {
-	bcf := BndlCFBundleDeletionStatusReportsAreRequested |
-		BndlCFBundleDeliveryStatusReportsAreRequested |
-		BndlCFBundleMustNotBeFragmented
+	bcf := StatusRequestDeletion |
+		StatusRequestDelivery |
+		MustNotFragmented
 
 	destination, _ := NewEndpointID("dtn", "foobar")
 	source, _ := NewEndpointID("dtn", "me")
@@ -45,7 +45,7 @@ func TestPrimaryBlockCRC(t *testing.T) {
 
 func TestPrimaryBlockFragmentation(t *testing.T) {
 	pb := setupPrimaryBlock()
-	pb.BundleControlFlags = BndlCFBundleIsAFragment
+	pb.BundleControlFlags = IsFragment
 
 	if !pb.HasFragmentation() {
 		t.Error("Primary Block should be fragmented")
@@ -65,9 +65,9 @@ func TestPrimaryBlockCbor(t *testing.T) {
 		// CRC, No Fragmentation
 		{PrimaryBlock{7, 0, CRC16, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 9},
 		// No CRC, Fragmentation
-		{PrimaryBlock{7, BndlCFBundleIsAFragment, CRCNo, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 10},
+		{PrimaryBlock{7, IsFragment, CRCNo, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 10},
 		// CRC, Fragmentation
-		{PrimaryBlock{7, BndlCFBundleIsAFragment, CRC16, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 11},
+		{PrimaryBlock{7, IsFragment, CRC16, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 11},
 	}
 
 	for _, test := range tests {
@@ -143,10 +143,10 @@ func TestPrimaryBlockCheckValid(t *testing.T) {
 	}{
 		// Wrong version
 		{PrimaryBlock{
-			23, BndlCFBundleMustNotBeFragmented, CRCNo, DtnNone(), DtnNone(), DtnNone(),
+			23, MustNotFragmented, CRCNo, DtnNone(), DtnNone(), DtnNone(),
 			NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil}, false},
 		{PrimaryBlock{
-			7, BndlCFBundleMustNotBeFragmented, CRCNo, DtnNone(), DtnNone(), DtnNone(),
+			7, MustNotFragmented, CRCNo, DtnNone(), DtnNone(), DtnNone(),
 			NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil}, true},
 
 		// Reserved bits in bundle control flags
@@ -157,14 +157,14 @@ func TestPrimaryBlockCheckValid(t *testing.T) {
 		// Illegal EndpointID
 		{PrimaryBlock{
 			7, 0, CRCNo,
-			EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}},
+			EndpointID{SchemeName: endpointURISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}},
 			DtnNone(), DtnNone(), NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil},
 			false},
 
 		// Everything from above
 		{PrimaryBlock{
 			23, 0xFF00, CRCNo,
-			EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}},
+			EndpointID{SchemeName: endpointURISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}},
 			DtnNone(), DtnNone(), NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil},
 			false},
 
@@ -175,7 +175,7 @@ func TestPrimaryBlockCheckValid(t *testing.T) {
 
 		// Source Node = dtn:none, a status flag is one
 		{PrimaryBlock{
-			7, BndlCFBundleMustNotBeFragmented | BndlCFBundleReceptionStatusReportsAreRequested,
+			7, MustNotFragmented | StatusRequestReception,
 			CRCNo, DtnNone(), DtnNone(), DtnNone(), NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil},
 			false},
 	}

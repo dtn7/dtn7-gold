@@ -11,14 +11,14 @@ func TestBundleApplyCRC(t *testing.T) {
 	var creationTs = NewCreationTimestamp(4200, 23)
 
 	var primary = NewPrimaryBlock(
-		BndlCFBundleDeliveryStatusReportsAreRequested,
+		StatusRequestDelivery,
 		epPrim, epPrim, creationTs, 42000)
 
 	var epPrev, _ = NewEndpointID("ipn", "23.42")
 	var prevNode = NewPreviousNodeBlock(1, 0, epPrev)
 
 	var payload = NewPayloadBlock(
-		BlckCFBundleMustBeDeletedIfBlockCannotBeProcessed, []byte("GuMo"))
+		DeleteBundle, []byte("GuMo"))
 
 	var bundle, err = NewBundle(
 		primary, []CanonicalBlock{prevNode, payload})
@@ -48,14 +48,14 @@ func TestBundleCbor(t *testing.T) {
 	var creationTs = NewCreationTimestamp(4200, 23)
 
 	var primary = NewPrimaryBlock(
-		BndlCFBundleDeliveryStatusReportsAreRequested,
+		StatusRequestDelivery,
 		epDest, epSource, creationTs, 42000)
 
 	var epPrev, _ = NewEndpointID("ipn", "23.42")
 	var prevNode = NewPreviousNodeBlock(23, 0, epPrev)
 
 	var payload = NewPayloadBlock(
-		BlckCFBundleMustBeDeletedIfBlockCannotBeProcessed,
+		DeleteBundle,
 		[]byte("GuMo meine Kernel"))
 
 	bundle1, err := NewBundle(
@@ -122,8 +122,8 @@ func TestBundleUpcn(t *testing.T) {
 		t.Errorf("Primary Block's version is not 7: %d", ver)
 	}
 
-	bcfExpected := BndlCFBundleMustNotBeFragmented |
-		BndlCFBundleContainsAManifestBlock
+	bcfExpected := MustNotFragmented |
+		ContainsManifest
 	if bcf := pb.BundleControlFlags; bcf != bcfExpected {
 		t.Errorf("Primary Block's control flags mismatches: %x instead of %x",
 			bcf, bcfExpected)
@@ -160,7 +160,7 @@ func TestBundleUpcn(t *testing.T) {
 
 	for _, cb := range bndl.CanonicalBlocks {
 		switch cb.BlockType {
-		case BlockTypePayload:
+		case PayloadBlock:
 			chkPayload = true
 
 			payloadExpected := []byte("Hello world!")
@@ -169,7 +169,7 @@ func TestBundleUpcn(t *testing.T) {
 					payload, payloadExpected)
 			}
 
-		case BlockTypePreviousNode:
+		case PreviousNodeBlock:
 			chkPreviousNode = true
 
 			prevExpected, _ := NewEndpointID("dtn", "GS4")
@@ -178,7 +178,7 @@ func TestBundleUpcn(t *testing.T) {
 					prev, prevExpected)
 			}
 
-		case BlockTypeHopCount:
+		case HopCountBlock:
 			chkHopCount = true
 
 			hopExpected := NewHopCount(30, 0)
@@ -187,7 +187,7 @@ func TestBundleUpcn(t *testing.T) {
 					hop, hopExpected)
 			}
 
-		case BlockTypeBundleAge:
+		case BundleAgeBlock:
 			chkBundleAge = true
 
 			ageExpected := uint(0)
@@ -217,7 +217,7 @@ func TestBundleUpcn(t *testing.T) {
 func TestBundleExtensionBlock(t *testing.T) {
 	var bndl, err = NewBundle(
 		NewPrimaryBlock(
-			BndlCFBundleMustNotBeFragmented,
+			MustNotFragmented,
 			MustNewEndpointID("dtn", "some"), DtnNone(),
 			NewCreationTimestamp(DtnTimeEpoch, 0), 3600),
 		[]CanonicalBlock{
@@ -229,15 +229,15 @@ func TestBundleExtensionBlock(t *testing.T) {
 		t.Error(err)
 	}
 
-	if cb, err := bndl.ExtensionBlock(BlockTypePreviousNode); err == nil {
+	if cb, err := bndl.ExtensionBlock(PreviousNodeBlock); err == nil {
 		t.Errorf("Bundle returned a non-existing Extension Block: %v", cb)
 	}
 
-	if _, err := bndl.ExtensionBlock(BlockTypeBundleAge); err != nil {
+	if _, err := bndl.ExtensionBlock(BundleAgeBlock); err != nil {
 		t.Errorf("Bundle did not returned the existing Bundle Age block: %v", err)
 	}
 
-	if _, err := bndl.ExtensionBlock(BlockTypePayload); err != nil {
+	if _, err := bndl.ExtensionBlock(PayloadBlock); err != nil {
 		t.Errorf("Bundle did not returned the existing Payload block: %v", err)
 	}
 
@@ -262,21 +262,21 @@ func TestBundleCheckValid(t *testing.T) {
 	}{
 		// Administrative record
 		{createNewBundle(
-			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
 			[]CanonicalBlock{
-				NewPayloadBlock(BlckCFStatusReportMustBeTransmittedIfBlockCannotBeProcessed, nil)}),
+				NewPayloadBlock(StatusReportBlock, nil)}),
 			false},
 
 		{createNewBundle(
-			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
 			[]CanonicalBlock{NewPayloadBlock(0, nil)}),
 			true},
 
 		// Block number (0) occures twice
 		{createNewBundle(
-			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
 			[]CanonicalBlock{
 				NewPayloadBlock(0, nil), NewPayloadBlock(0, nil)}),
@@ -284,7 +284,7 @@ func TestBundleCheckValid(t *testing.T) {
 
 		// Two Hop Count blocks
 		{createNewBundle(
-			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
 			[]CanonicalBlock{
 				NewHopCountBlock(23, 0, NewHopCount(23, 2)),
@@ -294,14 +294,14 @@ func TestBundleCheckValid(t *testing.T) {
 
 		// Creation Time = 0, no Bundle Age block
 		{createNewBundle(
-			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(0, 0), 3600),
 			[]CanonicalBlock{
 				NewBundleAgeBlock(1, 0, 42000),
 				NewPayloadBlock(0, nil)}),
 			true},
 		{createNewBundle(
-			NewPrimaryBlock(BndlCFBundleMustNotBeFragmented|BndlCFPayloadIsAnAdministrativeRecord,
+			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(0, 0), 3600),
 			[]CanonicalBlock{
 				NewPayloadBlock(0, nil)}),

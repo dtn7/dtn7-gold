@@ -52,7 +52,7 @@ func (b Bundle) ExtensionBlock(blockType CanonicalBlockType) (cb CanonicalBlock,
 // PayloadBlock returns this Bundle's Payload Block or an error, if it does
 // not exists.
 func (b Bundle) PayloadBlock() (CanonicalBlock, error) {
-	return b.ExtensionBlock(BlockTypePayload)
+	return b.ExtensionBlock(PayloadBlock)
 }
 
 // SetCRCType sets the given CRCType for each block.
@@ -93,10 +93,10 @@ func (b Bundle) checkValid() (errs error) {
 	})
 
 	// Check CanonicalBlocks for errors
-	if b.PrimaryBlock.BundleControlFlags.Has(BndlCFPayloadIsAnAdministrativeRecord) ||
+	if b.PrimaryBlock.BundleControlFlags.Has(AdministrativeRecordPayload) ||
 		b.PrimaryBlock.SourceNode == DtnNone() {
 		for _, cb := range b.CanonicalBlocks {
-			if cb.BlockControlFlags.Has(BlckCFStatusReportMustBeTransmittedIfBlockCannotBeProcessed) {
+			if cb.BlockControlFlags.Has(StatusReportBlock) {
 				errs = multierror.Append(errs,
 					newBundleError("Bundle: Bundle Processing Control Flags indicate that "+
 						"this bundle's payload is an administrative record or the source "+
@@ -121,7 +121,7 @@ func (b Bundle) checkValid() (errs error) {
 		cbBlockNumbers[cb.BlockNumber] = true
 
 		switch cb.BlockType {
-		case BlockTypePreviousNode, BlockTypeBundleAge, BlockTypeHopCount:
+		case PreviousNodeBlock, BundleAgeBlock, HopCountBlock:
 			if _, ok := cbBlockTypes[cb.BlockType]; ok {
 				errs = multierror.Append(errs,
 					newBundleError(fmt.Sprintf(
@@ -132,7 +132,7 @@ func (b Bundle) checkValid() (errs error) {
 	}
 
 	if b.PrimaryBlock.CreationTimestamp[0] == 0 {
-		if _, ok := cbBlockTypes[BlockTypeBundleAge]; !ok {
+		if _, ok := cbBlockTypes[BundleAgeBlock]; !ok {
 			errs = multierror.Append(errs, newBundleError(
 				"Bundle: Creation Timestamp is zero, but no Bundle Age block is present"))
 		}

@@ -14,7 +14,7 @@ func TestEndpointDtnNone(t *testing.T) {
 		t.Errorf("dtn:none resulted in an error: %v", err)
 	}
 
-	if dtnNone.SchemeName != URISchemeDTN {
+	if dtnNone.SchemeName != endpointURISchemeDTN {
 		t.Errorf("dtn:none has wrong scheme name: %d", dtnNone.SchemeName)
 	}
 	if ty := reflect.TypeOf(dtnNone.SchemeSpecificPart); ty.Kind() != reflect.Uint {
@@ -36,7 +36,7 @@ func TestEndpointDtn(t *testing.T) {
 		t.Errorf("dtn:foobar resulted in an error: %v", err)
 	}
 
-	if dtnEP.SchemeName != URISchemeDTN {
+	if dtnEP.SchemeName != endpointURISchemeDTN {
 		t.Errorf("dtn:foobar has wrong scheme name: %d", dtnEP.SchemeName)
 	}
 	if ty := reflect.TypeOf(dtnEP.SchemeSpecificPart); ty.Kind() != reflect.String {
@@ -58,7 +58,7 @@ func TestEndpointIpn(t *testing.T) {
 		t.Errorf("ipn:23.42 resulted in an error: %v", err)
 	}
 
-	if ipnEP.SchemeName != URISchemeIPN {
+	if ipnEP.SchemeName != endpointURISchemeIPN {
 		t.Errorf("ipn:23.42 has wrong scheme name: %d", ipnEP.SchemeName)
 	}
 	if ty := reflect.TypeOf(ipnEP.SchemeSpecificPart); ty.Kind() == reflect.Array {
@@ -213,12 +213,12 @@ func TestEndpointCheckValid(t *testing.T) {
 		ep    EndpointID
 		valid bool
 	}{
-		{EndpointID{SchemeName: URISchemeDTN, SchemeSpecificPart: "none"}, false},
-		{EndpointID{SchemeName: URISchemeDTN, SchemeSpecificPart: 0}, true},
-		{EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 1}}, false},
-		{EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{1, 0}}, false},
-		{EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}}, false},
-		{EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{1, 1}}, true},
+		{EndpointID{SchemeName: endpointURISchemeDTN, SchemeSpecificPart: "none"}, false},
+		{EndpointID{SchemeName: endpointURISchemeDTN, SchemeSpecificPart: 0}, true},
+		{EndpointID{SchemeName: endpointURISchemeIPN, SchemeSpecificPart: [2]uint64{0, 1}}, false},
+		{EndpointID{SchemeName: endpointURISchemeIPN, SchemeSpecificPart: [2]uint64{1, 0}}, false},
+		{EndpointID{SchemeName: endpointURISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}}, false},
+		{EndpointID{SchemeName: endpointURISchemeIPN, SchemeSpecificPart: [2]uint64{1, 1}}, true},
 		{EndpointID{SchemeName: 23, SchemeSpecificPart: 0}, false},
 	}
 

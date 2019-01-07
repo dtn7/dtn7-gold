@@ -50,7 +50,7 @@ func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
 // fragmented bundle. In this case the FragmentOffset and TotalDataLength fields
 // of this struct should become relevant.
 func (pb PrimaryBlock) HasFragmentation() bool {
-	return pb.BundleControlFlags.Has(BndlCFBundleIsAFragment)
+	return pb.BundleControlFlags.Has(IsFragment)
 }
 
 // HasCRC retruns true if the CRCType indicates a CRC present for this block.
@@ -209,14 +209,14 @@ func (pb PrimaryBlock) checkValid() (errs error) {
 	// [...] the "Bundle must not be fragmented" flag value must be 1 and all
 	// status report request flag values must be zero.
 	// SourceNode == dtn:none => (
-	//    BndlCFBundleMustNotBeFragmented
+	//    MustNotFragmented
 	//  & !"all status report flags")
 	bpcfImpl := !(pb.SourceNode == DtnNone()) ||
-		(pb.BundleControlFlags.Has(BndlCFBundleMustNotBeFragmented) &&
-			!pb.BundleControlFlags.Has(BndlCFBundleReceptionStatusReportsAreRequested) &&
-			!pb.BundleControlFlags.Has(BndlCFBundleForwardingStatusReportsAreRequested) &&
-			!pb.BundleControlFlags.Has(BndlCFBundleDeliveryStatusReportsAreRequested) &&
-			!pb.BundleControlFlags.Has(BndlCFBundleDeletionStatusReportsAreRequested))
+		(pb.BundleControlFlags.Has(MustNotFragmented) &&
+			!pb.BundleControlFlags.Has(StatusRequestReception) &&
+			!pb.BundleControlFlags.Has(StatusRequestForward) &&
+			!pb.BundleControlFlags.Has(StatusRequestDelivery) &&
+			!pb.BundleControlFlags.Has(StatusRequestDeletion))
 	if !bpcfImpl {
 		errs = multierror.Append(errs,
 			newBundleError("PrimaryBlock: Source Node is dtn:none, but Bundle could "+

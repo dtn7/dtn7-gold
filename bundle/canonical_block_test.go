@@ -10,7 +10,7 @@ import (
 
 func TestNewCanonicalBlock(t *testing.T) {
 	b := NewPayloadBlock(
-		BlckCFBlockMustBeReplicatedInEveryFragment, []byte("hello world"))
+		ReplicateBlock, []byte("hello world"))
 
 	if b.HasCRC() {
 		t.Errorf("Canonical Block (Payload Block) has CRC: %v", b)
@@ -117,15 +117,15 @@ func TestCanonicalBlockCheckValid(t *testing.T) {
 		valid bool
 	}{
 		// Payload block with a block number != zero
-		{CanonicalBlock{BlockTypePayload, 23, 0, CRCNo, nil, nil}, false},
-		{CanonicalBlock{BlockTypePayload, 0, 0, CRCNo, nil, nil}, true},
+		{CanonicalBlock{PayloadBlock, 23, 0, CRCNo, nil, nil}, false},
+		{CanonicalBlock{PayloadBlock, 0, 0, CRCNo, nil, nil}, true},
 
 		// Reserved bits in block control flags
-		{CanonicalBlock{BlockTypePayload, 0, 0x80, CRCNo, nil, nil}, false},
+		{CanonicalBlock{PayloadBlock, 0, 0x80, CRCNo, nil, nil}, false},
 
 		// Illegal EndpointID in Previous Node Block
 		{NewPreviousNodeBlock(23, 0,
-			EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}}),
+			EndpointID{SchemeName: endpointURISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}}),
 			false},
 		{NewPreviousNodeBlock(23, 0, DtnNone()), true},
 

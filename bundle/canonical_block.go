@@ -13,36 +13,36 @@ import (
 type CanonicalBlockType uint
 
 const (
-	// BlockTypePayload is a BlockType for a payload block as defined in 4.2.3.
-	BlockTypePayload CanonicalBlockType = 1
+	// PayloadBlock is a BlockType for a payload block as defined in 4.2.3.
+	PayloadBlock CanonicalBlockType = 1
 
-	// BlockTypeIntegrity is a BlockType defined in the Bundle Security Protocol
+	// IntegrityBlock is a BlockType defined in the Bundle Security Protocol
 	// specifiation.
-	BlockTypeIntegrity CanonicalBlockType = 2
+	IntegrityBlock CanonicalBlockType = 2
 
-	// BlockTypeConfidentiality is a BlockType defined in the Bundle Security
+	// ConfidentialityBlock is a BlockType defined in the Bundle Security
 	// Protocol specifiation.
-	BlockTypeConfidentiality CanonicalBlockType = 3
+	ConfidentialityBlock CanonicalBlockType = 3
 
-	// BlockTypeManifest is a BlockType defined in the Manifest Extension Block
+	// ManifestBlock is a BlockType defined in the Manifest Extension Block
 	// specifiation.
-	BlockTypeManifest CanonicalBlockType = 4
+	ManifestBlock CanonicalBlockType = 4
 
-	// BlockTypeFlowLabel is a BlockType defined in the Flow Label Extension Block
+	// FlowLabelBlock is a BlockType defined in the Flow Label Extension Block
 	// specification.
-	BlockTypeFlowLabel CanonicalBlockType = 6
+	FlowLabelBlock CanonicalBlockType = 6
 
-	// BlockTypePreviousNode is a BlockType for a Previous Node block as defined
+	// PreviousNodeBlock is a BlockType for a Previous Node block as defined
 	// in section 4.3.1.
-	BlockTypePreviousNode CanonicalBlockType = 7
+	PreviousNodeBlock CanonicalBlockType = 7
 
-	// BlockTypeBundleAge is a BlockType for a Bundle Age block as defined in
+	// BundleAgeBlock is a BlockType for a Bundle Age block as defined in
 	// section 4.3.2.
-	BlockTypeBundleAge CanonicalBlockType = 8
+	BundleAgeBlock CanonicalBlockType = 8
 
-	// BlockTypeHopCount is a BlockType for a Hop Count block as defined in
+	// HopCountBlock is a BlockType for a Hop Count block as defined in
 	// section 4.3.3.
-	BlockTypeHopCount CanonicalBlockType = 9
+	HopCountBlock CanonicalBlockType = 9
 )
 
 // CanonicalBlock represents the Canonical Bundle Block defined in section 4.2.3
@@ -130,15 +130,15 @@ func (cb CanonicalBlock) CodecEncodeSelf(enc *codec.Encoder) {
 
 func (cb *CanonicalBlock) codecDecodeData(data interface{}) {
 	switch cb.BlockType {
-	case BlockTypePreviousNode:
+	case PreviousNodeBlock:
 		var ep *EndpointID = new(EndpointID)
 		setEndpointIDFromCborArray(ep, data.([]interface{}))
 		cb.Data = *ep
 
-	case BlockTypeBundleAge:
+	case BundleAgeBlock:
 		cb.Data = uint(data.(uint64))
 
-	case BlockTypeHopCount:
+	case HopCountBlock:
 		tuple := data.([]interface{})
 		cb.Data = HopCount{
 			Limit: uint(tuple[0].(uint64)),
@@ -175,7 +175,7 @@ func (cb *CanonicalBlock) CodecDecodeSelf(dec *codec.Decoder) {
 
 func (cb CanonicalBlock) checkValidExtensionBlocks() error {
 	switch cb.BlockType {
-	case BlockTypePayload:
+	case PayloadBlock:
 		if cb.BlockNumber != 0 {
 			return newBundleError(
 				"CanonicalBlock: Payload Block's block number is not zero")
@@ -183,14 +183,14 @@ func (cb CanonicalBlock) checkValidExtensionBlocks() error {
 
 		return nil
 
-	case BlockTypeIntegrity, BlockTypeConfidentiality, BlockTypeManifest, BlockTypeFlowLabel:
+	case IntegrityBlock, ConfidentialityBlock, ManifestBlock, FlowLabelBlock:
 		// These extension blocks are defined in other specifications
 		return nil
 
-	case BlockTypePreviousNode:
+	case PreviousNodeBlock:
 		return cb.Data.(EndpointID).checkValid()
 
-	case BlockTypeBundleAge, BlockTypeHopCount:
+	case BundleAgeBlock, HopCountBlock:
 		// Nothing to check here
 		return nil
 
@@ -257,14 +257,14 @@ func (hc HopCount) String() string {
 // NewPayloadBlock creates a new payload block.
 func NewPayloadBlock(blockControlFlags BlockControlFlags, data []byte) CanonicalBlock {
 	// A payload block's block number is always 0 (4.2.3)
-	return NewCanonicalBlock(BlockTypePayload, 0, blockControlFlags, data)
+	return NewCanonicalBlock(PayloadBlock, 0, blockControlFlags, data)
 }
 
 // NewPreviousNodeBlock creates a new Previous Node block.
 func NewPreviousNodeBlock(blockNumber uint, blockControlFlags BlockControlFlags,
 	prevNodeId EndpointID) CanonicalBlock {
 	return NewCanonicalBlock(
-		BlockTypePreviousNode, blockNumber, blockControlFlags, prevNodeId)
+		PreviousNodeBlock, blockNumber, blockControlFlags, prevNodeId)
 }
 
 // NewBundleAgeBlock creates a new Bundle Age block to hold the bundle's lifetime
@@ -272,12 +272,12 @@ func NewPreviousNodeBlock(blockNumber uint, blockControlFlags BlockControlFlags,
 func NewBundleAgeBlock(blockNumber uint, blockControlFlags BlockControlFlags,
 	time uint) CanonicalBlock {
 	return NewCanonicalBlock(
-		BlockTypeBundleAge, blockNumber, blockControlFlags, time)
+		BundleAgeBlock, blockNumber, blockControlFlags, time)
 }
 
 // NewHopCountBlock creates a new Hop Count block.
 func NewHopCountBlock(blockNumber uint, blockControlFlags BlockControlFlags,
 	hopCount HopCount) CanonicalBlock {
 	return NewCanonicalBlock(
-		BlockTypeHopCount, blockNumber, blockControlFlags, hopCount)
+		HopCountBlock, blockNumber, blockControlFlags, hopCount)
 }

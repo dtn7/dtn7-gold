@@ -8,15 +8,15 @@ import (
 )
 
 func TestBundleControlFlagsHas(t *testing.T) {
-	var cf BundleControlFlags = BndlCFBundleIsAFragment |
-		BndlCFStatusTimeIsRequestedInAllStatusReports
+	var cf BundleControlFlags = IsFragment |
+		RequestStatusTime
 
-	if !cf.Has(BndlCFBundleIsAFragment) {
-		t.Error("cf has no BndlCFBundleIsAFragment-flag even when it was set")
+	if !cf.Has(IsFragment) {
+		t.Error("cf has no IsFragment-flag even when it was set")
 	}
 
-	if cf.Has(BndlCFBundleDeletionStatusReportsAreRequested) {
-		t.Error("cf has BndlCFBundleDeletionStatusReportsAreRequested-flag which was not set")
+	if cf.Has(StatusRequestDeletion) {
+		t.Error("cf has StatusRequestDeletion-flag which was not set")
 	}
 }
 
@@ -25,18 +25,18 @@ func TestBundleControlFlagsImplications(t *testing.T) {
 		cf BundleControlFlags = 0
 
 		reportReqs []BundleControlFlags = []BundleControlFlags{
-			BndlCFBundleReceptionStatusReportsAreRequested,
-			BndlCFBundleForwardingStatusReportsAreRequested,
-			BndlCFBundleDeliveryStatusReportsAreRequested,
-			BndlCFBundleDeletionStatusReportsAreRequested}
+			StatusRequestReception,
+			StatusRequestForward,
+			StatusRequestDelivery,
+			StatusRequestDeletion}
 	)
 
-	cf |= BndlCFPayloadIsAnAdministrativeRecord
+	cf |= AdministrativeRecordPayload
 	if errs := cf.checkValid(); errs != nil {
 		t.Errorf("Initial set resulted in an invalid state: %v", errs)
 	}
 
-	cf |= BndlCFBundleIsAFragment
+	cf |= IsFragment
 	if errs := cf.checkValid(); errs != nil {
 		t.Errorf("Unrelated set resulted in an invalid state: %v", errs)
 	}

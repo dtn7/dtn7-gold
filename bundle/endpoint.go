@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	URISchemeDTN uint = 1
-	URISchemeIPN uint = 2
+	endpointURISchemeDTN uint = 1
+	endpointURISchemeIPN uint = 2
 )
 
 // EndpointID represents an Endpoint ID as defined in section 4.1.5.1. The
@@ -33,7 +33,7 @@ func newEndpointIDDTN(ssp string) (EndpointID, error) {
 	}
 
 	return EndpointID{
-		SchemeName:         URISchemeDTN,
+		SchemeName:         endpointURISchemeDTN,
 		SchemeSpecificPart: sspRaw,
 	}, nil
 }
@@ -67,7 +67,7 @@ func newEndpointIDIPN(ssp string) (ep EndpointID, err error) {
 	}
 
 	ep = EndpointID{
-		SchemeName:         URISchemeIPN,
+		SchemeName:         endpointURISchemeIPN,
 		SchemeSpecificPart: [2]uint64{nodeNo, serviceNo},
 	}
 	return
@@ -143,10 +143,10 @@ func (eid EndpointID) checkValidIpn() error {
 
 func (eid EndpointID) checkValid() error {
 	switch eid.SchemeName {
-	case URISchemeDTN:
+	case endpointURISchemeDTN:
 		return eid.checkValidDtn()
 
-	case URISchemeIPN:
+	case endpointURISchemeIPN:
 		return eid.checkValidIpn()
 
 	default:
@@ -158,9 +158,9 @@ func (eid EndpointID) String() string {
 	var b strings.Builder
 
 	switch eid.SchemeName {
-	case URISchemeDTN:
+	case endpointURISchemeDTN:
 		b.WriteString("dtn")
-	case URISchemeIPN:
+	case endpointURISchemeIPN:
 		b.WriteString("ipn")
 	default:
 		fmt.Fprintf(&b, "unknown_%d", eid.SchemeName)
@@ -169,7 +169,7 @@ func (eid EndpointID) String() string {
 
 	switch t := eid.SchemeSpecificPart.(type) {
 	case uint:
-		if eid.SchemeName == URISchemeDTN && eid.SchemeSpecificPart.(uint) == 0 {
+		if eid.SchemeName == endpointURISchemeDTN && eid.SchemeSpecificPart.(uint) == 0 {
 			b.WriteString("none")
 		} else {
 			fmt.Fprintf(&b, "%d", eid.SchemeSpecificPart.(uint))
@@ -180,7 +180,7 @@ func (eid EndpointID) String() string {
 
 	case [2]uint64:
 		var ssp [2]uint64 = eid.SchemeSpecificPart.([2]uint64)
-		if eid.SchemeName == URISchemeIPN {
+		if eid.SchemeName == endpointURISchemeIPN {
 			fmt.Fprintf(&b, "%d.%d", ssp[0], ssp[1])
 		} else {
 			fmt.Fprintf(&b, "%v", ssp)
@@ -196,7 +196,7 @@ func (eid EndpointID) String() string {
 // DtnNone returns the "dtn:none" endpoint.
 func DtnNone() EndpointID {
 	return EndpointID{
-		SchemeName:         URISchemeDTN,
+		SchemeName:         endpointURISchemeDTN,
 		SchemeSpecificPart: uint(0),
 	}
 }
