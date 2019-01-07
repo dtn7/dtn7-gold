@@ -1,4 +1,4 @@
-package bpa
+package bundle
 
 import (
 	"fmt"
@@ -177,7 +177,8 @@ func (cb CanonicalBlock) checkValidExtensionBlocks() error {
 	switch cb.BlockType {
 	case BlockTypePayload:
 		if cb.BlockNumber != 0 {
-			return newBPAError("CanonicalBlock: Payload Block's block number is not zero")
+			return newBundleError(
+				"CanonicalBlock: Payload Block's block number is not zero")
 		}
 
 		return nil
@@ -197,7 +198,7 @@ func (cb CanonicalBlock) checkValidExtensionBlocks() error {
 		// "Block type codes 192 through 255 are not reserved and are available for
 		// private and/or experimental use.", draft-ietf-dtn-bpbis-12#section-4.2.3
 		if !(192 <= cb.BlockType && cb.BlockType <= 255) {
-			return newBPAError("CanonicalBlock: Unknown block type")
+			return newBundleError("CanonicalBlock: Unknown block type")
 		}
 	}
 

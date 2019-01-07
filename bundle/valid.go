@@ -1,4 +1,4 @@
-package bpa
+package bundle
 
 // valid is an interface with the checkValid function. This function should
 // return an errors for incorrect data. It should be implemented for the

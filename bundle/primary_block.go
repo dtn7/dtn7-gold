@@ -1,4 +1,4 @@
-package bpa
+package bundle
 
 import (
 	"fmt"
@@ -185,7 +185,7 @@ func (pb *PrimaryBlock) CodecDecodeSelf(dec *codec.Decoder) {
 func (pb PrimaryBlock) checkValid() (errs error) {
 	if pb.Version != dtnVersion {
 		errs = multierror.Append(errs,
-			newBPAError(fmt.Sprintf("PrimaryBlock: Wrong Version, %d instead of %d",
+			newBundleError(fmt.Sprintf("PrimaryBlock: Wrong Version, %d instead of %d",
 				pb.Version, dtnVersion)))
 	}
 
@@ -219,8 +219,8 @@ func (pb PrimaryBlock) checkValid() (errs error) {
 			!pb.BundleControlFlags.Has(BndlCFBundleDeletionStatusReportsAreRequested))
 	if !bpcfImpl {
 		errs = multierror.Append(errs,
-			newBPAError("PrimaryBlock: Source Node is dtn:none, but Bundle could be "+
-				"fragmented or status report flags are not zero"))
+			newBundleError("PrimaryBlock: Source Node is dtn:none, but Bundle could "+
+				"be fragmented or status report flags are not zero"))
 	}
 
 	return

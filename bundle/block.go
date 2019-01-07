@@ -1,4 +1,4 @@
-package bpa
+package bundle
 
 // block is an interface for the blocks present in a bundle. The PrimaryBlock
 // and each kind of CanonicalBlock have the CRC-fields in common.

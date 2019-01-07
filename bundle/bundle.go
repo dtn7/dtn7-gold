@@ -1,4 +1,4 @@
-package bpa
+package bundle
 
 import (
 	"bytes"
@@ -44,7 +44,7 @@ func (b Bundle) ExtensionBlock(blockType CanonicalBlockType) (cb CanonicalBlock,
 		}
 	}
 
-	err = newBPAError(fmt.Sprintf(
+	err = newBundleError(fmt.Sprintf(
 		"No CanonicalBlock with block type %d was found in Bundle", blockType))
 	return
 }
@@ -98,7 +98,7 @@ func (b Bundle) checkValid() (errs error) {
 		for _, cb := range b.CanonicalBlocks {
 			if cb.BlockControlFlags.Has(BlckCFStatusReportMustBeTransmittedIfBlockCannotBeProcessed) {
 				errs = multierror.Append(errs,
-					newBPAError("Bundle: Bundle Processing Control Flags indicate that "+
+					newBundleError("Bundle: Bundle Processing Control Flags indicate that "+
 						"this bundle's payload is an administrative record or the source "+
 						"node is omitted, but the \"Transmit status report if block canot "+
 						"be processed\" Block Processing Control Flag was set in a "+
@@ -115,7 +115,7 @@ func (b Bundle) checkValid() (errs error) {
 	for _, cb := range b.CanonicalBlocks {
 		if _, ok := cbBlockNumbers[cb.BlockNumber]; ok {
 			errs = multierror.Append(errs,
-				newBPAError(fmt.Sprintf(
+				newBundleError(fmt.Sprintf(
 					"Bundle: Block number %d occured multiple times", cb.BlockNumber)))
 		}
 		cbBlockNumbers[cb.BlockNumber] = true
@@ -124,7 +124,7 @@ func (b Bundle) checkValid() (errs error) {
 		case BlockTypePreviousNode, BlockTypeBundleAge, BlockTypeHopCount:
 			if _, ok := cbBlockTypes[cb.BlockType]; ok {
 				errs = multierror.Append(errs,
-					newBPAError(fmt.Sprintf(
+					newBundleError(fmt.Sprintf(
 						"Bundle: Block type %d occured multiple times", cb.BlockType)))
 			}
 			cbBlockTypes[cb.BlockType] = true
@@ -133,7 +133,7 @@ func (b Bundle) checkValid() (errs error) {
 
 	if b.PrimaryBlock.CreationTimestamp[0] == 0 {
 		if _, ok := cbBlockTypes[BlockTypeBundleAge]; !ok {
-			errs = multierror.Append(errs, newBPAError(
+			errs = multierror.Append(errs, newBundleError(
 				"Bundle: Creation Timestamp is zero, but no Bundle Age block is present"))
 		}
 	}
@@ -184,7 +184,7 @@ func NewBundleFromCbor(data []byte) (b Bundle, err error) {
 	// which returns an error.
 	defer func() {
 		if r := recover(); r != nil {
-			err = newBPAError(fmt.Sprintf("Bundle: Decoding CBOR failed, %v", r))
+			err = newBundleError(fmt.Sprintf("Bundle: Decoding CBOR failed, %v", r))
 		}
 	}()
 
@@ -206,7 +206,7 @@ func NewBundleFromCbor(data []byte) (b Bundle, err error) {
 	}
 
 	if !b.CheckCRC() {
-		err = multierror.Append(err, newBPAError("CRC failed"))
+		err = multierror.Append(err, newBundleError("CRC failed"))
 	}
 
 	return

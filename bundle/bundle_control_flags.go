@@ -1,4 +1,4 @@
-package bpa
+package bundle
 
 import "github.com/hashicorp/go-multierror"
 
@@ -28,12 +28,13 @@ func (bcf BundleControlFlags) Has(flag BundleControlFlags) bool {
 func (bcf BundleControlFlags) checkValid() (errs error) {
 	if bcf.Has(bndlCFReservedFields) {
 		errs = multierror.Append(
-			errs, newBPAError("BundleControlFlags: Given flag contains reserved bits"))
+			errs, newBundleError(
+				"BundleControlFlags: Given flag contains reserved bits"))
 	}
 
 	if bcf.Has(BndlCFBundleIsAFragment) && bcf.Has(BndlCFBundleMustNotBeFragmented) {
 		errs = multierror.Append(errs,
-			newBPAError("BundleControlFlags: both 'bundle is a fragment' and "+
+			newBundleError("BundleControlFlags: both 'bundle is a fragment' and "+
 				"'bundle must not be fragmented' flags are set"))
 	}
 
@@ -44,7 +45,7 @@ func (bcf BundleControlFlags) checkValid() (errs error) {
 			!bcf.Has(BndlCFBundleDeliveryStatusReportsAreRequested) &&
 			!bcf.Has(BndlCFBundleDeletionStatusReportsAreRequested))
 	if !adminRecCheck {
-		errs = multierror.Append(errs, newBPAError(
+		errs = multierror.Append(errs, newBundleError(
 			"BundleControlFlags: \"payload is administrative record => "+
 				"no status report request flags\" failed"))
 	}

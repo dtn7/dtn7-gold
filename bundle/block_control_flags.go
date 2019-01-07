@@ -1,4 +1,4 @@
-package bpa
+package bundle
 
 // BlockControlFlags is an uint8 which represents the Block Processing Control
 // Flags as specified in 4.1.4.
@@ -24,7 +24,7 @@ func (bcf BlockControlFlags) Has(flag BlockControlFlags) bool {
 
 func (bcf BlockControlFlags) checkValid() error {
 	if bcf.Has(blckCFReservedFields) {
-		return newBPAError("BlockControlFlags: Given flag contains reserved bits")
+		return newBundleError("BlockControlFlags: Given flag contains reserved bits")
 	}
 
 	return nil
