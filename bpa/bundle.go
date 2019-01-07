@@ -34,6 +34,27 @@ func (b *Bundle) forEachBlock(f func(block)) {
 	}
 }
 
+// ExtensionBlock returns this Bundle's Canonical Block/Extension Block
+// matching the requested block type code. If no such block was found,
+// an error will be returned.
+func (b Bundle) ExtensionBlock(blockType CanonicalBlockType) (cb CanonicalBlock, err error) {
+	for _, cb = range b.CanonicalBlocks {
+		if cb.BlockType == blockType {
+			return
+		}
+	}
+
+	err = newBPAError(fmt.Sprintf(
+		"No CanonicalBlock with block type %d was found in Bundle", blockType))
+	return
+}
+
+// PayloadBlock returns this Bundle's Payload Block or an error, if it does
+// not exists.
+func (b Bundle) PayloadBlock() (CanonicalBlock, error) {
+	return b.ExtensionBlock(BlockTypePayload)
+}
+
 // SetCRCType sets the given CRCType for each block.
 func (b *Bundle) SetCRCType(crcType CRCType) {
 	b.forEachBlock(func(blck block) {
@@ -89,7 +110,7 @@ func (b Bundle) checkValid() (errs error) {
 	// Check uniqueness of block numbers
 	var cbBlockNumbers = make(map[uint]bool)
 	// Check max 1 occurrence of extension blocks
-	var cbBlockTypes = make(map[uint]bool)
+	var cbBlockTypes = make(map[CanonicalBlockType]bool)
 
 	for _, cb := range b.CanonicalBlocks {
 		if _, ok := cbBlockNumbers[cb.BlockNumber]; ok {
@@ -100,7 +121,7 @@ func (b Bundle) checkValid() (errs error) {
 		cbBlockNumbers[cb.BlockNumber] = true
 
 		switch cb.BlockType {
-		case blockTypePreviousNode, blockTypeBundleAge, blockTypeHopCount:
+		case BlockTypePreviousNode, BlockTypeBundleAge, BlockTypeHopCount:
 			if _, ok := cbBlockTypes[cb.BlockType]; ok {
 				errs = multierror.Append(errs,
 					newBPAError(fmt.Sprintf(
@@ -111,7 +132,7 @@ func (b Bundle) checkValid() (errs error) {
 	}
 
 	if b.PrimaryBlock.CreationTimestamp[0] == 0 {
-		if _, ok := cbBlockTypes[blockTypeBundleAge]; !ok {
+		if _, ok := cbBlockTypes[BlockTypeBundleAge]; !ok {
 			errs = multierror.Append(errs, newBPAError(
 				"Bundle: Creation Timestamp is zero, but no Bundle Age block is present"))
 		}
@@ -157,7 +178,7 @@ func decodeBundleBlock(data interface{}, target interface{}) {
 }
 
 // NewBundleFromCbor tries to decodes the given data from CBOR into a Bundle.
-// It also checks the Bundle's validity and each bundle's CRC value.
+// It also checks the Bundle's validity and each block's CRC value.
 func NewBundleFromCbor(data []byte) (b Bundle, err error) {
 	// The decoding might panic and would be recovered in the following function,
 	// which returns an error.

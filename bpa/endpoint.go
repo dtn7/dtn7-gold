@@ -87,6 +87,17 @@ func NewEndpointID(name, ssp string) (EndpointID, error) {
 	}
 }
 
+// MustNewEndpointID returns a new EndpointID as NewEndpointID, but panics
+// in case of an error.
+func MustNewEndpointID(name, ssp string) EndpointID {
+	ep, err := NewEndpointID(name, ssp)
+	if err != nil {
+		panic(err)
+	}
+
+	return ep
+}
+
 // setEndpointIDFromCborArray sets the fields of the EndpointID addressed by
 // the EndpointID-pointer based on the given array. This function is used for
 // the CBOR decoding of the PrimaryBlock and some Extension Blocks.

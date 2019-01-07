@@ -160,7 +160,7 @@ func TestBundleUpcn(t *testing.T) {
 
 	for _, cb := range bndl.CanonicalBlocks {
 		switch cb.BlockType {
-		case blockTypePayload:
+		case BlockTypePayload:
 			chkPayload = true
 
 			payloadExpected := []byte("Hello world!")
@@ -169,7 +169,7 @@ func TestBundleUpcn(t *testing.T) {
 					payload, payloadExpected)
 			}
 
-		case blockTypePreviousNode:
+		case BlockTypePreviousNode:
 			chkPreviousNode = true
 
 			prevExpected, _ := NewEndpointID("dtn", "GS4")
@@ -178,7 +178,7 @@ func TestBundleUpcn(t *testing.T) {
 					prev, prevExpected)
 			}
 
-		case blockTypeHopCount:
+		case BlockTypeHopCount:
 			chkHopCount = true
 
 			hopExpected := NewHopCount(30, 0)
@@ -187,7 +187,7 @@ func TestBundleUpcn(t *testing.T) {
 					hop, hopExpected)
 			}
 
-		case blockTypeBundleAge:
+		case BlockTypeBundleAge:
 			chkBundleAge = true
 
 			ageExpected := uint(0)
@@ -211,6 +211,38 @@ func TestBundleUpcn(t *testing.T) {
 	if !bytes.Equal(upcnBytes, recreatedBytes) {
 		t.Errorf("Serialization of uPCN's bundle differs: %v instead of %v",
 			upcnBytes, recreatedBytes)
+	}
+}
+
+func TestBundleExtensionBlock(t *testing.T) {
+	var bndl, err = NewBundle(
+		NewPrimaryBlock(
+			BndlCFBundleMustNotBeFragmented,
+			MustNewEndpointID("dtn", "some"), DtnNone(),
+			NewCreationTimestamp(DTNTimeEpoch, 0), 3600),
+		[]CanonicalBlock{
+			NewBundleAgeBlock(1, 0, 420),
+			NewPayloadBlock(0, []byte("hello world")),
+		})
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if cb, err := bndl.ExtensionBlock(BlockTypePreviousNode); err == nil {
+		t.Errorf("Bundle returned a non-existing Extension Block: %v", cb)
+	}
+
+	if _, err := bndl.ExtensionBlock(BlockTypeBundleAge); err != nil {
+		t.Errorf("Bundle did not returned the existing Bundle Age block: %v", err)
+	}
+
+	if _, err := bndl.ExtensionBlock(BlockTypePayload); err != nil {
+		t.Errorf("Bundle did not returned the existing Payload block: %v", err)
+	}
+
+	if _, err := bndl.PayloadBlock(); err != nil {
+		t.Errorf("Bundle did not returned the existing Payload block: %v", err)
 	}
 }
 

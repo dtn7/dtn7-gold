@@ -117,11 +117,11 @@ func TestCanonicalBlockCheckValid(t *testing.T) {
 		valid bool
 	}{
 		// Payload block with a block number != zero
-		{CanonicalBlock{blockTypePayload, 23, 0, CRCNo, nil, nil}, false},
-		{CanonicalBlock{blockTypePayload, 0, 0, CRCNo, nil, nil}, true},
+		{CanonicalBlock{BlockTypePayload, 23, 0, CRCNo, nil, nil}, false},
+		{CanonicalBlock{BlockTypePayload, 0, 0, CRCNo, nil, nil}, true},
 
 		// Reserved bits in block control flags
-		{CanonicalBlock{blockTypePayload, 0, 0x80, CRCNo, nil, nil}, false},
+		{CanonicalBlock{BlockTypePayload, 0, 0x80, CRCNo, nil, nil}, false},
 
 		// Illegal EndpointID in Previous Node Block
 		{NewPreviousNodeBlock(23, 0,
@@ -148,7 +148,7 @@ func TestExtensionBlockTypes(t *testing.T) {
 	tests := []struct {
 		name      string
 		block     CanonicalBlock
-		blockType uint
+		blockType CanonicalBlockType
 		typeLike  reflect.Kind
 	}{
 		{"Payload", NewPayloadBlock(0, []byte("foobar")), 1, reflect.Slice},
@@ -184,7 +184,7 @@ func TestExtensionBlockTypes(t *testing.T) {
 		}
 
 		var decArr []interface{} = decGeneric.([]interface{})
-		var blockType uint = uint(decArr[0].(uint64))
+		var blockType = CanonicalBlockType(decArr[0].(uint64))
 		var blockData = decArr[4]
 
 		if blockType != test.blockType {
