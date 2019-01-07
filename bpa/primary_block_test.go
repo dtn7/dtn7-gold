@@ -16,7 +16,7 @@ func setupPrimaryBlock() PrimaryBlock {
 	destination, _ := NewEndpointID("dtn", "foobar")
 	source, _ := NewEndpointID("dtn", "me")
 
-	creationTimestamp := NewCreationTimestamp(DTNTimeNow(), 0)
+	creationTimestamp := NewCreationTimestamp(DtnTimeEpoch, 0)
 	lifetime := uint(10 * 60 * 1000)
 
 	return NewPrimaryBlock(bcf, destination, source, creationTimestamp, lifetime)
@@ -54,7 +54,7 @@ func TestPrimaryBlockFragmentation(t *testing.T) {
 
 func TestPrimaryBlockCbor(t *testing.T) {
 	ep, _ := NewEndpointID("dtn", "test")
-	ts := NewCreationTimestamp(DTNTimeNow(), 23)
+	ts := NewCreationTimestamp(DtnTimeEpoch, 23)
 
 	tests := []struct {
 		pb1 PrimaryBlock
@@ -144,39 +144,39 @@ func TestPrimaryBlockCheckValid(t *testing.T) {
 		// Wrong version
 		{PrimaryBlock{
 			23, BndlCFBundleMustNotBeFragmented, CRCNo, DtnNone(), DtnNone(), DtnNone(),
-			NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil}, false},
+			NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil}, false},
 		{PrimaryBlock{
 			7, BndlCFBundleMustNotBeFragmented, CRCNo, DtnNone(), DtnNone(), DtnNone(),
-			NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil}, true},
+			NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil}, true},
 
 		// Reserved bits in bundle control flags
 		{PrimaryBlock{
 			7, 0xFF00, CRCNo, DtnNone(), DtnNone(), DtnNone(),
-			NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil}, false},
+			NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil}, false},
 
 		// Illegal EndpointID
 		{PrimaryBlock{
 			7, 0, CRCNo,
 			EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}},
-			DtnNone(), DtnNone(), NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil},
+			DtnNone(), DtnNone(), NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil},
 			false},
 
 		// Everything from above
 		{PrimaryBlock{
 			23, 0xFF00, CRCNo,
 			EndpointID{SchemeName: URISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}},
-			DtnNone(), DtnNone(), NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil},
+			DtnNone(), DtnNone(), NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil},
 			false},
 
 		// Source Node = dtn:none, "Must Not Be Fragmented"-flag is zero
 		{PrimaryBlock{
 			7, 0, CRCNo, DtnNone(), DtnNone(), DtnNone(),
-			NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil}, false},
+			NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil}, false},
 
 		// Source Node = dtn:none, a status flag is one
 		{PrimaryBlock{
 			7, BndlCFBundleMustNotBeFragmented | BndlCFBundleReceptionStatusReportsAreRequested,
-			CRCNo, DtnNone(), DtnNone(), DtnNone(), NewCreationTimestamp(DTNTimeEpoch, 0), 0, 0, 0, nil},
+			CRCNo, DtnNone(), DtnNone(), DtnNone(), NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil},
 			false},
 	}
 

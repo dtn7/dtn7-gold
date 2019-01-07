@@ -5,46 +5,56 @@ import (
 	"time"
 )
 
-// DTNTime is an integer indicating the time like the Unix time, just starting
+// DtnTime is an integer indicating the time like the Unix time, just starting
 // from the year 2000 instead of 1970. This is specified in section 4.1.6.
-type DTNTime uint
+type DtnTime uint
 
 const (
 	seconds1970To2k = 946684800
 
-	// DTNTimeEpoch represents the zero timestamp/epoch.
-	DTNTimeEpoch DTNTime = 0
+	// DtnTimeEpoch represents the zero timestamp/epoch.
+	DtnTimeEpoch DtnTime = 0
 )
 
-// Unix returns the Unix timestamp for this DTNTime.
-func (t *DTNTime) Unix() int64 {
-	return (int64)(*t) + seconds1970To2k
+// Unix returns the Unix timestamp for this DtnTime.
+func (t DtnTime) Unix() int64 {
+	return int64(t) + seconds1970To2k
 }
 
-// Time returns a UTC-based time.Time for this DTNTime.
-func (t *DTNTime) Time() time.Time {
+// Time returns a UTC-based time.Time for this DtnTime.
+func (t DtnTime) Time() time.Time {
 	return time.Unix(t.Unix(), 0).UTC()
 }
 
-// DTNTimeFromTime returns the DTNTime for the time.Time.
-func DTNTimeFromTime(t time.Time) DTNTime {
-	return (DTNTime)(t.Unix() - seconds1970To2k)
+// DtnTimeFromTime returns the DtnTime for the time.Time.
+func DtnTimeFromTime(t time.Time) DtnTime {
+	return (DtnTime)(t.Unix() - seconds1970To2k)
 }
 
-// DTNTimeNow returns the current (UTC) time as DTNTime.
-func DTNTimeNow() DTNTime {
-	return DTNTimeFromTime(time.Now())
+// DtnTimeNow returns the current (UTC) time as DtnTime.
+func DtnTimeNow() DtnTime {
+	return DtnTimeFromTime(time.Now())
 }
 
-// CreationTimestamp is a tuple of a DTNTime and a sequence number to differ
-// bundles with the same DTNTime (seconds) from the same endpoint. It is
+// CreationTimestamp is a tuple of a DtnTime and a sequence number to differ
+// bundles with the same DtnTime (seconds) from the same endpoint. It is
 // specified in section 4.1.7.
 type CreationTimestamp [2]uint
 
 // NewCreationTimestamp creates a new Creation Timestamp from a given DTNTime
 // and a sequence number, resulting in a hopefully unique tuple.
-func NewCreationTimestamp(time DTNTime, sequence uint) CreationTimestamp {
+func NewCreationTimestamp(time DtnTime, sequence uint) CreationTimestamp {
 	return [2]uint{uint(time), sequence}
+}
+
+// DtnTime returns the CreationTimestamp's DTN time part.
+func (ct CreationTimestamp) DtnTime() DtnTime {
+	return DtnTime(ct[0])
+}
+
+// SequenceNumber returns the CreationTimestamp's sequence number.
+func (ct CreationTimestamp) SequenceNumber() uint {
+	return ct[1]
 }
 
 func (ct CreationTimestamp) String() string {

@@ -8,7 +8,7 @@ import (
 
 func TestBundleApplyCRC(t *testing.T) {
 	var epPrim, _ = NewEndpointID("dtn", "foo/bar")
-	var creationTs = NewCreationTimestamp(DTNTimeNow(), 23)
+	var creationTs = NewCreationTimestamp(4200, 23)
 
 	var primary = NewPrimaryBlock(
 		BndlCFBundleDeliveryStatusReportsAreRequested,
@@ -45,7 +45,7 @@ func TestBundleApplyCRC(t *testing.T) {
 func TestBundleCbor(t *testing.T) {
 	var epDest, _ = NewEndpointID("dtn", "desty")
 	var epSource, _ = NewEndpointID("dtn", "gumo")
-	var creationTs = NewCreationTimestamp(DTNTimeNow(), 23)
+	var creationTs = NewCreationTimestamp(4200, 23)
 
 	var primary = NewPrimaryBlock(
 		BndlCFBundleDeliveryStatusReportsAreRequested,
@@ -143,7 +143,7 @@ func TestBundleUpcn(t *testing.T) {
 		t.Errorf("Primary Block's report to is not dtn:none: %v", rprtTo)
 	}
 
-	creaTsExpected := NewCreationTimestamp(DTNTimeEpoch, 0)
+	creaTsExpected := NewCreationTimestamp(DtnTimeEpoch, 0)
 	if creaTs := pb.CreationTimestamp; creaTs != creaTsExpected {
 		t.Errorf("Primary Block's creation timestamp mismatches: %v instead of %v",
 			creaTs, creaTsExpected)
@@ -219,7 +219,7 @@ func TestBundleExtensionBlock(t *testing.T) {
 		NewPrimaryBlock(
 			BndlCFBundleMustNotBeFragmented,
 			MustNewEndpointID("dtn", "some"), DtnNone(),
-			NewCreationTimestamp(DTNTimeEpoch, 0), 3600),
+			NewCreationTimestamp(DtnTimeEpoch, 0), 3600),
 		[]CanonicalBlock{
 			NewBundleAgeBlock(1, 0, 420),
 			NewPayloadBlock(0, []byte("hello world")),
