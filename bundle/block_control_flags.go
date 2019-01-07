@@ -12,7 +12,7 @@ const (
 	// block can't be processed.
 	StatusReportBlock BlockControlFlags = 0x04
 
-	// Block must be removed from the bundle if it can't be processed.
+	// RemoveBlock: Block must be removed from the bundle if it can't be processed.
 	RemoveBlock BlockControlFlags = 0x02
 
 	// ReplicateBlock: This block must be replicated in every fragment.

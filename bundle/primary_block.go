@@ -10,7 +10,7 @@ import (
 
 const dtnVersion uint = 7
 
-// PrimaryBlock is a representation of a Primary Bundle Block as defined in
+// PrimaryBlock is a representation of the primary bundle block as defined in
 // section 4.2.2.
 type PrimaryBlock struct {
 	Version            uint
@@ -26,7 +26,7 @@ type PrimaryBlock struct {
 	CRC                []byte
 }
 
-// NewPrimaryBlock creates a new PrimaryBlock with the given parameters. All
+// NewPrimaryBlock creates a new primary block with the given parameters. All
 // other fields are set to default values.
 func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
 	destination EndpointID, sourceNode EndpointID,
@@ -46,9 +46,9 @@ func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
 	}
 }
 
-// HasFragmentation returns if the Bundle Processing Control Flags indicates a
-// fragmented bundle. In this case the FragmentOffset and TotalDataLength fields
-// of this struct should become relevant.
+// HasFragmentation returns true if the bundle processing control flags
+// indicates a fragmented bundle. In this case the FragmentOffset and
+// TotalDataLength fields should become relevant.
 func (pb PrimaryBlock) HasFragmentation() bool {
 	return pb.BundleControlFlags.Has(IsFragment)
 }
@@ -59,7 +59,7 @@ func (pb PrimaryBlock) HasCRC() bool {
 	return pb.GetCRCType() != CRCNo
 }
 
-// GetCRCType returns the CRCType of this Block.
+// GetCRCType returns the CRCType of this block.
 func (pb PrimaryBlock) GetCRCType() CRCType {
 	return pb.CRCType
 }
@@ -75,13 +75,13 @@ func (pb *PrimaryBlock) SetCRCType(crcType CRCType) {
 }
 
 // CalculateCRC calculates and writes the CRC-value for this block.
-// This method changes the block's CRC value temporary and is not thread safe.
 func (pb *PrimaryBlock) CalculateCRC() {
 	pb.setCRC(calculateCRC(pb))
 }
 
 // CheckCRC returns true if the CRC value matches to its CRCType or the
 // CRCType is CRCNo.
+//
 // This method changes the block's CRC value temporary and is not thread safe.
 func (pb *PrimaryBlock) CheckCRC() bool {
 	return checkCRC(pb)

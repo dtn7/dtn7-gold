@@ -10,7 +10,7 @@ type block interface {
 	// In this case the CRC value should become relevant.
 	HasCRC() bool
 
-	// GetCRCType returns the CRCType of this Block.
+	// GetCRCType returns the CRCType of this block.
 	GetCRCType() CRCType
 
 	// getCRC retruns the CRC value.
@@ -20,11 +20,11 @@ type block interface {
 	SetCRCType(CRCType)
 
 	// CalculateCRC calculates and writes the CRC-value for this block.
-	// This method changes the block's CRC value temporary and is not thread safe.
 	CalculateCRC()
 
 	// CheckCRC returns true if the CRC value matches to its CRCType or the
 	// CRCType is CRCNo.
+	//
 	// This method changes the block's CRC value temporary and is not thread safe.
 	CheckCRC() bool
 

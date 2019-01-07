@@ -8,14 +8,15 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
-// Bundle represents a Bundle as defined in section 4.2.1. Each Bundle contains
-// one Primary Block and multiple Canonical Blocks.
+// Bundle represents a bundle as defined in section 4.2.1. Each Bundle contains
+// one primary block and multiple canonical blocks.
 type Bundle struct {
 	PrimaryBlock    PrimaryBlock
 	CanonicalBlocks []CanonicalBlock
 }
 
-// NewBundle creates a new Bundle.
+// NewBundle creates a new Bundle. The values and flags of the blocks will be
+// checked and an error might be returned.
 func NewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) (b Bundle, err error) {
 	b = Bundle{
 		PrimaryBlock:    primary,
@@ -34,7 +35,7 @@ func (b *Bundle) forEachBlock(f func(block)) {
 	}
 }
 
-// ExtensionBlock returns this Bundle's Canonical Block/Extension Block
+// ExtensionBlock returns this Bundle's canonical block/extension block
 // matching the requested block type code. If no such block was found,
 // an error will be returned.
 func (b Bundle) ExtensionBlock(blockType CanonicalBlockType) (cb CanonicalBlock, err error) {
@@ -49,13 +50,14 @@ func (b Bundle) ExtensionBlock(blockType CanonicalBlockType) (cb CanonicalBlock,
 	return
 }
 
-// PayloadBlock returns this Bundle's Payload Block or an error, if it does
+// PayloadBlock returns this Bundle's payload block or an error, if it does
 // not exists.
 func (b Bundle) PayloadBlock() (CanonicalBlock, error) {
 	return b.ExtensionBlock(PayloadBlock)
 }
 
-// SetCRCType sets the given CRCType for each block.
+// SetCRCType sets the given CRCType for each block. To also calculate and set
+// the CRC value, one should also call the CalculateCRC method.
 func (b *Bundle) SetCRCType(crcType CRCType) {
 	b.forEachBlock(func(blck block) {
 		blck.SetCRCType(crcType)
@@ -70,8 +72,8 @@ func (b *Bundle) CalculateCRC() {
 }
 
 // CheckCRC checks the CRC value of each block and returns false if some
-// values do not match.
-// This method changes the block's CRC value temporary and is not thread safe.
+// value does not match. This method changes the block's CRC value temporary
+// and is not thread safe.
 func (b *Bundle) CheckCRC() bool {
 	var flag = true
 
@@ -142,7 +144,8 @@ func (b Bundle) checkValid() (errs error) {
 }
 
 // ToCbor creates a byte array representing a CBOR indefinite-length array of
-// this Bundle with all its blocks.
+// this Bundle with all its blocks, as defined in section 4 of the Bundle
+// Protocol Version 7.
 func (b Bundle) ToCbor() []byte {
 	// It seems to be tricky using both definite-length and indefinite-length
 	// arays with the codec library. However, an indefinite-length array is just
@@ -178,7 +181,7 @@ func decodeBundleBlock(data interface{}, target interface{}) {
 }
 
 // NewBundleFromCbor tries to decodes the given data from CBOR into a Bundle.
-// It also checks the Bundle's validity and each block's CRC value.
+// It also checks the whole bundle's validity and each block's CRC value.
 func NewBundleFromCbor(data []byte) (b Bundle, err error) {
 	// The decoding might panic and would be recovered in the following function,
 	// which returns an error.

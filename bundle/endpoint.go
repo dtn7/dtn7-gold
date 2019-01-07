@@ -14,8 +14,8 @@ const (
 )
 
 // EndpointID represents an Endpoint ID as defined in section 4.1.5.1. The
-// "scheme name" is represented by an uint (vide supra) and the "scheme-specific
-// part" (SSP) by an interface{}. Based on the characteristic of the name, the
+// "scheme name" is represented by an uint and the "scheme-specific part"
+// (SSP) by an interface{}. Based on the characteristic of the name, the
 // underlying type of the SSP may vary.
 type EndpointID struct {
 	_struct struct{} `codec:",toarray"`
@@ -87,7 +87,7 @@ func NewEndpointID(name, ssp string) (EndpointID, error) {
 	}
 }
 
-// MustNewEndpointID returns a new EndpointID as NewEndpointID, but panics
+// MustNewEndpointID returns a new EndpointID like NewEndpointID, but panics
 // in case of an error.
 func MustNewEndpointID(name, ssp string) EndpointID {
 	ep, err := NewEndpointID(name, ssp)
@@ -193,7 +193,7 @@ func (eid EndpointID) String() string {
 	return b.String()
 }
 
-// DtnNone returns the "dtn:none" endpoint.
+// DtnNone returns the "null endpoint", "dtn:none".
 func DtnNone() EndpointID {
 	return EndpointID{
 		SchemeName:         endpointURISchemeDTN,

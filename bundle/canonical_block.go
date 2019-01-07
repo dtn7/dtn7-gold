@@ -9,7 +9,7 @@ import (
 )
 
 // CanonicalBlockType is an uint which is used as "block type code" for the
-// CanonicalBlock. The BlockType-consts may be used.
+// canonical block. The BlockType-consts may be used.
 type CanonicalBlockType uint
 
 const (
@@ -45,7 +45,8 @@ const (
 	HopCountBlock CanonicalBlockType = 9
 )
 
-// CanonicalBlock represents the Canonical Bundle Block defined in section 4.2.3
+// CanonicalBlock represents the canonical bundle block defined
+// in section 4.2.3.
 type CanonicalBlock struct {
 	BlockType         CanonicalBlockType
 	BlockNumber       uint
@@ -55,7 +56,7 @@ type CanonicalBlock struct {
 	CRC               []byte
 }
 
-// NewCanonicalBlock creates a new CanonicalBlock with the given parameters.
+// NewCanonicalBlock creates a new canonical block with the given parameters.
 func NewCanonicalBlock(blockType CanonicalBlockType, blockNumber uint,
 	blockControlFlags BlockControlFlags, data interface{}) CanonicalBlock {
 	return CanonicalBlock{
@@ -74,7 +75,7 @@ func (cb CanonicalBlock) HasCRC() bool {
 	return cb.GetCRCType() != CRCNo
 }
 
-// GetCRCType returns the CRCType of this Block.
+// GetCRCType returns the CRCType of this block.
 func (cb CanonicalBlock) GetCRCType() CRCType {
 	return cb.CRCType
 }
@@ -90,13 +91,13 @@ func (cb *CanonicalBlock) SetCRCType(crcType CRCType) {
 }
 
 // CalculateCRC calculates and writes the CRC-value for this block.
-// This method changes the block's CRC value temporary and is not thread safe.
 func (cb *CanonicalBlock) CalculateCRC() {
 	cb.setCRC(calculateCRC(cb))
 }
 
 // CheckCRC returns true if the CRC value matches to its CRCType or the
 // CRCType is CRCNo.
+//
 // This method changes the block's CRC value temporary and is not thread safe.
 func (cb *CanonicalBlock) CheckCRC() bool {
 	return checkCRC(cb)
