@@ -8,7 +8,7 @@ import (
 // ProtocolAgent is the Bundle Protocol Agent (BPA) which handles transmission
 // and reception of bundles.
 type ProtocolAgent struct {
-	ConvergenceLayers []ConvergenceLayer
+	ConvergenceLayers []cla.ConvergenceLayer
 }
 
 // HasEndpoint returns true if the given endpoint ID is assigned to this
