@@ -11,6 +11,9 @@ import "github.com/geistesk/dtn7/bundle"
 type ConvergenceLayer interface {
 	// TODO: connection to BPA with an observer pattern or the like
 
+	// GetEndpointID returns the endpoint ID assigned to this CLA.
+	GetEndpointID() bundle.EndpointID
+
 	// Construct setups this convergence layer adapter's Goroutine.
 	Construct()
 
