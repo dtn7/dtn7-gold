@@ -24,5 +24,5 @@ type ConvergenceLayer interface {
 	Destruct()
 
 	// SendBundle transmits the given bundle to a node.
-	SendBundle(recipient bundle.EndpointID, bndl bundle.Bundle)
+	SendBundle(bndl *bundle.Bundle)
 }

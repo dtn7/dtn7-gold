@@ -38,21 +38,21 @@ func (b *Bundle) forEachBlock(f func(block)) {
 // ExtensionBlock returns this Bundle's canonical block/extension block
 // matching the requested block type code. If no such block was found,
 // an error will be returned.
-func (b Bundle) ExtensionBlock(blockType CanonicalBlockType) (cb CanonicalBlock, err error) {
-	for _, cb = range b.CanonicalBlocks {
-		if cb.BlockType == blockType {
-			return
+func (b *Bundle) ExtensionBlock(blockType CanonicalBlockType) (*CanonicalBlock, error) {
+	for i := 0; i < len(b.CanonicalBlocks); i++ {
+		cb := &b.CanonicalBlocks[i]
+		if (*cb).BlockType == blockType {
+			return cb, nil
 		}
 	}
 
-	err = newBundleError(fmt.Sprintf(
+	return nil, newBundleError(fmt.Sprintf(
 		"No CanonicalBlock with block type %d was found in Bundle", blockType))
-	return
 }
 
 // PayloadBlock returns this Bundle's payload block or an error, if it does
 // not exists.
-func (b Bundle) PayloadBlock() (CanonicalBlock, error) {
+func (b *Bundle) PayloadBlock() (*CanonicalBlock, error) {
 	return b.ExtensionBlock(PayloadBlock)
 }
 

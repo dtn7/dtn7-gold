@@ -1,0 +1,61 @@
+package core
+
+import (
+	"time"
+
+	"github.com/geistesk/dtn7/bundle"
+)
+
+// BundlePack is a set of a bundle, it's creation or reception time stamp and
+// a set of constraints used in the process of delivering this bundle.
+type BundlePack struct {
+	Bundle      *bundle.Bundle
+	Timestamp   time.Time
+	Constraints map[Constraint]bool
+}
+
+// NewBundlePack returns a BundlePack for the given bundle.
+func NewBundlePack(b bundle.Bundle) BundlePack {
+	return BundlePack{
+		Bundle:      &b,
+		Timestamp:   time.Now(),
+		Constraints: make(map[Constraint]bool),
+	}
+}
+
+// HasConstraint returns true if the given constraint contains.
+func (bp BundlePack) HasConstraint(c Constraint) bool {
+	_, ok := bp.Constraints[c]
+	return ok
+}
+
+// HasConstraints returns true if any constraint exists.
+func (bp BundlePack) HasConstraints() bool {
+	return len(bp.Constraints) != 0
+}
+
+// AddConstraint adds the given constraint.
+func (bp *BundlePack) AddConstraint(c Constraint) {
+	bp.Constraints[c] = true
+}
+
+// RemoveConstraint removes the given constraint.
+func (bp *BundlePack) RemoveConstraint(c Constraint) {
+	delete(bp.Constraints, c)
+}
+
+// UpdateBundleAge updates the bundle's Bundle Age block based on its reception
+// timestamp, if such a block exists.
+func (bp *BundlePack) UpdateBundleAge() (uint, error) {
+	ageBlock, err := bp.Bundle.ExtensionBlock(bundle.BundleAgeBlock)
+	if err != nil {
+		return 0, newCoreError("No such block")
+	}
+
+	age := ageBlock.Data.(uint)
+	offset := uint(time.Now().Sub(bp.Timestamp) / 1000)
+
+	(*ageBlock).Data = age + offset
+
+	return age + offset, nil
+}
