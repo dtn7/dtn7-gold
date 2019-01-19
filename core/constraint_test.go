@@ -1,4 +1,4 @@
-package bpa
+package core
 
 import (
 	"testing"

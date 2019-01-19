@@ -1,4 +1,4 @@
-package bpa
+package core
 
 import "github.com/geistesk/dtn7/bundle"
 

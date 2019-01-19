@@ -1,4 +1,4 @@
-package bpa
+package core
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ func (pa ProtocolAgent) Transmit(bp BundlePack) error {
 	bp.AddConstraint(DispatchPending)
 
 	src := bp.Bundle.PrimaryBlock.SourceNode
-	if src != bundle.DtnNone() || !pa.HasEndpoint(src) {
-		return newBpaError(fmt.Sprintf(
+	if src != bundle.DtnNone() || !pa.ApplicationAgent.HasEndpoint(src) {
+		return newCoreError(fmt.Sprintf(
 			"Bundle's source endpoint %v is neither dtn:none nor member of this node",
 			src))
 	}
@@ -28,7 +28,7 @@ func (pa ProtocolAgent) Forward(bp BundlePack) error {
 
 	if hcBlock, err := bp.Bundle.ExtensionBlock(bundle.HopCountBlock); err == nil {
 		if exceeded := hcBlock.Data.(bundle.HopCount).IsExceeded(); exceeded {
-			return newBpaError("Bundle's hop limit exceeded")
+			return newCoreError("Bundle's hop limit exceeded")
 		}
 	}
 

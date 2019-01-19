@@ -14,6 +14,9 @@ type ConvergenceLayer interface {
 	// GetEndpointID returns the endpoint ID assigned to this CLA.
 	GetEndpointID() bundle.EndpointID
 
+	// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer.
+	GetPeerEndpointID() bundle.EndpointID
+
 	// Construct setups this convergence layer adapter's Goroutine.
 	Construct()
 
