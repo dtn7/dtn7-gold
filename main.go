@@ -31,7 +31,12 @@ func setupServer() {
 func main() {
 	setupServer()
 
-	var bndl, err = bundle.NewBundle(
+	client, err := stcp.NewSTCPClient("localhost:9000")
+	if err != nil {
+		panic(err)
+	}
+
+	bndl, err := bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented,
 			bundle.MustNewEndpointID("dtn", "dest"),
@@ -44,11 +49,22 @@ func main() {
 		panic(err)
 	}
 
-	stcp.SendPoC("localhost:9000", bndl)
+	if err = client.Send(bndl); err != nil {
+		panic(err)
+	}
 	time.Sleep(300 * time.Millisecond)
-	stcp.SendPoC("localhost:9000", bndl)
-	time.Sleep(150 * time.Millisecond)
-	stcp.SendPoC("localhost:9000", bndl)
+
+	if err = client.Send(bndl); err != nil {
+		panic(err)
+	}
+	time.Sleep(100 * time.Millisecond)
+
+	if err = client.Send(bndl); err != nil {
+		panic(err)
+	}
+	time.Sleep(200 * time.Millisecond)
+
+	client.Close()
 
 	time.Sleep(time.Second)
 }

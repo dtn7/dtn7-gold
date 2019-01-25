@@ -1,11 +1,13 @@
 package stcp
 
 import (
-	"io/ioutil"
+	"io"
+	"log"
 	"net"
 	"time"
 
 	"github.com/geistesk/dtn7/bundle"
+	"github.com/ugorji/go/codec"
 )
 
 // STCPServer is an implementation of a Simple TCP Convergence-Layer server
@@ -35,31 +37,23 @@ func (serv STCPServer) handleSender(conn net.Conn) {
 		conn.Close()
 
 		if r := recover(); r != nil {
-			// TODO: handle error
+			log.Printf("STCPServer.handleSender: %v", r)
 		}
 	}()
 
 	for {
-		data, err := ioutil.ReadAll(conn)
-		if err != nil {
-			panic(err)
-		}
+		var dataUnit = new(DataUnit)
+		var dec = codec.NewDecoder(conn, new(codec.CborHandle))
 
-		if len(data) == 0 {
-			continue
+		if err := dec.Decode(dataUnit); err == nil {
+			if bndl, err := dataUnit.toBundle(); err == nil {
+				serv.reportChan <- bndl
+			} else {
+				log.Panicf("Reception of STCP data unit failed: %v", err)
+			}
+		} else if err != io.EOF {
+			log.Panicf("Reception of STCP data unit failed: %v", err)
 		}
-
-		s, err := newDataUnitFromCbor(data)
-		if err != nil {
-			panic(err)
-		}
-
-		b, err := s.toBundle()
-		if err != nil {
-			panic(err)
-		}
-
-		serv.reportChan <- b
 	}
 }
 
