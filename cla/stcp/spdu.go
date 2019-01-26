@@ -6,7 +6,7 @@ import (
 	"github.com/geistesk/dtn7/bundle"
 )
 
-// Data Unit represents a STCP Data Unit, which will be decoded as a CBOR
+// DataUnit represents a STCP Data Unit, which will be decoded as a CBOR
 // array of the serialized bundle's length and the serialized bundle.
 type DataUnit struct {
 	_struct struct{} `codec:",toarray"`

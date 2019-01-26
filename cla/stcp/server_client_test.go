@@ -49,7 +49,6 @@ func TestSTCPServerClient(t *testing.T) {
 	// Server
 	reportChan := make(chan bundle.Bundle)
 	serv := NewSTCPServer(fmt.Sprintf(":%d", port), reportChan)
-	serv.Construct()
 
 	go func() {
 		var counter int = packages * clients
@@ -63,7 +62,7 @@ func TestSTCPServerClient(t *testing.T) {
 				}
 
 			case <-time.After(time.Millisecond):
-				serv.Destruct()
+				serv.Close()
 				if counter != 0 {
 					t.Errorf("Counter is not zero: %d", counter)
 				}

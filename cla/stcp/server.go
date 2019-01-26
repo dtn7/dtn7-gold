@@ -21,44 +21,15 @@ type STCPServer struct {
 }
 
 // NewSTCPServer creates a new STCPServer for the given listen address and
-// reporting channel. To activate the STCPServer, the Construct method needs
-// to be called.
+// reporting channel.
 func NewSTCPServer(listenAddress string, reportChan chan bundle.Bundle) *STCPServer {
-	return &STCPServer{
+	var serv = &STCPServer{
 		listenAddress: listenAddress,
 		reportChan:    reportChan,
 		stopSyn:       make(chan struct{}),
 		stopAck:       make(chan struct{}),
 	}
-}
 
-func (serv STCPServer) handleSender(conn net.Conn) {
-	defer func() {
-		conn.Close()
-
-		if r := recover(); r != nil {
-			log.Printf("STCPServer.handleSender: %v", r)
-		}
-	}()
-
-	for {
-		var dataUnit = new(DataUnit)
-		var dec = codec.NewDecoder(conn, new(codec.CborHandle))
-
-		if err := dec.Decode(dataUnit); err == nil {
-			if bndl, err := dataUnit.toBundle(); err == nil {
-				serv.reportChan <- bndl
-			} else {
-				log.Panicf("Reception of STCP data unit failed: %v", err)
-			}
-		} else if err != io.EOF {
-			log.Panicf("Reception of STCP data unit failed: %v", err)
-		}
-	}
-}
-
-// Construct starts this STCPServer.
-func (serv *STCPServer) Construct() {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", serv.listenAddress)
 	if err != nil {
 		panic(err)
@@ -86,10 +57,37 @@ func (serv *STCPServer) Construct() {
 			}
 		}
 	}(ln)
+
+	return serv
 }
 
-// Destruct shuts this STCPServer down.
-func (serv *STCPServer) Destruct() {
+func (serv STCPServer) handleSender(conn net.Conn) {
+	defer func() {
+		conn.Close()
+
+		if r := recover(); r != nil {
+			log.Printf("STCPServer.handleSender: %v", r)
+		}
+	}()
+
+	for {
+		var du = new(DataUnit)
+		var dec = codec.NewDecoder(conn, new(codec.CborHandle))
+
+		if err := dec.Decode(du); err == nil {
+			if bndl, err := du.toBundle(); err == nil {
+				serv.reportChan <- bndl
+			} else {
+				log.Panicf("Reception of STCP data unit failed: %v", err)
+			}
+		} else if err != io.EOF {
+			log.Panicf("Reception of STCP data unit failed: %v", err)
+		}
+	}
+}
+
+// Close shuts this STCPServer down.
+func (serv *STCPServer) Close() {
 	close(serv.stopSyn)
 	<-serv.stopAck
 }
