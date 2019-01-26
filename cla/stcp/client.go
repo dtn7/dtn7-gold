@@ -37,8 +37,8 @@ func (client *STCPClient) Send(bndl bundle.Bundle) error {
 }
 
 // Close closes the STCPClient's connection.
-func (client *STCPClient) Close() error {
-	return client.conn.Close()
+func (client *STCPClient) Close() {
+	client.conn.Close()
 }
 
 // GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
