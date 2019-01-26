@@ -16,16 +16,18 @@ import (
 type STCPServer struct {
 	listenAddress string
 	reportChan    chan bundle.Bundle
-	stopSyn       chan struct{}
-	stopAck       chan struct{}
+	endpointID    bundle.EndpointID
+
+	stopSyn chan struct{}
+	stopAck chan struct{}
 }
 
-// NewSTCPServer creates a new STCPServer for the given listen address and
-// reporting channel.
-func NewSTCPServer(listenAddress string, reportChan chan bundle.Bundle) *STCPServer {
+// NewSTCPServer creates a new STCPServer for the given listen address.
+func NewSTCPServer(listenAddress string, endpointID bundle.EndpointID) *STCPServer {
 	var serv = &STCPServer{
 		listenAddress: listenAddress,
-		reportChan:    reportChan,
+		reportChan:    make(chan bundle.Bundle),
+		endpointID:    endpointID,
 		stopSyn:       make(chan struct{}),
 		stopAck:       make(chan struct{}),
 	}
@@ -86,8 +88,18 @@ func (serv STCPServer) handleSender(conn net.Conn) {
 	}
 }
 
+// Channel returns a channel of received bundles.
+func (serv STCPServer) Channel() <-chan bundle.Bundle {
+	return serv.reportChan
+}
+
 // Close shuts this STCPServer down.
 func (serv *STCPServer) Close() {
 	close(serv.stopSyn)
 	<-serv.stopAck
+}
+
+// GetEndpointID returns the endpoint ID assigned to this CLA.
+func (serv STCPServer) GetEndpointID() bundle.EndpointID {
+	return serv.endpointID
 }

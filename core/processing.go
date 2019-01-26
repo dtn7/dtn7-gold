@@ -31,7 +31,7 @@ func (pa ProtocolAgent) Forward(bp BundlePack) {
 		}
 	}
 
-	var nodes []cla.ConvergenceLayer
+	var nodes []cla.ConvergenceSender
 
 	nodes = pa.clasForDestination(bp.Bundle.PrimaryBlock.Destination)
 	if nodes == nil {
@@ -54,8 +54,8 @@ func (pa ProtocolAgent) Forward(bp BundlePack) {
 	wg.Add(len(nodes))
 
 	for _, node := range nodes {
-		go func(node cla.ConvergenceLayer) {
-			node.SendBundle(bp.Bundle)
+		go func(node cla.ConvergenceSender) {
+			node.Send(*bp.Bundle)
 			wg.Done()
 		}(node)
 	}

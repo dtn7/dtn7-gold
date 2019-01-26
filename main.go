@@ -9,19 +9,18 @@ import (
 )
 
 func setupServer() {
-	reportChan := make(chan bundle.Bundle)
-
-	serv := stcp.NewSTCPServer(":9000", reportChan)
-	serv.Construct()
+	serv := stcp.NewSTCPServer(":9000", bundle.MustNewEndpointID("dtn", "gumo"))
 
 	go func() {
+		chnl := serv.Channel()
+
 		for {
 			select {
-			case bndl := <-reportChan:
+			case bndl := <-chnl:
 				fmt.Println(bndl)
 
 			case <-time.After(750 * time.Millisecond):
-				serv.Destruct()
+				serv.Close()
 				return
 			}
 		}
@@ -31,7 +30,7 @@ func setupServer() {
 func main() {
 	setupServer()
 
-	client, err := stcp.NewSTCPClient("localhost:9000")
+	client, err := stcp.NewAnonymousSTCPClient("localhost:9000")
 	if err != nil {
 		panic(err)
 	}

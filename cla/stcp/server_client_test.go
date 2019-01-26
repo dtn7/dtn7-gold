@@ -47,15 +47,16 @@ func TestSTCPServerClient(t *testing.T) {
 	}
 
 	// Server
-	reportChan := make(chan bundle.Bundle)
-	serv := NewSTCPServer(fmt.Sprintf(":%d", port), reportChan)
+	serv := NewSTCPServer(
+		fmt.Sprintf(":%d", port), bundle.MustNewEndpointID("dtn", "stcpcla"))
 
 	go func() {
 		var counter int = packages * clients
+		var chnl = serv.Channel()
 
 		for {
 			select {
-			case b := <-reportChan:
+			case b := <-chnl:
 				counter--
 				if !reflect.DeepEqual(b, bndl) {
 					t.Errorf("Received bundle differs: %v, %v", b, bndl)
@@ -74,7 +75,7 @@ func TestSTCPServerClient(t *testing.T) {
 	// Client
 	for c := 0; c < clients; c++ {
 		go func() {
-			client, err := NewSTCPClient(fmt.Sprintf("localhost:%d", port))
+			client, err := NewAnonymousSTCPClient(fmt.Sprintf("localhost:%d", port))
 			if err != nil {
 				t.Error(err)
 			}

@@ -18,8 +18,8 @@ func (aa ApplicationAgent) HasEndpoint(endpoint bundle.EndpointID) bool {
 		}
 	}
 
-	for _, cla := range aa.ProtocolAgent.ConvergenceLayers {
-		if cla.GetEndpointID() == endpoint {
+	for _, rec := range aa.ProtocolAgent.ConvergenceReceivers {
+		if rec.GetEndpointID() == endpoint {
 			return true
 		}
 	}
