@@ -5,67 +5,54 @@ import (
 	"time"
 
 	"github.com/geistesk/dtn7/bundle"
-	"github.com/geistesk/dtn7/cla"
 	"github.com/geistesk/dtn7/cla/stcp"
 	"github.com/geistesk/dtn7/core"
 )
 
-func setupServer(port int) cla.ConvergenceReceiver {
-	var serv = stcp.NewSTCPServer(
-		fmt.Sprintf(":%d", port),
-		bundle.MustNewEndpointID("ipn", fmt.Sprintf("23.%d", port)))
-
-	go func() {
-		chnl := serv.Channel()
-
-		for {
-			select {
-			case bndl := <-chnl:
-				fmt.Printf("Server %d: %v\n", port, bndl)
-			}
-		}
-	}()
-
-	return serv
-}
-
-func setupCore() (aa *core.ApplicationAgent, pa *core.ProtocolAgent) {
-	aa = new(core.ApplicationAgent)
-	pa = new(core.ProtocolAgent)
+func createClient(port int, endpoint bundle.EndpointID) *core.ProtocolAgent {
+	var aa *core.ApplicationAgent = new(core.ApplicationAgent)
+	var pa *core.ProtocolAgent = new(core.ProtocolAgent)
 
 	aa.ProtocolAgent = pa
-
 	pa.ApplicationAgent = aa
 
-	for i := 9001; i <= 9003; i++ {
-		convClient, err := stcp.NewSTCPClient(
-			fmt.Sprintf("localhost:%d", i),
-			bundle.MustNewEndpointID("ipn", fmt.Sprintf("23.%d", i)))
-		if err != nil {
-			panic(err)
-		}
+	pa.RegisterConvergenceReceiver(
+		stcp.NewSTCPServer(fmt.Sprintf(":%d", port), endpoint))
 
-		pa.ConvergenceSenders = append(pa.ConvergenceSenders, convClient)
+	return pa
+}
+
+func connectClientTo(pa *core.ProtocolAgent, dest string, destEndpoint bundle.EndpointID) {
+	client, err := stcp.NewSTCPClient(dest, destEndpoint)
+	if err != nil {
+		panic(err)
 	}
 
-	return
+	pa.RegisterConvergenceSender(client)
 }
 
 func main() {
-	servs := []cla.ConvergenceReceiver{
-		setupServer(9001),
-		setupServer(9002),
-		setupServer(9003),
-	}
+	// Create three DTN clients
+	ep1 := bundle.MustNewEndpointID("ipn", "23.9001")
+	ep2 := bundle.MustNewEndpointID("ipn", "23.9002")
+	ep3 := bundle.MustNewEndpointID("ipn", "23.9003")
 
-	_, pa := setupCore()
+	cl1 := createClient(9001, ep1)
+	cl2 := createClient(9002, ep2)
+	cl3 := createClient(9003, ep3)
+
+	// Connect 1 <-> 2 and 2 <-> 3
+	connectClientTo(cl1, "localhost:9002", ep2)
+	connectClientTo(cl2, "localhost:9001", ep1)
+	connectClientTo(cl2, "localhost:9003", ep3)
+	connectClientTo(cl3, "localhost:9002", ep2)
 
 	bndl, err := bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented,
-			bundle.MustNewEndpointID("dtn", "dest"),
-			bundle.DtnNone(),
-			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000),
+			ep3,
+			ep1,
+			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 1000),
 		[]bundle.CanonicalBlock{
 			bundle.NewPayloadBlock(0, []byte("hello world!")),
 		})
@@ -73,18 +60,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("Should be delivered to all endpoints, unknown endpoint")
-	pa.Transmit(core.NewBundlePack(bndl))
+	cl1.Transmit(core.NewBundlePack(bndl))
 
 	time.Sleep(time.Second)
-
-	bndl.PrimaryBlock.Destination = bundle.MustNewEndpointID("ipn", "23.9001")
-	fmt.Println("\n\nShould be delivered to 9001, specified endpoint")
-	pa.Transmit(core.NewBundlePack(bndl))
-
-	time.Sleep(time.Second)
-
-	for _, serv := range servs {
-		serv.Close()
-	}
 }
