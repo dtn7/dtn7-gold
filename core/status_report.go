@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/ugorji/go/codec"
 )
@@ -33,28 +35,40 @@ func (bsi *BundleStatusItem) CodecDecodeSelf(dec *codec.Decoder) {
 	case 1:
 		bsi.Asserted = arr[0].(bool)
 
+		bsi.StatusRequested = false
+
 	case 2:
 		bsi.Asserted = arr[0].(bool)
 		bsi.Time = bundle.DtnTime(arr[1].(uint64))
+
+		bsi.StatusRequested = true
 
 	default:
 		panic("arr has wrong length, neither 1 nor 2")
 	}
 }
 
-// NewNegativeBundleStatusItem returns a new BundleStatusItem, indicating a
-// negative assertion and/or no status time requested.
-func NewNegativeBundleStatusItem() BundleStatusItem {
+func (bsi BundleStatusItem) String() string {
+	if !bsi.Asserted {
+		return fmt.Sprintf("BundleStatusItem(%t)", bsi.Asserted)
+	} else {
+		return fmt.Sprintf("BundleStatusItem(%t, %v)", bsi.Asserted, bsi.Time)
+	}
+}
+
+// NewBundleStatusItem returns a new BundleStatusItem, indicating an optional
+// assertion - givenas asserted -, but no status time request.
+func NewBundleStatusItem(asserted bool) BundleStatusItem {
 	return BundleStatusItem{
-		Asserted:        false,
+		Asserted:        asserted,
 		Time:            bundle.DtnTimeEpoch,
 		StatusRequested: false,
 	}
 }
 
-// NewReportingBundleStatusItem returns a new BundleStatusItem, indicating both
-// a positive assertion and a requested status time report.
-func NewReportingBundleStatusItem(time bundle.DtnTime) BundleStatusItem {
+// NewTimeReportingBundleStatusItem returns a new BundleStatusItem, indicating
+// both a positive assertion and a requested status time report.
+func NewTimeReportingBundleStatusItem(time bundle.DtnTime) BundleStatusItem {
 	return BundleStatusItem{
 		Asserted:        true,
 		Time:            time,
@@ -62,6 +76,153 @@ func NewReportingBundleStatusItem(time bundle.DtnTime) BundleStatusItem {
 	}
 }
 
+// StatusReportReason is the bundle status report reason code, which is used as
+// the second element of the bundle status report array.
+type StatusReportReason uint
+
+const (
+	// NoInformation is the "No additional information" bundle status report
+	// reason code.
+	NoInformation StatusReportReason = 0
+
+	// LifetimeExpired is the "Lifetime expired" bundle status report reason code.
+	LifetimeExpired StatusReportReason = 1
+
+	// ForwardUnidirectionalLink is the "Forwarded over unidirectional link"
+	// bundle status report reason code.
+	ForwardUnidirectionalLink StatusReportReason = 2
+
+	// TransmissionCanceled is the "Transmission canceled" bundle status report
+	// reason code.
+	TransmissionCanceled StatusReportReason = 3
+
+	// DepletedStorage is the "Depleted storage" bundle status report reason code.
+	DepletedStorage StatusReportReason = 4
+
+	// DestEndpointUnintelligible is the "Destination endpoint ID unintelligible"
+	// bundle status report reason code.
+	DestEndpointUnintelligible StatusReportReason = 5
+
+	// NoRouteToDestination is the "No known route to destination from here"
+	// bundle status report reason code.
+	NoRouteToDestination StatusReportReason = 6
+
+	// NoNextNodeContact is the "No timely contact with next node on route" bundle
+	// status report reason code.
+	NoNextNodeContact StatusReportReason = 7
+
+	// BlockUnintelligible is the "Block unintelligible" bundle status report
+	// reason code.
+	BlockUnintelligible StatusReportReason = 8
+
+	// HopLimitExceeded is the "Hop limit exceeded" bundle status report reason
+	// code.
+	HopLimitExceeded StatusReportReason = 9
+)
+
+func (srr StatusReportReason) String() string {
+	switch srr {
+	case NoInformation:
+		return "No additional information"
+
+	case LifetimeExpired:
+		return "Lifetime expired"
+
+	case ForwardUnidirectionalLink:
+		return "Forward over unidirectional link"
+
+	case TransmissionCanceled:
+		return "Transmission canceled"
+
+	case DepletedStorage:
+		return "Depleted storage"
+
+	case DestEndpointUnintelligible:
+		return "Destination endpoint ID unintelligible"
+
+	case NoRouteToDestination:
+		return "No known route to destination from here"
+
+	case NoNextNodeContact:
+		return "No timely contact with next node on route"
+
+	case BlockUnintelligible:
+		return "Block unintelligible"
+
+	case HopLimitExceeded:
+		return "Hop limit exceeded"
+
+	default:
+		return "unknown"
+	}
+}
+
+// StatusInformationPos describes the different bundle status information
+// entries. Each bundle status report must contain at least the following
+// bundle status items.
+type StatusInformationPos = int
+
+const (
+	// maxStatusInformationPos is the amount of different StatusInformationPos.
+	maxStatusInformationPos int = 4
+
+	// ReceivedBundle is the first bundle status information entry, indicating
+	// the reporting node received this bundle.
+	ReceivedBundle StatusInformationPos = 0
+
+	// ForwardedBundle is the second bundle status information entry, indicating
+	// the reporting node forwarded this bundle.
+	ForwardedBundle StatusInformationPos = 1
+
+	// DeliveredBundle is the third bundle status information entry, indicating
+	// the reporting node delivered this bundle.
+	DeliveredBundle StatusInformationPos = 2
+
+	// DeletedBundle is the fourth bundle status information entry, indicating
+	// the reporting node deleted this bundle.
+	DeletedBundle StatusInformationPos = 3
+)
+
+// StatusReport is the bundle status report, used in an administrative record.
 type StatusReport struct {
-	// TODO
+	_struct struct{} `codec:",toarray"`
+
+	StatusInformation []BundleStatusItem
+	ReportReason      StatusReportReason
+	SourceNode        bundle.EndpointID
+	Timestamp         bundle.CreationTimestamp
+}
+
+// NewStatusReport creates a bundle status report for the given bundle and
+// StatusInformationPos, which creates the right bundle status item. The
+// bundle status report reason code will be used and the bundle status item
+// gets the given timestamp.
+func NewStatusReport(bndl bundle.Bundle, statusItem StatusInformationPos,
+	reason StatusReportReason, time bundle.DtnTime) StatusReport {
+	var sr = StatusReport{
+		StatusInformation: make([]BundleStatusItem, maxStatusInformationPos),
+		ReportReason:      reason,
+		SourceNode:        bndl.PrimaryBlock.SourceNode,
+		Timestamp:         bndl.PrimaryBlock.CreationTimestamp,
+	}
+
+	for i := 0; i < maxStatusInformationPos; i++ {
+		switch {
+		case i == statusItem && bndl.PrimaryBlock.BundleControlFlags.Has(bundle.RequestStatusTime):
+			sr.StatusInformation[i] = NewTimeReportingBundleStatusItem(time)
+
+		case i == statusItem:
+			sr.StatusInformation[i] = NewBundleStatusItem(true)
+
+		default:
+			sr.StatusInformation[i] = NewBundleStatusItem(false)
+		}
+	}
+
+	return sr
+}
+
+func (sr StatusReport) String() string {
+	return fmt.Sprintf("StatusRequested(%v, %v, %v, %v)",
+		sr.StatusInformation, sr.ReportReason, sr.SourceNode, sr.Timestamp)
 }

@@ -13,9 +13,10 @@ func TestBundleStatusItemCbor(t *testing.T) {
 		bsi BundleStatusItem
 		len int
 	}{
-		{NewReportingBundleStatusItem(bundle.DtnTimeNow()), 2},
-		{NewReportingBundleStatusItem(bundle.DtnTimeEpoch), 2},
-		{NewNegativeBundleStatusItem(), 1},
+		{NewTimeReportingBundleStatusItem(bundle.DtnTimeNow()), 2},
+		{NewTimeReportingBundleStatusItem(bundle.DtnTimeEpoch), 2},
+		{NewBundleStatusItem(true), 1},
+		{NewBundleStatusItem(false), 1},
 	}
 
 	for _, test := range tests {
@@ -55,5 +56,82 @@ func TestBundleStatusItemCbor(t *testing.T) {
 			t.Errorf("Decoded array has wrong length: %d instead of %d",
 				len(arr), test.len)
 		}
+	}
+}
+
+func TestStatusReportCreation(t *testing.T) {
+	var bndl, err = bundle.NewBundle(
+		bundle.NewPrimaryBlock(
+			bundle.MustNotFragmented|bundle.RequestStatusTime,
+			bundle.MustNewEndpointID("dtn", "dest"),
+			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
+		[]bundle.CanonicalBlock{
+			bundle.NewPayloadBlock(0, []byte("hello world!")),
+		})
+	if err != nil {
+		panic(err)
+	}
+
+	var initTime = bundle.DtnTimeNow()
+	var statusRep = NewStatusReport(
+		bndl, ReceivedBundle, NoInformation, initTime)
+
+	// Check bundle status report's fields
+	bsi := statusRep.StatusInformation[ReceivedBundle]
+	if bsi.Asserted != true || bsi.Time != initTime {
+		t.Errorf("ReceivedBundle's status item is incorrect: %v", bsi)
+	}
+
+	for i := 0; i < maxStatusInformationPos; i++ {
+		if i == ReceivedBundle {
+			continue
+		}
+		if statusRep.StatusInformation[i].Asserted == true {
+			t.Errorf("Invalid status item is asserted: %d", i)
+		}
+	}
+
+	// CBOR
+	var b []byte = make([]byte, 0, 64)
+	var enc = codec.NewEncoderBytes(&b, new(codec.CborHandle))
+
+	if err := enc.Encode(statusRep); err != nil {
+		t.Errorf("Encoding failed: %v", err)
+	}
+
+	var dec = codec.NewDecoderBytes(b, new(codec.CborHandle))
+	var statusRepDec StatusReport
+
+	if err := dec.Decode(&statusRepDec); err != nil {
+		t.Errorf("Decoding failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(statusRep, statusRepDec) {
+		t.Errorf("CBOR result differs: %v, %v", statusRep, statusRepDec)
+	}
+}
+
+func TestStatusReportCreationNoTime(t *testing.T) {
+	var bndl, err = bundle.NewBundle(
+		bundle.NewPrimaryBlock(
+			bundle.MustNotFragmented,
+			bundle.MustNewEndpointID("dtn", "dest"),
+			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
+		[]bundle.CanonicalBlock{
+			bundle.NewPayloadBlock(0, []byte("hello world!")),
+		})
+	if err != nil {
+		panic(err)
+	}
+
+	var statusRep = NewStatusReport(
+		bndl, ReceivedBundle, NoInformation, bundle.DtnTimeNow())
+
+	// Test no time is present.
+	bsi := statusRep.StatusInformation[ReceivedBundle]
+	if bsi.Asserted != true || bsi.Time != bundle.DtnTimeEpoch {
+		t.Errorf("ReceivedBundle's status item is incorrect: %v", bsi)
 	}
 }
