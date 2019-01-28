@@ -95,6 +95,23 @@ func (pa ProtocolAgent) Forward(bp BundlePack) {
 		}
 	}
 
+	if bp.Bundle.PrimaryBlock.IsLifetimeExceeded() {
+		log.Printf("Bundle's primary block's lifetime is exceeded: %v",
+			bp.Bundle.PrimaryBlock)
+
+		pa.BundleDeletion(bp)
+		return
+	}
+
+	if age, err := bp.UpdateBundleAge(); err == nil {
+		if age >= bp.Bundle.PrimaryBlock.Lifetime {
+			log.Printf("Bundle's lifetime is expired")
+
+			pa.BundleDeletion(bp)
+			return
+		}
+	}
+
 	var nodes []cla.ConvergenceSender
 
 	nodes = pa.clasForDestination(bp.Bundle.PrimaryBlock.Destination)
@@ -106,15 +123,6 @@ func (pa ProtocolAgent) Forward(bp BundlePack) {
 		// No nodes could be selected, the bundle will be contraindicated.
 		pa.BundleContraindicated(bp)
 		return
-	}
-
-	if age, err := bp.UpdateBundleAge(); err == nil {
-		if age >= bp.Bundle.PrimaryBlock.Lifetime {
-			log.Printf("Bundle's lifetime is expired")
-
-			pa.BundleDeletion(bp)
-			return
-		}
 	}
 
 	var wg sync.WaitGroup

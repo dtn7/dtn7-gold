@@ -3,6 +3,7 @@ package bundle
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/ugorji/go/codec"
@@ -225,6 +226,20 @@ func (pb PrimaryBlock) checkValid() (errs error) {
 	}
 
 	return
+}
+
+// IsLifetimeExceeded returns true if this PrimaryBlock's lifetime is exceeded.
+// This method only compares the tuple of the CreationTimestamp and Lifetime
+// against the current time.
+//
+// The hop count block and the bundle age block are not inspected by this method
+// and should also be checked.
+func (pb PrimaryBlock) IsLifetimeExceeded() bool {
+	currentTs := time.Now()
+	supremumTs := pb.CreationTimestamp.DtnTime().Time().Add(
+		time.Duration(pb.Lifetime) * time.Microsecond)
+
+	return currentTs.After(supremumTs)
 }
 
 func (pb PrimaryBlock) String() string {

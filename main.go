@@ -52,7 +52,7 @@ func main() {
 			bundle.MustNotFragmented,
 			ep3,
 			ep1,
-			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 1000),
+			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 1000000),
 		[]bundle.CanonicalBlock{
 			bundle.NewHopCountBlock(1, 0, bundle.NewHopCount(3)),
 			bundle.NewPayloadBlock(0, []byte("hello world!")),
