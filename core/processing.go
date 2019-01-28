@@ -81,10 +81,17 @@ func (pa ProtocolAgent) Forward(bp BundlePack) {
 	bp.RemoveConstraint(DispatchPending)
 
 	if hcBlock, err := bp.Bundle.ExtensionBlock(bundle.HopCountBlock); err == nil {
-		if exceeded := hcBlock.Data.(bundle.HopCount).IsExceeded(); exceeded {
-			log.Printf("Bundle contains an exceeded hop count block: %v", hcBlock)
+		hc := hcBlock.Data.(bundle.HopCount)
+		hc.Increment()
+		hcBlock.Data = hc
+
+		log.Printf("Bundle contains an hop count block: %v", hc)
+
+		if exceeded := hc.IsExceeded(); exceeded {
+			log.Printf("Bundle contains an exceeded hop count block: %v", hc)
 
 			pa.BundleDeletion(bp)
+			return
 		}
 	}
 

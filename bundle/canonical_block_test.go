@@ -42,7 +42,7 @@ func TestCanonicalBlockCbor(t *testing.T) {
 		// Bundle Age block
 		{NewBundleAgeBlock(23, 0, 100000), 5},
 		// Hop Count block
-		{NewHopCountBlock(23, 0, NewHopCount(100, 0)), 5},
+		{NewHopCountBlock(23, 0, NewHopCount(100)), 5},
 	}
 
 	for _, test := range tests {
@@ -154,7 +154,7 @@ func TestExtensionBlockTypes(t *testing.T) {
 		{"Payload", NewPayloadBlock(0, []byte("foobar")), 1, reflect.Slice},
 		{"Previous Node", NewPreviousNodeBlock(23, 0, DtnNone()), 7, reflect.Slice},
 		{"Bundle Age", NewBundleAgeBlock(23, 0, 42000), 8, reflect.Uint64},
-		{"Hop Count", NewHopCountBlock(23, 0, NewHopCount(42, 23)), 9, reflect.Slice},
+		{"Hop Count", NewHopCountBlock(23, 0, NewHopCount(42)), 9, reflect.Slice},
 	}
 
 	for _, test := range tests {
@@ -195,6 +195,33 @@ func TestExtensionBlockTypes(t *testing.T) {
 		if ty := reflect.TypeOf(blockData); ty.Kind() != test.typeLike {
 			t.Errorf("%s Block's CBOR data has wrong type: %v instead of %v",
 				test.name, ty.Kind(), test.typeLike)
+		}
+	}
+}
+
+func TestHopCount(t *testing.T) {
+	tests := []struct {
+		hc                     HopCount
+		exceeded               bool
+		exceededAfterIncrement bool
+	}{
+		{NewHopCount(10), false, false},
+		{NewHopCount(1), false, false},
+		{NewHopCount(0), false, true},
+		{HopCount{Limit: 23, Count: 20}, false, false},
+		{HopCount{Limit: 23, Count: 22}, false, false},
+		{HopCount{Limit: 23, Count: 23}, false, true},
+	}
+
+	for _, test := range tests {
+		if state := test.hc.IsExceeded(); state != test.exceeded {
+			t.Errorf("Hop count block's %v state is wrong: expected %t, real %t",
+				test.hc, test.exceeded, state)
+		}
+
+		if state := test.hc.Increment(); state != test.exceededAfterIncrement {
+			t.Errorf("Hop count block's state %v is wrong after increment: expected %t, real %t",
+				test.hc, test.exceededAfterIncrement, state)
 		}
 	}
 }

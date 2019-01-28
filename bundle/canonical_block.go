@@ -245,14 +245,23 @@ type HopCount struct {
 
 // IsExceeded returns true if the hop limit exceeded.
 func (hc HopCount) IsExceeded() bool {
-	return hc.Count >= hc.Limit
+	return hc.Count > hc.Limit
 }
 
-// NewHopCount returns a new Hop Count block as defined in section 4.3.3.
-func NewHopCount(limit, count uint) HopCount {
+// Increment increments the hop counter and returns false, if the hop limit is
+// exceeded after incrementing the counter.
+func (hc *HopCount) Increment() bool {
+	hc.Count++
+
+	return hc.IsExceeded()
+}
+
+// NewHopCount returns a new Hop Count block as defined in section 4.3.3. The
+// hop count will be set to zero, as specified for new blocks.
+func NewHopCount(limit uint) HopCount {
 	return HopCount{
 		Limit: limit,
-		Count: count,
+		Count: 0,
 	}
 }
 

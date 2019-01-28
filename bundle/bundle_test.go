@@ -181,7 +181,7 @@ func TestBundleUpcn(t *testing.T) {
 		case HopCountBlock:
 			chkHopCount = true
 
-			hopExpected := NewHopCount(30, 0)
+			hopExpected := NewHopCount(30)
 			if hop := cb.Data.(HopCount); hop != hopExpected {
 				t.Errorf("Hop Count Block mismatches: %v instead of %v",
 					hop, hopExpected)
@@ -287,8 +287,8 @@ func TestBundleCheckValid(t *testing.T) {
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
 			[]CanonicalBlock{
-				NewHopCountBlock(23, 0, NewHopCount(23, 2)),
-				NewHopCountBlock(24, 0, NewHopCount(23, 2)),
+				NewHopCountBlock(23, 0, NewHopCount(23)),
+				NewHopCountBlock(24, 0, NewHopCount(23)),
 				NewPayloadBlock(0, nil)}),
 			false},
 

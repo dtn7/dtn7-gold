@@ -27,7 +27,8 @@ type PrimaryBlock struct {
 }
 
 // NewPrimaryBlock creates a new primary block with the given parameters. All
-// other fields are set to default values.
+// other fields are set to default values. The lifetime is taken in
+// microseconds.
 func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
 	destination EndpointID, sourceNode EndpointID,
 	creationTimestamp CreationTimestamp, lifetime uint) PrimaryBlock {
