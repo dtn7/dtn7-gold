@@ -89,11 +89,17 @@ func (c Core) HasEndpoint(endpoint bundle.EndpointID) bool {
 // BundlePack and transmits it.
 func (c Core) SendStatusReport(bp BundlePack,
 	status StatusInformationPos, reason StatusReportReason) {
+	// Don't repond to other administrative records
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
 		return
 	}
 
-	log.Printf("Creation of a %v %v status report regarding %v",
+	// Don't respond to ourself
+	if c.HasEndpoint(bp.Bundle.PrimaryBlock.ReportTo) {
+		return
+	}
+
+	log.Printf("Creation of a %v \"%v\" status report regarding %v",
 		status, reason, bp.Bundle)
 
 	var inBndl = *bp.Bundle
@@ -112,7 +118,6 @@ func (c Core) SendStatusReport(bp BundlePack,
 	var outBndl, err = bundle.NewBundle(
 		primary,
 		[]bundle.CanonicalBlock{
-			bundle.NewHopCountBlock(1, 0, bundle.NewHopCount(2)),
 			ar.ToCanonicalBlock(),
 		})
 

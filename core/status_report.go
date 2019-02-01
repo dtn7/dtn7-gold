@@ -160,7 +160,7 @@ func (srr StatusReportReason) String() string {
 // StatusInformationPos describes the different bundle status information
 // entries. Each bundle status report must contain at least the following
 // bundle status items.
-type StatusInformationPos = int
+type StatusInformationPos int
 
 const (
 	// maxStatusInformationPos is the amount of different StatusInformationPos.
@@ -182,6 +182,25 @@ const (
 	// the reporting node deleted this bundle.
 	DeletedBundle StatusInformationPos = 3
 )
+
+func (sip StatusInformationPos) String() string {
+	switch sip {
+	case ReceivedBundle:
+		return "received bundle"
+
+	case ForwardedBundle:
+		return "forwarded bundle"
+
+	case DeliveredBundle:
+		return "delivered bundle"
+
+	case DeletedBundle:
+		return "deleted bundle"
+
+	default:
+		return "unknown"
+	}
+}
 
 // StatusReport is the bundle status report, used in an administrative record.
 type StatusReport struct {
@@ -207,11 +226,13 @@ func NewStatusReport(bndl bundle.Bundle, statusItem StatusInformationPos,
 	}
 
 	for i := 0; i < maxStatusInformationPos; i++ {
+		sip := StatusInformationPos(i)
+
 		switch {
-		case i == statusItem && bndl.PrimaryBlock.BundleControlFlags.Has(bundle.RequestStatusTime):
+		case sip == statusItem && bndl.PrimaryBlock.BundleControlFlags.Has(bundle.RequestStatusTime):
 			sr.StatusInformation[i] = NewTimeReportingBundleStatusItem(time)
 
-		case i == statusItem:
+		case sip == statusItem:
 			sr.StatusInformation[i] = NewBundleStatusItem(true)
 
 		default:
@@ -223,6 +244,6 @@ func NewStatusReport(bndl bundle.Bundle, statusItem StatusInformationPos,
 }
 
 func (sr StatusReport) String() string {
-	return fmt.Sprintf("StatusRequested(%v, %v, %v, %v)",
+	return fmt.Sprintf("StatusReport(%v, %v, %v, %v)",
 		sr.StatusInformation, sr.ReportReason, sr.SourceNode, sr.Timestamp)
 }

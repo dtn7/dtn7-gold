@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/geistesk/dtn7/bundle"
+	"github.com/ugorji/go/codec"
 )
 
 // AdministrativeRecordTypeCode specifies the type of an AdministrativeRecord.
@@ -28,21 +29,32 @@ func (artc AdministrativeRecordTypeCode) String() string {
 
 // AdministrativeRecord is a application data unit used for administrative
 // records. There is only one kind of Administrative Record definded today: the
-// Bundle Status Report.
+// Bundle Status Report. Therefore the Content field is currently of the
+// StatusReport type. Otherwise the CBOR en- and decoding would have been done
+// by hand. So this becomes work for future me.
 type AdministrativeRecord struct {
 	_struct struct{} `codec:",toarray"`
 
 	TypeCode AdministrativeRecordTypeCode
-	Content  interface{}
+	Content  StatusReport
 }
 
 // NewAdministrativeRecord generates a new Administrative Record based on the
 // given parameters.
-func NewAdministrativeRecord(typeCode AdministrativeRecordTypeCode, content interface{}) AdministrativeRecord {
+func NewAdministrativeRecord(typeCode AdministrativeRecordTypeCode, content StatusReport) AdministrativeRecord {
 	return AdministrativeRecord{
 		TypeCode: typeCode,
 		Content:  content,
 	}
+}
+
+// NewAdministrativeRecordFromCbor creates a new AdministrativeRecord from
+// a given byte array.
+func NewAdministrativeRecordFromCbor(data []byte) (ar AdministrativeRecord, err error) {
+	var dec = codec.NewDecoderBytes(data, new(codec.CborHandle))
+	err = dec.Decode(&ar)
+
+	return
 }
 
 // ToCanonicalBlock creates a canonical block, containing this administrative

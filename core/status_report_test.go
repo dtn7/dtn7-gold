@@ -84,7 +84,7 @@ func TestStatusReportCreation(t *testing.T) {
 	}
 
 	for i := 0; i < maxStatusInformationPos; i++ {
-		if i == ReceivedBundle {
+		if StatusInformationPos(i) == ReceivedBundle {
 			continue
 		}
 		if statusRep.StatusInformation[i].Asserted == true {

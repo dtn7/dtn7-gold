@@ -182,6 +182,29 @@ func (c Core) LocalDelivery(bp BundlePack) {
 
 	log.Printf("Received delivered bundle: %v", bp.Bundle)
 
+	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
+		canonicalAr, err := bp.Bundle.PayloadBlock()
+		if err != nil {
+			log.Printf("Bundle %v with an administrative record payload misses payload: %v",
+				bp.Bundle, err)
+
+			c.BundleDeletion(bp, NoInformation)
+			return
+		}
+
+		ar, err := NewAdministrativeRecordFromCbor(canonicalAr.Data.([]byte))
+		if err != nil {
+			log.Printf("Bundle %v with an administrative record could not be parsed: %v",
+				bp.Bundle, err)
+
+			c.BundleDeletion(bp, NoInformation)
+			return
+		}
+
+		log.Printf("Received bundle %v contains an administrative record: %v",
+			bp.Bundle, ar)
+	}
+
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDelivery) {
 		c.SendStatusReport(bp, DeliveredBundle, NoInformation)
 	}
