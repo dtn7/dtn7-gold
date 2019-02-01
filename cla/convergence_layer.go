@@ -1,3 +1,14 @@
+// Package cla defines two interfaces for convergence layers.
+//
+// The ConvergenceReceiver specifies a type which receives bundles and forwards
+// those to an exposed channel.
+//
+// The ConvergenceSender specifies a type which sends bundles to a remote
+// endpoint.
+//
+// An implemented convergence layer can be a ConvergenceReceiver,
+// ConvergenceSender or even both. This depends on the convergence layer's
+// specification and is an implemention matter.
 package cla
 
 import "github.com/geistesk/dtn7/bundle"
