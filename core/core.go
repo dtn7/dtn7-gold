@@ -1,6 +1,8 @@
 package core
 
 import (
+	"log"
+
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/geistesk/dtn7/cla"
 )
@@ -83,11 +85,16 @@ func (c Core) HasEndpoint(endpoint bundle.EndpointID) bool {
 	return false
 }
 
+// SendStatusReport creates a new status report in response to the given
+// BundlePack and transmits it.
 func (c Core) SendStatusReport(bp BundlePack,
 	status StatusInformationPos, reason StatusReportReason) {
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
 		return
 	}
+
+	log.Printf("Creation of a %v %v status report regarding %v",
+		status, reason, bp.Bundle)
 
 	var inBndl = *bp.Bundle
 	var sr = NewStatusReport(inBndl, status, reason, bundle.DtnTimeNow())
@@ -108,8 +115,12 @@ func (c Core) SendStatusReport(bp BundlePack,
 			bundle.NewHopCountBlock(1, 0, bundle.NewHopCount(2)),
 			ar.ToCanonicalBlock(),
 		})
+
 	if err != nil {
-		panic(err)
+		log.Printf("Creating status report bundle regarding %v failed: %v",
+			bp.Bundle, err)
+
+		return
 	}
 
 	c.Transmit(NewBundlePack(outBndl))

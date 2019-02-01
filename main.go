@@ -48,7 +48,7 @@ func main() {
 
 	bndl, err := bundle.NewBundle(
 		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented,
+			bundle.MustNotFragmented|bundle.StatusRequestForward,
 			ep2,
 			ep1,
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 1000000),

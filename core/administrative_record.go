@@ -45,6 +45,9 @@ func NewAdministrativeRecord(typeCode AdministrativeRecordTypeCode, content inte
 	}
 }
 
+// ToCanonicalBlock creates a canonical block, containing this administrative
+// record. The surrounding bundle _must_ have a set AdministrativeRecordPayload
+// bundle processing control flag.
 func (ar AdministrativeRecord) ToCanonicalBlock() bundle.CanonicalBlock {
 	return bundle.NewCanonicalBlock(bundle.PayloadBlock, 0, 0, ar)
 }
