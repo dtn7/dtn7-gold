@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
@@ -148,7 +149,17 @@ func (cb *CanonicalBlock) codecDecodeData(data interface{}) {
 
 	// blockTypePayload is also a byte array and can be treated like the default.
 	default:
-		cb.Data = data.([]byte)
+		// In some cases codec was "too smart" and decoded the data by itself.
+		// This `if` checks if the decoded data is a byte array ([]uint8) or if
+		// we have to re-encode the data.
+		if t := reflect.TypeOf(data).Elem(); t.Kind() == reflect.Uint8 {
+			cb.Data = data.([]byte)
+		} else {
+			var b []byte
+			codec.NewEncoderBytes(&b, new(codec.CborHandle)).MustEncode(data)
+
+			cb.Data = b
+		}
 	}
 }
 

@@ -71,6 +71,13 @@ func (b *Bundle) CalculateCRC() {
 	})
 }
 
+func (b Bundle) String() string {
+	return fmt.Sprintf("%v-%d-%d",
+		b.PrimaryBlock.SourceNode,
+		b.PrimaryBlock.CreationTimestamp[0],
+		b.PrimaryBlock.CreationTimestamp[1])
+}
+
 // CheckCRC checks the CRC value of each block and returns false if some
 // value does not match. This method changes the block's CRC value temporary
 // and is not thread safe.

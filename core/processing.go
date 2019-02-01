@@ -10,30 +10,31 @@ import (
 
 // Transmit starts the transmission of an outbounding bundle pack. Therefore
 // the source's endpoint ID must be dtn:none or a member of this node.
-func (pa ProtocolAgent) Transmit(bp BundlePack) {
+func (c Core) Transmit(bp BundlePack) {
 	log.Printf("Transmission of bundle requested: %v", bp.Bundle)
 
 	bp.AddConstraint(DispatchPending)
 
 	src := bp.Bundle.PrimaryBlock.SourceNode
-	if src != bundle.DtnNone() && !pa.ApplicationAgent.HasEndpoint(src) {
+	if src != bundle.DtnNone() && !c.HasEndpoint(src) {
 		log.Printf(
 			"Bundle's source %v is neither dtn:none nor an endpoint of this node", src)
 
-		pa.BundleDeletion(bp)
+		c.BundleDeletion(bp)
 		return
 	}
 
-	pa.Forward(bp)
+	c.Forward(bp)
 }
 
 // Receive handles received/incomming bundles.
-func (pa ProtocolAgent) Receive(bp BundlePack) {
+func (c Core) Receive(bp BundlePack) {
 	log.Printf("Received new bundle: %v", bp.Bundle)
 
 	bp.AddConstraint(DispatchPending)
 
-	// TODO: create reception report
+	// TODO: unfuck this fuckery
+	c.SendStatusReport(bp, ReceivedBundle, NoInformation)
 
 	for i := len(bp.Bundle.CanonicalBlocks) - 1; i >= 0; i-- {
 		var cb = bp.Bundle.CanonicalBlocks[i]
@@ -49,7 +50,7 @@ func (pa ProtocolAgent) Receive(bp BundlePack) {
 		if cb.BlockControlFlags.Has(bundle.DeleteBundle) {
 			log.Printf("Bundle's unknown canonical block requested deletion")
 
-			pa.BundleDeletion(bp)
+			c.BundleDeletion(bp)
 			return
 		}
 
@@ -61,20 +62,22 @@ func (pa ProtocolAgent) Receive(bp BundlePack) {
 		}
 	}
 
-	pa.Dispatching(bp)
+	c.Dispatching(bp)
 }
 
 // Dispatching handles the dispatching of received bundles.
-func (pa ProtocolAgent) Dispatching(bp BundlePack) {
-	if pa.ApplicationAgent.HasEndpoint(bp.Bundle.PrimaryBlock.Destination) {
-		pa.LocalDelivery(bp)
+func (c Core) Dispatching(bp BundlePack) {
+	log.Printf("Dispatching bundle %v", bp.Bundle)
+
+	if c.HasEndpoint(bp.Bundle.PrimaryBlock.Destination) {
+		c.LocalDelivery(bp)
 	} else {
-		pa.Forward(bp)
+		c.Forward(bp)
 	}
 }
 
 // Forward forwards a bundle pack's bundle to another node.
-func (pa ProtocolAgent) Forward(bp BundlePack) {
+func (c Core) Forward(bp BundlePack) {
 	log.Printf("Bundle will be forwarded: %v", bp.Bundle)
 
 	bp.AddConstraint(ForwardPending)
@@ -85,12 +88,12 @@ func (pa ProtocolAgent) Forward(bp BundlePack) {
 		hc.Increment()
 		hcBlock.Data = hc
 
-		log.Printf("Bundle contains an hop count block: %v", hc)
+		log.Printf("Bundle %v contains an hop count block: %v", bp.Bundle, hc)
 
 		if exceeded := hc.IsExceeded(); exceeded {
 			log.Printf("Bundle contains an exceeded hop count block: %v", hc)
 
-			pa.BundleDeletion(bp)
+			c.BundleDeletion(bp)
 			return
 		}
 	}
@@ -99,7 +102,7 @@ func (pa ProtocolAgent) Forward(bp BundlePack) {
 		log.Printf("Bundle's primary block's lifetime is exceeded: %v",
 			bp.Bundle.PrimaryBlock)
 
-		pa.BundleDeletion(bp)
+		c.BundleDeletion(bp)
 		return
 	}
 
@@ -107,21 +110,21 @@ func (pa ProtocolAgent) Forward(bp BundlePack) {
 		if age >= bp.Bundle.PrimaryBlock.Lifetime {
 			log.Printf("Bundle's lifetime is expired")
 
-			pa.BundleDeletion(bp)
+			c.BundleDeletion(bp)
 			return
 		}
 	}
 
 	var nodes []cla.ConvergenceSender
 
-	nodes = pa.clasForDestination(bp.Bundle.PrimaryBlock.Destination)
+	nodes = c.clasForDestination(bp.Bundle.PrimaryBlock.Destination)
 	if nodes == nil {
-		nodes = pa.clasForBudlePack(bp)
+		nodes = c.clasForBudlePack(bp)
 	}
 
 	if nodes == nil {
 		// No nodes could be selected, the bundle will be contraindicated.
-		pa.BundleContraindicated(bp)
+		c.BundleContraindicated(bp)
 		return
 	}
 
@@ -130,13 +133,13 @@ func (pa ProtocolAgent) Forward(bp BundlePack) {
 
 	for _, node := range nodes {
 		go func(node cla.ConvergenceSender) {
-			log.Printf("Trying to deliver bundle to %v", node)
+			log.Printf("Trying to deliver bundle %v to %v", bp.Bundle, node)
 
 			if err := node.Send(*bp.Bundle); err != nil {
 				log.Printf("ConvergenceSender %v failed to transmit bundle %v: %v",
-					node, bp, err)
+					node, bp.Bundle, err)
 			} else {
-				log.Printf("ConvergenceSender %v transmited bundle %v", node, bp)
+				log.Printf("ConvergenceSender %v transmited bundle %v", node, bp.Bundle)
 			}
 
 			wg.Done()
@@ -151,7 +154,7 @@ func (pa ProtocolAgent) Forward(bp BundlePack) {
 	bp.RemoveConstraint(ForwardPending)
 }
 
-func (pa ProtocolAgent) LocalDelivery(bp BundlePack) {
+func (c Core) LocalDelivery(bp BundlePack) {
 	// TODO: check fragmentation
 	// TODO: handle delivery
 
@@ -160,12 +163,12 @@ func (pa ProtocolAgent) LocalDelivery(bp BundlePack) {
 	// TODO: report
 }
 
-func (pa ProtocolAgent) BundleContraindicated(bp BundlePack) {
+func (c Core) BundleContraindicated(bp BundlePack) {
 	// TODO: implement :^)
-	log.Printf("Bundle %v was marked for contraindication", bp)
+	log.Printf("Bundle %v was marked for contraindication", bp.Bundle)
 }
 
-func (pa ProtocolAgent) BundleDeletion(bp BundlePack) {
+func (c Core) BundleDeletion(bp BundlePack) {
 	// TODO: implement (^^,)
-	log.Printf("Bundle %v was marked for deletion", bp)
+	log.Printf("Bundle %v was marked for deletion", bp.Bundle)
 }

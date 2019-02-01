@@ -1,6 +1,7 @@
 package stcp
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -80,10 +81,10 @@ func (serv STCPServer) handleSender(conn net.Conn) {
 			if bndl, err := du.toBundle(); err == nil {
 				serv.reportChan <- bndl
 			} else {
-				log.Panicf("Reception of STCP data unit failed: %v", err)
+				log.Printf("Reception of STCP data unit failed: %v", err)
 			}
 		} else if err != io.EOF {
-			log.Panicf("Reception of STCP data unit failed: %v", err)
+			log.Printf("Reception of STCP data unit failed: %v", err)
 		}
 	}
 }
@@ -102,4 +103,8 @@ func (serv *STCPServer) Close() {
 // GetEndpointID returns the endpoint ID assigned to this CLA.
 func (serv STCPServer) GetEndpointID() bundle.EndpointID {
 	return serv.endpointID
+}
+
+func (serv STCPServer) String() string {
+	return fmt.Sprintf("stcp://%s", serv.listenAddress)
 }

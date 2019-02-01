@@ -1,6 +1,7 @@
 package stcp
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/geistesk/dtn7/bundle"
@@ -45,4 +46,8 @@ func (client *STCPClient) Close() {
 // if it's known. Otherwise the zero endpoint will be returned.
 func (client STCPClient) GetPeerEndpointID() bundle.EndpointID {
 	return client.peer
+}
+
+func (client STCPClient) String() string {
+	return fmt.Sprintf("stcp://%v", client.conn.RemoteAddr())
 }

@@ -1,6 +1,10 @@
 package core
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/geistesk/dtn7/bundle"
+)
 
 // AdministrativeRecordTypeCode specifies the type of an AdministrativeRecord.
 // However, currently the Bundle Status Report is the only known type.
@@ -39,6 +43,10 @@ func NewAdministrativeRecord(typeCode AdministrativeRecordTypeCode, content inte
 		TypeCode: typeCode,
 		Content:  content,
 	}
+}
+
+func (ar AdministrativeRecord) ToCanonicalBlock() bundle.CanonicalBlock {
+	return bundle.NewCanonicalBlock(bundle.PayloadBlock, 0, 0, ar)
 }
 
 func (ar AdministrativeRecord) String() string {
