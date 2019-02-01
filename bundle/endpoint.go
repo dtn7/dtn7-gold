@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/ugorji/go/codec"
 )
 
 const (
@@ -18,8 +20,6 @@ const (
 // (SSP) by an interface{}. Based on the characteristic of the name, the
 // underlying type of the SSP may vary.
 type EndpointID struct {
-	_struct struct{} `codec:",toarray"`
-
 	SchemeName         uint
 	SchemeSpecificPart interface{}
 }
@@ -119,6 +119,22 @@ func setEndpointIDFromCborArray(ep *EndpointID, arr []interface{}) {
 			(*ep).SchemeSpecificPart.([]interface{})[1].(uint64),
 		}
 	}
+}
+
+func (eid *EndpointID) CodecEncodeSelf(enc *codec.Encoder) {
+	var blockArr = []interface{}{
+		eid.SchemeName,
+		eid.SchemeSpecificPart,
+	}
+
+	enc.MustEncode(blockArr)
+}
+
+func (eid *EndpointID) CodecDecodeSelf(dec *codec.Decoder) {
+	var blockArrPt = new([]interface{})
+	dec.MustDecode(blockArrPt)
+
+	setEndpointIDFromCborArray(eid, *blockArrPt)
 }
 
 func (eid EndpointID) checkValidDtn() error {
