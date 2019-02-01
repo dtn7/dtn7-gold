@@ -106,6 +106,7 @@ func (c Core) SendStatusReport(bp BundlePack,
 	var sr = NewStatusReport(inBndl, status, reason, bundle.DtnTimeNow())
 	var ar = NewAdministrativeRecord(BundleStatusReportTypeCode, sr)
 
+	// TODO change this
 	var aaEndpoint = c.AppEndpoints[0]
 
 	var primary = bundle.NewPrimaryBlock(

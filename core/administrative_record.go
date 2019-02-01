@@ -61,7 +61,10 @@ func NewAdministrativeRecordFromCbor(data []byte) (ar AdministrativeRecord, err 
 // record. The surrounding bundle _must_ have a set AdministrativeRecordPayload
 // bundle processing control flag.
 func (ar AdministrativeRecord) ToCanonicalBlock() bundle.CanonicalBlock {
-	return bundle.NewCanonicalBlock(bundle.PayloadBlock, 0, 0, ar)
+	var data []byte
+	codec.NewEncoderBytes(&data, new(codec.CborHandle)).Encode(ar)
+
+	return bundle.NewCanonicalBlock(bundle.PayloadBlock, 0, 0, data)
 }
 
 func (ar AdministrativeRecord) String() string {

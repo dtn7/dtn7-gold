@@ -135,3 +135,51 @@ func TestStatusReportCreationNoTime(t *testing.T) {
 		t.Errorf("ReceivedBundle's status item is incorrect: %v", bsi)
 	}
 }
+
+func TestStatusReportApplicationRecord(t *testing.T) {
+	bndl, err := bundle.NewBundle(
+		bundle.NewPrimaryBlock(
+			bundle.MustNotFragmented|bundle.RequestStatusTime,
+			bundle.MustNewEndpointID("dtn", "dest"),
+			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
+		[]bundle.CanonicalBlock{
+			bundle.NewPayloadBlock(0, []byte("hello world!")),
+		})
+	if err != nil {
+		t.Errorf("Creating bundle failed: %v", err)
+	}
+
+	initTime := bundle.DtnTimeNow()
+	statusRep := NewStatusReport(
+		bndl, ReceivedBundle, NoInformation, initTime)
+
+	adminRec := NewAdministrativeRecord(BundleStatusReportTypeCode, statusRep)
+
+	primary := bundle.NewPrimaryBlock(
+		bundle.AdministrativeRecordPayload,
+		bndl.PrimaryBlock.ReportTo,
+		bundle.MustNewEndpointID("dtn", "foo"),
+		bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0),
+		60*60*1000000)
+
+	outBndl, err := bundle.NewBundle(
+		primary,
+		[]bundle.CanonicalBlock{
+			adminRec.ToCanonicalBlock(),
+		})
+	if err != nil {
+		t.Errorf("Creating new bundle failed: %v", err)
+	}
+
+	outBndlData := outBndl.ToCbor()
+
+	inBndl, err := bundle.NewBundleFromCbor(outBndlData)
+	if err != nil {
+		t.Errorf("Parsing bundle failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(outBndl, inBndl) {
+		t.Errorf("CBOR result differs: %v, %v", outBndl, inBndl)
+	}
+}
