@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/geistesk/dtn7/bundle"
@@ -44,6 +46,13 @@ func (bp *BundlePack) RemoveConstraint(c Constraint) {
 	delete(bp.Constraints, c)
 }
 
+// PurgeConstraints removes all constraints.
+func (bp *BundlePack) PurgeConstraints() {
+	for c, _ := range bp.Constraints {
+		bp.RemoveConstraint(c)
+	}
+}
+
 // UpdateBundleAge updates the bundle's Bundle Age block based on its reception
 // timestamp, if such a block exists.
 func (bp *BundlePack) UpdateBundleAge() (uint, error) {
@@ -58,4 +67,16 @@ func (bp *BundlePack) UpdateBundleAge() (uint, error) {
 	(*ageBlock).Data = age + offset
 
 	return age + offset, nil
+}
+
+func (bp BundlePack) String() string {
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "BundlePack(%v,", bp.Bundle)
+	for c, _ := range bp.Constraints {
+		fmt.Fprintf(&b, " %v", c)
+	}
+	fmt.Fprintf(&b, ")")
+
+	return b.String()
 }

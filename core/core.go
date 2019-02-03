@@ -28,6 +28,7 @@ type Core struct {
 	ConvergenceSenders   []cla.ConvergenceSender
 	ConvergenceReceivers []cla.ConvergenceReceiver
 	AppEndpoints         []bundle.EndpointID
+	Store                Store
 }
 
 func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {

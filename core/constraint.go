@@ -15,3 +15,19 @@ const (
 	// pending.
 	ReassemblyPending Constraint = iota
 )
+
+func (c Constraint) String() string {
+	switch c {
+	case DispatchPending:
+		return "dispatch pending"
+
+	case ForwardPending:
+		return "forwarding pending"
+
+	case ReassemblyPending:
+		return "reassembly pending"
+
+	default:
+		return "unknown"
+	}
+}

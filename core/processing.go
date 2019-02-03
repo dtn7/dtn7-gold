@@ -14,6 +14,7 @@ func (c Core) Transmit(bp BundlePack) {
 	log.Printf("Transmission of bundle requested: %v", bp.Bundle)
 
 	bp.AddConstraint(DispatchPending)
+	c.Store.Push(bp)
 
 	src := bp.Bundle.PrimaryBlock.SourceNode
 	if src != bundle.DtnNone() && !c.HasEndpoint(src) {
@@ -32,6 +33,7 @@ func (c Core) Receive(bp BundlePack) {
 	log.Printf("Received new bundle: %v", bp.Bundle)
 
 	bp.AddConstraint(DispatchPending)
+	c.Store.Push(bp)
 
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestReception) {
 		c.SendStatusReport(bp, ReceivedBundle, NoInformation)
@@ -91,6 +93,7 @@ func (c Core) Forward(bp BundlePack) {
 
 	bp.AddConstraint(ForwardPending)
 	bp.RemoveConstraint(DispatchPending)
+	c.Store.Push(bp)
 
 	if hcBlock, err := bp.Bundle.ExtensionBlock(bundle.HopCountBlock); err == nil {
 		hc := hcBlock.Data.(bundle.HopCount)
@@ -169,6 +172,7 @@ func (c Core) Forward(bp BundlePack) {
 		}
 
 		bp.RemoveConstraint(ForwardPending)
+		c.Store.Push(bp)
 	} else {
 		log.Printf("Failed to forward %v", bp.Bundle)
 
@@ -219,6 +223,9 @@ func (c Core) BundleDeletion(bp BundlePack, reason StatusReportReason) {
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDeletion) {
 		c.SendStatusReport(bp, DeletedBundle, reason)
 	}
+
+	bp.PurgeConstraints()
+	c.Store.Push(bp)
 
 	// TODO: implement (^^,)
 	log.Printf("Bundle %v was marked for deletion", bp.Bundle)
