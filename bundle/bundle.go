@@ -3,6 +3,7 @@ package bundle
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/ugorji/go/codec"
@@ -71,11 +72,26 @@ func (b *Bundle) CalculateCRC() {
 	})
 }
 
-func (b Bundle) String() string {
-	return fmt.Sprintf("%v-%d-%d",
+// ID returns a kind of uniquene representation of this bundle, containing
+// the souce node and creation timestamp. If this bundle is a fragment, the
+// offset is also present.
+func (b Bundle) ID() string {
+	var bldr strings.Builder
+
+	fmt.Fprintf(&bldr, "%v-%d-%d",
 		b.PrimaryBlock.SourceNode,
 		b.PrimaryBlock.CreationTimestamp[0],
 		b.PrimaryBlock.CreationTimestamp[1])
+
+	if pb := b.PrimaryBlock; pb.BundleControlFlags.Has(IsFragment) {
+		fmt.Fprintf(&bldr, "-%d", pb.FragmentOffset)
+	}
+
+	return bldr.String()
+}
+
+func (b Bundle) String() string {
+	return b.ID()
 }
 
 // CheckCRC checks the CRC value of each block and returns false if some
