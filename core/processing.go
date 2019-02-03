@@ -13,6 +13,8 @@ import (
 func (c Core) Transmit(bp BundlePack) {
 	log.Printf("Transmission of bundle requested: %v", bp.Bundle)
 
+	c.IdKeeper.update(bp.Bundle)
+
 	bp.AddConstraint(DispatchPending)
 	c.Store.Push(bp)
 

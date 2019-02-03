@@ -12,7 +12,13 @@ import (
 func createClient(port int, endpoint bundle.EndpointID) *core.Core {
 	var c *core.Core = new(core.Core)
 
-	c.Store = core.NoStore{}
+	store, err := core.NewSimpleStore(fmt.Sprintf("/tmp/store%d", port))
+	if err != nil {
+		panic(err)
+	}
+	c.Store = store
+
+	c.IdKeeper = core.NewIdKeeper()
 
 	c.RegisterConvergenceReceiver(
 		stcp.NewSTCPServer(fmt.Sprintf(":%d", port), endpoint))
