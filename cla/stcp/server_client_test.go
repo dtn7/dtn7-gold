@@ -62,14 +62,14 @@ func TestSTCPServerClient(t *testing.T) {
 			select {
 			case b := <-chnl:
 				counter--
-				if !reflect.DeepEqual(b, bndl) {
+				if !reflect.DeepEqual(b.Bundle, bndl) {
 					t.Errorf("Received bundle differs: %v, %v", b, bndl)
 				}
 
 			case <-time.After(time.Millisecond):
 				serv.Close()
 				if counter != 0 {
-					t.Errorf("Counter is not zero: %d", counter)
+					t.Fatalf("Counter is not zero: %d", counter)
 				}
 				break
 			}
@@ -94,5 +94,5 @@ func TestSTCPServerClient(t *testing.T) {
 		}()
 	}
 
-	time.Sleep(time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 }

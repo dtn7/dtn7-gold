@@ -39,12 +39,13 @@ func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
 func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
 	c.ConvergenceReceivers = append(c.ConvergenceReceivers, rec)
 
+	// TODO: merge all incomming channels
 	go func() {
 		var chnl = rec.Channel()
 		for {
 			select {
 			case bndl := <-chnl:
-				c.Receive(NewBundlePack(bndl))
+				c.Receive(NewRecBundlePack(bndl))
 			}
 		}
 	}()

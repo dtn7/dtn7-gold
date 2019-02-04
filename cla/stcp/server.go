@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/geistesk/dtn7/bundle"
+	"github.com/geistesk/dtn7/cla"
 	"github.com/ugorji/go/codec"
 )
 
@@ -16,7 +17,7 @@ import (
 // given channel.
 type STCPServer struct {
 	listenAddress string
-	reportChan    chan bundle.Bundle
+	reportChan    chan cla.RecBundle
 	endpointID    bundle.EndpointID
 
 	stopSyn chan struct{}
@@ -27,7 +28,7 @@ type STCPServer struct {
 func NewSTCPServer(listenAddress string, endpointID bundle.EndpointID) *STCPServer {
 	var serv = &STCPServer{
 		listenAddress: listenAddress,
-		reportChan:    make(chan bundle.Bundle),
+		reportChan:    make(chan cla.RecBundle),
 		endpointID:    endpointID,
 		stopSyn:       make(chan struct{}),
 		stopAck:       make(chan struct{}),
@@ -65,7 +66,7 @@ func NewSTCPServer(listenAddress string, endpointID bundle.EndpointID) *STCPServ
 	return serv
 }
 
-func (serv STCPServer) handleSender(conn net.Conn) {
+func (serv *STCPServer) handleSender(conn net.Conn) {
 	defer func() {
 		conn.Close()
 
@@ -80,7 +81,7 @@ func (serv STCPServer) handleSender(conn net.Conn) {
 
 		if err := dec.Decode(du); err == nil {
 			if bndl, err := du.toBundle(); err == nil {
-				serv.reportChan <- bndl
+				serv.reportChan <- cla.NewRecBundle(bndl, serv)
 			} else {
 				log.Printf("Reception of STCP data unit failed: %v", err)
 			}
@@ -91,7 +92,7 @@ func (serv STCPServer) handleSender(conn net.Conn) {
 }
 
 // Channel returns a channel of received bundles.
-func (serv STCPServer) Channel() <-chan bundle.Bundle {
+func (serv *STCPServer) Channel() <-chan cla.RecBundle {
 	return serv.reportChan
 }
 

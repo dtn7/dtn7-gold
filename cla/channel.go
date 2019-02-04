@@ -2,19 +2,17 @@ package cla
 
 import (
 	"sync"
-
-	"github.com/geistesk/dtn7/bundle"
 )
 
-// merge merges two bundle channels into a new one.
-func merge(a, b <-chan bundle.Bundle) (ch chan bundle.Bundle) {
+// merge merges two RecBundle channels into a new one.
+func merge(a, b <-chan RecBundle) (ch chan RecBundle) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	ch = make(chan bundle.Bundle)
+	ch = make(chan RecBundle)
 
-	for _, c := range []<-chan bundle.Bundle{a, b} {
-		go func(c <-chan bundle.Bundle) {
+	for _, c := range []<-chan RecBundle{a, b} {
+		go func(c <-chan RecBundle) {
 			for bndl := range c {
 				ch <- bndl
 			}
@@ -31,12 +29,12 @@ func merge(a, b <-chan bundle.Bundle) (ch chan bundle.Bundle) {
 	return
 }
 
-// JoinReceivers joins the given bundle channels into a new channel, receiving
-// all bundles from all channels.
-func JoinReceivers(chans ...chan bundle.Bundle) chan bundle.Bundle {
+// JoinReceivers joins the given receiving bundle channels into a new channel,
+// containing all bundles from all channels.
+func JoinReceivers(chans ...chan RecBundle) chan RecBundle {
 	switch len(chans) {
 	case 0:
-		ch := make(chan bundle.Bundle)
+		ch := make(chan RecBundle)
 		close(ch)
 		return ch
 

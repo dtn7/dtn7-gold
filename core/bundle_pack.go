@@ -6,12 +6,14 @@ import (
 	"time"
 
 	"github.com/geistesk/dtn7/bundle"
+	"github.com/geistesk/dtn7/cla"
 )
 
 // BundlePack is a set of a bundle, it's creation or reception time stamp and
 // a set of constraints used in the process of delivering this bundle.
 type BundlePack struct {
 	Bundle      *bundle.Bundle
+	Receiver    cla.ConvergenceReceiver `codec:"-"`
 	Timestamp   time.Time
 	Constraints map[Constraint]bool
 }
@@ -20,9 +22,24 @@ type BundlePack struct {
 func NewBundlePack(b bundle.Bundle) BundlePack {
 	return BundlePack{
 		Bundle:      &b,
+		Receiver:    nil,
 		Timestamp:   time.Now(),
 		Constraints: make(map[Constraint]bool),
 	}
+}
+
+// NewRecBundlePack returns a new BundlePack based on a RecBundle, which
+// contains a receiving CLA.
+func NewRecBundlePack(b cla.RecBundle) BundlePack {
+	bp := NewBundlePack(b.Bundle)
+	bp.Receiver = b.Receiver
+
+	return bp
+}
+
+// HasReceiver returns true if this BundlePack has a Receiver value.
+func (bp BundlePack) HasReceiver() bool {
+	return bp.Receiver != nil
 }
 
 // HasConstraint returns true if the given constraint contains.
@@ -73,9 +90,15 @@ func (bp BundlePack) String() string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "BundlePack(%v,", bp.Bundle)
+
 	for c, _ := range bp.Constraints {
 		fmt.Fprintf(&b, " %v", c)
 	}
+
+	if bp.HasReceiver() {
+		fmt.Fprintf(&b, ", %v", bp.Receiver)
+	}
+
 	fmt.Fprintf(&b, ")")
 
 	return b.String()

@@ -13,13 +13,29 @@ package cla
 
 import "github.com/geistesk/dtn7/bundle"
 
+// RecBundle is a tuple struct to attach the receiving CLA to an incomming
+// bundle. Each ConvergenceReceiver returns its received bundles as a channel
+// of RecBundles.
+type RecBundle struct {
+	Bundle   bundle.Bundle
+	Receiver ConvergenceReceiver
+}
+
+// NewRecBundle returns a new RecBundle for the given bundle and CLA.
+func NewRecBundle(b bundle.Bundle, cr ConvergenceReceiver) RecBundle {
+	return RecBundle{
+		Bundle:   b,
+		Receiver: cr,
+	}
+}
+
 // ConvergenceReceiver is an interface for types which are able to receive
 // bundles and write them to a channel. This channel can be accessed through
 // the Channel method.
 // A type can be both a ConvergenceReceiver and ConvergenceSender.
 type ConvergenceReceiver interface {
 	// Channel returns a channel of received bundles.
-	Channel() <-chan bundle.Bundle
+	Channel() <-chan RecBundle
 
 	// Close signals this ConvergenceReceiver to shut down.
 	Close()

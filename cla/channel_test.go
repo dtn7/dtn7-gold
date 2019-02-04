@@ -28,8 +28,10 @@ func TestMerge(t *testing.T) {
 		t.Error(err)
 	}
 
-	ch0 := make(chan bundle.Bundle)
-	ch1 := make(chan bundle.Bundle)
+	recBndl := NewRecBundle(bndl, nil)
+
+	ch0 := make(chan RecBundle)
+	ch1 := make(chan RecBundle)
 
 	chMerge := merge(ch0, ch1)
 
@@ -41,7 +43,7 @@ func TestMerge(t *testing.T) {
 			case b, ok := <-chMerge:
 				if ok {
 					counter--
-					if !reflect.DeepEqual(b, bndl) {
+					if !reflect.DeepEqual(b.Bundle, bndl) {
 						t.Errorf("Received bundle differs: %v, %v", b, bndl)
 					}
 				}
@@ -57,9 +59,9 @@ func TestMerge(t *testing.T) {
 		}
 	}()
 
-	spam := func(ch chan bundle.Bundle, amount int) {
+	spam := func(ch chan RecBundle, amount int) {
 		for i := 0; i < amount; i++ {
-			ch <- bndl
+			ch <- recBndl
 		}
 		close(ch)
 	}
@@ -90,9 +92,11 @@ func TestJoinReceivers(t *testing.T) {
 		t.Error(err)
 	}
 
-	chns := make([]chan bundle.Bundle, clients)
+	recBndl := NewRecBundle(bndl, nil)
+
+	chns := make([]chan RecBundle, clients)
 	for i := 0; i < clients; i++ {
-		chns[i] = make(chan bundle.Bundle)
+		chns[i] = make(chan RecBundle)
 	}
 
 	chMerge := JoinReceivers(chns...)
@@ -105,7 +109,7 @@ func TestJoinReceivers(t *testing.T) {
 			case b, ok := <-chMerge:
 				if ok {
 					counter--
-					if !reflect.DeepEqual(b, bndl) {
+					if !reflect.DeepEqual(b.Bundle, bndl) {
 						t.Errorf("Received bundle differs: %v, %v", b, bndl)
 					}
 				}
@@ -122,13 +126,13 @@ func TestJoinReceivers(t *testing.T) {
 	}()
 
 	for i := 0; i < clients; i++ {
-		go func(ch chan bundle.Bundle) {
+		go func(ch chan RecBundle) {
 			for i := 0; i < packages; i++ {
-				ch <- bndl
+				ch <- recBndl
 			}
 			close(ch)
 		}(chns[i])
 	}
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 }
