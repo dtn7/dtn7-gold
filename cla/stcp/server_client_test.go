@@ -10,8 +10,7 @@ import (
 	"github.com/geistesk/dtn7/bundle"
 )
 
-func TestSTCPServerClient(t *testing.T) {
-	// Address
+func getRandomPort(t *testing.T) int {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
 		t.Error(err)
@@ -22,13 +21,18 @@ func TestSTCPServerClient(t *testing.T) {
 		t.Error(err)
 	}
 
-	port := l.Addr().(*net.TCPAddr).Port
+	defer l.Close()
 
-	l.Close()
+	return l.Addr().(*net.TCPAddr).Port
+}
+
+func TestSTCPServerClient(t *testing.T) {
+	// Address
+	port := getRandomPort(t)
 
 	// Bundle
 	const (
-		packages = 50
+		packages = 1000
 		clients  = 100
 	)
 
@@ -84,7 +88,6 @@ func TestSTCPServerClient(t *testing.T) {
 				if err = client.Send(bndl); err != nil {
 					t.Error(err)
 				}
-				time.Sleep(10 * time.Microsecond)
 			}
 
 			client.Close()

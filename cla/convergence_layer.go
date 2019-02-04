@@ -32,7 +32,9 @@ type ConvergenceReceiver interface {
 // bundles to another node.
 // A type can be both a ConvergenceReceiver and ConvergenceSender.
 type ConvergenceSender interface {
-	// Send transmits a bundle to this ConvergenceSender's endpoint.
+	// Send transmits a bundle to this ConvergenceSender's endpoint. This method
+	// should be thread safe and finish transmitting one bundle, before acting
+	// on the next. This could be achieved by using a mutex or the like.
 	Send(bndl bundle.Bundle) error
 
 	// Close signals this ConvergenceSender to shut down.

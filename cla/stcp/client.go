@@ -3,6 +3,7 @@ package stcp
 import (
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/ugorji/go/codec"
@@ -11,8 +12,9 @@ import (
 // STCPClient is an implementation of a Simple TCP Convergence-Layer client
 // which connects to a STCP server to send bundles.
 type STCPClient struct {
-	conn net.Conn
-	peer bundle.EndpointID
+	conn  net.Conn
+	peer  bundle.EndpointID
+	mutex sync.Mutex
 }
 
 // NewSTCPClient creates a new STCPClient, connected to the given address for
@@ -23,7 +25,10 @@ func NewSTCPClient(address string, peer bundle.EndpointID) (client *STCPClient, 
 		return
 	}
 
-	return &STCPClient{conn, peer}, nil
+	return &STCPClient{
+		conn: conn,
+		peer: peer,
+	}, nil
 }
 
 // NewSTCPClient creates a new STCPClient, connected to the given address.
@@ -32,14 +37,22 @@ func NewAnonymousSTCPClient(address string) (client *STCPClient, err error) {
 }
 
 // Send transmits a bundle to this STCPClient's endpoint.
-func (client *STCPClient) Send(bndl bundle.Bundle) error {
+func (client *STCPClient) Send(bndl bundle.Bundle) (err error) {
+	client.mutex.Lock()
+
 	var enc = codec.NewEncoder(client.conn, new(codec.CborHandle))
-	return enc.Encode(newDataUnit(bndl))
+	err = enc.Encode(newDataUnit(bndl))
+
+	client.mutex.Unlock()
+
+	return
 }
 
 // Close closes the STCPClient's connection.
 func (client *STCPClient) Close() {
+	client.mutex.Lock()
 	client.conn.Close()
+	client.mutex.Unlock()
 }
 
 // GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
