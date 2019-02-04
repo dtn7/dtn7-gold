@@ -48,6 +48,7 @@ func NewSTCPServer(listenAddress string, endpointID bundle.EndpointID) *STCPServ
 			select {
 			case <-serv.stopSyn:
 				ln.Close()
+				close(serv.reportChan)
 				close(serv.stopAck)
 
 				return
