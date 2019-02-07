@@ -5,14 +5,14 @@ import (
 )
 
 // merge merges two RecBundle channels into a new one.
-func merge(a, b <-chan RecBundle) (ch chan RecBundle) {
+func merge(a, b chan RecBundle) (ch chan RecBundle) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	ch = make(chan RecBundle)
 
-	for _, c := range []<-chan RecBundle{a, b} {
-		go func(c <-chan RecBundle) {
+	for _, c := range []chan RecBundle{a, b} {
+		go func(c chan RecBundle) {
 			for bndl := range c {
 				ch <- bndl
 			}

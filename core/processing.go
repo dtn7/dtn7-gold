@@ -8,9 +8,14 @@ import (
 	"github.com/geistesk/dtn7/cla"
 )
 
-// Transmit starts the transmission of an outbounding bundle pack. Therefore
+// SendBundle transmits an outbounding bundle.
+func (c *Core) SendBundle(bndl bundle.Bundle) {
+	c.transmit(NewBundlePack(bndl))
+}
+
+// transmit starts the transmission of an outbounding bundle pack. Therefore
 // the source's endpoint ID must be dtn:none or a member of this node.
-func (c Core) Transmit(bp BundlePack) {
+func (c *Core) transmit(bp BundlePack) {
 	log.Printf("Transmission of bundle requested: %v", bp.Bundle)
 
 	c.IdKeeper.update(bp.Bundle)
@@ -23,15 +28,15 @@ func (c Core) Transmit(bp BundlePack) {
 		log.Printf(
 			"Bundle's source %v is neither dtn:none nor an endpoint of this node", src)
 
-		c.BundleDeletion(bp, NoInformation)
+		c.bundleDeletion(bp, NoInformation)
 		return
 	}
 
-	c.Forward(bp)
+	c.forward(bp)
 }
 
-// Receive handles received/incomming bundles.
-func (c Core) Receive(bp BundlePack) {
+// receive handles received/incomming bundles.
+func (c *Core) receive(bp BundlePack) {
 	log.Printf("Received new bundle: %v", bp.Bundle)
 
 	bp.AddConstraint(DispatchPending)
@@ -62,7 +67,7 @@ func (c Core) Receive(bp BundlePack) {
 			log.Printf("Bundle's %v unknown canonical block requested bundle deletion",
 				bp.Bundle)
 
-			c.BundleDeletion(bp, BlockUnintelligible)
+			c.bundleDeletion(bp, BlockUnintelligible)
 			return
 		}
 
@@ -75,22 +80,22 @@ func (c Core) Receive(bp BundlePack) {
 		}
 	}
 
-	c.Dispatching(bp)
+	c.dispatching(bp)
 }
 
-// Dispatching handles the dispatching of received bundles.
-func (c Core) Dispatching(bp BundlePack) {
+// dispatching handles the dispatching of received bundles.
+func (c *Core) dispatching(bp BundlePack) {
 	log.Printf("Dispatching bundle %v", bp.Bundle)
 
 	if c.HasEndpoint(bp.Bundle.PrimaryBlock.Destination) {
-		c.LocalDelivery(bp)
+		c.localDelivery(bp)
 	} else {
-		c.Forward(bp)
+		c.forward(bp)
 	}
 }
 
-// Forward forwards a bundle pack's bundle to another node.
-func (c Core) Forward(bp BundlePack) {
+// forward forwards a bundle pack's bundle to another node.
+func (c *Core) forward(bp BundlePack) {
 	log.Printf("Bundle will be forwarded: %v", bp.Bundle)
 
 	bp.AddConstraint(ForwardPending)
@@ -107,7 +112,7 @@ func (c Core) Forward(bp BundlePack) {
 		if exceeded := hc.IsExceeded(); exceeded {
 			log.Printf("Bundle contains an exceeded hop count block: %v", hc)
 
-			c.BundleDeletion(bp, HopLimitExceeded)
+			c.bundleDeletion(bp, HopLimitExceeded)
 			return
 		}
 	}
@@ -116,7 +121,7 @@ func (c Core) Forward(bp BundlePack) {
 		log.Printf("Bundle's primary block's lifetime is exceeded: %v",
 			bp.Bundle.PrimaryBlock)
 
-		c.BundleDeletion(bp, LifetimeExpired)
+		c.bundleDeletion(bp, LifetimeExpired)
 		return
 	}
 
@@ -124,7 +129,7 @@ func (c Core) Forward(bp BundlePack) {
 		if age >= bp.Bundle.PrimaryBlock.Lifetime {
 			log.Printf("Bundle's lifetime is expired")
 
-			c.BundleDeletion(bp, LifetimeExpired)
+			c.bundleDeletion(bp, LifetimeExpired)
 			return
 		}
 	}
@@ -138,7 +143,7 @@ func (c Core) Forward(bp BundlePack) {
 
 	if nodes == nil {
 		// No nodes could be selected, the bundle will be contraindicated.
-		c.BundleContraindicated(bp)
+		c.bundleContraindicated(bp)
 		return
 	}
 
@@ -178,11 +183,11 @@ func (c Core) Forward(bp BundlePack) {
 	} else {
 		log.Printf("Failed to forward %v", bp.Bundle)
 
-		c.BundleContraindicated(bp)
+		c.bundleContraindicated(bp)
 	}
 }
 
-func (c Core) LocalDelivery(bp BundlePack) {
+func (c *Core) localDelivery(bp BundlePack) {
 	// TODO: check fragmentation
 	// TODO: handle delivery
 
@@ -194,7 +199,7 @@ func (c Core) LocalDelivery(bp BundlePack) {
 			log.Printf("Bundle %v with an administrative record payload misses payload: %v",
 				bp.Bundle, err)
 
-			c.BundleDeletion(bp, NoInformation)
+			c.bundleDeletion(bp, NoInformation)
 			return
 		}
 
@@ -203,7 +208,7 @@ func (c Core) LocalDelivery(bp BundlePack) {
 			log.Printf("Bundle %v with an administrative record could not be parsed: %v",
 				bp.Bundle, err)
 
-			c.BundleDeletion(bp, NoInformation)
+			c.bundleDeletion(bp, NoInformation)
 			return
 		}
 
@@ -216,12 +221,11 @@ func (c Core) LocalDelivery(bp BundlePack) {
 	}
 }
 
-func (c Core) BundleContraindicated(bp BundlePack) {
-	// TODO: implement :^)
+func (c *Core) bundleContraindicated(bp BundlePack) {
 	log.Printf("Bundle %v was marked for contraindication", bp.Bundle)
 }
 
-func (c Core) BundleDeletion(bp BundlePack, reason StatusReportReason) {
+func (c *Core) bundleDeletion(bp BundlePack, reason StatusReportReason) {
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDeletion) {
 		c.SendStatusReport(bp, DeletedBundle, reason)
 	}
@@ -229,6 +233,5 @@ func (c Core) BundleDeletion(bp BundlePack, reason StatusReportReason) {
 	bp.PurgeConstraints()
 	c.Store.Push(bp)
 
-	// TODO: implement (^^,)
 	log.Printf("Bundle %v was marked for deletion", bp.Bundle)
 }

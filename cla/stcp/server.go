@@ -92,7 +92,7 @@ func (serv *STCPServer) handleSender(conn net.Conn) {
 }
 
 // Channel returns a channel of received bundles.
-func (serv *STCPServer) Channel() <-chan cla.RecBundle {
+func (serv *STCPServer) Channel() chan cla.RecBundle {
 	return serv.reportChan
 }
 

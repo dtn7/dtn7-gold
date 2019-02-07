@@ -30,6 +30,45 @@ type Core struct {
 	AppEndpoints         []bundle.EndpointID
 	Store                Store
 	IdKeeper             IdKeeper
+
+	reloadConvRecs chan struct{}
+}
+
+// NewCore creates and returns a new core.
+func NewCore(storePath string) (*Core, error) {
+	var c = new(Core)
+
+	store, err := NewSimpleStore(storePath)
+	if err != nil {
+		return nil, err
+	}
+	c.Store = store
+
+	c.IdKeeper = NewIdKeeper()
+	c.reloadConvRecs = make(chan struct{})
+
+	go c.checkConvergenceReceivers()
+
+	return c, nil
+}
+
+// checkConvergenceReceivers checks all ConvergenceReceivers for new bundles.
+func (c *Core) checkConvergenceReceivers() {
+	var chnl = cla.JoinReceivers()
+	for {
+		select {
+		case bndl, ok := <-chnl:
+			if ok {
+				c.receive(NewRecBundlePack(bndl))
+			}
+
+		case <-c.reloadConvRecs:
+			chnl = cla.JoinReceivers()
+			for _, claRec := range c.ConvergenceReceivers {
+				chnl = cla.JoinReceivers(chnl, claRec.Channel())
+			}
+		}
+	}
 }
 
 func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
@@ -39,19 +78,10 @@ func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
 func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
 	c.ConvergenceReceivers = append(c.ConvergenceReceivers, rec)
 
-	// TODO: merge all incomming channels
-	go func() {
-		var chnl = rec.Channel()
-		for {
-			select {
-			case bndl := <-chnl:
-				c.Receive(NewRecBundlePack(bndl))
-			}
-		}
-	}()
+	c.reloadConvRecs <- struct{}{}
 }
 
-func (c Core) clasForDestination(endpoint bundle.EndpointID) []cla.ConvergenceSender {
+func (c *Core) clasForDestination(endpoint bundle.EndpointID) []cla.ConvergenceSender {
 	var clas []cla.ConvergenceSender
 
 	for _, cla := range c.ConvergenceSenders {
@@ -63,7 +93,7 @@ func (c Core) clasForDestination(endpoint bundle.EndpointID) []cla.ConvergenceSe
 	return clas
 }
 
-func (c Core) clasForBudlePack(bp BundlePack) []cla.ConvergenceSender {
+func (c *Core) clasForBudlePack(bp BundlePack) []cla.ConvergenceSender {
 	// TODO: This software is kind of stupid at this moment and will return all
 	// currently known CLAs.
 
@@ -72,7 +102,7 @@ func (c Core) clasForBudlePack(bp BundlePack) []cla.ConvergenceSender {
 
 // HasEndpoint returns true if the given endpoint ID is assigned either to an
 // application or a CLA governed by this Application Agent.
-func (c Core) HasEndpoint(endpoint bundle.EndpointID) bool {
+func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
 	for _, ep := range c.AppEndpoints {
 		if ep == endpoint {
 			return true
@@ -90,7 +120,7 @@ func (c Core) HasEndpoint(endpoint bundle.EndpointID) bool {
 
 // SendStatusReport creates a new status report in response to the given
 // BundlePack and transmits it.
-func (c Core) SendStatusReport(bp BundlePack,
+func (c *Core) SendStatusReport(bp BundlePack,
 	status StatusInformationPos, reason StatusReportReason) {
 	// Don't repond to other administrative records
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
@@ -138,5 +168,5 @@ func (c Core) SendStatusReport(bp BundlePack,
 		return
 	}
 
-	c.Transmit(NewBundlePack(outBndl))
+	c.transmit(NewBundlePack(outBndl))
 }

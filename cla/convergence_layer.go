@@ -35,7 +35,7 @@ func NewRecBundle(b bundle.Bundle, rec bundle.EndpointID) RecBundle {
 // A type can be both a ConvergenceReceiver and ConvergenceSender.
 type ConvergenceReceiver interface {
 	// Channel returns a channel of received bundles.
-	Channel() <-chan RecBundle
+	Channel() chan RecBundle
 
 	// Close signals this ConvergenceReceiver to shut down.
 	Close()
