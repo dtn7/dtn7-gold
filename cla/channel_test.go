@@ -28,7 +28,7 @@ func TestMerge(t *testing.T) {
 		t.Error(err)
 	}
 
-	recBndl := NewRecBundle(bndl, nil)
+	recBndl := NewRecBundle(bndl, bundle.DtnNone())
 
 	ch0 := make(chan RecBundle)
 	ch1 := make(chan RecBundle)
@@ -92,7 +92,7 @@ func TestJoinReceivers(t *testing.T) {
 		t.Error(err)
 	}
 
-	recBndl := NewRecBundle(bndl, nil)
+	recBndl := NewRecBundle(bndl, bundle.DtnNone())
 
 	chns := make([]chan RecBundle, clients)
 	for i := 0; i < clients; i++ {

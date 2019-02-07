@@ -13,19 +13,19 @@ package cla
 
 import "github.com/geistesk/dtn7/bundle"
 
-// RecBundle is a tuple struct to attach the receiving CLA to an incomming
-// bundle. Each ConvergenceReceiver returns its received bundles as a channel
-// of RecBundles.
+// RecBundle is a tuple struct to attach the receiving CLA's node ID  to an
+// incomming bundle. Each ConvergenceReceiver returns its received bundles as
+// a channel of RecBundles.
 type RecBundle struct {
 	Bundle   bundle.Bundle
-	Receiver ConvergenceReceiver
+	Receiver bundle.EndpointID
 }
 
 // NewRecBundle returns a new RecBundle for the given bundle and CLA.
-func NewRecBundle(b bundle.Bundle, cr ConvergenceReceiver) RecBundle {
+func NewRecBundle(b bundle.Bundle, rec bundle.EndpointID) RecBundle {
 	return RecBundle{
 		Bundle:   b,
-		Receiver: cr,
+		Receiver: rec,
 	}
 }
 

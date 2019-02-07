@@ -81,7 +81,7 @@ func (serv *STCPServer) handleSender(conn net.Conn) {
 
 		if err := dec.Decode(du); err == nil {
 			if bndl, err := du.toBundle(); err == nil {
-				serv.reportChan <- cla.NewRecBundle(bndl, serv)
+				serv.reportChan <- cla.NewRecBundle(bndl, serv.endpointID)
 			} else {
 				log.Printf("Reception of STCP data unit failed: %v", err)
 			}

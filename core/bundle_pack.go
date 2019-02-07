@@ -13,7 +13,7 @@ import (
 // a set of constraints used in the process of delivering this bundle.
 type BundlePack struct {
 	Bundle      *bundle.Bundle
-	Receiver    cla.ConvergenceReceiver `codec:"-"`
+	Receiver    bundle.EndpointID
 	Timestamp   time.Time
 	Constraints map[Constraint]bool
 }
@@ -22,7 +22,7 @@ type BundlePack struct {
 func NewBundlePack(b bundle.Bundle) BundlePack {
 	return BundlePack{
 		Bundle:      &b,
-		Receiver:    nil,
+		Receiver:    bundle.DtnNone(),
 		Timestamp:   time.Now(),
 		Constraints: make(map[Constraint]bool),
 	}
@@ -39,7 +39,7 @@ func NewRecBundlePack(b cla.RecBundle) BundlePack {
 
 // HasReceiver returns true if this BundlePack has a Receiver value.
 func (bp BundlePack) HasReceiver() bool {
-	return bp.Receiver != nil
+	return bp.Receiver != bundle.DtnNone()
 }
 
 // HasConstraint returns true if the given constraint contains.

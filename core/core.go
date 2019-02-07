@@ -109,8 +109,14 @@ func (c Core) SendStatusReport(bp BundlePack,
 	var sr = NewStatusReport(inBndl, status, reason, bundle.DtnTimeNow())
 	var ar = NewAdministrativeRecord(BundleStatusReportTypeCode, sr)
 
-	// TODO change this
-	var aaEndpoint = c.AppEndpoints[0]
+	var aaEndpoint = bp.Receiver
+	if !c.HasEndpoint(aaEndpoint) {
+		log.Printf(
+			"Failed to create status report for %v, receiver %v is not a current endpoint",
+			bp.Bundle, aaEndpoint)
+
+		return
+	}
 
 	var primary = bundle.NewPrimaryBlock(
 		bundle.AdministrativeRecordPayload,
