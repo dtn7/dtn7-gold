@@ -23,7 +23,7 @@ func TestNewCanonicalBlock(t *testing.T) {
 }
 
 func TestCanonicalBlockCbor(t *testing.T) {
-	ep, _ := NewEndpointID("dtn", "foo/bar")
+	ep, _ := NewEndpointID("dtn:foo/bar")
 
 	tests := []struct {
 		cb1 CanonicalBlock

@@ -10,8 +10,8 @@ func TestIdKeeper(t *testing.T) {
 	bndl0, err := bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn", "dest"),
-			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.MustNewEndpointID("dtn:dest"),
+			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
 		[]bundle.CanonicalBlock{
 			bundle.NewPayloadBlock(0, []byte("hello world!")),
@@ -24,8 +24,8 @@ func TestIdKeeper(t *testing.T) {
 	bndl1, err := bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn", "dest"),
-			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.MustNewEndpointID("dtn:dest"),
+			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
 		[]bundle.CanonicalBlock{
 			bundle.NewPayloadBlock(0, []byte("hello world!")),

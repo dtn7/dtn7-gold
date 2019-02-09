@@ -19,8 +19,8 @@ func createClient(port int, endpoint bundle.EndpointID) *core.Core {
 		stcp.NewSTCPServer(fmt.Sprintf(":%d", port), endpoint))
 
 	c.AppEndpoints = []bundle.EndpointID{
-		bundle.MustNewEndpointID("dtn", fmt.Sprintf("resp%d", port)),
-		bundle.MustNewEndpointID("dtn", fmt.Sprintf("resp%d", port+1000))}
+		bundle.MustNewEndpointID(fmt.Sprintf("dtn:resp%d", port)),
+		bundle.MustNewEndpointID(fmt.Sprintf("dtn:resp%d", port+1000))}
 
 	return c
 }
@@ -36,9 +36,9 @@ func connectClientTo(c *core.Core, dest string, destEndpoint bundle.EndpointID) 
 
 func main() {
 	// Create three DTN clients
-	ep1 := bundle.MustNewEndpointID("ipn", "23.9001")
-	ep2 := bundle.MustNewEndpointID("ipn", "23.9002")
-	ep3 := bundle.MustNewEndpointID("ipn", "23.9003")
+	ep1 := bundle.MustNewEndpointID("ipn:23.9001")
+	ep2 := bundle.MustNewEndpointID("ipn:23.9002")
+	ep3 := bundle.MustNewEndpointID("ipn:23.9003")
 
 	cl1 := createClient(9001, ep1)
 	cl2 := createClient(9002, ep2)

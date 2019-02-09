@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -8,7 +9,7 @@ import (
 )
 
 func TestEndpointDtnNone(t *testing.T) {
-	dtnNone, err := NewEndpointID("dtn", "none")
+	dtnNone, err := NewEndpointID("dtn:none")
 
 	if err != nil {
 		t.Errorf("dtn:none resulted in an error: %v", err)
@@ -30,7 +31,7 @@ func TestEndpointDtnNone(t *testing.T) {
 }
 
 func TestEndpointDtn(t *testing.T) {
-	dtnEP, err := NewEndpointID("dtn", "foobar")
+	dtnEP, err := NewEndpointID("dtn:foobar")
 
 	if err != nil {
 		t.Errorf("dtn:foobar resulted in an error: %v", err)
@@ -52,7 +53,7 @@ func TestEndpointDtn(t *testing.T) {
 }
 
 func TestEndpointIpn(t *testing.T) {
-	ipnEP, err := NewEndpointID("ipn", "23.42")
+	ipnEP, err := NewEndpointID("ipn:23.42")
 
 	if err != nil {
 		t.Errorf("ipn:23.42 resulted in an error: %v", err)
@@ -93,7 +94,7 @@ func TestEndpointIpnInvalid(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		_, err := NewEndpointID("ipn", testCase)
+		_, err := NewEndpointID(fmt.Sprintf("ipn:%v", testCase))
 		if err == nil {
 			t.Errorf("ipn:%v does not resulted in an error", testCase)
 		}
@@ -109,7 +110,7 @@ func TestEndpointInvalid(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		_, err := NewEndpointID(testCase.name, testCase.ssp)
+		_, err := NewEndpointID(fmt.Sprintf("%v:%v", testCase.name, testCase.ssp))
 		if err == nil {
 			t.Errorf("%v:%v does not resulted in an error", testCase.name, testCase.ssp)
 		}
@@ -121,7 +122,7 @@ func TestEndpointCborDtnNone(t *testing.T) {
 	var h codec.Handle = new(codec.CborHandle)
 	var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
 
-	ep, _ := NewEndpointID("dtn", "none")
+	ep, _ := NewEndpointID("dtn:none")
 
 	err := enc.Encode(ep)
 	if err != nil {
@@ -150,7 +151,7 @@ func TestEndpointCborDtn(t *testing.T) {
 	var h codec.Handle = new(codec.CborHandle)
 	var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
 
-	ep, _ := NewEndpointID("dtn", "foobar")
+	ep, _ := NewEndpointID("dtn:foobar")
 
 	err := enc.Encode(ep)
 	if err != nil {
@@ -179,7 +180,7 @@ func TestEndpointCborIpn(t *testing.T) {
 	var h codec.Handle = new(codec.CborHandle)
 	var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
 
-	ep, _ := NewEndpointID("ipn", "23.42")
+	ep, _ := NewEndpointID("ipn:23.42")
 
 	err := enc.Encode(ep)
 	if err != nil {

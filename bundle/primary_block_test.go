@@ -13,8 +13,8 @@ func setupPrimaryBlock() PrimaryBlock {
 		StatusRequestDelivery |
 		MustNotFragmented
 
-	destination, _ := NewEndpointID("dtn", "foobar")
-	source, _ := NewEndpointID("dtn", "me")
+	destination, _ := NewEndpointID("dtn:foobar")
+	source, _ := NewEndpointID("dtn:me")
 
 	creationTimestamp := NewCreationTimestamp(DtnTimeEpoch, 0)
 	lifetime := uint(10 * 60 * 1000)
@@ -53,7 +53,7 @@ func TestPrimaryBlockFragmentation(t *testing.T) {
 }
 
 func TestPrimaryBlockCbor(t *testing.T) {
-	ep, _ := NewEndpointID("dtn", "test")
+	ep, _ := NewEndpointID("dtn:test")
 	ts := NewCreationTimestamp(DtnTimeEpoch, 23)
 
 	tests := []struct {

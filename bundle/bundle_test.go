@@ -7,14 +7,14 @@ import (
 )
 
 func TestBundleApplyCRC(t *testing.T) {
-	var epPrim, _ = NewEndpointID("dtn", "foo/bar")
+	var epPrim, _ = NewEndpointID("dtn:foo/bar")
 	var creationTs = NewCreationTimestamp(4200, 23)
 
 	var primary = NewPrimaryBlock(
 		StatusRequestDelivery,
 		epPrim, epPrim, creationTs, 42000)
 
-	var epPrev, _ = NewEndpointID("ipn", "23.42")
+	var epPrev, _ = NewEndpointID("ipn:23.42")
 	var prevNode = NewPreviousNodeBlock(1, 0, epPrev)
 
 	var payload = NewPayloadBlock(
@@ -43,15 +43,15 @@ func TestBundleApplyCRC(t *testing.T) {
 }
 
 func TestBundleCbor(t *testing.T) {
-	var epDest, _ = NewEndpointID("dtn", "desty")
-	var epSource, _ = NewEndpointID("dtn", "gumo")
+	var epDest, _ = NewEndpointID("dtn:desty")
+	var epSource, _ = NewEndpointID("dtn:gumo")
 	var creationTs = NewCreationTimestamp(4200, 23)
 
 	var primary = NewPrimaryBlock(
 		StatusRequestDelivery,
 		epDest, epSource, creationTs, 42000)
 
-	var epPrev, _ = NewEndpointID("ipn", "23.42")
+	var epPrev, _ = NewEndpointID("ipn:23.42")
 	var prevNode = NewPreviousNodeBlock(23, 0, epPrev)
 
 	var payload = NewPayloadBlock(
@@ -129,7 +129,7 @@ func TestBundleUpcn(t *testing.T) {
 			bcf, bcfExpected)
 	}
 
-	destExpected, _ := NewEndpointID("dtn", "GS2")
+	destExpected, _ := NewEndpointID("dtn:GS2")
 	if dest := pb.Destination; dest != destExpected {
 		t.Errorf("Primary Block's destination mismatches: %v instead of %v",
 			dest, destExpected)
@@ -172,7 +172,7 @@ func TestBundleUpcn(t *testing.T) {
 		case PreviousNodeBlock:
 			chkPreviousNode = true
 
-			prevExpected, _ := NewEndpointID("dtn", "GS4")
+			prevExpected, _ := NewEndpointID("dtn:GS4")
 			if prev := cb.Data.(EndpointID); prev != prevExpected {
 				t.Errorf("Previous Node Block's EID mismatches: %v instead of %v",
 					prev, prevExpected)
@@ -218,7 +218,7 @@ func TestBundleExtensionBlock(t *testing.T) {
 	var bndl, err = NewBundle(
 		NewPrimaryBlock(
 			MustNotFragmented,
-			MustNewEndpointID("dtn", "some"), DtnNone(),
+			MustNewEndpointID("dtn:some"), DtnNone(),
 			NewCreationTimestamp(DtnTimeEpoch, 0), 3600),
 		[]CanonicalBlock{
 			NewBundleAgeBlock(1, 0, 420),

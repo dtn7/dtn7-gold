@@ -25,8 +25,8 @@ func TestSimpleStoreSingle(t *testing.T) {
 	bndl, err := bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn", "dest"),
-			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.MustNewEndpointID("dtn:dest"),
+			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
 		[]bundle.CanonicalBlock{
 			bundle.NewPayloadBlock(0, []byte("hello world!")),
@@ -82,8 +82,8 @@ func TestSimpleStoreTwoStores(t *testing.T) {
 	bndl, err := bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn", "dest"),
-			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.MustNewEndpointID("dtn:dest"),
+			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
 		[]bundle.CanonicalBlock{
 			bundle.NewPayloadBlock(0, []byte("hello world!")),

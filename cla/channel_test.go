@@ -17,8 +17,8 @@ func TestMerge(t *testing.T) {
 	bndl, err := bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented,
-			bundle.MustNewEndpointID("dtn", "dest"),
-			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.MustNewEndpointID("dtn:dest"),
+			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
 		[]bundle.CanonicalBlock{
 			bundle.NewBundleAgeBlock(1, bundle.DeleteBundle, 0),
@@ -81,8 +81,8 @@ func TestJoinReceivers(t *testing.T) {
 	bndl, err := bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented,
-			bundle.MustNewEndpointID("dtn", "dest"),
-			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.MustNewEndpointID("dtn:dest"),
+			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
 		[]bundle.CanonicalBlock{
 			bundle.NewBundleAgeBlock(1, bundle.DeleteBundle, 0),

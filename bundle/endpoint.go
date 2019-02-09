@@ -76,7 +76,20 @@ func newEndpointIDIPN(ssp string) (ep EndpointID, err error) {
 // NewEndpointID creates a new EndpointID by a given "scheme name" and a
 // "scheme-specific part" (SSP). Currently the "dtn" and "ipn"-scheme names
 // are supported.
-func NewEndpointID(name, ssp string) (EndpointID, error) {
+//
+// Example: "dtn:foobar"
+func NewEndpointID(eid string) (e EndpointID, err error) {
+	re := regexp.MustCompile(`^([[:alnum:]]+):(.+)$`)
+	matches := re.FindStringSubmatch(eid)
+
+	if len(matches) != 3 {
+		err = newBundleError("eid does not satisfy regex")
+		return
+	}
+
+	name := matches[1]
+	ssp := matches[2]
+
 	switch name {
 	case "dtn":
 		return newEndpointIDDTN(ssp)
@@ -89,8 +102,8 @@ func NewEndpointID(name, ssp string) (EndpointID, error) {
 
 // MustNewEndpointID returns a new EndpointID like NewEndpointID, but panics
 // in case of an error.
-func MustNewEndpointID(name, ssp string) EndpointID {
-	ep, err := NewEndpointID(name, ssp)
+func MustNewEndpointID(eid string) EndpointID {
+	ep, err := NewEndpointID(eid)
 	if err != nil {
 		panic(err)
 	}

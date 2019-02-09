@@ -63,8 +63,8 @@ func TestStatusReportCreation(t *testing.T) {
 	var bndl, err = bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn", "dest"),
-			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.MustNewEndpointID("dtn:dest"),
+			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
 		[]bundle.CanonicalBlock{
 			bundle.NewPayloadBlock(0, []byte("hello world!")),
@@ -116,8 +116,8 @@ func TestStatusReportCreationNoTime(t *testing.T) {
 	var bndl, err = bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented,
-			bundle.MustNewEndpointID("dtn", "dest"),
-			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.MustNewEndpointID("dtn:dest"),
+			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
 		[]bundle.CanonicalBlock{
 			bundle.NewPayloadBlock(0, []byte("hello world!")),
@@ -140,8 +140,8 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 	bndl, err := bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn", "dest"),
-			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.MustNewEndpointID("dtn:dest"),
+			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
 		[]bundle.CanonicalBlock{
 			bundle.NewPayloadBlock(0, []byte("hello world!")),
@@ -159,7 +159,7 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 	primary := bundle.NewPrimaryBlock(
 		bundle.AdministrativeRecordPayload,
 		bndl.PrimaryBlock.ReportTo,
-		bundle.MustNewEndpointID("dtn", "foo"),
+		bundle.MustNewEndpointID("dtn:foo"),
 		bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0),
 		60*60*1000000)
 

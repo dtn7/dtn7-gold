@@ -10,8 +10,8 @@ func TestBundlePackConstraints(t *testing.T) {
 	var bndl, err = bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented,
-			bundle.MustNewEndpointID("dtn", "dest"),
-			bundle.MustNewEndpointID("dtn", "src"),
+			bundle.MustNewEndpointID("dtn:dest"),
+			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 24*60*60),
 		[]bundle.CanonicalBlock{
 			bundle.NewBundleAgeBlock(1, bundle.DeleteBundle, 0),
