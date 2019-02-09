@@ -28,10 +28,13 @@ type Core struct {
 	ConvergenceSenders   []cla.ConvergenceSender
 	ConvergenceReceivers []cla.ConvergenceReceiver
 	AppEndpoints         []bundle.EndpointID
-	Store                Store
-	IdKeeper             IdKeeper
+
+	store    Store
+	idKeeper IdKeeper
 
 	reloadConvRecs chan struct{}
+	stopSyn        chan struct{}
+	stopAck        chan struct{}
 }
 
 // NewCore creates and returns a new core.
@@ -42,10 +45,13 @@ func NewCore(storePath string) (*Core, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.Store = store
+	c.store = store
 
-	c.IdKeeper = NewIdKeeper()
+	c.idKeeper = NewIdKeeper()
 	c.reloadConvRecs = make(chan struct{})
+
+	c.stopSyn = make(chan struct{})
+	c.stopAck = make(chan struct{})
 
 	go c.checkConvergenceReceivers()
 
@@ -57,11 +63,22 @@ func (c *Core) checkConvergenceReceivers() {
 	var chnl = cla.JoinReceivers()
 	for {
 		select {
+		// Invoked by Close(), shuts down
+		case <-c.stopSyn:
+			for _, claRec := range c.ConvergenceReceivers {
+				claRec.Close()
+			}
+
+			close(c.stopAck)
+			return
+
+		// Handle a received bundle, also checks if the channel is open
 		case bndl, ok := <-chnl:
 			if ok {
 				c.receive(NewRecBundlePack(bndl))
 			}
 
+		// Invoked by RegisterConvergenceReceiver, recreates chnl
 		case <-c.reloadConvRecs:
 			chnl = cla.JoinReceivers()
 			for _, claRec := range c.ConvergenceReceivers {
@@ -71,10 +88,21 @@ func (c *Core) checkConvergenceReceivers() {
 	}
 }
 
+// Close shuts the Core down and notifies all bounded ConvergenceReceivers to
+// also close the connection.
+func (c *Core) Close() {
+	close(c.stopSyn)
+	<-c.stopAck
+}
+
+// RegisterConvergenceSender adds a new ConvergenceSender to this Core's list.
+// Bundles will be sent through this ConvergenceSender.
 func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
 	c.ConvergenceSenders = append(c.ConvergenceSenders, sender)
 }
 
+// RegisterConvergenceReceiver adds a new ConvergenceReceiver to this Core's
+// list. Bundles will be received through this ConvergenceReceiver
 func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
 	c.ConvergenceReceivers = append(c.ConvergenceReceivers, rec)
 

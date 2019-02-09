@@ -19,7 +19,8 @@ func createClient(port int, endpoint bundle.EndpointID) *core.Core {
 		stcp.NewSTCPServer(fmt.Sprintf(":%d", port), endpoint))
 
 	c.AppEndpoints = []bundle.EndpointID{
-		bundle.MustNewEndpointID("dtn", fmt.Sprintf("resp%d", port))}
+		bundle.MustNewEndpointID("dtn", fmt.Sprintf("resp%d", port)),
+		bundle.MustNewEndpointID("dtn", fmt.Sprintf("resp%d", port+1000))}
 
 	return c
 }
@@ -66,4 +67,8 @@ func main() {
 	cl1.SendBundle(bndl)
 
 	time.Sleep(time.Second)
+
+	cl1.Close()
+	cl2.Close()
+	cl3.Close()
 }
