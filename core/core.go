@@ -27,7 +27,7 @@ func isKnownBlockType(blocktype bundle.CanonicalBlockType) bool {
 type Core struct {
 	ConvergenceSenders   []cla.ConvergenceSender
 	ConvergenceReceivers []cla.ConvergenceReceiver
-	AppEndpoints         []bundle.EndpointID
+	Agents               []ApplicationAgent
 
 	store    Store
 	idKeeper IdKeeper
@@ -109,6 +109,11 @@ func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
 	c.reloadConvRecs <- struct{}{}
 }
 
+// RegisterApplicationAgent adds a new ApplicationAgent to this Core's list.
+func (c *Core) RegisterApplicationAgent(agent ApplicationAgent) {
+	c.Agents = append(c.Agents, agent)
+}
+
 func (c *Core) clasForDestination(endpoint bundle.EndpointID) []cla.ConvergenceSender {
 	var clas []cla.ConvergenceSender
 
@@ -131,8 +136,8 @@ func (c *Core) clasForBudlePack(bp BundlePack) []cla.ConvergenceSender {
 // HasEndpoint returns true if the given endpoint ID is assigned either to an
 // application or a CLA governed by this Application Agent.
 func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
-	for _, ep := range c.AppEndpoints {
-		if ep == endpoint {
+	for _, agent := range c.Agents {
+		if agent.EndpointID() == endpoint {
 			return true
 		}
 	}
