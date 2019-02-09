@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/BurntSushi/toml"
 	"github.com/geistesk/dtn7/bundle"
@@ -92,10 +93,10 @@ func parseCore(filename string) (c *core.Core, err error) {
 
 	// Peer/ConvergenceSender
 	for _, conv := range conf.Peer {
-		var convRec cla.ConvergenceSender
-		convRec, err = parsePeer(conv)
+		convRec, err := parsePeer(conv)
 		if err != nil {
-			return
+			log.Printf("Failed to establish a connection to peer %v", conv.Endpoint)
+			continue
 		}
 
 		c.RegisterConvergenceSender(convRec)

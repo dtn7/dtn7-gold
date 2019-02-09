@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/ugorji/go/codec"
@@ -20,7 +21,7 @@ type STCPClient struct {
 // NewSTCPClient creates a new STCPClient, connected to the given address for
 // the registered endpoint ID.
 func NewSTCPClient(address string, peer bundle.EndpointID) (client *STCPClient, err error) {
-	conn, err := net.Dial("tcp", address)
+	conn, err := net.DialTimeout("tcp", address, time.Second)
 	if err != nil {
 		return
 	}

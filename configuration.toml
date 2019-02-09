@@ -6,12 +6,12 @@ node = "dtn:hostymyhostface"
 protocol = "stcp"
 endpoint = "0.0.0.0:35037"
 
-#[[peer]]
-#node = "dtn:alpha"
-#protocol = "stcp"
-#endpoint = "10.0.0.2:35037"
+[[peer]]
+node = "dtn:alpha"
+protocol = "stcp"
+endpoint = "10.0.0.2:35037"
 
-#[[peer]]
-#node = "dtn:beta"
-#protocol = "stcp"
-#endpoint = "[fc23::2]:35037"
+[[peer]]
+node = "dtn:beta"
+protocol = "stcp"
+endpoint = "[fc23::2]:35037"

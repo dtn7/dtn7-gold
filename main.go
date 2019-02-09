@@ -1,37 +1,38 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
-	"time"
+	"os/signal"
 )
 
+// waitSigint blocks the current thread until a SIGINT appears.
+func waitSigint() {
+	signalSyn := make(chan os.Signal)
+	signalAck := make(chan struct{})
+
+	signal.Notify(signalSyn, os.Interrupt)
+
+	go func() {
+		<-signalSyn
+		close(signalAck)
+	}()
+
+	<-signalAck
+}
+
 func main() {
-	/*
-		bndl, err := bundle.NewBundle(
-			bundle.NewPrimaryBlock(
-				bundle.MustNotFragmented|bundle.StatusRequestReception|bundle.StatusRequestDelivery,
-				ep3,
-				ep1,
-				bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 1000000),
-			[]bundle.CanonicalBlock{
-				bundle.NewHopCountBlock(1, 0, bundle.NewHopCount(23)),
-				bundle.NewPayloadBlock(0, []byte("hello world!")),
-			})
-		if err != nil {
-			panic(err)
-		}
-
-		cl1.SendBundle(bndl)
-	*/
-
-	dtn, err := parseCore("configuration.toml")
-	if err != nil {
-		fmt.Printf("Failed to parse config: %v\n", err)
-		os.Exit(1)
+	if len(os.Args) != 2 {
+		log.Fatalf("Usage: %s configuration.toml", os.Args[0])
 	}
 
-	time.Sleep(time.Second)
+	dtn, err := parseCore(os.Args[1])
+	if err != nil {
+		log.Fatalf("Failed to parse config: %v\n", err)
+	}
+
+	waitSigint()
+	log.Print("Shutting down")
 
 	dtn.Close()
 }
