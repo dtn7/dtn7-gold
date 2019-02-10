@@ -71,5 +71,9 @@ func (client STCPClient) GetPeerEndpointID() bundle.EndpointID {
 }
 
 func (client STCPClient) String() string {
-	return fmt.Sprintf("stcp://%v", client.conn.RemoteAddr())
+	if client.conn != nil {
+		return fmt.Sprintf("stcp://%v", client.conn.RemoteAddr())
+	} else {
+		return fmt.Sprintf("stcp://%s", client.address)
+	}
 }

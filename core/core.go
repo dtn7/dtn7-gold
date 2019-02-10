@@ -2,6 +2,8 @@ package core
 
 import (
 	"log"
+	"sync"
+	"time"
 
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/geistesk/dtn7/cla"
@@ -25,9 +27,11 @@ func isKnownBlockType(blocktype bundle.CanonicalBlockType) bool {
 // ProtocolAgent is the Bundle Protocol Agent (BPA) which handles transmission
 // and reception of bundles.
 type Core struct {
-	ConvergenceSenders   []cla.ConvergenceSender
-	ConvergenceReceivers []cla.ConvergenceReceiver
-	Agents               []ApplicationAgent
+	Agents []ApplicationAgent
+
+	convergenceSenders   []cla.ConvergenceSender
+	convergenceReceivers []cla.ConvergenceReceiver
+	convergenceMutex     sync.Mutex
 
 	store    Store
 	idKeeper IdKeeper
@@ -65,9 +69,11 @@ func (c *Core) checkConvergenceReceivers() {
 		select {
 		// Invoked by Close(), shuts down
 		case <-c.stopSyn:
-			for _, claRec := range c.ConvergenceReceivers {
+			c.convergenceMutex.Lock()
+			for _, claRec := range c.convergenceReceivers {
 				claRec.Close()
 			}
+			c.convergenceMutex.Unlock()
 
 			close(c.stopAck)
 			return
@@ -80,10 +86,12 @@ func (c *Core) checkConvergenceReceivers() {
 
 		// Invoked by RegisterConvergenceReceiver, recreates chnl
 		case <-c.reloadConvRecs:
+			c.convergenceMutex.Lock()
 			chnl = cla.JoinReceivers()
-			for _, claRec := range c.ConvergenceReceivers {
+			for _, claRec := range c.convergenceReceivers {
 				chnl = cla.JoinReceivers(chnl, claRec.Channel())
 			}
+			c.convergenceMutex.Unlock()
 		}
 	}
 }
@@ -98,20 +106,42 @@ func (c *Core) Close() {
 // RegisterConvergenceSender adds a new ConvergenceSender to this Core's list.
 // Bundles will be sent through this ConvergenceSender.
 func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
-	if err, _ := sender.Start(); err != nil {
-		log.Printf("Failed to start ConvergenceReceiver: %v", err)
+	if err, retry := sender.Start(); err != nil {
+		log.Printf("Failed to start ConvergenceSender %v: %v", sender, err)
+
+		if retry {
+			go func(sender cla.ConvergenceSender) {
+				time.Sleep(5 * time.Second)
+				c.RegisterConvergenceSender(sender)
+			}(sender)
+		}
 	} else {
-		c.ConvergenceSenders = append(c.ConvergenceSenders, sender)
+		log.Printf("Started ConvergenceSender %v", sender)
+
+		c.convergenceMutex.Lock()
+		c.convergenceSenders = append(c.convergenceSenders, sender)
+		c.convergenceMutex.Unlock()
 	}
 }
 
 // RegisterConvergenceReceiver adds a new ConvergenceReceiver to this Core's
 // list. Bundles will be received through this ConvergenceReceiver
 func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
-	if err, _ := rec.Start(); err != nil {
-		log.Printf("Failed to start ConvergenceReceiver: %v", err)
+	if err, retry := rec.Start(); err != nil {
+		log.Printf("Failed to start ConvergenceReceiver %v: %v", rec, err)
+
+		if retry {
+			go func(rec cla.ConvergenceReceiver) {
+				time.Sleep(5 * time.Second)
+				c.RegisterConvergenceReceiver(rec)
+			}(rec)
+		}
 	} else {
-		c.ConvergenceReceivers = append(c.ConvergenceReceivers, rec)
+		log.Printf("Started ConvergenceReceiver %v", rec)
+
+		c.convergenceMutex.Lock()
+		c.convergenceReceivers = append(c.convergenceReceivers, rec)
+		c.convergenceMutex.Unlock()
 
 		c.reloadConvRecs <- struct{}{}
 	}
@@ -125,11 +155,13 @@ func (c *Core) RegisterApplicationAgent(agent ApplicationAgent) {
 func (c *Core) clasForDestination(endpoint bundle.EndpointID) []cla.ConvergenceSender {
 	var clas []cla.ConvergenceSender
 
-	for _, cla := range c.ConvergenceSenders {
+	c.convergenceMutex.Lock()
+	for _, cla := range c.convergenceSenders {
 		if cla.GetPeerEndpointID() == endpoint {
 			clas = append(clas, cla)
 		}
 	}
+	c.convergenceMutex.Unlock()
 
 	return clas
 }
@@ -138,7 +170,7 @@ func (c *Core) clasForBudlePack(bp BundlePack) []cla.ConvergenceSender {
 	// TODO: This software is kind of stupid at this moment and will return all
 	// currently known CLAs.
 
-	return c.ConvergenceSenders
+	return c.convergenceSenders
 }
 
 // HasEndpoint returns true if the given endpoint ID is assigned either to an
@@ -150,11 +182,13 @@ func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
 		}
 	}
 
-	for _, rec := range c.ConvergenceReceivers {
+	c.convergenceMutex.Lock()
+	for _, rec := range c.convergenceReceivers {
 		if rec.GetEndpointID() == endpoint {
 			return true
 		}
 	}
+	c.convergenceMutex.Unlock()
 
 	return false
 }
