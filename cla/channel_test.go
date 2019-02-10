@@ -2,6 +2,7 @@ package cla
 
 import (
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -35,26 +36,33 @@ func TestMerge(t *testing.T) {
 
 	chMerge := merge(ch0, ch1)
 
-	go func() {
-		var counter int = packages0 + packages1
+	var wg sync.WaitGroup
+	wg.Add(2 + 1) // 2 clients, 1 server
 
+	var counter sync.Map
+	counter.Store("counter", packages0+packages1)
+
+	go func() {
 		for {
 			select {
 			case b, ok := <-chMerge:
 				if ok {
-					counter--
+					c, _ := counter.Load("counter")
+					cVal := c.(int) - 1
+					counter.Store("counter", cVal)
+
 					if !reflect.DeepEqual(b.Bundle, bndl) {
 						t.Errorf("Received bundle differs: %v, %v", b, bndl)
 					}
+
+					if cVal == 0 {
+						wg.Done()
+						return
+					}
 				}
 
-			case <-time.After(time.Millisecond):
-				if counter != 0 {
-					t.Errorf("Counter is not zero: %d", counter)
-				}
-
-				close(chMerge)
-				return
+			case <-time.After(time.Second):
+				t.Fatal("Server timed out")
 			}
 		}
 	}()
@@ -64,17 +72,24 @@ func TestMerge(t *testing.T) {
 			ch <- recBndl
 		}
 		close(ch)
+
+		wg.Done()
 	}
 
 	go spam(ch0, packages0)
 	go spam(ch1, packages1)
 
-	time.Sleep(10 * time.Millisecond)
+	wg.Wait()
+
+	c, _ := counter.Load("counter")
+	if c.(int) != 0 {
+		t.Fatalf("Counter is not zero: %d", c.(int))
+	}
 }
 
 func TestJoinReceivers(t *testing.T) {
 	const (
-		clients  = 1000
+		clients  = 100
 		packages = 10000
 	)
 
@@ -101,26 +116,33 @@ func TestJoinReceivers(t *testing.T) {
 
 	chMerge := JoinReceivers(chns...)
 
-	go func() {
-		var counter int = clients * packages
+	var wg sync.WaitGroup
+	wg.Add(clients + 1) // 1 for the server
 
+	var counter sync.Map
+	counter.Store("counter", clients*packages)
+
+	go func() {
 		for {
 			select {
 			case b, ok := <-chMerge:
 				if ok {
-					counter--
+					c, _ := counter.Load("counter")
+					cVal := c.(int) - 1
+					counter.Store("counter", cVal)
+
 					if !reflect.DeepEqual(b.Bundle, bndl) {
 						t.Errorf("Received bundle differs: %v, %v", b, bndl)
 					}
+
+					if cVal == 0 {
+						wg.Done()
+						return
+					}
 				}
 
-			case <-time.After(time.Millisecond):
-				if counter != 0 {
-					t.Errorf("Counter is not zero: %d", counter)
-				}
-
-				close(chMerge)
-				return
+			case <-time.After(time.Second):
+				t.Fatal("Server timed out")
 			}
 		}
 	}()
@@ -131,8 +153,15 @@ func TestJoinReceivers(t *testing.T) {
 				ch <- recBndl
 			}
 			close(ch)
+
+			wg.Done()
 		}(chns[i])
 	}
 
-	time.Sleep(10 * time.Millisecond)
+	wg.Wait()
+
+	c, _ := counter.Load("counter")
+	if c.(int) != 0 {
+		t.Fatalf("Counter is not zero: %d", c.(int))
+	}
 }

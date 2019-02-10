@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -32,8 +33,8 @@ func TestSTCPServerClient(t *testing.T) {
 
 	// Bundle
 	const (
-		packages = 1000
 		clients  = 100
+		packages = 1000
 	)
 
 	bndl, err := bundle.NewBundle(
@@ -50,28 +51,38 @@ func TestSTCPServerClient(t *testing.T) {
 		t.Error(err)
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(clients + 1) // 1 for the server
+
 	// Server
 	serv := NewSTCPServer(
 		fmt.Sprintf(":%d", port), bundle.MustNewEndpointID("dtn:stcpcla"))
 
+	var counter sync.Map
+	counter.Store("counter", clients*packages)
+
 	go func() {
-		var counter int = packages * clients
 		var chnl = serv.Channel()
 
 		for {
 			select {
 			case b := <-chnl:
-				counter--
+				c, _ := counter.Load("counter")
+				cVal := c.(int) - 1
+				counter.Store("counter", cVal)
+
 				if !reflect.DeepEqual(b.Bundle, bndl) {
 					t.Errorf("Received bundle differs: %v, %v", b, bndl)
 				}
 
-			case <-time.After(time.Millisecond):
-				serv.Close()
-				if counter != 0 {
-					t.Fatalf("Counter is not zero: %d", counter)
+				if cVal == 0 {
+					serv.Close()
+					wg.Done()
+					return
 				}
-				break
+
+			case <-time.After(time.Second):
+				t.Fatal("Server timed out")
 			}
 		}
 	}()
@@ -91,8 +102,14 @@ func TestSTCPServerClient(t *testing.T) {
 			}
 
 			client.Close()
+			wg.Done()
 		}()
 	}
 
-	time.Sleep(10 * time.Millisecond)
+	wg.Wait()
+
+	c, _ := counter.Load("counter")
+	if c.(int) != 0 {
+		t.Fatalf("Counter is not zero: %d", c.(int))
+	}
 }
