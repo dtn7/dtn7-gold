@@ -98,15 +98,23 @@ func (c *Core) Close() {
 // RegisterConvergenceSender adds a new ConvergenceSender to this Core's list.
 // Bundles will be sent through this ConvergenceSender.
 func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
-	c.ConvergenceSenders = append(c.ConvergenceSenders, sender)
+	if err, _ := sender.Start(); err != nil {
+		log.Printf("Failed to start ConvergenceReceiver: %v", err)
+	} else {
+		c.ConvergenceSenders = append(c.ConvergenceSenders, sender)
+	}
 }
 
 // RegisterConvergenceReceiver adds a new ConvergenceReceiver to this Core's
 // list. Bundles will be received through this ConvergenceReceiver
 func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
-	c.ConvergenceReceivers = append(c.ConvergenceReceivers, rec)
+	if err, _ := rec.Start(); err != nil {
+		log.Printf("Failed to start ConvergenceReceiver: %v", err)
+	} else {
+		c.ConvergenceReceivers = append(c.ConvergenceReceivers, rec)
 
-	c.reloadConvRecs <- struct{}{}
+		c.reloadConvRecs <- struct{}{}
+	}
 }
 
 // RegisterApplicationAgent adds a new ApplicationAgent to this Core's list.

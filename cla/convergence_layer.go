@@ -34,6 +34,10 @@ func NewRecBundle(b bundle.Bundle, rec bundle.EndpointID) RecBundle {
 // the Channel method.
 // A type can be both a ConvergenceReceiver and ConvergenceSender.
 type ConvergenceReceiver interface {
+	// Start starts this ConvergenceReceiver and might return an error and a
+	// boolean indicating if another Start should be tried later.
+	Start() (error, bool)
+
 	// Channel returns a channel of received bundles.
 	Channel() chan RecBundle
 
@@ -48,6 +52,10 @@ type ConvergenceReceiver interface {
 // bundles to another node.
 // A type can be both a ConvergenceReceiver and ConvergenceSender.
 type ConvergenceSender interface {
+	// Start starts this ConvergenceSender and might return an error and a boolean
+	// indicating if another Start should be tried later.
+	Start() (error, bool)
+
 	// Send transmits a bundle to this ConvergenceSender's endpoint. This method
 	// should be thread safe and finish transmitting one bundle, before acting
 	// on the next. This could be achieved by using a mutex or the like.

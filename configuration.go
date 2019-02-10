@@ -55,7 +55,7 @@ func parsePeer(conv convergenceConf) (cla.ConvergenceSender, error) {
 			return nil, err
 		}
 
-		return stcp.NewSTCPClient(conv.Endpoint, endpointID)
+		return stcp.NewSTCPClient(conv.Endpoint, endpointID), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown peer.protocol \"%s\"", conv.Protocol)

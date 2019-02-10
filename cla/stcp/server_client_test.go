@@ -19,7 +19,7 @@ func getRandomPort(t *testing.T) int {
 
 	l, err := net.ListenTCP("tcp", addr)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	defer l.Close()
@@ -48,7 +48,7 @@ func TestSTCPServerClient(t *testing.T) {
 			bundle.NewPayloadBlock(0, []byte("hello world!")),
 		})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	var wg sync.WaitGroup
@@ -57,6 +57,9 @@ func TestSTCPServerClient(t *testing.T) {
 	// Server
 	serv := NewSTCPServer(
 		fmt.Sprintf(":%d", port), bundle.MustNewEndpointID("dtn:stcpcla"))
+	if err, _ := serv.Start(); err != nil {
+		t.Fatal(err)
+	}
 
 	var counter sync.Map
 	counter.Store("counter", clients*packages)
@@ -90,14 +93,14 @@ func TestSTCPServerClient(t *testing.T) {
 	// Client
 	for c := 0; c < clients; c++ {
 		go func() {
-			client, err := NewAnonymousSTCPClient(fmt.Sprintf("localhost:%d", port))
-			if err != nil {
-				t.Error(err)
+			client := NewAnonymousSTCPClient(fmt.Sprintf("localhost:%d", port))
+			if err, _ := client.Start(); err != nil {
+				t.Fatal(err)
 			}
 
 			for i := 0; i < packages; i++ {
-				if err = client.Send(bndl); err != nil {
-					t.Error(err)
+				if err := client.Send(bndl); err != nil {
+					t.Fatal(err)
 				}
 			}
 

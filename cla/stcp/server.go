@@ -26,22 +26,26 @@ type STCPServer struct {
 
 // NewSTCPServer creates a new STCPServer for the given listen address.
 func NewSTCPServer(listenAddress string, endpointID bundle.EndpointID) *STCPServer {
-	var serv = &STCPServer{
+	return &STCPServer{
 		listenAddress: listenAddress,
 		reportChan:    make(chan cla.RecBundle),
 		endpointID:    endpointID,
 		stopSyn:       make(chan struct{}),
 		stopAck:       make(chan struct{}),
 	}
+}
 
+// Start starts this STCPServer and might return an error and a boolean
+// indicating if another Start should be tried later.
+func (serv *STCPServer) Start() (error, bool) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", serv.listenAddress)
 	if err != nil {
-		panic(err)
+		return err, false
 	}
 
 	ln, err := net.ListenTCP("tcp", tcpAddr)
 	if err != nil {
-		panic(err)
+		return err, true
 	}
 
 	go func(ln *net.TCPListener) {
@@ -63,7 +67,7 @@ func NewSTCPServer(listenAddress string, endpointID bundle.EndpointID) *STCPServ
 		}
 	}(ln)
 
-	return serv
+	return nil, false
 }
 
 func (serv *STCPServer) handleSender(conn net.Conn) {

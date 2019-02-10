@@ -16,25 +16,33 @@ type STCPClient struct {
 	conn  net.Conn
 	peer  bundle.EndpointID
 	mutex sync.Mutex
+
+	address string
 }
 
 // NewSTCPClient creates a new STCPClient, connected to the given address for
 // the registered endpoint ID.
-func NewSTCPClient(address string, peer bundle.EndpointID) (client *STCPClient, err error) {
-	conn, err := net.DialTimeout("tcp", address, time.Second)
-	if err != nil {
-		return
-	}
-
+func NewSTCPClient(address string, peer bundle.EndpointID) *STCPClient {
 	return &STCPClient{
-		conn: conn,
-		peer: peer,
-	}, nil
+		peer:    peer,
+		address: address,
+	}
 }
 
 // NewSTCPClient creates a new STCPClient, connected to the given address.
-func NewAnonymousSTCPClient(address string) (client *STCPClient, err error) {
+func NewAnonymousSTCPClient(address string) *STCPClient {
 	return NewSTCPClient(address, bundle.DtnNone())
+}
+
+// Start starts this STCPClient and might return an error and a boolean
+// indicating if another Start should be tried later.
+func (client *STCPClient) Start() (error, bool) {
+	conn, err := net.DialTimeout("tcp", client.address, time.Second)
+	if err == nil {
+		client.conn = conn
+	}
+
+	return err, true
 }
 
 // Send transmits a bundle to this STCPClient's endpoint.
