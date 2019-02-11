@@ -186,6 +186,7 @@ func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
 	c.convergenceMutex.Lock()
 	for _, rec := range c.convergenceReceivers {
 		if rec.GetEndpointID() == endpoint {
+			c.convergenceMutex.Unlock()
 			return true
 		}
 	}
