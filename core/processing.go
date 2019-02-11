@@ -189,10 +189,10 @@ func (c *Core) forward(bp BundlePack) {
 
 func (c *Core) localDelivery(bp BundlePack) {
 	// TODO: check fragmentation
-	// TODO: handle delivery
 
 	log.Printf("Received delivered bundle: %v", bp.Bundle)
 
+	// TODO: move this to the ApplicationAgent
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
 		canonicalAr, err := bp.Bundle.PayloadBlock()
 		if err != nil {
@@ -214,6 +214,12 @@ func (c *Core) localDelivery(bp BundlePack) {
 
 		log.Printf("Received bundle %v contains an administrative record: %v",
 			bp.Bundle, ar)
+	}
+
+	for _, agent := range c.Agents {
+		if agent.EndpointID() == bp.Bundle.PrimaryBlock.Destination {
+			agent.Deliver(bp.Bundle)
+		}
 	}
 
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDelivery) {

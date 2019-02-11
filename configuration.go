@@ -9,18 +9,27 @@ import (
 	"github.com/geistesk/dtn7/cla"
 	"github.com/geistesk/dtn7/cla/stcp"
 	"github.com/geistesk/dtn7/core"
+	"github.com/geistesk/dtn7/core/appagent"
+	"github.com/geistesk/dtn7/core/appagent/srest"
 )
 
 // tomlConfig describes the TOML-configuration.
 type tomlConfig struct {
-	Core   coreConf
-	Listen []convergenceConf
-	Peer   []convergenceConf
+	Core       coreConf
+	SimpleRest simpleRestConf `toml:"simple-rest"`
+	Listen     []convergenceConf
+	Peer       []convergenceConf
 }
 
 // coreConf describes the Core-configuration block.
 type coreConf struct {
 	Store string
+}
+
+// simpleRestConf describes the SimpleRESTAppAgent.
+type simpleRestConf struct {
+	Node   string
+	Listen string
 }
 
 // convergenceConf describes the Convergence-configuration block, used for
@@ -62,6 +71,15 @@ func parsePeer(conv convergenceConf) (cla.ConvergenceSender, error) {
 	}
 }
 
+func parseSimpleRESTAppAgent(conf simpleRestConf, c *core.Core) (appagent.ApplicationAgent, error) {
+	endpointID, err := bundle.NewEndpointID(conf.Node)
+	if err != nil {
+		return nil, err
+	}
+
+	return srest.NewSimpleRESTAppAgent(endpointID, c, conf.Listen), nil
+}
+
 // parseCore creates the Core based on the given TOML configuration.
 func parseCore(filename string) (c *core.Core, err error) {
 	var conf tomlConfig
@@ -78,6 +96,14 @@ func parseCore(filename string) (c *core.Core, err error) {
 	c, err = core.NewCore(conf.Core.Store)
 	if err != nil {
 		return
+	}
+
+	if conf.SimpleRest != (simpleRestConf{}) {
+		if aa, err := parseSimpleRESTAppAgent(conf.SimpleRest, c); err == nil {
+			c.RegisterApplicationAgent(aa)
+		} else {
+			log.Printf("Failed to register SimpleRESTAppAgent: %v", err)
+		}
 	}
 
 	// Listen/ConvergenceReceiver

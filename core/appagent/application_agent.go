@@ -1,8 +1,11 @@
-package core
+// Package appagent describes the ApplicationAgent interface for application
+// agents.
+//
+// The subpackages should contain implementations of this interface, which could
+// be used in the core package.
+package appagent
 
-import (
-	"github.com/geistesk/dtn7/bundle"
-)
+import "github.com/geistesk/dtn7/bundle"
 
 // ApplicationAgent is an interface which describes application agent, which can
 // both receive and transmit bundles in interaction with the Core.
@@ -12,5 +15,5 @@ type ApplicationAgent interface {
 
 	// Deliver delivers a received bundle to this ApplicationAgent. This bundle
 	// may contain an application specific payload or an administrative record.
-	Deliver(bndl bundle.Bundle) error
+	Deliver(bndl *bundle.Bundle) error
 }

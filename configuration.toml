@@ -1,6 +1,10 @@
 [core]
 store = "store.dat"
 
+[simple-rest]
+node = "dtn:sender"
+listen = "127.0.0.1:8080"
+
 [[listen]]
 node = "dtn:hostymyhostface"
 protocol = "stcp"

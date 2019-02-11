@@ -7,6 +7,7 @@ import (
 
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/geistesk/dtn7/cla"
+	"github.com/geistesk/dtn7/core/appagent"
 )
 
 // isKnownBlockType checks if this program's core knows the given block type.
@@ -24,10 +25,10 @@ func isKnownBlockType(blocktype bundle.CanonicalBlockType) bool {
 	}
 }
 
-// ProtocolAgent is the Bundle Protocol Agent (BPA) which handles transmission
-// and reception of bundles.
+// Core is the inner core of our DTN which handles transmission, reception and
+// reception of bundles.
 type Core struct {
-	Agents []ApplicationAgent
+	Agents []appagent.ApplicationAgent
 
 	convergenceSenders   []cla.ConvergenceSender
 	convergenceReceivers []cla.ConvergenceReceiver
@@ -148,7 +149,7 @@ func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
 }
 
 // RegisterApplicationAgent adds a new ApplicationAgent to this Core's list.
-func (c *Core) RegisterApplicationAgent(agent ApplicationAgent) {
+func (c *Core) RegisterApplicationAgent(agent appagent.ApplicationAgent) {
 	c.Agents = append(c.Agents, agent)
 }
 
