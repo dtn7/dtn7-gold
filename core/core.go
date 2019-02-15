@@ -235,6 +235,7 @@ func (c *Core) SendStatusReport(bp BundlePack,
 	var outBndl, err = bundle.NewBundle(
 		primary,
 		[]bundle.CanonicalBlock{
+			bundle.NewHopCountBlock(23, 0, bundle.NewHopCount(5)),
 			ar.ToCanonicalBlock(),
 		})
 

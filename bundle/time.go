@@ -26,6 +26,11 @@ func (t DtnTime) Time() time.Time {
 	return time.Unix(t.Unix(), 0).UTC()
 }
 
+// String returns this DtnTime's string representation.
+func (t DtnTime) String() string {
+	return t.Time().Format("2006-01-02 15:04:05")
+}
+
 // DtnTimeFromTime returns the DtnTime for the time.Time.
 func DtnTimeFromTime(t time.Time) DtnTime {
 	return (DtnTime)(t.Unix() - seconds1970To2k)
@@ -58,5 +63,5 @@ func (ct CreationTimestamp) SequenceNumber() uint {
 }
 
 func (ct CreationTimestamp) String() string {
-	return fmt.Sprintf("(%d, %d)", ct[0], ct[1])
+	return fmt.Sprintf("(%v, %d)", DtnTime(ct[0]), ct[1])
 }

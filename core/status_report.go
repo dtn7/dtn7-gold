@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/ugorji/go/codec"
@@ -244,6 +245,26 @@ func NewStatusReport(bndl bundle.Bundle, statusItem StatusInformationPos,
 }
 
 func (sr StatusReport) String() string {
-	return fmt.Sprintf("StatusReport(%v, %v, %v, %v)",
-		sr.StatusInformation, sr.ReportReason, sr.SourceNode, sr.Timestamp)
+	var b strings.Builder
+	fmt.Fprintf(&b, "StatusReport([")
+
+	for i := 0; i < len(sr.StatusInformation); i++ {
+		si := sr.StatusInformation[i]
+		sip := StatusInformationPos(i)
+
+		if !si.Asserted {
+			continue
+		}
+
+		if si.Time == bundle.DtnTimeEpoch {
+			fmt.Fprintf(&b, "%v,", sip)
+		} else {
+			fmt.Fprintf(&b, "%v %v,", sip, si.Time)
+		}
+	}
+	fmt.Fprintf(&b, "], ")
+
+	fmt.Fprintf(&b, "%v, %v, %v", sr.ReportReason, sr.SourceNode, sr.Timestamp)
+
+	return b.String()
 }

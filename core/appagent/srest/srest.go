@@ -86,6 +86,7 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 			60*60*1000000),
 		[]bundle.CanonicalBlock{
 			bundle.NewPayloadBlock(0, []byte(postReq.Payload)),
+			bundle.NewHopCountBlock(23, 0, bundle.NewHopCount(5)),
 		})
 	if bndlErr != nil {
 		handleErr(fmt.Sprintf("Creating bundle failed: %v", bndlErr))
