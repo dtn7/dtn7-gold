@@ -1,6 +1,10 @@
 [core]
 store = "store.dat"
 
+[discovery]
+ipv4 = true
+ipv6 = true
+
 [simple-rest]
 node = "dtn:sender"
 listen = "127.0.0.1:8080"

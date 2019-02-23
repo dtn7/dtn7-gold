@@ -26,7 +26,7 @@ func main() {
 		log.Fatalf("Usage: %s configuration.toml", os.Args[0])
 	}
 
-	dtn, err := parseCore(os.Args[1])
+	core, discovery, err := parseCore(os.Args[1])
 	if err != nil {
 		log.Fatalf("Failed to parse config: %v\n", err)
 	}
@@ -34,5 +34,6 @@ func main() {
 	waitSigint()
 	log.Print("Shutting down")
 
-	dtn.Close()
+	core.Close()
+	discovery.Close()
 }

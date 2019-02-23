@@ -1,3 +1,5 @@
+// Package discovery contains code for peer/neighbor discovery of other DTN
+// nodes through UDP multicast packages.
 package discovery
 
 import (

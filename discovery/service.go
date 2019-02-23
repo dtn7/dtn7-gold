@@ -5,12 +5,16 @@ import (
 	"log"
 	"time"
 
+	"github.com/geistesk/dtn7/cla/stcp"
+	"github.com/geistesk/dtn7/core"
 	"github.com/schollz/peerdiscovery"
 )
 
 // DiscoveryService is a type to publish the node's CLAs to its network while
 // discovering new peers. Internally UDP mulitcast packets are used.
 type DiscoveryService struct {
+	c *core.Core
+
 	stopChan4 chan struct{}
 	stopChan6 chan struct{}
 }
@@ -24,7 +28,21 @@ func (ds *DiscoveryService) notify(discovered peerdiscovery.Discovered) {
 		return
 	}
 
-	log.Printf("Peer discovery discovered %v at %v", dms, discovered.Address)
+	for _, dm := range dms {
+		go ds.handleDiscovery(dm, discovered.Address)
+	}
+}
+
+func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
+	log.Printf("Peer discovery discovered %v at %v", dm, addr)
+
+	if dm.Type != STCP {
+		log.Printf("DiscoveryMessage's Type is unknown or unsupported: %d", dm.Type)
+		return
+	}
+
+	client := stcp.NewSTCPClient(fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint)
+	ds.c.RegisterConvergenceSender(client)
 }
 
 // Close shuts the DiscoveryService down.
@@ -41,8 +59,12 @@ func (ds *DiscoveryService) Close() {
 // NewDiscoveryService starts a new DiscoveryService and promotes the given
 // DiscoveryMessages through IPv4 and/or IPv6, as specified in the parameters.
 // Furthermore, received DiscoveryMessages will be processed.
-func NewDiscoveryService(dms []DiscoveryMessage, ipv4, ipv6 bool) (*DiscoveryService, error) {
-	var ds = &DiscoveryService{}
+func NewDiscoveryService(dms []DiscoveryMessage, c *core.Core, ipv4, ipv6 bool) (*DiscoveryService, error) {
+	log.Printf("New DiscoveryService: IPv4: %t, IPv6: %t, %v", ipv4, ipv6, dms)
+
+	var ds = &DiscoveryService{
+		c: c,
+	}
 
 	if ipv4 {
 		ds.stopChan4 = make(chan struct{})

@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
+	"strconv"
 
 	"github.com/BurntSushi/toml"
 	"github.com/geistesk/dtn7/bundle"
@@ -11,11 +13,13 @@ import (
 	"github.com/geistesk/dtn7/core"
 	"github.com/geistesk/dtn7/core/appagent"
 	"github.com/geistesk/dtn7/core/appagent/srest"
+	"github.com/geistesk/dtn7/discovery"
 )
 
 // tomlConfig describes the TOML-configuration.
 type tomlConfig struct {
 	Core       coreConf
+	Discovery  discoveryConf
 	SimpleRest simpleRestConf `toml:"simple-rest"`
 	Listen     []convergenceConf
 	Peer       []convergenceConf
@@ -24,6 +28,12 @@ type tomlConfig struct {
 // coreConf describes the Core-configuration block.
 type coreConf struct {
 	Store string
+}
+
+// discoveryConf describes the Discovery-configuration block.
+type discoveryConf struct {
+	IPv4 bool
+	IPv6 bool
 }
 
 // simpleRestConf describes the SimpleRESTAppAgent.
@@ -41,18 +51,29 @@ type convergenceConf struct {
 }
 
 // parseListen inspects a "listen" convergenceConf and returns a ConvergenceReceiver.
-func parseListen(conv convergenceConf) (cla.ConvergenceReceiver, error) {
+func parseListen(conv convergenceConf) (cla.ConvergenceReceiver, discovery.DiscoveryMessage, error) {
+	var defaultDisc = discovery.DiscoveryMessage{}
+
 	switch conv.Protocol {
 	case "stcp":
 		endpointID, err := bundle.NewEndpointID(conv.Node)
 		if err != nil {
-			return nil, err
+			return nil, defaultDisc, err
 		}
 
-		return stcp.NewSTCPServer(conv.Endpoint, endpointID), nil
+		_, portStr, _ := net.SplitHostPort(conv.Endpoint)
+		portInt, _ := strconv.Atoi(portStr)
+
+		msg := discovery.DiscoveryMessage{
+			Type:     discovery.STCP,
+			Endpoint: endpointID,
+			Port:     uint(portInt),
+		}
+
+		return stcp.NewSTCPServer(conv.Endpoint, endpointID), msg, nil
 
 	default:
-		return nil, fmt.Errorf("Unknown listen.protocol \"%s\"", conv.Protocol)
+		return nil, defaultDisc, fmt.Errorf("Unknown listen.protocol \"%s\"", conv.Protocol)
 	}
 }
 
@@ -81,11 +102,13 @@ func parseSimpleRESTAppAgent(conf simpleRestConf, c *core.Core) (appagent.Applic
 }
 
 // parseCore creates the Core based on the given TOML configuration.
-func parseCore(filename string) (c *core.Core, err error) {
+func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, err error) {
 	var conf tomlConfig
 	if _, err = toml.DecodeFile(filename, &conf); err != nil {
 		return
 	}
+
+	var discoveryMsgs []discovery.DiscoveryMessage
 
 	// Core
 	if conf.Core.Store == "" {
@@ -98,6 +121,7 @@ func parseCore(filename string) (c *core.Core, err error) {
 		return
 	}
 
+	// SimpleREST (srest)
 	if conf.SimpleRest != (simpleRestConf{}) {
 		if aa, err := parseSimpleRESTAppAgent(conf.SimpleRest, c); err == nil {
 			c.RegisterApplicationAgent(aa)
@@ -109,10 +133,14 @@ func parseCore(filename string) (c *core.Core, err error) {
 	// Listen/ConvergenceReceiver
 	for _, conv := range conf.Listen {
 		var convRec cla.ConvergenceReceiver
-		convRec, err = parseListen(conv)
+		var discoMsg discovery.DiscoveryMessage
+
+		convRec, discoMsg, err = parseListen(conv)
 		if err != nil {
 			return
 		}
+
+		discoveryMsgs = append(discoveryMsgs, discoMsg)
 
 		c.RegisterConvergenceReceiver(convRec)
 	}
@@ -126,6 +154,13 @@ func parseCore(filename string) (c *core.Core, err error) {
 		}
 
 		c.RegisterConvergenceSender(convRec)
+	}
+
+	// Discovery
+	ds, err = discovery.NewDiscoveryService(
+		discoveryMsgs, c, conf.Discovery.IPv4, conf.Discovery.IPv6)
+	if err != nil {
+		return
 	}
 
 	return
