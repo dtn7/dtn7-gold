@@ -2,7 +2,6 @@ package core
 
 import (
 	"log"
-	"net"
 	"sync"
 	"time"
 
@@ -50,15 +49,16 @@ type Core struct {
 func NewCore(storePath string) (*Core, error) {
 	var c = new(Core)
 
-	dm := discovery.DiscoveryMessage{
-		Type:        discovery.STCP,
-		Endpoint:    bundle.MustNewEndpointID("dtn:test"),
-		Address:     net.ParseIP("23.23.23.23"),
-		Port:        2323,
-		Additionals: []byte(storePath),
+	dms := []discovery.DiscoveryMessage{
+		discovery.DiscoveryMessage{
+			Type:        discovery.STCP,
+			Endpoint:    bundle.MustNewEndpointID("dtn:test"),
+			Port:        2323,
+			Additionals: []byte(storePath),
+		},
 	}
 
-	ds, err := discovery.NewDiscoveryService(dm)
+	ds, err := discovery.NewDiscoveryService(dms, true, true)
 	if err != nil {
 		return nil, err
 	}

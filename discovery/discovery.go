@@ -2,7 +2,6 @@ package discovery
 
 import (
 	"fmt"
-	"net"
 	"strings"
 
 	"github.com/geistesk/dtn7/bundle"
@@ -39,24 +38,24 @@ type DiscoveryMessage struct {
 
 	Type        CLAType
 	Endpoint    bundle.EndpointID
-	Address     net.IP
 	Port        uint
 	Additionals []byte
 }
 
-// NewDiscoveryMessageFromCbor creates a new DiscoveryMessage based on the given
-// CBOR byte string.
-func NewDiscoveryMessageFromCbor(buff []byte) (dm DiscoveryMessage, err error) {
+// NewDiscoveryMessagesFromCbor creates a new array of DiscoveryMessage based
+// on the given CBOR byte string.
+func NewDiscoveryMessagesFromCbor(buff []byte) (dms []DiscoveryMessage, err error) {
 	var dec = codec.NewDecoderBytes(buff, new(codec.CborHandle))
-	err = dec.Decode(&dm)
+	err = dec.Decode(&dms)
 
 	return
 }
 
-// Cbor returns a CBOR byte string representation of this DiscoveryMessage.
-func (dm DiscoveryMessage) Cbor() (buff []byte, err error) {
+// DiscoveryMessagesToCbor returns a CBOR byte string representation of this
+// array of DiscoveryMessages.
+func DiscoveryMessagesToCbor(dms []DiscoveryMessage) (buff []byte, err error) {
 	var enc = codec.NewEncoderBytes(&buff, new(codec.CborHandle))
-	err = enc.Encode(dm)
+	err = enc.Encode(dms)
 
 	return
 }
@@ -75,8 +74,8 @@ func (dm DiscoveryMessage) String() string {
 		fmt.Fprintf(&builder, "Unknown CLA")
 	}
 
-	fmt.Fprintf(&builder, ",%v,%v,%d,%v)",
-		dm.Endpoint, dm.Address, dm.Port, dm.Additionals)
+	fmt.Fprintf(&builder, ",%v,%d,%v)",
+		dm.Endpoint, dm.Port, dm.Additionals)
 
 	return builder.String()
 }

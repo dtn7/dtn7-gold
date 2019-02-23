@@ -1,7 +1,6 @@
 package discovery
 
 import (
-	"net"
 	"reflect"
 	"testing"
 
@@ -14,45 +13,45 @@ func TestDiscoveryMessageCbor(t *testing.T) {
 		DiscoveryMessage{
 			Type:     STCP,
 			Endpoint: bundle.MustNewEndpointID("dtn:foobar"),
-			Address:  net.ParseIP("172.23.23.23"),
 			Port:     8000,
 		},
 		DiscoveryMessage{
 			Type:        STCP,
 			Endpoint:    bundle.MustNewEndpointID("dtn:foobar"),
-			Address:     net.ParseIP("172.23.23.23"),
 			Port:        8000,
 			Additionals: []byte("gumo"),
 		},
 		DiscoveryMessage{
 			Type:     TCPCLV4,
 			Endpoint: bundle.MustNewEndpointID("ipn:1337.23"),
-			Address:  net.ParseIP("2a01:4a0:2002:2417::2"),
 			Port:     12345,
 		},
 		DiscoveryMessage{
 			Type:        TCPCLV4,
 			Endpoint:    bundle.MustNewEndpointID("ipn:1337.23"),
-			Address:     net.ParseIP("2a01:4a0:2002:2417::2"),
 			Port:        12345,
 			Additionals: []byte("gumo"),
 		},
 	}
 
 	for _, dmIn := range tests {
-		buff, err := dmIn.Cbor()
+		buff, err := DiscoveryMessagesToCbor([]DiscoveryMessage{dmIn})
 		if err != nil {
 			t.Fatalf("Encoding failed: %v", err)
 		}
 
 		// Decode into another DiscoveryMessage
-		dmOut, err := NewDiscoveryMessageFromCbor(buff)
+		dmsOut, err := NewDiscoveryMessagesFromCbor(buff)
 		if err != nil {
 			t.Fatalf("Decoding failed: %v", err)
 		}
 
-		if !reflect.DeepEqual(dmIn, dmOut) {
-			t.Fatalf("Decoded DiscoveryMessage differs: %v became %v", dmIn, dmOut)
+		if l := len(dmsOut); l != 1 {
+			t.Fatalf("Length of decoded DiscoveryMessages is %d != 1", l)
+		}
+
+		if !reflect.DeepEqual(dmIn, dmsOut[0]) {
+			t.Fatalf("Decoded DiscoveryMessage differs: %v became %v", dmIn, dmsOut[0])
 		}
 
 		// Decode as unknown
@@ -67,8 +66,17 @@ func TestDiscoveryMessageCbor(t *testing.T) {
 			t.Errorf("Decoded CBOR has wrong type: %v instead of slice", ty.Kind())
 		}
 
-		if arr := dmGeneric.([]interface{}); len(arr) != 5 {
-			t.Errorf("CBOR-Array has wrong length: %d instead of %d", len(arr), 5)
+		const outerLen = 1
+		const innerLen = 4
+		if arr := dmGeneric.([]interface{}); len(arr) != outerLen {
+			t.Errorf("CBOR-Array has wrong length: %d instead of %d",
+				len(arr), outerLen)
+
+			innerArr := arr[0].([]interface{})
+			if len(innerArr) != innerLen {
+				t.Errorf("CBOR-Array has wrong length: %d instead of %d",
+					len(innerArr), innerLen)
+			}
 		}
 
 		t.Logf("%x", buff)
