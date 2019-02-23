@@ -2,12 +2,14 @@ package core
 
 import (
 	"log"
+	"net"
 	"sync"
 	"time"
 
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/geistesk/dtn7/cla"
 	"github.com/geistesk/dtn7/core/appagent"
+	"github.com/geistesk/dtn7/discovery"
 )
 
 // isKnownBlockType checks if this program's core knows the given block type.
@@ -34,6 +36,8 @@ type Core struct {
 	convergenceReceivers []cla.ConvergenceReceiver
 	convergenceMutex     sync.Mutex
 
+	discoveryService *discovery.DiscoveryService
+
 	store    Store
 	idKeeper IdKeeper
 
@@ -45,6 +49,20 @@ type Core struct {
 // NewCore creates and returns a new core.
 func NewCore(storePath string) (*Core, error) {
 	var c = new(Core)
+
+	dm := discovery.DiscoveryMessage{
+		Type:        discovery.STCP,
+		Endpoint:    bundle.MustNewEndpointID("dtn:test"),
+		Address:     net.ParseIP("23.23.23.23"),
+		Port:        2323,
+		Additionals: []byte(storePath),
+	}
+
+	ds, err := discovery.NewDiscoveryService(dm)
+	if err != nil {
+		return nil, err
+	}
+	c.discoveryService = ds
 
 	store, err := NewSimpleStore(storePath)
 	if err != nil {
@@ -100,6 +118,8 @@ func (c *Core) checkConvergenceReceivers() {
 // Close shuts the Core down and notifies all bounded ConvergenceReceivers to
 // also close the connection.
 func (c *Core) Close() {
+	c.discoveryService.Close()
+
 	close(c.stopSyn)
 	<-c.stopAck
 }
