@@ -39,6 +39,14 @@ func (c *Core) transmit(bp BundlePack) {
 func (c *Core) receive(bp BundlePack) {
 	log.Printf("Received new bundle: %v", bp.Bundle)
 
+	if KnowsBundle(c.store, bp) {
+		log.Printf("Received bundle's ID is already known.")
+
+		// bundleDeletion is _not_ called because this would delete the already
+		// stored BundlePack.
+		return
+	}
+
 	bp.AddConstraint(DispatchPending)
 	c.store.Push(bp)
 

@@ -32,6 +32,14 @@ func QueryPending(store Store) []BundlePack {
 	})
 }
 
+// KnowsBundle returns true if the requested store knows a BundlePack which
+// bundle equals the requested BundlePack's.
+func KnowsBundle(store Store, requested BundlePack) bool {
+	return store.Query(func(bp BundlePack) bool {
+		return bp.Bundle.ID() == requested.Bundle.ID()
+	}) != nil
+}
+
 // NoStore is a dummy implemention of the Store interface which represents, as
 // the name indicates, no store whatsoever. Push will produce log messages and
 // Query has no functionality at all.
