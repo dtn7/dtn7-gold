@@ -144,9 +144,10 @@ func (c *Core) forward(bp BundlePack) {
 
 	var nodes []cla.ConvergenceSender
 
-	nodes = c.clasForDestination(bp.Bundle.PrimaryBlock.Destination)
+	// Try a direct delivery or consult the RoutingAlgorithm otherwise.
+	nodes = c.senderForDestination(bp.Bundle.PrimaryBlock.Destination)
 	if nodes == nil {
-		nodes = c.clasForBudlePack(bp)
+		nodes = c.routing.SenderForBundle(bp)
 	}
 
 	if nodes == nil {

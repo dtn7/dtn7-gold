@@ -34,8 +34,9 @@ type Core struct {
 	convergenceReceivers []cla.ConvergenceReceiver
 	convergenceMutex     sync.Mutex
 
-	store    Store
 	idKeeper IdKeeper
+	store    Store
+	routing  RoutingAlgorithm
 
 	reloadConvRecs chan struct{}
 	stopSyn        chan struct{}
@@ -55,12 +56,20 @@ func NewCore(storePath string) (*Core, error) {
 	c.idKeeper = NewIdKeeper()
 	c.reloadConvRecs = make(chan struct{})
 
+	c.routing = NewEpidemicRouting(c)
+
 	c.stopSyn = make(chan struct{})
 	c.stopAck = make(chan struct{})
 
 	go c.checkConvergenceReceivers()
 
 	return c, nil
+}
+
+// SetRoutingAlgorithm overwrites the used RoutingAlgorithm, which defaults to
+// EpidemicRouting.
+func (c *Core) SetRoutingAlgorithm(routing RoutingAlgorithm) {
+	c.routing = routing
 }
 
 // checkConvergenceReceivers checks all ConvergenceReceivers for new bundles.
@@ -179,7 +188,10 @@ func (c *Core) RegisterApplicationAgent(agent appagent.ApplicationAgent) {
 	c.Agents = append(c.Agents, agent)
 }
 
-func (c *Core) clasForDestination(endpoint bundle.EndpointID) []cla.ConvergenceSender {
+// senderForDestination returns an array of ConvergenceSenders whose endpoint ID
+// equals the requested one. This is used for direct delivery, comparing the
+// PrimaryBlock's destination to the assigned endpoint ID of each CLA.
+func (c *Core) senderForDestination(endpoint bundle.EndpointID) []cla.ConvergenceSender {
 	var clas []cla.ConvergenceSender
 
 	c.convergenceMutex.Lock()
@@ -191,13 +203,6 @@ func (c *Core) clasForDestination(endpoint bundle.EndpointID) []cla.ConvergenceS
 	c.convergenceMutex.Unlock()
 
 	return clas
-}
-
-func (c *Core) clasForBudlePack(bp BundlePack) []cla.ConvergenceSender {
-	// TODO: This software is kind of stupid at this moment and will return all
-	// currently known CLAs.
-
-	return c.convergenceSenders
 }
 
 // HasEndpoint returns true if the given endpoint ID is assigned either to an
