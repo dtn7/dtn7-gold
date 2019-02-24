@@ -15,7 +15,7 @@ const (
 	DiscoveryAddress4 = "224.23.23.23"
 
 	// DiscoveryAddress6 is the default multicast IPv4 add6ess used for discovery.
-	DiscoveryAddress6 = "ff00::23:23:23"
+	DiscoveryAddress6 = "ff02::23"
 
 	// DiscoveryPort is the default multicast port used for discovery.
 	DiscoveryPort = 35039

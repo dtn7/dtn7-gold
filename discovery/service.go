@@ -19,6 +19,12 @@ type DiscoveryService struct {
 	stopChan6 chan struct{}
 }
 
+func (ds *DiscoveryService) notify6(discovered peerdiscovery.Discovered) {
+	discovered.Address = fmt.Sprintf("[%s]", discovered.Address)
+
+	ds.notify(discovered)
+}
+
 func (ds *DiscoveryService) notify(discovered peerdiscovery.Discovered) {
 	dms, err := NewDiscoveryMessagesFromCbor(discovered.Payload)
 	if err != nil {
@@ -84,9 +90,10 @@ func NewDiscoveryService(dms []DiscoveryMessage, c *core.Core, ipv4, ipv6 bool) 
 		multicastAddress string
 		stopChan         chan struct{}
 		ipVersion        peerdiscovery.IPVersion
+		notify           func(discovered peerdiscovery.Discovered)
 	}{
-		{ipv4, DiscoveryAddress4, ds.stopChan4, peerdiscovery.IPv4},
-		{ipv6, DiscoveryAddress6, ds.stopChan6, peerdiscovery.IPv6},
+		{ipv4, DiscoveryAddress4, ds.stopChan4, peerdiscovery.IPv4, ds.notify},
+		{ipv6, DiscoveryAddress6, ds.stopChan6, peerdiscovery.IPv6, ds.notify6},
 	}
 
 	for _, set := range sets {
@@ -104,7 +111,7 @@ func NewDiscoveryService(dms []DiscoveryMessage, c *core.Core, ipv4, ipv6 bool) 
 			StopChan:         set.stopChan,
 			AllowSelf:        true,
 			IPVersion:        set.ipVersion,
-			Notify:           ds.notify,
+			Notify:           set.notify,
 		}
 
 		go peerdiscovery.Discover(set)
