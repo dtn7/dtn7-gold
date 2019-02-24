@@ -118,6 +118,21 @@ func (c *Core) Close() {
 // RegisterConvergenceSender adds a new ConvergenceSender to this Core's list.
 // Bundles will be sent through this ConvergenceSender.
 func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
+	c.convergenceMutex.Lock()
+	for _, cs := range c.convergenceSenders {
+		if cs.Address() == sender.Address() {
+			log.Printf("ConvergenceSender's address is already known: %v", sender)
+			c.convergenceMutex.Unlock()
+			return
+		}
+	}
+	c.convergenceMutex.Unlock()
+
+	if c.HasEndpoint(sender.GetPeerEndpointID()) {
+		log.Printf("Node contains ConvergenceSender's endpoint ID: %v", sender)
+		return
+	}
+
 	if err, retry := sender.Start(); err != nil {
 		log.Printf("Failed to start ConvergenceSender %v: %v", sender, err)
 

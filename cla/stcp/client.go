@@ -70,6 +70,12 @@ func (client STCPClient) GetPeerEndpointID() bundle.EndpointID {
 	return client.peer
 }
 
+// Address should return a unique address string to both identify this
+// ConvergenceSender and ensure it will not opened twice.
+func (client STCPClient) Address() string {
+	return client.address
+}
+
 func (client STCPClient) String() string {
 	if client.conn != nil {
 		return fmt.Sprintf("stcp://%v", client.conn.RemoteAddr())

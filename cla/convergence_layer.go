@@ -67,4 +67,8 @@ type ConvergenceSender interface {
 	// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
 	// if it's known. Otherwise the zero endpoint will be returned.
 	GetPeerEndpointID() bundle.EndpointID
+
+	// Address should return a unique address string to both identify this
+	// ConvergenceSender and ensure it will not opened twice.
+	Address() string
 }
