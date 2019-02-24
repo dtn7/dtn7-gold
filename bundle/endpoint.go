@@ -216,7 +216,7 @@ func (eid EndpointID) String() string {
 		}
 
 	default:
-		fmt.Fprintf(&b, "unkown %T: %v", t, eid.SchemeSpecificPart)
+		fmt.Fprintf(&b, "unknown %T: %v", t, eid.SchemeSpecificPart)
 	}
 
 	return b.String()

@@ -24,13 +24,13 @@ func TestBundlePackConstraints(t *testing.T) {
 	var bp = NewBundlePack(bndl)
 
 	if len(bp.Constraints) != 0 {
-		t.Errorf("Inital constraints map is not empty")
+		t.Errorf("Initial constraints map is not empty")
 	}
 	if bp.HasConstraints() {
-		t.Errorf("Inital bundle pack has constraints")
+		t.Errorf("Initial bundle pack has constraints")
 	}
 	if bp.HasConstraint(DispatchPending) {
-		t.Errorf("Inital bundle pack has specific constraint")
+		t.Errorf("Initial bundle pack has specific constraint")
 	}
 
 	bp.AddConstraint(DispatchPending)

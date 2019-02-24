@@ -13,7 +13,7 @@ import (
 )
 
 // STCPServer is an implementation of a Simple TCP Convergence-Layer server
-// which accpets bundles from multiple connections and forwards them to the
+// which accepts bundles from multiple connections and forwards them to the
 // given channel.
 type STCPServer struct {
 	listenAddress string

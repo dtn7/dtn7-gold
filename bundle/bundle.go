@@ -141,7 +141,7 @@ func (b Bundle) checkValid() (errs error) {
 		if _, ok := cbBlockNumbers[cb.BlockNumber]; ok {
 			errs = multierror.Append(errs,
 				newBundleError(fmt.Sprintf(
-					"Bundle: Block number %d occured multiple times", cb.BlockNumber)))
+					"Bundle: Block number %d occurred multiple times", cb.BlockNumber)))
 		}
 		cbBlockNumbers[cb.BlockNumber] = true
 
@@ -150,7 +150,7 @@ func (b Bundle) checkValid() (errs error) {
 			if _, ok := cbBlockTypes[cb.BlockType]; ok {
 				errs = multierror.Append(errs,
 					newBundleError(fmt.Sprintf(
-						"Bundle: Block type %d occured multiple times", cb.BlockType)))
+						"Bundle: Block type %d occurred multiple times", cb.BlockType)))
 			}
 			cbBlockTypes[cb.BlockType] = true
 		}

@@ -191,17 +191,17 @@ func (c *Core) RegisterApplicationAgent(agent ApplicationAgent) {
 // equals the requested one. This is used for direct delivery, comparing the
 // PrimaryBlock's destination to the assigned endpoint ID of each CLA.
 func (c *Core) senderForDestination(endpoint bundle.EndpointID) []cla.ConvergenceSender {
-	var clas []cla.ConvergenceSender
+	var css []cla.ConvergenceSender
 
 	c.convergenceMutex.Lock()
-	for _, cla := range c.convergenceSenders {
-		if cla.GetPeerEndpointID() == endpoint {
-			clas = append(clas, cla)
+	for _, cs := range c.convergenceSenders {
+		if cs.GetPeerEndpointID() == endpoint {
+			css = append(css, cs)
 		}
 	}
 	c.convergenceMutex.Unlock()
 
-	return clas
+	return css
 }
 
 // HasEndpoint returns true if the given endpoint ID is assigned either to an
