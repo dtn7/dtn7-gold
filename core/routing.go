@@ -12,6 +12,8 @@ type RoutingAlgorithm interface {
 	NotifyIncomming(bp BundlePack)
 
 	// SenderForBundle returns an array of ConvergenceSender for a requested
-	// bundle. The CLA selection is based on the algorithm's design.
-	SenderForBundle(bp BundlePack) []cla.ConvergenceSender
+	// bundle. Furthermore the finished flags indicates if this BundlePack should
+	// be deleted afterwards.
+	// The CLA selection is based on the algorithm's design.
+	SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool)
 }

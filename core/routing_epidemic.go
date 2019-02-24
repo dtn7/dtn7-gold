@@ -14,8 +14,11 @@ func NewEpidemicRouting(c *Core) EpidemicRouting {
 	return EpidemicRouting{c}
 }
 
+// NotifyIncomming tells the EpidemicRouting new bundles. However,
+// EpidemicRouting simply does not listen.
 func (er EpidemicRouting) NotifyIncomming(_ BundlePack) {}
 
-func (er EpidemicRouting) SenderForBundle(bp BundlePack) []cla.ConvergenceSender {
-	return er.c.convergenceSenders
+// SenderForBundle returns the Core's ConvergenceSenders.
+func (er EpidemicRouting) SenderForBundle(bp BundlePack) ([]cla.ConvergenceSender, bool) {
+	return er.c.convergenceSenders, false
 }

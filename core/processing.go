@@ -143,11 +143,12 @@ func (c *Core) forward(bp BundlePack) {
 	}
 
 	var nodes []cla.ConvergenceSender
+	var deleteAfterwards = true
 
 	// Try a direct delivery or consult the RoutingAlgorithm otherwise.
 	nodes = c.senderForDestination(bp.Bundle.PrimaryBlock.Destination)
 	if nodes == nil {
-		nodes = c.routing.SenderForBundle(bp)
+		nodes, deleteAfterwards = c.routing.SenderForBundle(bp)
 	}
 
 	if nodes == nil {
@@ -187,8 +188,10 @@ func (c *Core) forward(bp BundlePack) {
 			c.SendStatusReport(bp, ForwardedBundle, NoInformation)
 		}
 
-		bp.PurgeConstraints()
-		c.store.Push(bp)
+		if deleteAfterwards {
+			bp.PurgeConstraints()
+			c.store.Push(bp)
+		}
 	} else {
 		log.Printf("Failed to forward %v", bp.Bundle)
 
