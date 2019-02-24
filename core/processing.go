@@ -186,7 +186,7 @@ func (c *Core) forward(bp BundlePack) {
 			c.SendStatusReport(bp, ForwardedBundle, NoInformation)
 		}
 
-		bp.RemoveConstraint(ForwardPending)
+		bp.PurgeConstraints()
 		c.store.Push(bp)
 	} else {
 		log.Printf("Failed to forward %v", bp.Bundle)
@@ -233,10 +233,16 @@ func (c *Core) localDelivery(bp BundlePack) {
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDelivery) {
 		c.SendStatusReport(bp, DeliveredBundle, NoInformation)
 	}
+
+	bp.PurgeConstraints()
+	c.store.Push(bp)
 }
 
 func (c *Core) bundleContraindicated(bp BundlePack) {
 	log.Printf("Bundle %v was marked for contraindication", bp.Bundle)
+
+	bp.AddConstraint(Contraindicated)
+	c.store.Push(bp)
 }
 
 func (c *Core) bundleDeletion(bp BundlePack, reason StatusReportReason) {

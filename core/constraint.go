@@ -8,12 +8,17 @@ const (
 	// DispatchPending is assigned to a bundle if its dispatching is pending.
 	DispatchPending Constraint = iota
 
-	// ForwardPending is assigned to a bundle, if its forwarding is pending.
+	// ForwardPending is assigned to a bundle if its forwarding is pending.
 	ForwardPending Constraint = iota
 
-	// ReassemblyPending is assigned to a fragmented bundle, if its reassembly is
+	// ReassemblyPending is assigned to a fragmented bundle if its reassembly is
 	// pending.
 	ReassemblyPending Constraint = iota
+
+	// Contraindicated is assigned to a bundle if it could not be delivered and
+	// was moved to the contraindicated stage. This Constraint was not defined
+	// in draft-ietf-dtn-bpbis-12, but seemed reasonable for this implementation.
+	Contraindicated Constraint = iota
 )
 
 func (c Constraint) String() string {

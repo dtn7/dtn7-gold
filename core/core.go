@@ -66,10 +66,14 @@ func NewCore(storePath string) (*Core, error) {
 // checkConvergenceReceivers checks all ConvergenceReceivers for new bundles.
 func (c *Core) checkConvergenceReceivers() {
 	var chnl = cla.JoinReceivers()
+	var tick = time.NewTicker(30 * time.Second)
+
 	for {
 		select {
 		// Invoked by Close(), shuts down
 		case <-c.stopSyn:
+			tick.Stop()
+
 			c.convergenceMutex.Lock()
 			for _, claRec := range c.convergenceReceivers {
 				claRec.Close()
@@ -83,6 +87,13 @@ func (c *Core) checkConvergenceReceivers() {
 		case bndl, ok := <-chnl:
 			if ok {
 				c.receive(NewRecBundlePack(bndl))
+			}
+
+		// Check back on contraindicated bundles
+		case <-tick.C:
+			for _, bp := range QueryPending(c.store) {
+				log.Printf("Retrying bundle %v from store", bp)
+				c.dispatching(bp)
 			}
 
 		// Invoked by RegisterConvergenceReceiver, recreates chnl
