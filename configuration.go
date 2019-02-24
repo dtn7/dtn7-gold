@@ -11,8 +11,6 @@ import (
 	"github.com/geistesk/dtn7/cla"
 	"github.com/geistesk/dtn7/cla/stcp"
 	"github.com/geistesk/dtn7/core"
-	"github.com/geistesk/dtn7/core/appagent"
-	"github.com/geistesk/dtn7/core/appagent/srest"
 	"github.com/geistesk/dtn7/discovery"
 )
 
@@ -92,13 +90,13 @@ func parsePeer(conv convergenceConf) (cla.ConvergenceSender, error) {
 	}
 }
 
-func parseSimpleRESTAppAgent(conf simpleRestConf, c *core.Core) (appagent.ApplicationAgent, error) {
+func parseSimpleRESTAppAgent(conf simpleRestConf, c *core.Core) (core.ApplicationAgent, error) {
 	endpointID, err := bundle.NewEndpointID(conf.Node)
 	if err != nil {
 		return nil, err
 	}
 
-	return srest.NewSimpleRESTAppAgent(endpointID, c, conf.Listen), nil
+	return core.NewSimpleRESTAppAgent(endpointID, c, conf.Listen), nil
 }
 
 // parseCore creates the Core based on the given TOML configuration.

@@ -1,4 +1,4 @@
-package srest
+package core
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/geistesk/dtn7/bundle"
-	"github.com/geistesk/dtn7/core"
 	"github.com/ugorji/go/codec"
 )
 
@@ -18,17 +17,17 @@ type Request struct {
 
 type SimpleRESTAppAgent struct {
 	endpointID bundle.EndpointID
-	core       *core.Core
+	c          *Core
 
 	serv        *http.Server
 	bundles     []bundle.Bundle
 	bundleMutex sync.Mutex
 }
 
-func NewSimpleRESTAppAgent(endpointID bundle.EndpointID, core *core.Core, addr string) (aa *SimpleRESTAppAgent) {
+func NewSimpleRESTAppAgent(endpointID bundle.EndpointID, c *Core, addr string) (aa *SimpleRESTAppAgent) {
 	aa = &SimpleRESTAppAgent{
 		endpointID: endpointID,
-		core:       core,
+		c:          c,
 		bundles:    make([]bundle.Bundle, 0, 0),
 	}
 
@@ -93,7 +92,7 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 		return
 	}
 
-	aa.core.SendBundle(bndl)
+	aa.c.SendBundle(bndl)
 
 	fmt.Fprintf(respWriter, `{"error":""}`)
 	log.Printf("SimpleRESTAppAgent's transmitted %v", bndl)

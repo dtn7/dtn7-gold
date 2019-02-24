@@ -1,9 +1,4 @@
-// Package appagent describes the ApplicationAgent interface for application
-// agents.
-//
-// The subpackages should contain implementations of this interface, which could
-// be used in the core package.
-package appagent
+package core
 
 import "github.com/geistesk/dtn7/bundle"
 
