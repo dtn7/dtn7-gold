@@ -66,17 +66,17 @@ func (client *STCPClient) Close() {
 
 // GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
 // if it's known. Otherwise the zero endpoint will be returned.
-func (client STCPClient) GetPeerEndpointID() bundle.EndpointID {
+func (client *STCPClient) GetPeerEndpointID() bundle.EndpointID {
 	return client.peer
 }
 
 // Address should return a unique address string to both identify this
 // ConvergenceSender and ensure it will not opened twice.
-func (client STCPClient) Address() string {
+func (client *STCPClient) Address() string {
 	return client.address
 }
 
-func (client STCPClient) String() string {
+func (client *STCPClient) String() string {
 	if client.conn != nil {
 		return fmt.Sprintf("stcp://%v", client.conn.RemoteAddr())
 	} else {
