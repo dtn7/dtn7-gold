@@ -157,10 +157,12 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 	}
 
 	// Discovery
-	ds, err = discovery.NewDiscoveryService(
-		discoveryMsgs, c, conf.Discovery.IPv4, conf.Discovery.IPv6)
-	if err != nil {
-		return
+	if conf.Discovery.IPv4 || conf.Discovery.IPv6 {
+		ds, err = discovery.NewDiscoveryService(
+			discoveryMsgs, c, conf.Discovery.IPv4, conf.Discovery.IPv6)
+		if err != nil {
+			return
+		}
 	}
 
 	return

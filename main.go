@@ -35,5 +35,8 @@ func main() {
 	log.Print("Shutting down")
 
 	core.Close()
-	discovery.Close()
+
+	if discovery != nil {
+		discovery.Close()
+	}
 }
