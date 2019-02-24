@@ -55,7 +55,7 @@ func NewCore(storePath string) (*Core, error) {
 	c.idKeeper = NewIdKeeper()
 	c.reloadConvRecs = make(chan struct{})
 
-	c.routing = NewEpidemicRouting(c)
+	c.routing = NewEpidemicRouting(c, false)
 
 	c.stopSyn = make(chan struct{})
 	c.stopAck = make(chan struct{})
