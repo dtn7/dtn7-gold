@@ -199,33 +199,45 @@ func (c *Core) forward(bp BundlePack) {
 	}
 }
 
+// checkAdministrativeRecord checks administrative records. If this method
+// returns false, an error occured.
+func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
+	if !bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
+		log.Printf("Bundle %v does not contain an administrative record", bp.Bundle)
+		return false
+	}
+
+	canonicalAr, err := bp.Bundle.PayloadBlock()
+	if err != nil {
+		log.Printf("Bundle %v with an administrative record payload misses payload: %v",
+			bp.Bundle, err)
+
+		return false
+	}
+
+	ar, err := NewAdministrativeRecordFromCbor(canonicalAr.Data.([]byte))
+	if err != nil {
+		log.Printf("Bundle %v with an administrative record could not be parsed: %v",
+			bp.Bundle, err)
+
+		return false
+	}
+
+	log.Printf("Received bundle %v contains an administrative record: %v",
+		bp.Bundle, ar)
+	return true
+}
+
 func (c *Core) localDelivery(bp BundlePack) {
 	// TODO: check fragmentation
 
 	log.Printf("Received delivered bundle: %v", bp.Bundle)
 
-	// TODO: move this to the ApplicationAgent
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
-		canonicalAr, err := bp.Bundle.PayloadBlock()
-		if err != nil {
-			log.Printf("Bundle %v with an administrative record payload misses payload: %v",
-				bp.Bundle, err)
-
+		if !c.checkAdministrativeRecord(bp) {
 			c.bundleDeletion(bp, NoInformation)
 			return
 		}
-
-		ar, err := NewAdministrativeRecordFromCbor(canonicalAr.Data.([]byte))
-		if err != nil {
-			log.Printf("Bundle %v with an administrative record could not be parsed: %v",
-				bp.Bundle, err)
-
-			c.bundleDeletion(bp, NoInformation)
-			return
-		}
-
-		log.Printf("Received bundle %v contains an administrative record: %v",
-			bp.Bundle, ar)
 	}
 
 	for _, agent := range c.Agents {
@@ -233,6 +245,8 @@ func (c *Core) localDelivery(bp BundlePack) {
 			agent.Deliver(bp.Bundle)
 		}
 	}
+
+	c.routing.NotifyIncomming(bp)
 
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDelivery) {
 		c.SendStatusReport(bp, DeliveredBundle, NoInformation)
