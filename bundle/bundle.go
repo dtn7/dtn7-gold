@@ -166,6 +166,12 @@ func (b Bundle) checkValid() (errs error) {
 	return
 }
 
+// IsAdministrativeRecord returns if this Bundle's control flags indicate this
+// has an administrative record payload.
+func (b Bundle) IsAdministrativeRecord() bool {
+	return b.PrimaryBlock.BundleControlFlags.Has(AdministrativeRecordPayload)
+}
+
 // ToCbor creates a byte array representing a CBOR indefinite-length array of
 // this Bundle with all its blocks, as defined in section 4 of the Bundle
 // Protocol Version 7.

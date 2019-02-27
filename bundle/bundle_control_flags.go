@@ -1,6 +1,10 @@
 package bundle
 
-import "github.com/hashicorp/go-multierror"
+import (
+	"strings"
+
+	"github.com/hashicorp/go-multierror"
+)
 
 // BundleControlFlags is an uint16 which represents the Bundle Processing
 // Control Flags as specified in section 4.1.3.
@@ -73,4 +77,32 @@ func (bcf BundleControlFlags) checkValid() (errs error) {
 	}
 
 	return
+}
+
+func (bcf BundleControlFlags) String() string {
+	fields := make([]string, 0, 0)
+
+	checks := []struct {
+		field BundleControlFlags
+		text  string
+	}{
+		{StatusRequestDeletion, "REQUESTED_DELETION_STATUS_REPORT"},
+		{StatusRequestDelivery, "REQUESTED_DELIVERY_STATUS_REPORT"},
+		{StatusRequestForward, "REQUESTED_FORWARD_STATUS_REPORT"},
+		{StatusRequestReception, "REQUESTED_RECEPTIONSTATUS_REPORT"},
+		{ContainsManifest, "CONTAINS_MANIFEST"},
+		{RequestStatusTime, "REQUESTED_TIME_IN_STATUS_REPORT"},
+		{RequestUserApplicationAck, "REQUESTED_APPLICATION_ACK"},
+		{MustNotFragmented, "MUST_NO_BE_FRAGMENTED"},
+		{AdministrativeRecordPayload, "ADMINISTRATIVE_PAYLOAD"},
+		{IsFragment, "IS_FRAGMENT"},
+	}
+
+	for _, check := range checks {
+		if bcf.Has(check.field) {
+			fields = append(fields, check.text)
+		}
+	}
+
+	return strings.Join(fields, ",")
 }

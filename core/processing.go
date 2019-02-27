@@ -202,7 +202,7 @@ func (c *Core) forward(bp BundlePack) {
 // checkAdministrativeRecord checks administrative records. If this method
 // returns false, an error occured.
 func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
-	if !bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
+	if !bp.Bundle.IsAdministrativeRecord() {
 		log.Printf("Bundle %v does not contain an administrative record", bp.Bundle)
 		return false
 	}
@@ -233,7 +233,7 @@ func (c *Core) localDelivery(bp BundlePack) {
 
 	log.Printf("Received delivered bundle: %v", bp.Bundle)
 
-	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
+	if bp.Bundle.IsAdministrativeRecord() {
 		if !c.checkAdministrativeRecord(bp) {
 			c.bundleDeletion(bp, NoInformation)
 			return
