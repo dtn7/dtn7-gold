@@ -37,7 +37,7 @@ func QueryFromStatusReport(store Store, sr StatusReport) []BundlePack {
 // which could not be delivered previously, but are complete (not fragmented).
 func QueryPending(store Store) []BundlePack {
 	return store.Query(func(bp BundlePack) bool {
-		return !bp.HasConstraint(ReassemblyPending)
+		return !bp.HasConstraint(ReassemblyPending) && bp.HasConstraint(Contraindicated)
 	})
 }
 

@@ -61,11 +61,10 @@ func (store *SimpleStore) Push(bp BundlePack) error {
 	store.mutex.Lock()
 	defer store.mutex.Unlock()
 
-	if !bp.HasConstraints() {
-		delete(store.bundles, bp.Bundle.ID())
-	} else {
-		store.bundles[bp.Bundle.ID()] = bp
-	}
+	// Originally, bundle packs without any constraints were removed from the
+	// store, as advided in dtn-bpbis. However, removing all track of a bundle
+	// whatsoever	resulted in accepting an already known bundle.
+	store.bundles[bp.Bundle.ID()] = bp
 
 	return store.sync()
 }

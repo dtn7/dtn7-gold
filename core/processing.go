@@ -192,11 +192,11 @@ func (c *Core) forward(bp BundlePack) {
 			bp.PurgeConstraints()
 			c.store.Push(bp)
 		} else if c.inspectAllBundles && bp.Bundle.IsAdministrativeRecord() {
+			c.bundleContraindicated(bp)
 			c.checkAdministrativeRecord(bp)
 		}
 	} else {
 		log.Printf("Failed to forward %v", bp.Bundle)
-
 		c.bundleContraindicated(bp)
 	}
 }
