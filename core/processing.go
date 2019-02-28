@@ -32,7 +32,7 @@ func (c *Core) transmit(bp BundlePack) {
 		return
 	}
 
-	c.forward(bp)
+	c.dispatching(bp)
 }
 
 // receive handles received/incomming bundles.
