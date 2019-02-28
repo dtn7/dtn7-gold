@@ -1,5 +1,6 @@
 [core]
 store = "store.dat"
+inspect-all-bundles = true
 
 [discovery]
 ipv4 = true

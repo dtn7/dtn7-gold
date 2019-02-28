@@ -29,6 +29,8 @@ func isKnownBlockType(blocktype bundle.CanonicalBlockType) bool {
 type Core struct {
 	Agents []ApplicationAgent
 
+	inspectAllBundles bool
+
 	convergenceSenders   []cla.ConvergenceSender
 	convergenceReceivers []cla.ConvergenceReceiver
 	convergenceMutex     sync.Mutex
@@ -42,9 +44,14 @@ type Core struct {
 	stopAck        chan struct{}
 }
 
-// NewCore creates and returns a new core.
-func NewCore(storePath string) (*Core, error) {
+// NewCore creates and returns a new Core. A SimpleStore will be created or used
+// at the given path. The inspectAllBundles flag indicates if all
+// administrative records - next to the bundles addressed to this node - should
+// be inspected. This allows bundle deletion for forwarding bundles.
+func NewCore(storePath string, inspectAllBundles bool) (*Core, error) {
 	var c = new(Core)
+
+	c.inspectAllBundles = inspectAllBundles
 
 	store, err := NewSimpleStore(storePath)
 	if err != nil {

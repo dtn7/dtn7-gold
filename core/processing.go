@@ -191,6 +191,8 @@ func (c *Core) forward(bp BundlePack) {
 		if deleteAfterwards {
 			bp.PurgeConstraints()
 			c.store.Push(bp)
+		} else if c.inspectAllBundles && bp.Bundle.IsAdministrativeRecord() {
+			c.checkAdministrativeRecord(bp)
 		}
 	} else {
 		log.Printf("Failed to forward %v", bp.Bundle)

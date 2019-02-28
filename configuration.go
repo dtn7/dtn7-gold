@@ -25,7 +25,8 @@ type tomlConfig struct {
 
 // coreConf describes the Core-configuration block.
 type coreConf struct {
-	Store string
+	Store             string
+	InspectAllBundles bool `toml:"inspect-all-bundles"`
 }
 
 // discoveryConf describes the Discovery-configuration block.
@@ -114,7 +115,7 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		return
 	}
 
-	c, err = core.NewCore(conf.Core.Store)
+	c, err = core.NewCore(conf.Core.Store, conf.Core.InspectAllBundles)
 	if err != nil {
 		return
 	}
