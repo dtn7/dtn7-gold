@@ -244,6 +244,20 @@ func NewStatusReport(bndl bundle.Bundle, statusItem StatusInformationPos,
 	return sr
 }
 
+// StatusInformations returns an array of available StatusInformationPos.
+func (sr StatusReport) StatusInformations() (sips []StatusInformationPos) {
+	for i := 0; i < len(sr.StatusInformation); i++ {
+		si := sr.StatusInformation[i]
+		sip := StatusInformationPos(i)
+
+		if si.Asserted {
+			sips = append(sips, sip)
+		}
+	}
+
+	return
+}
+
 func (sr StatusReport) String() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "StatusReport([")

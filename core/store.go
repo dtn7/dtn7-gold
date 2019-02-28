@@ -24,6 +24,15 @@ func QueryAll(store Store) []BundlePack {
 	})
 }
 
+// QueryFromStatusReport returns all (hopefully <= 1) bundles related to the
+// given StatusReport.
+func QueryFromStatusReport(store Store, sr StatusReport) []BundlePack {
+	return store.Query(func(bp BundlePack) bool {
+		pb := bp.Bundle.PrimaryBlock
+		return pb.SourceNode == sr.SourceNode && pb.CreationTimestamp == sr.Timestamp
+	})
+}
+
 // QueryPending is a helper function for Stores and queries those bundle packs,
 // which could not be delivered previously, but are complete (not fragmented).
 func QueryPending(store Store) []BundlePack {

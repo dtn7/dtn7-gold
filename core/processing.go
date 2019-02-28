@@ -225,7 +225,48 @@ func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
 
 	log.Printf("Received bundle %v contains an administrative record: %v",
 		bp.Bundle, ar)
+	c.inspectStatusReport(ar)
+
 	return true
+}
+
+func (c *Core) inspectStatusReport(ar AdministrativeRecord) {
+	var status = ar.Content
+	var sips = status.StatusInformations()
+
+	if len(sips) == 0 {
+		log.Printf("Administrative record %v contains no status information", ar)
+		return
+	}
+
+	var bps = QueryFromStatusReport(c.store, status)
+	if len(bps) != 1 {
+		log.Printf("Status Report's (%v) bundle is unknown", status)
+		return
+	}
+	var bp = bps[0]
+
+	for _, sip := range sips {
+		switch sip {
+		case ReceivedBundle:
+			log.Printf("Status Report %v indicates a received bundle", status)
+
+		case ForwardedBundle:
+			log.Printf("Status Report %v indicates a forwarded bundle", status)
+
+		case DeliveredBundle:
+			log.Printf("Status Report %v indicates a delivered bundle", status)
+
+			bp.PurgeConstraints()
+			c.store.Push(bp)
+
+		case DeletedBundle:
+			log.Printf("Status Report %v indicates a deleted bundle", status)
+
+		default:
+			log.Printf("Status Report %v has an unknown status information", status)
+		}
+	}
 }
 
 func (c *Core) localDelivery(bp BundlePack) {
