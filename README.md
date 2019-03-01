@@ -20,19 +20,20 @@ nodes.
 
 
 ### dtnd
-`dtnd` is a delay-tolerant networking daemon. It represents a node inside the
+dtnd is a delay-tolerant networking daemon. It represents a node inside the
 network and is able to transmit, receive and forward bundles to other nodes. A
 node's neighbors may be specified in the configuration or detected within the
 local network through a peer discovery. Bundles might be sent and received
 through a REST-like web interface. The features and their configuration is
-described inside the provided example [`configuration.toml`][dtnd-contains].
+described inside the provided example [configuration.toml][dtnd-configuration].
 
 #### REST-API usage
 ```bash
 # Create a outbounding bundle to dtn:foobar, containing "hello world"
-curl -d'{"Destination":"dtn:host", "Payload":"hello world"}' http://localhost:8080/send/
+# Payload must be base64 encoded
+curl -d "{\"Destination\":\"dtn:host\", \"Payload\":\"`base64 <<< "hello world"`\"}" http://localhost:8080/send/
 
-# Fetch received bundles
+# Fetch received bundles. Payload is base64 encoded.
 curl http://localhost:8080/fetch/
 ```
 
@@ -47,6 +48,6 @@ interested in working with this code, check out the
 
 [dtn-bpbis-12]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-12
 [dtn-stcp-00]: https://tools.ietf.org/html/draft-burleigh-dtn-stcp-00
-[dtnd-configuraton]: https://github.com/geistesk/dtn7/blob/master/cmd/dtnd/configuration.toml
+[dtnd-configuration]: https://github.com/geistesk/dtn7/blob/master/cmd/dtnd/configuration.toml
 [godoc]: https://godoc.org/github.com/geistesk/dtn7
 [golang]: https://golang.org/

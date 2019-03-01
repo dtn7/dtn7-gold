@@ -19,8 +19,9 @@ ipv6 = true
 node = "dtn:alpha"
 # Bind the web server to port 8080 on the localhost (v4).
 # - Create a outbounding bundle to dtn:foobar, containing "hello world"
-#   $ curl -d'{"Destination":"dtn:host", "Payload":"hello world"}' http://localhost:8080/send/
-# - Fetch received bundles
+#   Payload must be base64 encoded
+#   $ curl -d "{\"Destination\":\"dtn:host\", \"Payload\":\"`base64 <<< "hello world"`\"}" http://localhost:8080/send/
+# - Fetch received bundles. Payload is base64 encoded.
 #   $ curl http://localhost:8080/fetch/
 listen = "127.0.0.1:8080"
 

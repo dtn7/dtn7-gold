@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -50,9 +51,9 @@ func NewSimpleRESTReponseFromBundle(b bundle.Bundle) SimpleRESTResponse {
 // afterwards.
 //
 // The /send/ endpoint can be queried through a HTTP POST request with JSON
-// data.
+// data. The payload must be base64 encoded.
 //
-//	curl -d'{"Destination":"dtn:foobar", "Payload":"hello"}' http://localhost:8080/send/
+//	curl -d "{\"Destination\":\"dtn:foobar\", \"Payload\":\"`base64 <<< "hello world"`\"}" http://localhost:8080/send/
 //
 // Would create an outbounding bundle with a "hello" payload, addressed to an
 // endpoint named "dtn:foobar".
@@ -124,6 +125,12 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 		return
 	}
 
+	var payload, base64Err = base64.StdEncoding.DecodeString(postReq.Payload)
+	if base64Err != nil {
+		handleErr("Failed to decode base64 payload")
+		return
+	}
+
 	var bndl, bndlErr = bundle.NewBundle(
 		bundle.NewPrimaryBlock(
 			bundle.MustNotFragmented|bundle.StatusRequestDelivery,
@@ -132,7 +139,7 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0),
 			60*60*1000000),
 		[]bundle.CanonicalBlock{
-			bundle.NewPayloadBlock(0, []byte(postReq.Payload)),
+			bundle.NewPayloadBlock(0, payload),
 			bundle.NewHopCountBlock(23, 0, bundle.NewHopCount(5)),
 		})
 	if bndlErr != nil {
