@@ -19,8 +19,8 @@ type Store interface {
 
 // QueryAll is a helper function for Stores and queries all bundle packs.
 func QueryAll(store Store) []BundlePack {
-	return store.Query(func(_ BundlePack) bool {
-		return true
+	return store.Query(func(bp BundlePack) bool {
+		return bp.HasConstraints()
 	})
 }
 

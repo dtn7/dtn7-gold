@@ -58,7 +58,7 @@ func TestSimpleStoreSingle(t *testing.T) {
 		t.Errorf("Pushing errored :%v", err)
 	}
 
-	if l := len(store.bundles); l != 0 {
+	if l := len(QueryAll(store)); l != 0 {
 		t.Errorf("Store is not empty after pushing bundle pack without constraints")
 	}
 
