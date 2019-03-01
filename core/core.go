@@ -166,6 +166,20 @@ func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
 	}
 }
 
+// RemoveConvergenceSender removes a (known) ConvergenceSender. It should have
+// been `Close()`ed before.
+func (c *Core) RemoveConvergenceSender(sender cla.ConvergenceSender) {
+	c.convergenceMutex.Lock()
+	for i := len(c.convergenceSenders) - 1; i >= 0; i-- {
+		if c.convergenceSenders[i] == sender {
+			log.Printf("Removing ConvergenceSender %v", sender)
+			c.convergenceSenders = append(
+				c.convergenceSenders[:i], c.convergenceSenders[i+1:]...)
+		}
+	}
+	c.convergenceMutex.Unlock()
+}
+
 // RegisterConvergenceReceiver adds a new ConvergenceReceiver to this Core's
 // list. Bundles will be received through this ConvergenceReceiver
 func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
@@ -187,6 +201,20 @@ func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
 
 		c.reloadConvRecs <- struct{}{}
 	}
+}
+
+// RemoveConvergenceReceiver removes a (known) ConvergenceSender. It should have
+// been `Close()`ed before.
+func (c *Core) RemoveConvergenceReceiver(rec cla.ConvergenceReceiver) {
+	c.convergenceMutex.Lock()
+	for i := len(c.convergenceReceivers) - 1; i >= 0; i-- {
+		if c.convergenceReceivers[i] == rec {
+			log.Printf("Removing ConvergenceReceiver %v", rec)
+			c.convergenceReceivers = append(
+				c.convergenceReceivers[:i], c.convergenceReceivers[i+1:]...)
+		}
+	}
+	c.convergenceMutex.Unlock()
 }
 
 // RegisterApplicationAgent adds a new ApplicationAgent to this Core's list.

@@ -171,6 +171,11 @@ func (c *Core) forward(bp BundlePack) {
 			if err := node.Send(*bp.Bundle); err != nil {
 				log.Printf("Transmission of bundle %v failed to %v: %v",
 					bp.Bundle, node, err)
+
+				log.Printf("Restarting ConvergenceSender %v", node)
+				node.Close()
+				c.RemoveConvergenceSender(node)
+				c.RegisterConvergenceSender(node)
 			} else {
 				log.Printf("Transmission of bundle %v succeeded to %v", bp.Bundle, node)
 

@@ -47,12 +47,17 @@ func (client *STCPClient) Start() (error, bool) {
 
 // Send transmits a bundle to this STCPClient's endpoint.
 func (client *STCPClient) Send(bndl bundle.Bundle) (err error) {
+	defer func() {
+		if r := recover(); r != nil && err == nil {
+			err = fmt.Errorf("STCPClient.Send: %v", r)
+		}
+	}()
+
 	client.mutex.Lock()
+	defer client.mutex.Unlock()
 
 	var enc = codec.NewEncoder(client.conn, new(codec.CborHandle))
 	err = enc.Encode(newDataUnit(bndl))
-
-	client.mutex.Unlock()
 
 	return
 }
