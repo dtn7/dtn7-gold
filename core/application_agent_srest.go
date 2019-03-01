@@ -18,6 +18,11 @@ type SimpleRESTRequest struct {
 	Payload     string
 }
 
+// SimpleRESTRequestResponse is the response, sent to a SimpleRESTRequest.
+type SimpleRESTRequestResponse struct {
+	Error string
+}
+
 // SimpleRESTResponse is the data structure used for incoming bundles,
 // handled through the SimpleRESTAppAgent.
 type SimpleRESTResponse struct {
@@ -103,8 +108,14 @@ func (aa *SimpleRESTAppAgent) handleFetch(respWriter http.ResponseWriter, _ *htt
 }
 
 func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *http.Request) {
+	var resp SimpleRESTRequestResponse
+
+	defer func(resp SimpleRESTRequestResponse) {
+		codec.NewEncoder(respWriter, new(codec.JsonHandle)).Encode(resp)
+	}(resp)
+
 	var handleErr = func(msg string) {
-		fmt.Fprintf(respWriter, `{"error":"%s"}`, msg)
+		resp = SimpleRESTRequestResponse{msg}
 		log.Printf("SimpleRESTAppAgent's send errored: %s", msg)
 	}
 
@@ -149,7 +160,7 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 
 	aa.c.SendBundle(bndl)
 
-	fmt.Fprintf(respWriter, `{"error":""}`)
+	resp = SimpleRESTRequestResponse{}
 	log.Printf("SimpleRESTAppAgent's transmitted %v", bndl)
 }
 
