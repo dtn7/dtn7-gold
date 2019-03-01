@@ -19,9 +19,9 @@ func NewEpidemicRouting(c *Core, sendBack bool) EpidemicRouting {
 	}
 }
 
-// NotifyIncomming tells the EpidemicRouting new bundles. However,
+// NotifyIncoming tells the EpidemicRouting new bundles. However,
 // EpidemicRouting simply does not listen.
-func (er EpidemicRouting) NotifyIncomming(_ BundlePack) {}
+func (er EpidemicRouting) NotifyIncoming(_ BundlePack) {}
 
 // SenderForBundle returns the Core's ConvergenceSenders. The ConvergenceSender
 // for this BundlePack's receiver will be removed sendBack is false.

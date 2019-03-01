@@ -35,7 +35,7 @@ func (c *Core) transmit(bp BundlePack) {
 	c.dispatching(bp)
 }
 
-// receive handles received/incomming bundles.
+// receive handles received/incoming bundles.
 func (c *Core) receive(bp BundlePack) {
 	log.Printf("Received new bundle: %v", bp.Bundle)
 
@@ -289,7 +289,7 @@ func (c *Core) localDelivery(bp BundlePack) {
 		}
 	}
 
-	c.routing.NotifyIncomming(bp)
+	c.routing.NotifyIncoming(bp)
 
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDelivery) {
 		c.SendStatusReport(bp, DeliveredBundle, NoInformation)

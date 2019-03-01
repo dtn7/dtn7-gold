@@ -1,6 +1,6 @@
 
-# Created by https://www.gitignore.io/api/go,vim,linux
-# Edit at https://www.gitignore.io/?templates=go,vim,linux
+# Created by https://www.gitignore.io/api/go,vim
+# Edit at https://www.gitignore.io/?templates=go,vim
 
 ### Go ###
 # Binaries for programs and plugins
@@ -10,7 +10,7 @@
 *.so
 *.dylib
 
-# Test binary, build with `go test -c`
+# Test binary, built with `go test -c`
 *.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
@@ -19,21 +19,6 @@
 ### Go Patch ###
 /vendor/
 /Godeps/
-
-### Linux ###
-*~
-
-# temporary files which can be created if a process still has a handle open of a deleted file
-.fuse_hidden*
-
-# KDE directory preferences
-.directory
-
-# Linux trash folder which might appear on any partition or disk
-.Trash-*
-
-# .nfs files are created when an open file is removed but is still being accessed
-.nfs*
 
 ### Vim ###
 # Swap
@@ -48,9 +33,15 @@ Session.vim
 
 # Temporary
 .netrwhist
+*~
 # Auto-generated tag files
 tags
 # Persistent undo
 [._]*.un~
 
-# End of https://www.gitignore.io/api/go,vim,linux
+# End of https://www.gitignore.io/api/go,vim
+
+# dtn7 related files
+/dtnd
+/conf*.toml
+/store*.dat

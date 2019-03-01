@@ -1,16 +1,52 @@
 # dtn7
+Delay-tolerant networking software suite and library
 
-Implementation of the Bundle Protocol Version 7
-([draft-ietf-dtn-bpbis-12.txt][dtn-bpbis-12]), work in progress.
+
+## Protocols
+This software implements the current draft of the seventh version of the Bundle
+Protocol and the experimental STCP Convergence Layer to exchange bundles between
+nodes.
+
+- Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-12.txt][dtn-bpbis-12])
+- Simple TCP Convergence-Layer Protocol
+  ([draft-burleigh-dtn-stcp-00.txt][dtn-stcp-00])
+
+
+## Software
+### Installation
+1. Install the [Go programming language][golang], version 1.11 or later.
+2. `git clone https://github.com/geistesk/dtn7.git && cd dtn7`
+3. `go build ./cmd/...`
+
+
+### dtnd
+`dtnd` is a delay-tolerant networking daemon. It represents a node inside the
+network and is able to transmit, receive and forward bundles to other nodes. A
+node's neighbors may be specified in the configuration or detected within the
+local network through a peer discovery. Bundles might be sent and received
+through a REST-like web interface. The features and their configuration is
+described inside the provided example [`configuration.toml`][dtnd-contains].
+
+#### REST-API usage
+```bash
+# Create a outbounding bundle to dtn:foobar, containing "hello world"
+curl -d'{"Destination":"dtn:host", "Payload":"hello world"}' http://localhost:8080/send/
+
+# Fetch received bundles
+curl http://localhost:8080/fetch/
+```
 
 
 ## Go Library
-[![GoDoc](https://godoc.org/github.com/geistesk/dtn7/bundle?status.svg)][godoc]
-
-The `bundle` package is usable as a Go library for bundle creation,
-modification, serialization and deserialization.
-
+Multiple parts of this software are usable as a Go library. The `bundle`
+package contains code for bundle modification, serialization and
+deserialization and would most likely the most interesting part. If you are
+interested in working with this code, check out the
+[documentation][godoc].
 
 
 [dtn-bpbis-12]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-12
-[godoc]: https://godoc.org/github.com/geistesk/dtn7/bundle
+[dtn-stcp-00]: https://tools.ietf.org/html/draft-burleigh-dtn-stcp-00
+[dtnd-configuraton]: https://github.com/geistesk/dtn7/blob/master/cmd/dtnd/configuration.toml
+[godoc]: https://godoc.org/github.com/geistesk/dtn7
+[golang]: https://golang.org/

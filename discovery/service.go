@@ -28,7 +28,7 @@ func (ds *DiscoveryService) notify6(discovered peerdiscovery.Discovered) {
 func (ds *DiscoveryService) notify(discovered peerdiscovery.Discovered) {
 	dms, err := NewDiscoveryMessagesFromCbor(discovered.Payload)
 	if err != nil {
-		log.Printf("Peer discovery failed to parse incomming package from %v: %v",
+		log.Printf("Peer discovery failed to parse incoming package from %v: %v",
 			discovered.Address, err)
 
 		return
