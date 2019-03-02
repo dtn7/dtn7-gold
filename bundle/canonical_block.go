@@ -267,6 +267,12 @@ func (hc *HopCount) Increment() bool {
 	return hc.IsExceeded()
 }
 
+// Decrement decrements the hop counter. This could be usefull if you want to
+// reset the HopCount's state after sending a modified bundle.
+func (hc *HopCount) Decrement() {
+	hc.Count--
+}
+
 // NewHopCount returns a new Hop Count block as defined in section 4.3.3. The
 // hop count will be set to zero, as specified for new blocks.
 func NewHopCount(limit uint) HopCount {

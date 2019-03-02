@@ -190,12 +190,6 @@ func (c *Core) forward(bp BundlePack) {
 		nodes, deleteAfterwards = c.routing.SenderForBundle(bp)
 	}
 
-	if nodes == nil {
-		// No nodes could be selected, the bundle will be contraindicated.
-		c.bundleContraindicated(bp)
-		return
-	}
-
 	var bundleSent = false
 
 	var wg sync.WaitGroup
@@ -233,6 +227,17 @@ func (c *Core) forward(bp BundlePack) {
 	}
 
 	wg.Wait()
+
+	if hcBlock, err := bp.Bundle.ExtensionBlock(bundle.HopCountBlock); err == nil {
+		hc := hcBlock.Data.(bundle.HopCount)
+		hc.Decrement()
+		hcBlock.Data = hc
+
+		log.WithFields(log.Fields{
+			"bundle":    bp.Bundle,
+			"hop_count": hc,
+		}).Debug("Bundle's hop count block was resetted")
+	}
 
 	if bundleSent {
 		if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestForward) {
