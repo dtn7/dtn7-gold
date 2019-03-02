@@ -180,7 +180,7 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 
 		discoveryMsgs = append(discoveryMsgs, discoMsg)
 
-		c.RegisterConvergenceReceiver(convRec)
+		c.RegisterConvergence(convRec)
 	}
 
 	// Peer/ConvergenceSender
@@ -194,7 +194,7 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 			continue
 		}
 
-		c.RegisterConvergenceSender(convRec)
+		c.RegisterConvergence(convRec)
 	}
 
 	// Discovery

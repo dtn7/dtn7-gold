@@ -122,6 +122,12 @@ func (serv STCPServer) GetEndpointID() bundle.EndpointID {
 	return serv.endpointID
 }
 
-func (serv STCPServer) String() string {
+// Address should return a unique address string to both identify this
+// ConvergenceReceiver and ensure it will not opened twice.
+func (serv STCPServer) Address() string {
 	return fmt.Sprintf("stcp://%s", serv.listenAddress)
+}
+
+func (serv STCPServer) String() string {
+	return serv.Address()
 }

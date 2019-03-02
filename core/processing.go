@@ -217,12 +217,8 @@ func (c *Core) forward(bp BundlePack) {
 					"error":  err,
 				}).Warn("Sending bundle failed")
 
-				log.WithFields(log.Fields{
-					"cla": node,
-				}).Info("Restarting ConvergenceSender")
 				node.Close()
-				c.RemoveConvergenceSender(node)
-				c.RegisterConvergenceSender(node)
+				c.RestartConvergence(node)
 			} else {
 				log.WithFields(log.Fields{
 					"bundle": bp.Bundle,

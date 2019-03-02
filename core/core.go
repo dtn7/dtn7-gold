@@ -32,8 +32,10 @@ type Core struct {
 
 	inspectAllBundles bool
 
+	// Used by the convergence methods, defined in core/convergence.go
 	convergenceSenders   []cla.ConvergenceSender
 	convergenceReceivers []cla.ConvergenceReceiver
+	convergenceQueue     []*convergenceQueueElement
 	convergenceMutex     sync.Mutex
 
 	idKeeper IdKeeper
@@ -61,7 +63,7 @@ func NewCore(storePath string, inspectAllBundles bool) (*Core, error) {
 	c.store = store
 
 	c.idKeeper = NewIdKeeper()
-	c.reloadConvRecs = make(chan struct{})
+	c.reloadConvRecs = make(chan struct{}, 9000)
 
 	c.routing = NewEpidemicRouting(c, false)
 
@@ -105,12 +107,51 @@ func (c *Core) checkConvergenceReceivers() {
 				c.receive(NewRecBundlePack(bndl))
 			}
 
-		// Check back on contraindicated bundles
+		// Check back on enqueued CLAs and contraindicated bundles
 		case <-tick.C:
+			// CLAs
+			var tmpQueue = make([]*convergenceQueueElement, len(c.convergenceQueue))
+			var delQueue = make([]*convergenceQueueElement, 0, 0)
+
+			c.convergenceMutex.Lock()
+			copy(tmpQueue, c.convergenceQueue)
+			c.convergenceMutex.Unlock()
+
+			for _, cqe := range tmpQueue {
+				log.WithFields(log.Fields{
+					"cla": cqe.conv,
+				}).Debug("Getting CLA from queue")
+
+				if retry := cqe.activate(c); !retry {
+					delQueue = append(delQueue, cqe)
+
+					log.WithFields(log.Fields{
+						"cla": cqe.conv,
+					}).Debug("Removing CLA from queue")
+				} else {
+					log.WithFields(log.Fields{
+						"cla": cqe.conv,
+					}).Debug("CLA stays in the queue")
+				}
+			}
+
+			c.convergenceMutex.Lock()
+			for _, cqe := range delQueue {
+				for i := len(c.convergenceQueue) - 1; i >= 0; i-- {
+					if cqe == c.convergenceQueue[i] {
+						c.convergenceQueue = append(
+							c.convergenceQueue[:i], c.convergenceQueue[i+1:]...)
+					}
+				}
+			}
+			c.convergenceMutex.Unlock()
+
+			// Bundles
 			for _, bp := range QueryPending(c.store) {
 				log.WithFields(log.Fields{
 					"bundle": bp.Bundle,
 				}).Info("Retrying bundle from store")
+
 				c.dispatching(bp)
 			}
 
@@ -131,114 +172,6 @@ func (c *Core) checkConvergenceReceivers() {
 func (c *Core) Close() {
 	close(c.stopSyn)
 	<-c.stopAck
-}
-
-// RegisterConvergenceSender adds a new ConvergenceSender to this Core's list.
-// Bundles will be sent through this ConvergenceSender.
-func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
-	c.convergenceMutex.Lock()
-	for _, cs := range c.convergenceSenders {
-		if cs.Address() == sender.Address() {
-			log.WithFields(log.Fields{
-				"cla": sender,
-			}).Debug("ConvergenceSender's address is already known")
-
-			c.convergenceMutex.Unlock()
-			return
-		}
-	}
-	c.convergenceMutex.Unlock()
-
-	if c.HasEndpoint(sender.GetPeerEndpointID()) {
-		log.WithFields(log.Fields{
-			"cla": sender,
-		}).Debug("Node contains ConvergenceSender's endpoint ID")
-		return
-	}
-
-	if err, retry := sender.Start(); err != nil {
-		log.WithFields(log.Fields{
-			"cla":   sender,
-			"error": err,
-		}).Info("Failed to start ConvergenceSender")
-
-		if retry {
-			go func(sender cla.ConvergenceSender) {
-				time.Sleep(5 * time.Second)
-				c.RegisterConvergenceSender(sender)
-			}(sender)
-		}
-	} else {
-		log.WithFields(log.Fields{
-			"cla": sender,
-		}).Info("Started ConvergenceSender")
-
-		c.convergenceMutex.Lock()
-		c.convergenceSenders = append(c.convergenceSenders, sender)
-		c.convergenceMutex.Unlock()
-	}
-}
-
-// RemoveConvergenceSender removes a (known) ConvergenceSender. It should have
-// been `Close()`ed before.
-func (c *Core) RemoveConvergenceSender(sender cla.ConvergenceSender) {
-	c.convergenceMutex.Lock()
-	for i := len(c.convergenceSenders) - 1; i >= 0; i-- {
-		if c.convergenceSenders[i] == sender {
-			log.WithFields(log.Fields{
-				"cla": sender,
-			}).Info("Removing ConvergenceSender")
-
-			c.convergenceSenders = append(
-				c.convergenceSenders[:i], c.convergenceSenders[i+1:]...)
-		}
-	}
-	c.convergenceMutex.Unlock()
-}
-
-// RegisterConvergenceReceiver adds a new ConvergenceReceiver to this Core's
-// list. Bundles will be received through this ConvergenceReceiver
-func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
-	if err, retry := rec.Start(); err != nil {
-		log.WithFields(log.Fields{
-			"cla":   rec,
-			"error": err,
-		}).Info("Failed to start ConvergenceReceiver")
-
-		if retry {
-			go func(rec cla.ConvergenceReceiver) {
-				time.Sleep(5 * time.Second)
-				c.RegisterConvergenceReceiver(rec)
-			}(rec)
-		}
-	} else {
-		log.WithFields(log.Fields{
-			"cla": rec,
-		}).Info("Started ConvergenceReceiver")
-
-		c.convergenceMutex.Lock()
-		c.convergenceReceivers = append(c.convergenceReceivers, rec)
-		c.convergenceMutex.Unlock()
-
-		c.reloadConvRecs <- struct{}{}
-	}
-}
-
-// RemoveConvergenceReceiver removes a (known) ConvergenceSender. It should have
-// been `Close()`ed before.
-func (c *Core) RemoveConvergenceReceiver(rec cla.ConvergenceReceiver) {
-	c.convergenceMutex.Lock()
-	for i := len(c.convergenceReceivers) - 1; i >= 0; i-- {
-		if c.convergenceReceivers[i] == rec {
-			log.WithFields(log.Fields{
-				"cla": rec,
-			}).Info("Removing ConvergenceReceiver")
-
-			c.convergenceReceivers = append(
-				c.convergenceReceivers[:i], c.convergenceReceivers[i+1:]...)
-		}
-	}
-	c.convergenceMutex.Unlock()
 }
 
 // RegisterApplicationAgent adds a new ApplicationAgent to this Core's list.
@@ -263,25 +196,32 @@ func (c *Core) senderForDestination(endpoint bundle.EndpointID) []cla.Convergenc
 	return css
 }
 
-// HasEndpoint returns true if the given endpoint ID is assigned either to an
-// application or a CLA governed by this Application Agent.
-func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
+// hasEndpoint checks if this Core has some endpoint, but does not secure this
+// request with a Mutex. Therefore, the safe HasEndpoint method exists.
+func (c *Core) hasEndpoint(endpoint bundle.EndpointID) bool {
 	for _, agent := range c.Agents {
 		if agent.EndpointID() == endpoint {
 			return true
 		}
 	}
 
-	c.convergenceMutex.Lock()
 	for _, rec := range c.convergenceReceivers {
 		if rec.GetEndpointID() == endpoint {
-			c.convergenceMutex.Unlock()
 			return true
 		}
 	}
-	c.convergenceMutex.Unlock()
 
 	return false
+}
+
+// HasEndpoint returns true if the given endpoint ID is assigned either to an
+// application or a CLA governed by this Application Agent.
+func (c *Core) HasEndpoint(endpoint bundle.EndpointID) (state bool) {
+	c.convergenceMutex.Lock()
+	state = c.hasEndpoint(endpoint)
+	c.convergenceMutex.Unlock()
+
+	return
 }
 
 // SendStatusReport creates a new status report in response to the given

@@ -29,20 +29,32 @@ func NewRecBundle(b bundle.Bundle, rec bundle.EndpointID) RecBundle {
 	}
 }
 
+// Convergence is an interface to describe all kinds of Convergence Layer
+// Adapters. There should not be a direct implemention of this interface. One
+// must implement ConvergenceReceiver and/or ConvergenceSender, which are both
+// extending this interface.
+// A type can be both a ConvergenceReceiver and ConvergenceSender.
+type Convergence interface {
+	// Start starts this Convergence{Receiver,Sender} and might return an error
+	// and a boolean indicating if another Start should be tried later.
+	Start() (error, bool)
+
+	// Close signals this Convergence{Receiver,Send} to shut down.
+	Close()
+
+	// Address should return a unique address string to both identify this
+	// Convergence{Receiver,Sender} and ensure it will not opened twice.
+	Address() string
+}
+
 // ConvergenceReceiver is an interface for types which are able to receive
 // bundles and write them to a channel. This channel can be accessed through
 // the Channel method.
-// A type can be both a ConvergenceReceiver and ConvergenceSender.
 type ConvergenceReceiver interface {
-	// Start starts this ConvergenceReceiver and might return an error and a
-	// boolean indicating if another Start should be tried later.
-	Start() (error, bool)
+	Convergence
 
 	// Channel returns a channel of received bundles.
 	Channel() chan RecBundle
-
-	// Close signals this ConvergenceReceiver to shut down.
-	Close()
 
 	// GetEndpointID returns the endpoint ID assigned to this CLA.
 	GetEndpointID() bundle.EndpointID
@@ -50,25 +62,15 @@ type ConvergenceReceiver interface {
 
 // ConvergenceSender is an interface for types which are able to transmit
 // bundles to another node.
-// A type can be both a ConvergenceReceiver and ConvergenceSender.
 type ConvergenceSender interface {
-	// Start starts this ConvergenceSender and might return an error and a boolean
-	// indicating if another Start should be tried later.
-	Start() (error, bool)
+	Convergence
 
 	// Send transmits a bundle to this ConvergenceSender's endpoint. This method
 	// should be thread safe and finish transmitting one bundle, before acting
 	// on the next. This could be achieved by using a mutex or the like.
 	Send(bndl bundle.Bundle) error
 
-	// Close signals this ConvergenceSender to shut down.
-	Close()
-
 	// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
 	// if it's known. Otherwise the zero endpoint will be returned.
 	GetPeerEndpointID() bundle.EndpointID
-
-	// Address should return a unique address string to both identify this
-	// ConvergenceSender and ensure it will not opened twice.
-	Address() string
 }

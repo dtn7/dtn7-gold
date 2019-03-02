@@ -60,7 +60,7 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 	}
 
 	client := stcp.NewSTCPClient(fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint)
-	ds.c.RegisterConvergenceSender(client)
+	ds.c.RegisterConvergence(client)
 }
 
 // Close shuts the DiscoveryService down.
