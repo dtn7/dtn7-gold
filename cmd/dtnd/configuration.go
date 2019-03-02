@@ -78,7 +78,7 @@ func parseListen(conv convergenceConf) (cla.ConvergenceReceiver, discovery.Disco
 			Port:     uint(portInt),
 		}
 
-		return stcp.NewSTCPServer(conv.Endpoint, endpointID), msg, nil
+		return stcp.NewSTCPServer(conv.Endpoint, endpointID, true), msg, nil
 
 	default:
 		return nil, defaultDisc, fmt.Errorf("Unknown listen.protocol \"%s\"", conv.Protocol)
@@ -93,7 +93,7 @@ func parsePeer(conv convergenceConf) (cla.ConvergenceSender, error) {
 			return nil, err
 		}
 
-		return stcp.NewSTCPClient(conv.Endpoint, endpointID), nil
+		return stcp.NewSTCPClient(conv.Endpoint, endpointID, true), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown peer.protocol \"%s\"", conv.Protocol)

@@ -20,17 +20,21 @@ type STCPServer struct {
 	listenAddress string
 	reportChan    chan cla.RecBundle
 	endpointID    bundle.EndpointID
+	permanent     bool
 
 	stopSyn chan struct{}
 	stopAck chan struct{}
 }
 
-// NewSTCPServer creates a new STCPServer for the given listen address.
-func NewSTCPServer(listenAddress string, endpointID bundle.EndpointID) *STCPServer {
+// NewSTCPServer creates a new STCPServer for the given listen address. The
+// permanent flag indicates if this STCPServer should never be removed from
+// the core.
+func NewSTCPServer(listenAddress string, endpointID bundle.EndpointID, permanent bool) *STCPServer {
 	return &STCPServer{
 		listenAddress: listenAddress,
 		reportChan:    make(chan cla.RecBundle),
 		endpointID:    endpointID,
+		permanent:     permanent,
 		stopSyn:       make(chan struct{}),
 		stopAck:       make(chan struct{}),
 	}
@@ -126,6 +130,11 @@ func (serv STCPServer) GetEndpointID() bundle.EndpointID {
 // ConvergenceReceiver and ensure it will not opened twice.
 func (serv STCPServer) Address() string {
 	return fmt.Sprintf("stcp://%s", serv.listenAddress)
+}
+
+// IsPermanent returns true, if this CLA should not be removed after failures.
+func (serv STCPServer) IsPermanent() bool {
+	return serv.permanent
 }
 
 func (serv STCPServer) String() string {

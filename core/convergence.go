@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/geistesk/dtn7/cla"
@@ -49,7 +51,7 @@ func (cqe *convergenceQueueElement) activate(c *Core) (retry bool) {
 	}()
 
 	// Check TTL
-	if cqe.ttl == 0 {
+	if !cqe.conv.IsPermanent() && cqe.ttl == 0 {
 		log.WithFields(log.Fields{
 			"cla": cqe.conv,
 		}).Warn("Failed to start CLA, TTL expired")
@@ -117,11 +119,18 @@ func (cqe *convergenceQueueElement) activate(c *Core) (retry bool) {
 	}
 
 	if err, claRetry := cqe.conv.Start(); err != nil {
+		var ttlVal string
+		if cqe.conv.IsPermanent() {
+			ttlVal = "permanent"
+		} else {
+			ttlVal = fmt.Sprintf("%d", cqe.ttl)
+		}
+
 		log.WithFields(log.Fields{
 			"cla":             cqe.conv,
 			"error":           err,
 			"retry_requested": claRetry,
-			"ttl":             cqe.ttl,
+			"ttl":             ttlVal,
 		}).Info("Failed to start CLA")
 
 		retry = claRetry
@@ -156,7 +165,7 @@ func (cqe *convergenceQueueElement) activate(c *Core) (retry bool) {
 func (c *Core) RegisterConvergence(conv cla.Convergence) {
 	cqe := newConvergenceQueueElement(conv)
 
-	if retry := cqe.activate(c); !retry {
+	if retry := cqe.activate(c); retry {
 		c.convergenceMutex.Lock()
 		c.convergenceQueue = append(c.convergenceQueue, cqe)
 		c.convergenceMutex.Unlock()

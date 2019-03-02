@@ -45,6 +45,9 @@ type Convergence interface {
 	// Address should return a unique address string to both identify this
 	// Convergence{Receiver,Sender} and ensure it will not opened twice.
 	Address() string
+
+	// IsPermanent returns true, if this CLA should not be removed after failures.
+	IsPermanent() bool
 }
 
 // ConvergenceReceiver is an interface for types which are able to receive

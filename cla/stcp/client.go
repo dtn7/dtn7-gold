@@ -17,21 +17,26 @@ type STCPClient struct {
 	peer  bundle.EndpointID
 	mutex sync.Mutex
 
-	address string
+	permanent bool
+	address   string
 }
 
 // NewSTCPClient creates a new STCPClient, connected to the given address for
-// the registered endpoint ID.
-func NewSTCPClient(address string, peer bundle.EndpointID) *STCPClient {
+// the registered endpoint ID. The permanent flag indicates if this STCPClient
+// should never be removed from the core.
+func NewSTCPClient(address string, peer bundle.EndpointID, permanent bool) *STCPClient {
 	return &STCPClient{
-		peer:    peer,
-		address: address,
+		peer:      peer,
+		permanent: permanent,
+		address:   address,
 	}
 }
 
-// NewSTCPClient creates a new STCPClient, connected to the given address.
-func NewAnonymousSTCPClient(address string) *STCPClient {
-	return NewSTCPClient(address, bundle.DtnNone())
+// NewSTCPClient creates a new STCPClient, connected to the given address. The
+// permanent flag indicates if this STCPClient should never be removed from
+// the core.
+func NewAnonymousSTCPClient(address string, permanent bool) *STCPClient {
+	return NewSTCPClient(address, bundle.DtnNone(), permanent)
 }
 
 // Start starts this STCPClient and might return an error and a boolean
@@ -79,6 +84,11 @@ func (client *STCPClient) GetPeerEndpointID() bundle.EndpointID {
 // ConvergenceSender and ensure it will not opened twice.
 func (client *STCPClient) Address() string {
 	return client.address
+}
+
+// IsPermanent returns true, if this CLA should not be removed after failures.
+func (client *STCPClient) IsPermanent() bool {
+	return client.permanent
 }
 
 func (client *STCPClient) String() string {

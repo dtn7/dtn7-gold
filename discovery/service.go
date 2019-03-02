@@ -59,7 +59,8 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		return
 	}
 
-	client := stcp.NewSTCPClient(fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint)
+	client := stcp.NewSTCPClient(
+		fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint, false)
 	ds.c.RegisterConvergence(client)
 }
 
