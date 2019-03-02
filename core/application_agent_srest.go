@@ -3,9 +3,10 @@ package core
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/ugorji/go/codec"
@@ -116,7 +117,11 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 
 	var handleErr = func(msg string) {
 		resp = SimpleRESTRequestResponse{msg}
-		log.Printf("SimpleRESTAppAgent's send errored: %s", msg)
+		log.WithFields(log.Fields{
+			"srest":   aa.EndpointID(),
+			"request": req,
+			"error":   msg,
+		}).Warn("SimpleRESTAppAgent's send errored")
 	}
 
 	if req.Method != "POST" {
@@ -161,7 +166,10 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 	aa.c.SendBundle(bndl)
 
 	resp = SimpleRESTRequestResponse{}
-	log.Printf("SimpleRESTAppAgent's transmitted %v", bndl)
+	log.WithFields(log.Fields{
+		"srest":  aa.EndpointID(),
+		"bundle": bndl,
+	}).Info("SimpleRESTAppAgent's transmitted bundle")
 }
 
 // EndpointID returns this SimpleRESTAppAgent's (unique) endpoint ID.
@@ -172,7 +180,10 @@ func (aa *SimpleRESTAppAgent) EndpointID() bundle.EndpointID {
 // Deliver delivers a received bundle to this SimpleRESTAppAgent. This bundle
 // may contain an application specific payload or an administrative record.
 func (aa *SimpleRESTAppAgent) Deliver(bndl *bundle.Bundle) error {
-	log.Printf("SimpleRESTAppAgent %v received a bundle: %v", aa.endpointID, bndl)
+	log.WithFields(log.Fields{
+		"srest":  aa.EndpointID(),
+		"bundle": bndl,
+	}).Info("SimpleRESTAppAgent received a bundle")
 
 	aa.bundleMutex.Lock()
 	aa.bundles = append(aa.bundles, *bndl)

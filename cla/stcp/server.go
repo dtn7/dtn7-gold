@@ -3,9 +3,10 @@ package stcp
 import (
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/geistesk/dtn7/cla"
@@ -75,22 +76,32 @@ func (serv *STCPServer) handleSender(conn net.Conn) {
 		conn.Close()
 
 		if r := recover(); r != nil {
-			log.Printf("STCPServer.handleSender: %v", r)
+			log.WithFields(log.Fields{
+				"cla":   serv,
+				"conn":  conn,
+				"error": r,
+			}).Warn("STCPServer's sender failed")
 		}
 	}()
 
 	for {
 		var du = new(DataUnit)
 		var dec = codec.NewDecoder(conn, new(codec.CborHandle))
+		var err error
 
-		if err := dec.Decode(du); err == nil {
-			if bndl, err := du.toBundle(); err == nil {
+		if err = dec.Decode(du); err == nil {
+			var bndl bundle.Bundle
+			if bndl, err = du.toBundle(); err == nil {
 				serv.reportChan <- cla.NewRecBundle(bndl, serv.endpointID)
-			} else {
-				log.Printf("Reception of STCP data unit failed: %v", err)
 			}
-		} else if err != io.EOF {
-			log.Printf("Reception of STCP data unit failed: %v", err)
+		}
+
+		if err != nil && err != io.EOF {
+			log.WithFields(log.Fields{
+				"cla":   serv,
+				"conn":  conn,
+				"error": err,
+			}).Warn("Reception of STCP data unit failed")
 		}
 	}
 }

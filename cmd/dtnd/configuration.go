@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
 	"github.com/geistesk/dtn7/bundle"
@@ -125,7 +126,9 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		if aa, err := parseSimpleRESTAppAgent(conf.SimpleRest, c); err == nil {
 			c.RegisterApplicationAgent(aa)
 		} else {
-			log.Printf("Failed to register SimpleRESTAppAgent: %v", err)
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Warn("Failed to register SimpleRESTAppAgent")
 		}
 	}
 
@@ -148,7 +151,10 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 	for _, conv := range conf.Peer {
 		convRec, err := parsePeer(conv)
 		if err != nil {
-			log.Printf("Failed to establish a connection to peer %v", conv.Endpoint)
+			log.WithFields(log.Fields{
+				"peer":  conv.Endpoint,
+				"error": err,
+			}).Warn("Failed to establish a connection to a peer")
 			continue
 		}
 

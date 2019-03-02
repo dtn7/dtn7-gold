@@ -2,8 +2,9 @@ package discovery
 
 import (
 	"fmt"
-	"log"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/geistesk/dtn7/cla/stcp"
 	"github.com/geistesk/dtn7/core"
@@ -28,8 +29,11 @@ func (ds *DiscoveryService) notify6(discovered peerdiscovery.Discovered) {
 func (ds *DiscoveryService) notify(discovered peerdiscovery.Discovered) {
 	dms, err := NewDiscoveryMessagesFromCbor(discovered.Payload)
 	if err != nil {
-		log.Printf("Peer discovery failed to parse incoming package from %v: %v",
-			discovered.Address, err)
+		log.WithFields(log.Fields{
+			"discovery": ds,
+			"peer":      discovered.Address,
+			"error":     err,
+		}).Warn("Peer discovery failed to parse incoming package")
 
 		return
 	}
@@ -40,10 +44,18 @@ func (ds *DiscoveryService) notify(discovered peerdiscovery.Discovered) {
 }
 
 func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
-	log.Printf("Peer discovery discovered %v at %v", dm, addr)
+	log.WithFields(log.Fields{
+		"discovery": ds,
+		"peer":      addr,
+		"message":   dm,
+	}).Debug("Peer discovery received a message")
 
 	if dm.Type != STCP {
-		log.Printf("DiscoveryMessage's Type is unknown or unsupported: %d", dm.Type)
+		log.WithFields(log.Fields{
+			"discovery": ds,
+			"peer":      addr,
+			"type":      uint(dm.Type),
+		}).Warn("DiscoveryMessage's Type is unknown or unsupported")
 		return
 	}
 
@@ -66,7 +78,11 @@ func (ds *DiscoveryService) Close() {
 // DiscoveryMessages through IPv4 and/or IPv6, as specified in the parameters.
 // Furthermore, received DiscoveryMessages will be processed.
 func NewDiscoveryService(dms []DiscoveryMessage, c *core.Core, ipv4, ipv6 bool) (*DiscoveryService, error) {
-	log.Printf("New DiscoveryService: IPv4: %t, IPv6: %t, %v", ipv4, ipv6, dms)
+	log.WithFields(log.Fields{
+		"ipv4":    ipv4,
+		"ipv6":    ipv6,
+		"message": dms,
+	}).Info("Started DiscoveryService")
 
 	var ds = &DiscoveryService{
 		c: c,

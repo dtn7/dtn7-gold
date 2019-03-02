@@ -1,6 +1,6 @@
 package core
 
-import "log"
+import log "github.com/sirupsen/logrus"
 
 // Store is an interface for a bundle storage.
 type Store interface {
@@ -55,7 +55,9 @@ func KnowsBundle(store Store, requested BundlePack) bool {
 type NoStore struct{}
 
 func (_ NoStore) Push(bp BundlePack) error {
-	log.Printf("NoStore got pushed: %v", bp)
+	log.WithFields(log.Fields{
+		"bundle": bp.Bundle,
+	}).Info("NoStore got pushed an update")
 	return nil
 }
 

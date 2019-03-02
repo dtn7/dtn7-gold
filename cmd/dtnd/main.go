@@ -1,9 +1,10 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // waitSigint blocks the current thread until a SIGINT appears.
@@ -28,11 +29,13 @@ func main() {
 
 	core, discovery, err := parseCore(os.Args[1])
 	if err != nil {
-		log.Fatalf("Failed to parse config: %v\n", err)
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Fatal("Failed to parse config")
 	}
 
 	waitSigint()
-	log.Print("Shutting down")
+	log.Info("Shutting down..")
 
 	core.Close()
 

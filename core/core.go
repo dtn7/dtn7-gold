@@ -1,9 +1,10 @@
 package core
 
 import (
-	"log"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/geistesk/dtn7/cla"
@@ -107,7 +108,9 @@ func (c *Core) checkConvergenceReceivers() {
 		// Check back on contraindicated bundles
 		case <-tick.C:
 			for _, bp := range QueryPending(c.store) {
-				log.Printf("Retrying bundle %v from store", bp)
+				log.WithFields(log.Fields{
+					"bundle": bp.Bundle,
+				}).Info("Retrying bundle from store")
 				c.dispatching(bp)
 			}
 
@@ -136,7 +139,10 @@ func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
 	c.convergenceMutex.Lock()
 	for _, cs := range c.convergenceSenders {
 		if cs.Address() == sender.Address() {
-			log.Printf("ConvergenceSender's address is already known: %v", sender)
+			log.WithFields(log.Fields{
+				"cla": sender,
+			}).Debug("ConvergenceSender's address is already known")
+
 			c.convergenceMutex.Unlock()
 			return
 		}
@@ -144,12 +150,17 @@ func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
 	c.convergenceMutex.Unlock()
 
 	if c.HasEndpoint(sender.GetPeerEndpointID()) {
-		log.Printf("Node contains ConvergenceSender's endpoint ID: %v", sender)
+		log.WithFields(log.Fields{
+			"cla": sender,
+		}).Debug("Node contains ConvergenceSender's endpoint ID")
 		return
 	}
 
 	if err, retry := sender.Start(); err != nil {
-		log.Printf("Failed to start ConvergenceSender %v: %v", sender, err)
+		log.WithFields(log.Fields{
+			"cla":   sender,
+			"error": err,
+		}).Info("Failed to start ConvergenceSender")
 
 		if retry {
 			go func(sender cla.ConvergenceSender) {
@@ -158,7 +169,9 @@ func (c *Core) RegisterConvergenceSender(sender cla.ConvergenceSender) {
 			}(sender)
 		}
 	} else {
-		log.Printf("Started ConvergenceSender %v", sender)
+		log.WithFields(log.Fields{
+			"cla": sender,
+		}).Info("Started ConvergenceSender")
 
 		c.convergenceMutex.Lock()
 		c.convergenceSenders = append(c.convergenceSenders, sender)
@@ -172,7 +185,10 @@ func (c *Core) RemoveConvergenceSender(sender cla.ConvergenceSender) {
 	c.convergenceMutex.Lock()
 	for i := len(c.convergenceSenders) - 1; i >= 0; i-- {
 		if c.convergenceSenders[i] == sender {
-			log.Printf("Removing ConvergenceSender %v", sender)
+			log.WithFields(log.Fields{
+				"cla": sender,
+			}).Info("Removing ConvergenceSender")
+
 			c.convergenceSenders = append(
 				c.convergenceSenders[:i], c.convergenceSenders[i+1:]...)
 		}
@@ -184,7 +200,10 @@ func (c *Core) RemoveConvergenceSender(sender cla.ConvergenceSender) {
 // list. Bundles will be received through this ConvergenceReceiver
 func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
 	if err, retry := rec.Start(); err != nil {
-		log.Printf("Failed to start ConvergenceReceiver %v: %v", rec, err)
+		log.WithFields(log.Fields{
+			"cla":   rec,
+			"error": err,
+		}).Info("Failed to start ConvergenceReceiver")
 
 		if retry {
 			go func(rec cla.ConvergenceReceiver) {
@@ -193,7 +212,9 @@ func (c *Core) RegisterConvergenceReceiver(rec cla.ConvergenceReceiver) {
 			}(rec)
 		}
 	} else {
-		log.Printf("Started ConvergenceReceiver %v", rec)
+		log.WithFields(log.Fields{
+			"cla": rec,
+		}).Info("Started ConvergenceReceiver")
 
 		c.convergenceMutex.Lock()
 		c.convergenceReceivers = append(c.convergenceReceivers, rec)
@@ -209,7 +230,10 @@ func (c *Core) RemoveConvergenceReceiver(rec cla.ConvergenceReceiver) {
 	c.convergenceMutex.Lock()
 	for i := len(c.convergenceReceivers) - 1; i >= 0; i-- {
 		if c.convergenceReceivers[i] == rec {
-			log.Printf("Removing ConvergenceReceiver %v", rec)
+			log.WithFields(log.Fields{
+				"cla": rec,
+			}).Info("Removing ConvergenceReceiver")
+
 			c.convergenceReceivers = append(
 				c.convergenceReceivers[:i], c.convergenceReceivers[i+1:]...)
 		}
@@ -274,8 +298,11 @@ func (c *Core) SendStatusReport(bp BundlePack,
 		return
 	}
 
-	log.Printf("Creation of a %v \"%v\" status report regarding %v",
-		status, reason, bp.Bundle)
+	log.WithFields(log.Fields{
+		"bundle": bp.Bundle,
+		"status": status,
+		"reason": reason,
+	}).Info("Sending a status report for a bundle")
 
 	var inBndl = *bp.Bundle
 	var sr = NewStatusReport(inBndl, status, reason, bundle.DtnTimeNow())
@@ -283,9 +310,10 @@ func (c *Core) SendStatusReport(bp BundlePack,
 
 	var aaEndpoint = bp.Receiver
 	if !c.HasEndpoint(aaEndpoint) {
-		log.Printf(
-			"Failed to create status report for %v, receiver %v is not a current endpoint",
-			bp.Bundle, aaEndpoint)
+		log.WithFields(log.Fields{
+			"bundle":   bp.Bundle,
+			"endpoint": aaEndpoint,
+		}).Warn("Failed to create status report, receiver is not a current endpoint")
 
 		return
 	}
@@ -305,8 +333,10 @@ func (c *Core) SendStatusReport(bp BundlePack,
 		})
 
 	if err != nil {
-		log.Printf("Creating status report bundle regarding %v failed: %v",
-			bp.Bundle, err)
+		log.WithFields(log.Fields{
+			"bundle": bp.Bundle,
+			"error":  err,
+		}).Warn("Creating status report bundle failed")
 
 		return
 	}
