@@ -18,6 +18,7 @@ import (
 // tomlConfig describes the TOML-configuration.
 type tomlConfig struct {
 	Core       coreConf
+	Logging    logConf
 	Discovery  discoveryConf
 	SimpleRest simpleRestConf `toml:"simple-rest"`
 	Listen     []convergenceConf
@@ -28,6 +29,13 @@ type tomlConfig struct {
 type coreConf struct {
 	Store             string
 	InspectAllBundles bool `toml:"inspect-all-bundles"`
+}
+
+// logConf describes the Logging-configuration block.
+type logConf struct {
+	Level        string
+	ReportCaller bool `toml:"report-caller"`
+	Format       string
 }
 
 // discoveryConf describes the Discovery-configuration block.
@@ -106,6 +114,34 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 	var conf tomlConfig
 	if _, err = toml.DecodeFile(filename, &conf); err != nil {
 		return
+	}
+
+	// Logging
+	if conf.Logging.Level != "" {
+		if lvl, err := log.ParseLevel(conf.Logging.Level); err != nil {
+			log.WithFields(log.Fields{
+				"level":    conf.Logging.Level,
+				"error":    err,
+				"provided": "panic,fatal,error,warn,info,debug,trace",
+			}).Warn("Failed to set log level. Please select one of the provided ones")
+		} else {
+			log.SetLevel(lvl)
+		}
+	}
+
+	log.SetReportCaller(conf.Logging.ReportCaller)
+
+	switch conf.Logging.Format {
+	case "", "text":
+		log.SetFormatter(&log.TextFormatter{
+			DisableTimestamp: true,
+		})
+
+	case "json":
+		log.SetFormatter(&log.JSONFormatter{})
+
+	default:
+		log.Warn("Unknown logging format")
 	}
 
 	var discoveryMsgs []discovery.DiscoveryMessage

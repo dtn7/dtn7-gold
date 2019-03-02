@@ -7,6 +7,17 @@ store = "store.dat"
 # This allows deletion of stored bundles after being received.
 inspect-all-bundles = true
 
+# Configure the format and verbosity of dtnd's logging.
+[logging]
+# Should be one of, sorted from silence to verbose:
+# panic,fatal,error,warn,info,debug,trace
+level = "info"
+# Show the calling method and its file in the logs
+report-caller = false
+# Could be "text" for human readable output or "json".
+format = "text"
+
+
 # The peer/neighbor discovery searches the (local) network for other dtnd nodes
 # and tries to establish a connection to the promoted CLAs.
 [discovery]
