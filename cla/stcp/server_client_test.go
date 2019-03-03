@@ -56,7 +56,7 @@ func TestSTCPServerClient(t *testing.T) {
 
 	// Server
 	serv := NewSTCPServer(
-		fmt.Sprintf(":%d", port), bundle.MustNewEndpointID("dtn:stcpcla"))
+		fmt.Sprintf(":%d", port), bundle.MustNewEndpointID("dtn:stcpcla"), false)
 	if err, _ := serv.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestSTCPServerClient(t *testing.T) {
 	// Client
 	for c := 0; c < clients; c++ {
 		go func() {
-			client := NewAnonymousSTCPClient(fmt.Sprintf("localhost:%d", port))
+			client := NewAnonymousSTCPClient(fmt.Sprintf("localhost:%d", port), false)
 			if err, _ := client.Start(); err != nil {
 				t.Fatal(err)
 			}
