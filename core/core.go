@@ -102,10 +102,8 @@ func (c *Core) checkConvergenceReceivers() {
 			return
 
 		// Handle a received bundle, also checks if the channel is open
-		case bndl, ok := <-chnl:
-			if ok {
-				c.receive(NewRecBundlePack(bndl))
-			}
+		case bndl := <-chnl:
+			c.receive(NewRecBundlePack(bndl))
 
 		// Check back on enqueued CLAs and contraindicated bundles
 		case <-tick.C:

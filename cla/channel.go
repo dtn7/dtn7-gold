@@ -29,14 +29,27 @@ func merge(a, b chan RecBundle) (ch chan RecBundle) {
 	return
 }
 
+// zeroChan is an empty, always opened channel - after being requested the first
+// time from getZeroChan() - to be returned for an empty parameter list of
+// JoinReceivers. This prevents the select statement within
+// checkConvergenceReceivers's for loop to always return a closed channel and
+// heat up the loop.
+var zeroChan chan RecBundle
+
+func getZeroChan() chan RecBundle {
+	if zeroChan == nil {
+		zeroChan = make(chan RecBundle)
+	}
+
+	return zeroChan
+}
+
 // JoinReceivers joins the given receiving bundle channels into a new channel,
 // containing all bundles from all channels.
 func JoinReceivers(chans ...chan RecBundle) chan RecBundle {
 	switch len(chans) {
 	case 0:
-		ch := make(chan RecBundle)
-		close(ch)
-		return ch
+		return getZeroChan()
 
 	case 1:
 		return chans[0]
