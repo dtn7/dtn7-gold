@@ -2,7 +2,6 @@ package stcp
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"time"
 
@@ -72,7 +71,7 @@ func (serv *STCPServer) Start() (error, bool) {
 		}
 	}(ln)
 
-	return nil, false
+	return nil, true
 }
 
 func (serv *STCPServer) handleSender(conn net.Conn) {
@@ -100,12 +99,14 @@ func (serv *STCPServer) handleSender(conn net.Conn) {
 			}
 		}
 
-		if err != nil && err != io.EOF {
+		if err != nil {
 			log.WithFields(log.Fields{
 				"cla":   serv,
 				"conn":  conn,
 				"error": err,
-			}).Warn("Reception of STCP data unit failed")
+			}).Warn("Reception of STCP data unit failed, closing conn's handler")
+
+			return
 		}
 	}
 }
