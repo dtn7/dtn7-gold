@@ -60,7 +60,10 @@ func showHelp() {
 func main() {
 	args := os.Args[1:]
 
-	resthost := "http://127.0.0.1:8080"
+	resthost := os.Getenv("DTN7RESTHOST")
+	if resthost == "" {
+		resthost = "http://127.0.0.1:8080"
+	}
 
 	if len(args) == 0 {
 		showHelp()
