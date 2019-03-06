@@ -1,4 +1,7 @@
 # dtn7
+[![Build Status](https://travis-ci.com/geistesk/dtn7.svg?branch=master)](https://travis-ci.com/geistesk/dtn7)
+[![GoDoc](https://godoc.org/github.com/geistesk/dtn7?status.svg)](https://godoc.org/github.com/geistesk/dtn7)
+
 Delay-tolerant networking software suite and library
 
 
