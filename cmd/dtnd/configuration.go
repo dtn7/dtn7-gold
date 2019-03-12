@@ -28,7 +28,8 @@ type tomlConfig struct {
 // coreConf describes the Core-configuration block.
 type coreConf struct {
 	Store             string
-	InspectAllBundles bool `toml:"inspect-all-bundles"`
+	InspectAllBundles bool   `toml:"inspect-all-bundles"`
+	NodeId            string `toml:"node-id"`
 }
 
 // logConf describes the Logging-configuration block.
@@ -59,26 +60,21 @@ type convergenceConf struct {
 }
 
 // parseListen inspects a "listen" convergenceConf and returns a ConvergenceReceiver.
-func parseListen(conv convergenceConf) (cla.ConvergenceReceiver, discovery.DiscoveryMessage, error) {
+func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.ConvergenceReceiver, discovery.DiscoveryMessage, error) {
 	var defaultDisc = discovery.DiscoveryMessage{}
 
 	switch conv.Protocol {
 	case "stcp":
-		endpointID, err := bundle.NewEndpointID(conv.Node)
-		if err != nil {
-			return nil, defaultDisc, err
-		}
-
 		_, portStr, _ := net.SplitHostPort(conv.Endpoint)
 		portInt, _ := strconv.Atoi(portStr)
 
 		msg := discovery.DiscoveryMessage{
 			Type:     discovery.STCP,
-			Endpoint: endpointID,
+			Endpoint: nodeId,
 			Port:     uint(portInt),
 		}
 
-		return stcp.NewSTCPServer(conv.Endpoint, endpointID, true), msg, nil
+		return stcp.NewSTCPServer(conv.Endpoint, nodeId, true), msg, nil
 
 	default:
 		return nil, defaultDisc, fmt.Errorf("Unknown listen.protocol \"%s\"", conv.Protocol)
@@ -152,7 +148,13 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		return
 	}
 
-	c, err = core.NewCore(conf.Core.Store, conf.Core.InspectAllBundles)
+	nodeId, nodeErr := bundle.NewEndpointID(conf.Core.NodeId)
+	if nodeErr != nil {
+		err = nodeErr
+		return
+	}
+
+	c, err = core.NewCore(conf.Core.Store, nodeId, conf.Core.InspectAllBundles)
 	if err != nil {
 		return
 	}
@@ -173,7 +175,7 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		var convRec cla.ConvergenceReceiver
 		var discoMsg discovery.DiscoveryMessage
 
-		convRec, discoMsg, err = parseListen(conv)
+		convRec, discoMsg, err = parseListen(conv, c.NodeId)
 		if err != nil {
 			return
 		}

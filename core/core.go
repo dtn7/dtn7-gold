@@ -28,9 +28,9 @@ func isKnownBlockType(blocktype bundle.CanonicalBlockType) bool {
 // Core is the inner core of our DTN which handles transmission, reception and
 // reception of bundles.
 type Core struct {
-	Agents []ApplicationAgent
-
-	inspectAllBundles bool
+	Agents            []ApplicationAgent
+	InspectAllBundles bool
+	NodeId            bundle.EndpointID
 
 	// Used by the convergence methods, defined in core/convergence.go
 	convergenceSenders   []cla.ConvergenceSender
@@ -51,10 +51,11 @@ type Core struct {
 // at the given path. The inspectAllBundles flag indicates if all
 // administrative records - next to the bundles addressed to this node - should
 // be inspected. This allows bundle deletion for forwarding bundles.
-func NewCore(storePath string, inspectAllBundles bool) (*Core, error) {
+func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool) (*Core, error) {
 	var c = new(Core)
 
-	c.inspectAllBundles = inspectAllBundles
+	c.InspectAllBundles = inspectAllBundles
+	c.NodeId = nodeId
 
 	store, err := NewSimpleStore(storePath)
 	if err != nil {

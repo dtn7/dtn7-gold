@@ -247,7 +247,7 @@ func (c *Core) forward(bp BundlePack) {
 		if deleteAfterwards {
 			bp.PurgeConstraints()
 			c.store.Push(bp)
-		} else if c.inspectAllBundles && bp.Bundle.IsAdministrativeRecord() {
+		} else if c.InspectAllBundles && bp.Bundle.IsAdministrativeRecord() {
 			c.bundleContraindicated(bp)
 			c.checkAdministrativeRecord(bp)
 		}
