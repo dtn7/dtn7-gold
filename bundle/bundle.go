@@ -182,12 +182,12 @@ func (b Bundle) ToCbor() []byte {
 	// exported as consts from the codec library.
 
 	var buf bytes.Buffer
-	var cborHandle *codec.CborHandle = new(codec.CborHandle)
+	var cborEncoder = codec.NewEncoder(&buf, new(codec.CborHandle))
 
 	buf.WriteByte(codec.CborStreamArray)
 
 	b.forEachBlock(func(blck block) {
-		codec.NewEncoder(&buf, cborHandle).MustEncode(blck)
+		cborEncoder.MustEncode(blck)
 	})
 
 	buf.WriteByte(codec.CborStreamBreak)

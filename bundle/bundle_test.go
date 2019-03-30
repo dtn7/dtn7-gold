@@ -316,11 +316,6 @@ func TestBundleCheckValid(t *testing.T) {
 	}
 }
 
-/*
-BenchmarkBundleCreationCRCNo-4             50000             32779 ns/op
-BenchmarkBundleCreationCRC16-4             50000             34994 ns/op
-BenchmarkBundleCreationCRC32-4             50000             35108 ns/op
-*/
 func benchmarkBundleCreation(b *testing.B, crcType CRCType) {
 	var (
 		primary    PrimaryBlock
