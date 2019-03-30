@@ -315,3 +315,49 @@ func TestBundleCheckValid(t *testing.T) {
 		}
 	}
 }
+
+/*
+BenchmarkBundleCreationCRCNo-4             50000             32779 ns/op
+BenchmarkBundleCreationCRC16-4             50000             34994 ns/op
+BenchmarkBundleCreationCRC32-4             50000             35108 ns/op
+*/
+func benchmarkBundleCreation(b *testing.B, crcType CRCType) {
+	var (
+		primary    PrimaryBlock
+		canonicals []CanonicalBlock
+		bndl       Bundle
+	)
+
+	canonicals = make([]CanonicalBlock, 2)
+
+	for i := 0; i < b.N; i++ {
+		primary = NewPrimaryBlock(
+			0,
+			MustNewEndpointID("dtn:dest"),
+			MustNewEndpointID("dtn:src"),
+			NewCreationTimestamp(DtnTimeEpoch, 0),
+			60*60*1000000)
+
+		canonicals[0] = NewBundleAgeBlock(1, 0, 0)
+		canonicals[1] = NewPayloadBlock(0, []byte("uff"))
+
+		bndl, _ = NewBundle(primary, canonicals)
+
+		bndl.SetCRCType(crcType)
+		bndl.CalculateCRC()
+
+		bndl.ToCbor()
+	}
+}
+
+func BenchmarkBundleCreationCRCNo(b *testing.B) {
+	benchmarkBundleCreation(b, CRCNo)
+}
+
+func BenchmarkBundleCreationCRC16(b *testing.B) {
+	benchmarkBundleCreation(b, CRC16)
+}
+
+func BenchmarkBundleCreationCRC32(b *testing.B) {
+	benchmarkBundleCreation(b, CRC32)
+}
