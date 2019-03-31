@@ -19,13 +19,19 @@ type Bundle struct {
 // NewBundle creates a new Bundle. The values and flags of the blocks will be
 // checked and an error might be returned.
 func NewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) (b Bundle, err error) {
-	b = Bundle{
-		PrimaryBlock:    primary,
-		CanonicalBlocks: canonicals,
-	}
+	b = MustNewBundle(primary, canonicals)
 	err = b.checkValid()
 
 	return
+}
+
+// MustNewBundle creates a new Bundle like NewBundle, but skips the validity
+// check. No panic will be called!
+func MustNewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) Bundle {
+	return Bundle{
+		PrimaryBlock:    primary,
+		CanonicalBlocks: canonicals,
+	}
 }
 
 // forEachBlock applies the given function for each of this Bundle's blocks.

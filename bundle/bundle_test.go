@@ -316,7 +316,7 @@ func TestBundleCheckValid(t *testing.T) {
 	}
 }
 
-func benchmarkBundleCreation(b *testing.B, crcType CRCType) {
+func benchmarkBundleCreation(b *testing.B, crcType CRCType, validity bool) {
 	var (
 		primary    PrimaryBlock
 		canonicals []CanonicalBlock
@@ -336,7 +336,11 @@ func benchmarkBundleCreation(b *testing.B, crcType CRCType) {
 		canonicals[0] = NewBundleAgeBlock(1, 0, 0)
 		canonicals[1] = NewPayloadBlock(0, []byte("uff"))
 
-		bndl, _ = NewBundle(primary, canonicals)
+		if validity {
+			bndl, _ = NewBundle(primary, canonicals)
+		} else {
+			bndl = MustNewBundle(primary, canonicals)
+		}
 
 		bndl.SetCRCType(crcType)
 		bndl.CalculateCRC()
@@ -345,14 +349,26 @@ func benchmarkBundleCreation(b *testing.B, crcType CRCType) {
 	}
 }
 
-func BenchmarkBundleCreationCRCNo(b *testing.B) {
-	benchmarkBundleCreation(b, CRCNo)
+func BenchmarkBundleCreationCRCNoValidity(b *testing.B) {
+	benchmarkBundleCreation(b, CRCNo, true)
 }
 
-func BenchmarkBundleCreationCRC16(b *testing.B) {
-	benchmarkBundleCreation(b, CRC16)
+func BenchmarkBundleCreationCRC16Validity(b *testing.B) {
+	benchmarkBundleCreation(b, CRC16, true)
 }
 
-func BenchmarkBundleCreationCRC32(b *testing.B) {
-	benchmarkBundleCreation(b, CRC32)
+func BenchmarkBundleCreationCRC32Validity(b *testing.B) {
+	benchmarkBundleCreation(b, CRC32, true)
+}
+
+func BenchmarkBundleCreationCRCNoNoValidity(b *testing.B) {
+	benchmarkBundleCreation(b, CRCNo, false)
+}
+
+func BenchmarkBundleCreationCRC16NoValidity(b *testing.B) {
+	benchmarkBundleCreation(b, CRC16, false)
+}
+
+func BenchmarkBundleCreationCRC32NoValidity(b *testing.B) {
+	benchmarkBundleCreation(b, CRC32, false)
 }
