@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -134,7 +135,9 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		})
 
 	case "json":
-		log.SetFormatter(&log.JSONFormatter{})
+		log.SetFormatter(&log.JSONFormatter{
+			TimestampFormat: time.RFC3339Nano,
+		})
 
 	default:
 		log.Warn("Unknown logging format")
