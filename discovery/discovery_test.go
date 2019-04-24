@@ -11,12 +11,12 @@ import (
 func TestDiscoveryMessageCbor(t *testing.T) {
 	var tests = []DiscoveryMessage{
 		DiscoveryMessage{
-			Type:     STCP,
+			Type:     MTCP,
 			Endpoint: bundle.MustNewEndpointID("dtn:foobar"),
 			Port:     8000,
 		},
 		DiscoveryMessage{
-			Type:        STCP,
+			Type:        MTCP,
 			Endpoint:    bundle.MustNewEndpointID("dtn:foobar"),
 			Port:        8000,
 			Additionals: []byte("gumo"),

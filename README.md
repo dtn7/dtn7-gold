@@ -7,12 +7,11 @@ Delay-tolerant networking software suite and library
 
 ## Protocols
 This software implements the current draft of the seventh version of the Bundle
-Protocol and the experimental STCP Convergence Layer to exchange bundles between
-nodes.
+Protocol and the MTCP Convergence Layer to exchange bundles between nodes.
 
 - Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-13.txt][dtn-bpbis-13])
-- Simple TCP Convergence-Layer Protocol
-  ([draft-burleigh-dtn-stcp-00.txt][dtn-stcp-00])
+- Minimal TCP Convergence-Layer Protocol
+  ([draft-ietf-dtn-mtcpcl-01.txt][dtn-mtcpcl-01])
 
 
 ## Software
@@ -72,7 +71,7 @@ interested in working with this code, check out the
 
 
 [dtn-bpbis-13]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-13
-[dtn-stcp-00]: https://tools.ietf.org/html/draft-burleigh-dtn-stcp-00
+[dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
 [dtnd-configuration]: https://github.com/geistesk/dtn7/blob/master/cmd/dtnd/configuration.toml
 [godoc]: https://godoc.org/github.com/geistesk/dtn7
 [golang]: https://golang.org/

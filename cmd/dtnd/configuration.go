@@ -11,7 +11,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/geistesk/dtn7/bundle"
 	"github.com/geistesk/dtn7/cla"
-	"github.com/geistesk/dtn7/cla/stcp"
+	"github.com/geistesk/dtn7/cla/mtcp"
 	"github.com/geistesk/dtn7/core"
 	"github.com/geistesk/dtn7/discovery"
 )
@@ -65,17 +65,17 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergenc
 	var defaultDisc = discovery.DiscoveryMessage{}
 
 	switch conv.Protocol {
-	case "stcp":
+	case "mtcp":
 		_, portStr, _ := net.SplitHostPort(conv.Endpoint)
 		portInt, _ := strconv.Atoi(portStr)
 
 		msg := discovery.DiscoveryMessage{
-			Type:     discovery.STCP,
+			Type:     discovery.MTCP,
 			Endpoint: nodeId,
 			Port:     uint(portInt),
 		}
 
-		return stcp.NewSTCPServer(conv.Endpoint, nodeId, true), msg, nil
+		return mtcp.NewMTCPServer(conv.Endpoint, nodeId, true), msg, nil
 
 	default:
 		return nil, defaultDisc, fmt.Errorf("Unknown listen.protocol \"%s\"", conv.Protocol)
@@ -84,13 +84,13 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergenc
 
 func parsePeer(conv convergenceConf) (cla.ConvergenceSender, error) {
 	switch conv.Protocol {
-	case "stcp":
+	case "mtcp":
 		endpointID, err := bundle.NewEndpointID(conv.Node)
 		if err != nil {
 			return nil, err
 		}
 
-		return stcp.NewSTCPClient(conv.Endpoint, endpointID, true), nil
+		return mtcp.NewMTCPClient(conv.Endpoint, endpointID, true), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown peer.protocol \"%s\"", conv.Protocol)

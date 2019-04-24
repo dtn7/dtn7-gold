@@ -6,7 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/geistesk/dtn7/cla/stcp"
+	"github.com/geistesk/dtn7/cla/mtcp"
 	"github.com/geistesk/dtn7/core"
 	"github.com/schollz/peerdiscovery"
 )
@@ -50,7 +50,7 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		"message":   dm,
 	}).Debug("Peer discovery received a message")
 
-	if dm.Type != STCP {
+	if dm.Type != MTCP {
 		log.WithFields(log.Fields{
 			"discovery": ds,
 			"peer":      addr,
@@ -59,7 +59,7 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		return
 	}
 
-	client := stcp.NewSTCPClient(
+	client := mtcp.NewMTCPClient(
 		fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint, false)
 	ds.c.RegisterConvergence(client)
 }

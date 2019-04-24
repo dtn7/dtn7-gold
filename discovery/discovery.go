@@ -29,9 +29,9 @@ const (
 	// Version 4" as specified in draft-ietf-dtn-tcpclv4-10 or newer documents.
 	TCPCLV4 CLAType = 0
 
-	// STCP is the "Simple TCP Convergence-Layer Protocol" as specified in
-	// draft-burleigh-dtn-stcp-00 or newer documents.
-	STCP CLAType = 1
+	// MTCP is the "Minimal TCP Convergence-Layer Protocol" as specified in
+	// draft-ietf-dtn-mtcpcl-01 or newer documents.
+	MTCP CLAType = 1
 )
 
 // DiscoveryMessage is the kind of message used by this peer/neighbor discovery.
@@ -70,8 +70,8 @@ func (dm DiscoveryMessage) String() string {
 	switch dm.Type {
 	case TCPCLV4:
 		fmt.Fprintf(&builder, "TCPCLv4")
-	case STCP:
-		fmt.Fprintf(&builder, "STCP")
+	case MTCP:
+		fmt.Fprintf(&builder, "MTCP")
 	default:
 		fmt.Fprintf(&builder, "Unknown CLA")
 	}
