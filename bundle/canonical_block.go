@@ -208,7 +208,7 @@ func (cb CanonicalBlock) checkValidExtensionBlocks() error {
 
 	default:
 		// "Block type codes 192 through 255 are not reserved and are available for
-		// private and/or experimental use.", draft-ietf-dtn-bpbis-12#section-4.2.3
+		// private and/or experimental use.", draft-ietf-dtn-bpbis-13#section-4.2.3
 		if !(192 <= cb.BlockType && cb.BlockType <= 255) {
 			return newBundleError("CanonicalBlock: Unknown block type")
 		}

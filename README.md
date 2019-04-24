@@ -10,7 +10,7 @@ This software implements the current draft of the seventh version of the Bundle
 Protocol and the experimental STCP Convergence Layer to exchange bundles between
 nodes.
 
-- Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-12.txt][dtn-bpbis-12])
+- Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-13.txt][dtn-bpbis-13])
 - Simple TCP Convergence-Layer Protocol
   ([draft-burleigh-dtn-stcp-00.txt][dtn-stcp-00])
 
@@ -71,7 +71,7 @@ interested in working with this code, check out the
 [documentation][godoc].
 
 
-[dtn-bpbis-12]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-12
+[dtn-bpbis-13]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-13
 [dtn-stcp-00]: https://tools.ietf.org/html/draft-burleigh-dtn-stcp-00
 [dtnd-configuration]: https://github.com/geistesk/dtn7/blob/master/cmd/dtnd/configuration.toml
 [godoc]: https://godoc.org/github.com/geistesk/dtn7
