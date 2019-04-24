@@ -1,4 +1,4 @@
-package stcp
+package mtcp
 
 import (
 	"fmt"
@@ -12,10 +12,10 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
-// STCPServer is an implementation of a Simple TCP Convergence-Layer server
+// MTCPServer is an implementation of a Minimal TCP Convergence-Layer server
 // which accepts bundles from multiple connections and forwards them to the
 // given channel.
-type STCPServer struct {
+type MTCPServer struct {
 	listenAddress string
 	reportChan    chan cla.RecBundle
 	endpointID    bundle.EndpointID
@@ -25,11 +25,11 @@ type STCPServer struct {
 	stopAck chan struct{}
 }
 
-// NewSTCPServer creates a new STCPServer for the given listen address. The
-// permanent flag indicates if this STCPServer should never be removed from
+// NewMTCPServer creates a new MTCPServer for the given listen address. The
+// permanent flag indicates if this MTCPServer should never be removed from
 // the core.
-func NewSTCPServer(listenAddress string, endpointID bundle.EndpointID, permanent bool) *STCPServer {
-	return &STCPServer{
+func NewMTCPServer(listenAddress string, endpointID bundle.EndpointID, permanent bool) *MTCPServer {
+	return &MTCPServer{
 		listenAddress: listenAddress,
 		reportChan:    make(chan cla.RecBundle),
 		endpointID:    endpointID,
@@ -39,9 +39,9 @@ func NewSTCPServer(listenAddress string, endpointID bundle.EndpointID, permanent
 	}
 }
 
-// Start starts this STCPServer and might return an error and a boolean
+// Start starts this MTCPServer and might return an error and a boolean
 // indicating if another Start should be tried later.
-func (serv *STCPServer) Start() (error, bool) {
+func (serv *MTCPServer) Start() (error, bool) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", serv.listenAddress)
 	if err != nil {
 		return err, false
@@ -74,7 +74,7 @@ func (serv *STCPServer) Start() (error, bool) {
 	return nil, true
 }
 
-func (serv *STCPServer) handleSender(conn net.Conn) {
+func (serv *MTCPServer) handleSender(conn net.Conn) {
 	defer func() {
 		conn.Close()
 
@@ -83,7 +83,7 @@ func (serv *STCPServer) handleSender(conn net.Conn) {
 				"cla":   serv,
 				"conn":  conn,
 				"error": r,
-			}).Warn("STCPServer's sender failed")
+			}).Warn("MTCPServer's sender failed")
 		}
 	}()
 
@@ -104,7 +104,7 @@ func (serv *STCPServer) handleSender(conn net.Conn) {
 				"cla":   serv,
 				"conn":  conn,
 				"error": err,
-			}).Warn("Reception of STCP data unit failed, closing conn's handler")
+			}).Warn("Reception of MTCP data unit failed, closing conn's handler")
 
 			return
 		}
@@ -112,32 +112,32 @@ func (serv *STCPServer) handleSender(conn net.Conn) {
 }
 
 // Channel returns a channel of received bundles.
-func (serv *STCPServer) Channel() chan cla.RecBundle {
+func (serv *MTCPServer) Channel() chan cla.RecBundle {
 	return serv.reportChan
 }
 
-// Close shuts this STCPServer down.
-func (serv *STCPServer) Close() {
+// Close shuts this MTCPServer down.
+func (serv *MTCPServer) Close() {
 	close(serv.stopSyn)
 	<-serv.stopAck
 }
 
 // GetEndpointID returns the endpoint ID assigned to this CLA.
-func (serv STCPServer) GetEndpointID() bundle.EndpointID {
+func (serv MTCPServer) GetEndpointID() bundle.EndpointID {
 	return serv.endpointID
 }
 
 // Address should return a unique address string to both identify this
 // ConvergenceReceiver and ensure it will not opened twice.
-func (serv STCPServer) Address() string {
-	return fmt.Sprintf("stcp://%s", serv.listenAddress)
+func (serv MTCPServer) Address() string {
+	return fmt.Sprintf("mtcp://%s", serv.listenAddress)
 }
 
 // IsPermanent returns true, if this CLA should not be removed after failures.
-func (serv STCPServer) IsPermanent() bool {
+func (serv MTCPServer) IsPermanent() bool {
 	return serv.permanent
 }
 
-func (serv STCPServer) String() string {
+func (serv MTCPServer) String() string {
 	return serv.Address()
 }

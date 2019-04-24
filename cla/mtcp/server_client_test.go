@@ -1,4 +1,4 @@
-package stcp
+package mtcp
 
 import (
 	"fmt"
@@ -27,7 +27,7 @@ func getRandomPort(t *testing.T) int {
 	return l.Addr().(*net.TCPAddr).Port
 }
 
-func TestSTCPServerClient(t *testing.T) {
+func TestMTCPServerClient(t *testing.T) {
 	// Address
 	port := getRandomPort(t)
 
@@ -55,8 +55,8 @@ func TestSTCPServerClient(t *testing.T) {
 	wg.Add(clients + 1) // 1 for the server
 
 	// Server
-	serv := NewSTCPServer(
-		fmt.Sprintf(":%d", port), bundle.MustNewEndpointID("dtn:stcpcla"), false)
+	serv := NewMTCPServer(
+		fmt.Sprintf(":%d", port), bundle.MustNewEndpointID("dtn:mtcpcla"), false)
 	if err, _ := serv.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestSTCPServerClient(t *testing.T) {
 	// Client
 	for c := 0; c < clients; c++ {
 		go func() {
-			client := NewAnonymousSTCPClient(fmt.Sprintf("localhost:%d", port), false)
+			client := NewAnonymousMTCPClient(fmt.Sprintf("localhost:%d", port), false)
 			if err, _ := client.Start(); err != nil {
 				t.Fatal(err)
 			}
