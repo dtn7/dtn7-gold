@@ -99,6 +99,12 @@ func (c *Core) checkConvergenceReceivers() {
 			}
 			c.convergenceMutex.Unlock()
 
+			if storeErr := c.store.Close(); storeErr != nil {
+				log.WithFields(log.Fields{
+					"error": storeErr,
+				}).Warn("Closing store while shutting down the Core errors")
+			}
+
 			close(c.stopAck)
 			return
 

@@ -69,7 +69,7 @@ func (store *SimpleStore) Push(bp BundlePack) error {
 	return store.sync()
 }
 
-func (store *SimpleStore) Query(sel func(BundlePack) bool) (bps []BundlePack) {
+func (store *SimpleStore) Query(sel func(BundlePack) bool) (bps []BundlePack, err error) {
 	store.mutex.Lock()
 	defer store.mutex.Unlock()
 
@@ -80,4 +80,11 @@ func (store *SimpleStore) Query(sel func(BundlePack) bool) (bps []BundlePack) {
 	}
 
 	return
+}
+
+func (store *SimpleStore) Close() error {
+	// The SimpleStore serializes Bundles on each sync-call. This contains the
+	// opening of a file, the writing and the closing. Therefore, no further
+	// closing is required.
+	return nil
 }
