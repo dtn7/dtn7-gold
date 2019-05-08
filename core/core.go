@@ -154,7 +154,7 @@ func (c *Core) checkConvergenceReceivers() {
 			// Bundles
 			for _, bp := range QueryPending(c.store) {
 				log.WithFields(log.Fields{
-					"bundle": bp.Bundle,
+					"bundle": bp.ID(),
 				}).Info("Retrying bundle from store")
 
 				c.dispatching(bp)
@@ -244,7 +244,7 @@ func (c *Core) SendStatusReport(bp BundlePack,
 	}
 
 	log.WithFields(log.Fields{
-		"bundle": bp.Bundle,
+		"bundle": bp.ID(),
 		"status": status,
 		"reason": reason,
 	}).Info("Sending a status report for a bundle")
@@ -256,7 +256,7 @@ func (c *Core) SendStatusReport(bp BundlePack,
 	var aaEndpoint = bp.Receiver
 	if !c.HasEndpoint(aaEndpoint) {
 		log.WithFields(log.Fields{
-			"bundle":   bp.Bundle,
+			"bundle":   bp.ID(),
 			"endpoint": aaEndpoint,
 		}).Warn("Failed to create status report, receiver is not a current endpoint")
 
@@ -275,7 +275,7 @@ func (c *Core) SendStatusReport(bp BundlePack,
 
 	if err != nil {
 		log.WithFields(log.Fields{
-			"bundle": bp.Bundle,
+			"bundle": bp.ID(),
 			"error":  err,
 		}).Warn("Creating status report bundle failed")
 

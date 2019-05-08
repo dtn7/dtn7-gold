@@ -82,7 +82,7 @@ type NoStore struct{}
 
 func (_ NoStore) Push(bp BundlePack) error {
 	log.WithFields(log.Fields{
-		"bundle": bp.Bundle,
+		"bundle": bp.ID(),
 	}).Info("NoStore got pushed an update")
 	return nil
 }

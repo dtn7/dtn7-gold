@@ -165,7 +165,7 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 	resp = SimpleRESTRequestResponse{}
 	log.WithFields(log.Fields{
 		"srest":  aa.EndpointID(),
-		"bundle": bndl,
+		"bundle": bndl.ID(),
 	}).Info("SimpleRESTAppAgent's transmitted bundle")
 }
 
@@ -179,7 +179,7 @@ func (aa *SimpleRESTAppAgent) EndpointID() bundle.EndpointID {
 func (aa *SimpleRESTAppAgent) Deliver(bndl *bundle.Bundle) error {
 	log.WithFields(log.Fields{
 		"srest":  aa.EndpointID(),
-		"bundle": bndl,
+		"bundle": bndl.ID(),
 	}).Info("SimpleRESTAppAgent received a bundle")
 
 	aa.bundleMutex.Lock()
