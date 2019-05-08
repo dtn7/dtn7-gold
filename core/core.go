@@ -66,7 +66,7 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool)
 	c.idKeeper = NewIdKeeper()
 	c.reloadConvRecs = make(chan struct{}, 9000)
 
-	c.routing = NewEpidemicRouting(c, false)
+	c.routing = NewEpidemicRouting(c)
 
 	c.stopSyn = make(chan struct{})
 	c.stopAck = make(chan struct{})
