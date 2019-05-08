@@ -37,6 +37,11 @@ func NewRecBundlePack(b cla.RecBundle) BundlePack {
 	return bp
 }
 
+// ID returns the wrapped Bundle's ID.
+func (bp BundlePack) ID() string {
+	return bp.Bundle.ID()
+}
+
 // HasReceiver returns true if this BundlePack has a Receiver value.
 func (bp BundlePack) HasReceiver() bool {
 	return bp.Receiver != bundle.DtnNone()
