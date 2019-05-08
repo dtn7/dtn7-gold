@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/dgraph-io/badger"
+	"github.com/sirupsen/logrus"
 	"github.com/ugorji/go/codec"
 )
 
@@ -12,9 +13,14 @@ type BStore struct {
 }
 
 func NewBStore(dir string) (store *BStore, err error) {
+	store = &BStore{
+		dir: dir,
+	}
+
 	opts := badger.DefaultOptions
 	opts.Dir = dir
 	opts.ValueDir = dir
+	opts.Logger = store
 
 	db, dbErr := badger.Open(opts)
 	if dbErr != nil {
@@ -22,10 +28,7 @@ func NewBStore(dir string) (store *BStore, err error) {
 		return
 	}
 
-	store = &BStore{
-		dir: dir,
-		db:  db,
-	}
+	store.db = db
 	return
 }
 
@@ -90,4 +93,27 @@ func (store *BStore) Query(sel func(BundlePack) bool) (bps []BundlePack, err err
 		return nil
 	})
 	return
+}
+
+func (store *BStore) logFields() *logrus.Entry {
+	return logrus.WithFields(logrus.Fields{
+		"store": "BStore",
+		"dir":   store.dir,
+	})
+}
+
+func (store *BStore) Errorf(format string, args ...interface{}) {
+	store.logFields().Errorf(format, args...)
+}
+
+func (store *BStore) Warningf(format string, args ...interface{}) {
+	store.logFields().Warningf(format, args...)
+}
+
+func (store *BStore) Infof(format string, args ...interface{}) {
+	store.logFields().Infof(format, args...)
+}
+
+func (store *BStore) Debugf(format string, args ...interface{}) {
+	store.logFields().Debugf(format, args...)
 }

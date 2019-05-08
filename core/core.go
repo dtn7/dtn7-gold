@@ -57,7 +57,7 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool)
 	c.InspectAllBundles = inspectAllBundles
 	c.NodeId = nodeId
 
-	store, err := NewSimpleStore(storePath)
+	store, err := NewBStore(storePath)
 	if err != nil {
 		return nil, err
 	}

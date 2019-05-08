@@ -45,4 +45,4 @@ tags
 /dtncat
 /dtnd
 /conf*.toml
-/store*.dat
+/store*/
