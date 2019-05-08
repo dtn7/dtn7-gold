@@ -271,11 +271,7 @@ func (c *Core) SendStatusReport(bp BundlePack,
 		60*60*1000000)
 
 	var outBndl, err = bundle.NewBundle(
-		primary,
-		[]bundle.CanonicalBlock{
-			bundle.NewHopCountBlock(23, 0, bundle.NewHopCount(5)),
-			ar.ToCanonicalBlock(),
-		})
+		primary, []bundle.CanonicalBlock{ar.ToCanonicalBlock()})
 
 	if err != nil {
 		log.WithFields(log.Fields{
