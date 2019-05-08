@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/geistesk/dtn7/bundle"
+	"github.com/dtn7/dtn7/bundle"
 	"github.com/ugorji/go/codec"
 )
 

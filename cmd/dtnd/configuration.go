@@ -9,11 +9,11 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
-	"github.com/geistesk/dtn7/bundle"
-	"github.com/geistesk/dtn7/cla"
-	"github.com/geistesk/dtn7/cla/mtcp"
-	"github.com/geistesk/dtn7/core"
-	"github.com/geistesk/dtn7/discovery"
+	"github.com/dtn7/dtn7/bundle"
+	"github.com/dtn7/dtn7/cla"
+	"github.com/dtn7/dtn7/cla/mtcp"
+	"github.com/dtn7/dtn7/core"
+	"github.com/dtn7/dtn7/discovery"
 )
 
 // tomlConfig describes the TOML-configuration.

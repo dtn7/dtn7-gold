@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/geistesk/dtn7/bundle"
+	"github.com/dtn7/dtn7/bundle"
 )
 
 func getRandomPort(t *testing.T) int {

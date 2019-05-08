@@ -1,7 +1,7 @@
 package mtcp
 
 import (
-	"github.com/geistesk/dtn7/bundle"
+	"github.com/dtn7/dtn7/bundle"
 )
 
 // DataUnit represents a MTCP Data Unit, which is an encapsulated bundle inside

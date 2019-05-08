@@ -1,4 +1,4 @@
-module github.com/geistesk/dtn7
+module github.com/dtn7/dtn7
 
 require (
 	github.com/AndreasBriese/bbloom v0.0.0-20190306092124-e2d15f34fcf9 // indirect

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/geistesk/dtn7/bundle"
-	"github.com/geistesk/dtn7/cla"
+	"github.com/dtn7/dtn7/bundle"
+	"github.com/dtn7/dtn7/cla"
 )
 
 // BundlePack is a set of a bundle, it's creation or reception time stamp and

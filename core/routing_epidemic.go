@@ -1,6 +1,6 @@
 package core
 
-import "github.com/geistesk/dtn7/cla"
+import "github.com/dtn7/dtn7/cla"
 
 // EpidemicRouting is an implementation of a RoutingAlgorithm and behaves in a
 // flooding-based epidemic routing way.

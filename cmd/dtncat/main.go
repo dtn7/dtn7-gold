@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/geistesk/dtn7/core"
+	"github.com/dtn7/dtn7/core"
 	"github.com/ugorji/go/codec"
 )
 
