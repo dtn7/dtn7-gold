@@ -154,10 +154,7 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 			aa.endpointID,
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0),
 			60*60*1000000),
-		[]bundle.CanonicalBlock{
-			bundle.NewPayloadBlock(0, payload),
-			bundle.NewHopCountBlock(23, 0, bundle.NewHopCount(5)),
-		})
+		[]bundle.CanonicalBlock{bundle.NewPayloadBlock(0, payload)})
 	if bndlErr != nil {
 		handleErr(fmt.Sprintf("Creating bundle failed: %v", bndlErr))
 		return
