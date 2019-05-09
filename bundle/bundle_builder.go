@@ -1,11 +1,24 @@
 package bundle
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"time"
 )
 
-// BundleBuilder is WIP, TODO.
+// BundleBuilder is a simple framework to create bundles by method chaining.
+//
+//   bndl, err := bundle.Builder().
+//     CRC(bundle.CRC32).
+//     Source("dtn://src/").
+//     Destination("dtn://dest/").
+//     CreationTimestampNow().
+//     Lifetime("30m").
+//     HopCountBlock(64).
+//     PayloadBlock("hello world!").
+//     Build()
+//
 type BundleBuilder struct {
 	err error
 
@@ -15,6 +28,7 @@ type BundleBuilder struct {
 	crcType          CRCType
 }
 
+// Builder creates a new BundleBuilder.
 func Builder() *BundleBuilder {
 	return &BundleBuilder{
 		err: nil,
@@ -26,10 +40,12 @@ func Builder() *BundleBuilder {
 	}
 }
 
+// Error returns the BundleBuilder's error, if one is present.
 func (bldr *BundleBuilder) Error() error {
 	return bldr.err
 }
 
+// CRC sets the bundle's CRC value.
 func (bldr *BundleBuilder) CRC(crcType CRCType) *BundleBuilder {
 	if bldr.err == nil {
 		bldr.crcType = crcType
@@ -38,6 +54,7 @@ func (bldr *BundleBuilder) CRC(crcType CRCType) *BundleBuilder {
 	return bldr
 }
 
+// Build creates a new Bundle and returns an optional error.
 func (bldr *BundleBuilder) Build() (bndl Bundle, err error) {
 	if bldr.err != nil {
 		err = bldr.err
@@ -89,7 +106,11 @@ func bldrParseLifetime(duration interface{}) (us uint, err error) {
 	case uint:
 		us = duration.(uint)
 	case int:
-		us = uint(duration.(int))
+		if duration.(int) < 0 {
+			err = fmt.Errorf("Lifetime's duratoin %d <= 0", duration.(int))
+		} else {
+			us = uint(duration.(int))
+		}
 	case string:
 		dur, durErr := time.ParseDuration(duration.(string))
 		if durErr != nil {
@@ -108,6 +129,7 @@ func bldrParseLifetime(duration interface{}) (us uint, err error) {
 
 // PrimaryBlock related methods
 
+// Destination sets the bundle's destination, stored in its primary block.
 func (bldr *BundleBuilder) Destination(eid interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -122,6 +144,7 @@ func (bldr *BundleBuilder) Destination(eid interface{}) *BundleBuilder {
 	return bldr
 }
 
+// Source sets the bundle's source, stored in its primary block.
 func (bldr *BundleBuilder) Source(eid interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -136,6 +159,7 @@ func (bldr *BundleBuilder) Source(eid interface{}) *BundleBuilder {
 	return bldr
 }
 
+// ReportTo sets the bundle's report-to address, stored in its primary block.
 func (bldr *BundleBuilder) ReportTo(eid interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -150,6 +174,7 @@ func (bldr *BundleBuilder) ReportTo(eid interface{}) *BundleBuilder {
 	return bldr
 }
 
+// creationTimestamp sets the bundle's creation timestamp.
 func (bldr *BundleBuilder) creationTimestamp(t DtnTime) *BundleBuilder {
 	if bldr.err == nil {
 		bldr.primary.CreationTimestamp = NewCreationTimestamp(t, 0)
@@ -158,18 +183,32 @@ func (bldr *BundleBuilder) creationTimestamp(t DtnTime) *BundleBuilder {
 	return bldr
 }
 
+// CreationTimestampEpoch sets the bundle's creation timestamp to the epoch
+// time, stored in its primary block.
 func (bldr *BundleBuilder) CreationTimestampEpoch() *BundleBuilder {
 	return bldr.creationTimestamp(DtnTimeEpoch)
 }
 
+// CreationTimestampNow sets the bundle's creation timestamp to the current
+// time, stored in its primary block.
 func (bldr *BundleBuilder) CreationTimestampNow() *BundleBuilder {
 	return bldr.creationTimestamp(DtnTimeNow())
 }
 
+// CreationTimestampTime sets the bundle's creation timestamp to a given time,
+// stored in its primary block.
 func (bldr *BundleBuilder) CreationTimestampTime(t time.Time) *BundleBuilder {
 	return bldr.creationTimestamp(DtnTimeFromTime(t))
 }
 
+// Lifetime sets the bundle's lifetime, stored in its primary block. Possible
+// values are an uint/int, representing the lifetime in microseconds or a format
+// string for the duration. This string is passed to time.ParseDuration.
+//
+//   Lifetime(1000)     // Lifetime of 1000us
+//   Lifetime("1000us") // Lifetime of 1000us
+//   Lifetime("10m")    // Lifetime of 10min
+//
 func (bldr *BundleBuilder) Lifetime(duration interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -184,6 +223,7 @@ func (bldr *BundleBuilder) Lifetime(duration interface{}) *BundleBuilder {
 	return bldr
 }
 
+// BundleBuilder sets the bundle processing controll flags in the primary block.
 func (bldr *BundleBuilder) BundleCtrlFlags(bcf BundleControlFlags) *BundleBuilder {
 	if bldr.err == nil {
 		bldr.primary.BundleControlFlags = bcf
@@ -194,7 +234,14 @@ func (bldr *BundleBuilder) BundleCtrlFlags(bcf BundleControlFlags) *BundleBuilde
 
 // CanonicalBlock related methods
 
-// Canonical: BlockType, Data[, BlockControlFlags]
+// Canonical adds a canonical block to this bundle. The parameters are:
+//
+//   BlockType, Data[, BlockControlFlags]
+//
+//   where BlockType is a bundle.CanonicalBlockType,
+//   Data is the block's data in its specific type and
+//   BlockControlFlags are _optional_ block processing controll flags
+//
 func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -241,8 +288,13 @@ func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 	return bldr
 }
 
-// BundleAgeBlock: Age[, BlockControlFlags]
-// Age <- { us as uint, duration as string }
+// BundleAgeBlock adds a bundle age block to this bundle. The parameters are:
+//
+//   Age[, BlockControlFlags]
+//
+//   where Age is the age as an uint in microsecond or a format string and
+//   BlockControlFlags are _optional_ block processing controll flags
+//
 func (bldr *BundleBuilder) BundleAgeBlock(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -261,7 +313,13 @@ func (bldr *BundleBuilder) BundleAgeBlock(args ...interface{}) *BundleBuilder {
 		append([]interface{}{BundleAgeBlock, us}, args[1:]...)...)
 }
 
-// HopCountBlock: Limit[, BlockControlFlags]
+// HopCountBlock adds a hop count block to this bundle. The parameters are:
+//
+//   Limit[, BlockControlFlags]
+//
+//   where Limit is the limit of this Hop Count Block and
+//   BlockControlFlags are _optional_ block processing controll flags
+//
 func (bldr *BundleBuilder) HopCountBlock(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -277,14 +335,32 @@ func (bldr *BundleBuilder) HopCountBlock(args ...interface{}) *BundleBuilder {
 		[]interface{}{HopCountBlock, NewHopCount(uint(limit))}, args[1:]...)...)
 }
 
-// PayloadBlock: Data[, BlockControlFlags]
+// PayloadBlock adds a payload block to this bundle. The parameters are:
+//
+//   Data[, BlockControlFlags]
+//
+//   where Data is the payload's data and
+//   BlockControlFlags are _optional_ block processing controll flags
 func (bldr *BundleBuilder) PayloadBlock(args ...interface{}) *BundleBuilder {
+	var buf bytes.Buffer
+	if err := binary.Write(&buf, binary.LittleEndian, args[0]); err != nil {
+		bldr.err = err
+		return bldr
+	}
+
 	// Call Canonical, but add PayloadBlock as the first variadic parameter
-	return bldr.Canonical(append([]interface{}{PayloadBlock}, args...)...)
+	return bldr.Canonical(append(
+		[]interface{}{PayloadBlock, []byte(buf.Bytes())}, args[1:]...)...)
 }
 
-// PreviousNodeBlock: PrevNode[, BlockControlFlags]
-// PrevNode <- { EndpointID, endpoint as string }
+// PreviousNodeBlock adds a previous node block to this bundle. The parameters
+// are:
+//
+//   PrevNode[, BlockControlFlags]
+//
+//   where PrevNode is an EndpointID or a string describing an endpoint and
+//   BlockControlFlags are _optional_ block processing controll flags
+//
 func (bldr *BundleBuilder) PreviousNodeBlock(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
