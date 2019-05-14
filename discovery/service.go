@@ -77,12 +77,14 @@ func (ds *DiscoveryService) Close() {
 
 // NewDiscoveryService starts a new DiscoveryService and promotes the given
 // DiscoveryMessages through IPv4 and/or IPv6, as specified in the parameters.
+// The time between broadcasting two DiscoveryMessages is configured in seconds.
 // Furthermore, received DiscoveryMessages will be processed.
-func NewDiscoveryService(dms []DiscoveryMessage, c *core.Core, ipv4, ipv6 bool) (*DiscoveryService, error) {
+func NewDiscoveryService(dms []DiscoveryMessage, c *core.Core, interval uint, ipv4, ipv6 bool) (*DiscoveryService, error) {
 	log.WithFields(log.Fields{
-		"ipv4":    ipv4,
-		"ipv6":    ipv6,
-		"message": dms,
+		"interval": interval,
+		"ipv4":     ipv4,
+		"ipv6":     ipv6,
+		"message":  dms,
 	}).Info("Started DiscoveryService")
 
 	var ds = &DiscoveryService{
@@ -123,7 +125,7 @@ func NewDiscoveryService(dms []DiscoveryMessage, c *core.Core, ipv4, ipv6 bool) 
 			Port:             fmt.Sprintf("%d", DiscoveryPort),
 			MulticastAddress: set.multicastAddress,
 			Payload:          msg,
-			Delay:            10 * time.Second,
+			Delay:            time.Duration(interval) * time.Second,
 			TimeLimit:        -1,
 			StopChan:         set.stopChan,
 			AllowSelf:        true,

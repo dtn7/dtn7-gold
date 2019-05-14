@@ -42,8 +42,9 @@ type logConf struct {
 
 // discoveryConf describes the Discovery-configuration block.
 type discoveryConf struct {
-	IPv4 bool
-	IPv6 bool
+	IPv4     bool
+	IPv6     bool
+	Interval uint
 }
 
 // simpleRestConf describes the SimpleRESTAppAgent.
@@ -204,8 +205,13 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 
 	// Discovery
 	if conf.Discovery.IPv4 || conf.Discovery.IPv6 {
+		if conf.Discovery.Interval == 0 {
+			conf.Discovery.Interval = 10
+		}
+
 		ds, err = discovery.NewDiscoveryService(
-			discoveryMsgs, c, conf.Discovery.IPv4, conf.Discovery.IPv6)
+			discoveryMsgs, c, conf.Discovery.Interval,
+			conf.Discovery.IPv4, conf.Discovery.IPv6)
 		if err != nil {
 			return
 		}

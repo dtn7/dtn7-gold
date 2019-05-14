@@ -25,6 +25,8 @@ format = "text"
 [discovery]
 ipv4 = true
 ipv6 = true
+# Interval between two messages in seconds, defaults to 10.
+interval = 30
 
 # Enable the REST-like API to transmit and receive bundles.
 [simple-rest]
