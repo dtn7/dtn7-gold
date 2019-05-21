@@ -18,10 +18,10 @@ func TestEndpointDtnNone(t *testing.T) {
 	if dtnNone.SchemeName != endpointURISchemeDTN {
 		t.Errorf("dtn:none has wrong scheme name: %d", dtnNone.SchemeName)
 	}
-	if ty := reflect.TypeOf(dtnNone.SchemeSpecificPart); ty.Kind() != reflect.Uint {
-		t.Errorf("dtn:none's SSP has wrong type: %T instead of uint", ty)
+	if ty := reflect.TypeOf(dtnNone.SchemeSpecificPart); ty.Kind() != reflect.Uint64 {
+		t.Errorf("dtn:none's SSP has wrong type: %T instead of uint64", ty)
 	}
-	if v := dtnNone.SchemeSpecificPart.(uint); v != 0 {
+	if v := dtnNone.SchemeSpecificPart.(uint64); v != 0 {
 		t.Errorf("dtn:none's SSP is not 0, %d", v)
 	}
 

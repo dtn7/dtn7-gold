@@ -2,7 +2,6 @@ package bundle
 
 import (
 	"fmt"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,8 +10,8 @@ import (
 )
 
 const (
-	endpointURISchemeDTN uint = 1
-	endpointURISchemeIPN uint = 2
+	endpointURISchemeDTN uint64 = 1
+	endpointURISchemeIPN uint64 = 2
 )
 
 // EndpointID represents an Endpoint ID as defined in section 4.1.5.1. The
@@ -20,14 +19,14 @@ const (
 // (SSP) by an interface{}. Based on the characteristic of the name, the
 // underlying type of the SSP may vary.
 type EndpointID struct {
-	SchemeName         uint
+	SchemeName         uint64
 	SchemeSpecificPart interface{}
 }
 
 func newEndpointIDDTN(ssp string) (EndpointID, error) {
 	var sspRaw interface{}
 	if ssp == "none" {
-		sspRaw = uint(0)
+		sspRaw = uint64(0)
 	} else {
 		sspRaw = string(ssp)
 	}
@@ -115,22 +114,14 @@ func MustNewEndpointID(eid string) EndpointID {
 // the EndpointID-pointer based on the given array. This function is used for
 // the CBOR decoding of the PrimaryBlock and some Extension Blocks.
 func setEndpointIDFromCborArray(ep *EndpointID, arr []interface{}) {
-	(*ep).SchemeName = uint(arr[0].(uint64))
+	(*ep).SchemeName = arr[0].(uint64)
 	(*ep).SchemeSpecificPart = arr[1]
 
-	// The codec library uses uint64 for uints and []interface{} for arrays
-	// internally. However, our `dtn:none` is defined by an uint and each "ipn"
-	// endpoint by an uint64 array. That's why we have to re-cast some types..
-
-	switch ty := reflect.TypeOf((*ep).SchemeSpecificPart); ty.Kind() {
-	case reflect.Uint64:
-		(*ep).SchemeSpecificPart = uint((*ep).SchemeSpecificPart.(uint64))
-
-	case reflect.Slice:
-		(*ep).SchemeSpecificPart = [2]uint64{
-			(*ep).SchemeSpecificPart.([]interface{})[0].(uint64),
-			(*ep).SchemeSpecificPart.([]interface{})[1].(uint64),
-		}
+	// In case of an IPN endpoint we need to recast the anonymous interface
+	// array to an uint64 array.
+	if (*ep).SchemeName == endpointURISchemeIPN {
+		ssp := (*ep).SchemeSpecificPart.([]interface{})
+		(*ep).SchemeSpecificPart = [2]uint64{ssp[0].(uint64), ssp[1].(uint64)}
 	}
 }
 
@@ -197,11 +188,11 @@ func (eid EndpointID) String() string {
 	b.WriteRune(':')
 
 	switch t := eid.SchemeSpecificPart.(type) {
-	case uint:
-		if eid.SchemeName == endpointURISchemeDTN && eid.SchemeSpecificPart.(uint) == 0 {
+	case uint64:
+		if eid.SchemeName == endpointURISchemeDTN && eid.SchemeSpecificPart.(uint64) == 0 {
 			b.WriteString("none")
 		} else {
-			fmt.Fprintf(&b, "%d", eid.SchemeSpecificPart.(uint))
+			fmt.Fprintf(&b, "%d", eid.SchemeSpecificPart.(uint64))
 		}
 
 	case string:
@@ -226,6 +217,6 @@ func (eid EndpointID) String() string {
 func DtnNone() EndpointID {
 	return EndpointID{
 		SchemeName:         endpointURISchemeDTN,
-		SchemeSpecificPart: uint(0),
+		SchemeSpecificPart: uint64(0),
 	}
 }
