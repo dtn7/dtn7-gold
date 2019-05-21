@@ -1,8 +1,10 @@
 package bundle
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
@@ -217,16 +219,19 @@ func (b Bundle) ToCbor() []byte {
 	// exported as consts from the codec library.
 
 	var buf bytes.Buffer
-	var cborEncoder = codec.NewEncoder(&buf, new(codec.CborHandle))
+	var bw = bufio.NewWriter(&buf)
 
-	buf.WriteByte(codec.CborStreamArray)
+	var cborEncoder = codec.NewEncoder(bw, new(codec.CborHandle))
+
+	bw.WriteByte(codec.CborStreamArray)
 
 	b.forEachBlock(func(blck block) {
 		cborEncoder.MustEncode(blck)
 	})
 
-	buf.WriteByte(codec.CborStreamBreak)
+	bw.WriteByte(codec.CborStreamBreak)
 
+	bw.Flush()
 	return buf.Bytes()
 }
 
@@ -236,12 +241,17 @@ func (b Bundle) ToCbor() []byte {
 // in an array of arrays, as codec tries to decode the whole data. This method
 // will re-encode this "anonymous" array to CBOR and will decode it to its
 // struct, which is referenced as the target pointer.
-func decodeBundleBlock(data interface{}, target interface{}) {
-	var b []byte = make([]byte, 0, 64)
+func decodeBundleBlock(data *interface{}, target interface{}) {
 	var cborHandle *codec.CborHandle = new(codec.CborHandle)
+	var r, w = io.Pipe()
 
-	codec.NewEncoderBytes(&b, cborHandle).MustEncode(data)
-	codec.NewDecoderBytes(b, cborHandle).MustDecode(target)
+	go func() {
+		bw := bufio.NewWriter(w)
+		codec.NewEncoder(bw, cborHandle).MustEncode(data)
+		bw.Flush()
+	}()
+
+	codec.NewDecoder(bufio.NewReader(r), cborHandle).MustDecode(target)
 }
 
 // NewBundleFromCbor tries to decodes the given data from CBOR into a Bundle.
@@ -259,11 +269,11 @@ func NewBundleFromCbor(data []byte) (b Bundle, err error) {
 	codec.NewDecoderBytes(data, new(codec.CborHandle)).MustDecode(&dataArr)
 
 	var pb PrimaryBlock
-	decodeBundleBlock(dataArr[0], &pb)
+	decodeBundleBlock(&dataArr[0], &pb)
 
 	var cb []CanonicalBlock = make([]CanonicalBlock, len(dataArr)-1)
 	for i := 0; i < len(cb); i++ {
-		decodeBundleBlock(dataArr[i+1], &cb[i])
+		decodeBundleBlock(&dataArr[i+1], &cb[i])
 	}
 
 	b = Bundle{pb, cb}
