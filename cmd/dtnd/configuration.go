@@ -31,6 +31,7 @@ type coreConf struct {
 	Store             string
 	InspectAllBundles bool   `toml:"inspect-all-bundles"`
 	NodeId            string `toml:"node-id"`
+	Profiling         bool
 }
 
 // logConf describes the Logging-configuration block.
@@ -108,7 +109,7 @@ func parseSimpleRESTAppAgent(conf simpleRestConf, c *core.Core) (core.Applicatio
 }
 
 // parseCore creates the Core based on the given TOML configuration.
-func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, err error) {
+func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, profiling bool, err error) {
 	var conf tomlConfig
 	if _, err = toml.DecodeFile(filename, &conf); err != nil {
 		return
@@ -157,6 +158,8 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		err = nodeErr
 		return
 	}
+
+	profiling = conf.Core.Profiling
 
 	c, err = core.NewCore(conf.Core.Store, nodeId, conf.Core.InspectAllBundles)
 	if err != nil {

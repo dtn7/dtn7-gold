@@ -9,6 +9,9 @@ inspect-all-bundles = true
 # The node's ID, which should be a dtn-URI. Each node's endpoint ID should be
 # an URI based on the given node-id.
 node-id = "dtn://alpha/"
+# Enable profiling which will create a Go pprof prof-file after exiting dtnd in
+# the current directory.
+profiling = false
 
 # Configure the format and verbosity of dtnd's logging.
 [logging]

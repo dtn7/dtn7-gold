@@ -4,8 +4,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/pkg/profile"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/pkg/profile"
 )
 
 // waitSigint blocks the current thread until a SIGINT appears.
@@ -28,13 +29,15 @@ func main() {
 		log.Fatalf("Usage: %s configuration.toml", os.Args[0])
 	}
 
-	defer profile.Start(profile.ProfilePath(".")).Stop()
-
-	core, discovery, err := parseCore(os.Args[1])
+	core, discovery, profiling, err := parseCore(os.Args[1])
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Fatal("Failed to parse config")
+	}
+
+	if profiling {
+		defer profile.Start(profile.ProfilePath(".")).Stop()
 	}
 
 	waitSigint()
