@@ -15,9 +15,15 @@ Protocol and the MTCP Convergence Layer to exchange bundles between nodes.
 
 ## Software
 ### Installation
-1. Install the [Go programming language][golang], version 1.11 or later.
-2. `git clone https://github.com/dtn7/dtn7.git && cd dtn7`
-3. `go build ./cmd/dtncat && go build ./cmd/dtnd`
+Install the [Go programming language][golang], version 1.11 or later. Also
+install the [`codecgen` tool][codecgen] in your `PATH`.
+
+```bash
+git clone https://github.com/dtn7/dtn7.git && cd dtn7
+
+go generate ./...
+go build ./cmd/dtncat && go build ./cmd/dtnd
+```
 
 
 ### dtnd
@@ -69,6 +75,7 @@ interested in working with this code, check out the
 [documentation][godoc].
 
 
+[codecgen]: https://github.com/ugorji/go/tree/master/codec/codecgen
 [dtn-bpbis-13]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-13
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
 [dtnd-configuration]: https://github.com/dtn7/dtn7/blob/master/cmd/dtnd/configuration.toml

@@ -100,87 +100,89 @@ func (pb *PrimaryBlock) setCRC(crc []byte) {
 	pb.CRC = crc
 }
 
-func (pb PrimaryBlock) CodecEncodeSelf(enc *codec.Encoder) {
-	var blockArr = []interface{}{
-		pb.Version,
-		pb.BundleControlFlags,
-		pb.CRCType,
-		pb.Destination,
-		pb.SourceNode,
-		pb.ReportTo,
-		pb.CreationTimestamp,
-		pb.Lifetime}
-
-	if pb.HasFragmentation() {
-		blockArr = append(blockArr, pb.FragmentOffset, pb.TotalDataLength)
-	}
-
-	if pb.HasCRC() {
-		blockArr = append(blockArr, pb.CRC)
-	}
-
-	enc.MustEncode(blockArr)
-}
-
-// decodeEndpoints decodes the three defined EndpointIDs. This method is called
-// from CodecDecodeSelf.
-func (pb *PrimaryBlock) decodeEndpoints(blockArr []interface{}) {
-	endpoints := []struct {
-		pos     int
-		pointer *EndpointID
-	}{
-		{3, &pb.Destination},
-		{4, &pb.SourceNode},
-		{5, &pb.ReportTo},
-	}
-
-	for _, ep := range endpoints {
-		var arr []interface{} = blockArr[ep.pos].([]interface{})
-		setEndpointIDFromCborArray(ep.pointer, arr)
-	}
-}
-
-// decodeCreationTimestamp decodes the CreationTimestamp. This method is called
-// from CodecDecodeSelf.
-func (pb *PrimaryBlock) decodeCreationTimestamp(blockArr []interface{}) {
-	for i := 0; i <= 1; i++ {
-		pb.CreationTimestamp[i] = uint((blockArr[6].([]interface{}))[i].(uint64))
+func (pb *PrimaryBlock) CodecEncodeSelf(enc *codec.Encoder) {
+	if pb.HasFragmentation() && pb.HasCRC() {
+		enc.MustEncode(primaryBlock11{
+			Version:            pb.Version,
+			BundleControlFlags: pb.BundleControlFlags,
+			CRCType:            pb.CRCType,
+			Destination:        pb.Destination,
+			SourceNode:         pb.SourceNode,
+			ReportTo:           pb.ReportTo,
+			CreationTimestamp:  pb.CreationTimestamp,
+			Lifetime:           pb.Lifetime,
+			FragmentOffset:     pb.FragmentOffset,
+			TotalDataLength:    pb.TotalDataLength,
+			CRC:                pb.CRC,
+		})
+	} else if pb.HasFragmentation() {
+		enc.MustEncode(primaryBlock10{
+			Version:            pb.Version,
+			BundleControlFlags: pb.BundleControlFlags,
+			CRCType:            pb.CRCType,
+			Destination:        pb.Destination,
+			SourceNode:         pb.SourceNode,
+			ReportTo:           pb.ReportTo,
+			CreationTimestamp:  pb.CreationTimestamp,
+			Lifetime:           pb.Lifetime,
+			FragmentOffset:     pb.FragmentOffset,
+			TotalDataLength:    pb.TotalDataLength,
+		})
+	} else if pb.HasCRC() {
+		enc.MustEncode(primaryBlock09{
+			Version:            pb.Version,
+			BundleControlFlags: pb.BundleControlFlags,
+			CRCType:            pb.CRCType,
+			Destination:        pb.Destination,
+			SourceNode:         pb.SourceNode,
+			ReportTo:           pb.ReportTo,
+			CreationTimestamp:  pb.CreationTimestamp,
+			Lifetime:           pb.Lifetime,
+			CRC:                pb.CRC,
+		})
+	} else {
+		enc.MustEncode(primaryBlock08{
+			Version:            pb.Version,
+			BundleControlFlags: pb.BundleControlFlags,
+			CRCType:            pb.CRCType,
+			Destination:        pb.Destination,
+			SourceNode:         pb.SourceNode,
+			ReportTo:           pb.ReportTo,
+			CreationTimestamp:  pb.CreationTimestamp,
+			Lifetime:           pb.Lifetime,
+		})
 	}
 }
 
 func (pb *PrimaryBlock) CodecDecodeSelf(dec *codec.Decoder) {
-	var blockArrPt = new([]interface{})
-	dec.MustDecode(blockArrPt)
+	// The implementation of the deserialization still sucks. I don't get codec
+	// to decode a PrimaryBlock into primaryBlock{08-11}, because reasons.
 
-	var blockArr = *blockArrPt
+	var pbx []interface{}
+	dec.MustDecode(&pbx)
 
-	if len(blockArr) < 8 || len(blockArr) > 11 {
-		panic("blockArr has wrong length (< 8 or > 10)")
-	}
+	pb.Version = dtnVersion
+	pb.BundleControlFlags = BundleControlFlags(pbx[1].(uint64))
+	pb.CRCType = CRCType(pbx[2].(uint64))
+	pb.Lifetime = uint(pbx[7].(uint64))
 
-	pb.decodeEndpoints(blockArr)
-	pb.decodeCreationTimestamp(blockArr)
+	setEndpointIDFromCborArray(&pb.Destination, pbx[3].([]interface{}))
+	setEndpointIDFromCborArray(&pb.SourceNode, pbx[4].([]interface{}))
+	setEndpointIDFromCborArray(&pb.ReportTo, pbx[5].([]interface{}))
 
-	pb.Version = uint(blockArr[0].(uint64))
-	pb.BundleControlFlags = BundleControlFlags(blockArr[1].(uint64))
-	pb.CRCType = CRCType(blockArr[2].(uint64))
-	pb.Lifetime = uint(blockArr[7].(uint64))
+	ct := pbx[6].([]interface{})
+	pb.CreationTimestamp[0] = uint(ct[0].(uint64))
+	pb.CreationTimestamp[1] = uint(ct[1].(uint64))
 
-	switch len(blockArr) {
-	case 9:
-		// CRC, No Fragmentation
-		pb.CRC = blockArr[8].([]byte)
-
-	case 10:
-		// No CRC, Fragmentation
-		pb.FragmentOffset = uint(blockArr[8].(uint64))
-		pb.TotalDataLength = uint(blockArr[9].(uint64))
-
-	case 11:
-		// CRC, Fragmentation
-		pb.FragmentOffset = uint(blockArr[8].(uint64))
-		pb.TotalDataLength = uint(blockArr[9].(uint64))
-		pb.CRC = blockArr[10].([]byte)
+	if l := len(pbx); l == 11 {
+		pb.FragmentOffset = uint(pbx[8].(uint64))
+		pb.TotalDataLength = uint(pbx[9].(uint64))
+		pb.CRC = pbx[10].([]byte)
+	} else if l == 10 {
+		pb.FragmentOffset = uint(pbx[8].(uint64))
+		pb.TotalDataLength = uint(pbx[9].(uint64))
+	} else if l == 9 {
+		pb.CRC = pbx[8].([]byte)
 	}
 }
 
