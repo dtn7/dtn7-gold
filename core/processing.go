@@ -122,6 +122,8 @@ func (c *Core) dispatching(bp BundlePack) {
 		"bundle": bp.ID(),
 	}).Info("Dispatching bundle")
 
+	c.routing.NotifyIncoming(bp)
+
 	if c.HasEndpoint(bp.Bundle.PrimaryBlock.Destination) {
 		c.localDelivery(bp)
 	} else {
@@ -397,8 +399,6 @@ func (c *Core) localDelivery(bp BundlePack) {
 			agent.Deliver(bp.Bundle)
 		}
 	}
-
-	c.routing.NotifyIncoming(bp)
 
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDelivery) {
 		c.SendStatusReport(bp, DeliveredBundle, NoInformation)

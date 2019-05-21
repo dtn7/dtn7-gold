@@ -15,8 +15,7 @@ type EpidemicRouting struct {
 }
 
 // NewEpidemicRouting creates a new EpidemicRouting RoutingAlgorithm interacting
-// with the given Core. The second parameter indicates if a bundle should also
-// be send back to its origin.
+// with the given Core.
 func NewEpidemicRouting(c *Core) EpidemicRouting {
 	return EpidemicRouting{
 		c:       c,
@@ -24,12 +23,38 @@ func NewEpidemicRouting(c *Core) EpidemicRouting {
 	}
 }
 
-// NotifyIncoming tells the EpidemicRouting new bundles. However,
-// EpidemicRouting simply does not listen.
-func (er EpidemicRouting) NotifyIncoming(_ BundlePack) {}
+// NotifyIncoming tells the EpidemicRouting about new bundles. In our case, the
+// PreviousNodeBlock will be inspected.
+func (er EpidemicRouting) NotifyIncoming(bp BundlePack) {
+	// Check if we got a PreviousNodeBlock and extract its EndpointID
+	var prevNode bundle.EndpointID
+	if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.PreviousNodeBlock); err == nil {
+		prevNode = pnBlock.Data.(bundle.EndpointID)
+	} else {
+		return
+	}
 
-// SenderForBundle returns the Core's ConvergenceSenders. The ConvergenceSender
-// for this BundlePack's receiver will be removed sendBack is false.
+	sentEids, ok := er.sentMap[bp.ID()]
+	if !ok {
+		sentEids = make([]bundle.EndpointID, 0, 0)
+	}
+
+	// Check if PreviousNodeBlock is already known
+	for _, eids := range sentEids {
+		if eids == prevNode {
+			return
+		}
+	}
+
+	log.WithFields(log.Fields{
+		"bundle": bp.ID(),
+		"eid":    prevNode,
+	}).Debug("EpidemicRouting received an incomming bundle and checked its PreviousNodeBlock")
+
+	er.sentMap[bp.ID()] = append(sentEids, prevNode)
+}
+
+// SenderForBundle returns the Core's ConvergenceSenders.
 func (er EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
 	sentEids, ok := er.sentMap[bp.ID()]
 	if !ok {
