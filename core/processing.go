@@ -181,6 +181,21 @@ func (c *Core) forward(bp BundlePack) {
 		}
 	}
 
+	if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.PreviousNodeBlock); err == nil {
+		// Replace the PreviousNodeBlock
+		prevEid := pnBlock.Data.(bundle.EndpointID)
+		pnBlock.Data = c.NodeId
+
+		log.WithFields(log.Fields{
+			"bundle":  bp.ID(),
+			"old_eid": prevEid,
+			"new_eid": c.NodeId,
+		}).Debug("Previous Node Block was updated")
+	} else {
+		// Append a new PreviousNodeBlock
+		bp.Bundle.AddExtensionBlock(bundle.NewPreviousNodeBlock(0, 0, c.NodeId))
+	}
+
 	var nodes []cla.ConvergenceSender
 	var deleteAfterwards = true
 

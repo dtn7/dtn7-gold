@@ -63,6 +63,35 @@ func (b *Bundle) PayloadBlock() (*CanonicalBlock, error) {
 	return b.ExtensionBlock(PayloadBlock)
 }
 
+// AddExtensionBlock adds a new ExtensionBlock to this Bundle. The block number
+// will be calculated and overwritten within this method.
+func (b *Bundle) AddExtensionBlock(block CanonicalBlock) {
+	var blockNumbers []uint
+	for _, cb := range b.CanonicalBlocks {
+		blockNumbers = append(blockNumbers, cb.BlockNumber)
+	}
+
+	var blockNumber uint = 1
+	for {
+		flag := true
+		for _, no := range blockNumbers {
+			if blockNumber == no {
+				flag = false
+				break
+			}
+		}
+
+		if flag {
+			break
+		} else {
+			blockNumber += 1
+		}
+	}
+
+	block.BlockNumber = blockNumber
+	b.CanonicalBlocks = append(b.CanonicalBlocks, block)
+}
+
 // SetCRCType sets the given CRCType for each block. To also calculate and set
 // the CRC value, one should also call the CalculateCRC method.
 func (b *Bundle) SetCRCType(crcType CRCType) {
