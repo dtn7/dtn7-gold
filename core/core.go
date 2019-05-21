@@ -85,7 +85,7 @@ func (c *Core) SetRoutingAlgorithm(routing RoutingAlgorithm) {
 // checkConvergenceReceivers checks all ConvergenceReceivers for new bundles.
 func (c *Core) checkConvergenceReceivers() {
 	var chnl = cla.JoinReceivers()
-	var tick = time.NewTicker(30 * time.Second)
+	var tick = time.NewTicker(10 * time.Second)
 
 	for {
 		select {
@@ -168,6 +168,15 @@ func (c *Core) checkConvergenceReceivers() {
 				chnl = cla.JoinReceivers(chnl, claRec.Channel())
 			}
 			c.convergenceMutex.Unlock()
+
+			// Bundles
+			for _, bp := range QueryPending(c.store) {
+				log.WithFields(log.Fields{
+					"bundle": bp.ID(),
+				}).Info("Retrying bundle from store after reloading CLAs")
+
+				c.dispatching(bp)
+			}
 		}
 	}
 }
