@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/pkg/profile"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,6 +27,8 @@ func main() {
 	if len(os.Args) != 2 {
 		log.Fatalf("Usage: %s configuration.toml", os.Args[0])
 	}
+
+	defer profile.Start(profile.ProfilePath(".")).Stop()
 
 	core, discovery, err := parseCore(os.Args[1])
 	if err != nil {
