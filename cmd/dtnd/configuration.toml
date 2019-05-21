@@ -1,8 +1,8 @@
 # The core is the main module of the delay-tolerant networking daemon.
 [core]
-# Directory of the bundle storage. Bundles will be saved to this directory to be
-# present after restarting.
-store = "store/"
+# Path to  the bundle storage. Bundles will be saved in this file to be present
+# after restarting dtnd.
+store = "store"
 # Allow inspection of forwarding bundles, containing an administrative record.
 # This allows deletion of stored bundles after being received.
 inspect-all-bundles = true
