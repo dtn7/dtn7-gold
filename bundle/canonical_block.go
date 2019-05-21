@@ -2,7 +2,6 @@ package bundle
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
@@ -116,26 +115,32 @@ func (cb *CanonicalBlock) setCRC(crc []byte) {
 }
 
 func (cb CanonicalBlock) CodecEncodeSelf(enc *codec.Encoder) {
-	var blockArr = []interface{}{
-		cb.BlockType,
-		cb.BlockNumber,
-		cb.BlockControlFlags,
-		cb.CRCType,
-		cb.Data}
-
 	if cb.HasCRC() {
-		blockArr = append(blockArr, cb.CRC)
+		enc.MustEncode(canonicalBlock6{
+			BlockType:         cb.BlockType,
+			BlockNumber:       cb.BlockNumber,
+			BlockControlFlags: cb.BlockControlFlags,
+			CRCType:           cb.CRCType,
+			Data:              cb.Data,
+			CRC:               cb.CRC,
+		})
+	} else {
+		enc.MustEncode(canonicalBlock5{
+			BlockType:         cb.BlockType,
+			BlockNumber:       cb.BlockNumber,
+			BlockControlFlags: cb.BlockControlFlags,
+			CRCType:           cb.CRCType,
+			Data:              cb.Data,
+		})
 	}
-
-	enc.MustEncode(blockArr)
 }
 
 func (cb *CanonicalBlock) codecDecodeData(data interface{}) {
 	switch cb.BlockType {
 	case PreviousNodeBlock:
-		var ep *EndpointID = new(EndpointID)
-		setEndpointIDFromCborArray(ep, data.([]interface{}))
-		cb.Data = *ep
+		var ep EndpointID
+		setEndpointIDFromCborArray(&ep, data.([]interface{}))
+		cb.Data = ep
 
 	case BundleAgeBlock:
 		cb.Data = uint(data.(uint64))
@@ -148,18 +153,9 @@ func (cb *CanonicalBlock) codecDecodeData(data interface{}) {
 		}
 
 	// blockTypePayload is also a byte array and can be treated like the default.
+	// In some other cases codec was "too smart" and decoded the data by itself.
 	default:
-		// In some cases codec was "too smart" and decoded the data by itself.
-		// This `if` checks if the decoded data is a byte array ([]uint8) or if
-		// we have to re-encode the data.
-		if t := reflect.TypeOf(data).Elem(); t.Kind() == reflect.Uint8 {
-			cb.Data = data.([]byte)
-		} else {
-			var b []byte
-			codec.NewEncoderBytes(&b, new(codec.CborHandle)).MustEncode(data)
-
-			cb.Data = b
-		}
+		cb.Data = data.([]byte)
 	}
 }
 
