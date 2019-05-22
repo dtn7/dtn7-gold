@@ -10,8 +10,8 @@ import (
 )
 
 // SendBundle transmits an outbounding bundle.
-func (c *Core) SendBundle(bndl bundle.Bundle) {
-	c.transmit(NewBundlePack(&bndl))
+func (c *Core) SendBundle(bndl *bundle.Bundle) {
+	c.transmit(NewBundlePack(bndl))
 }
 
 // transmit starts the transmission of an outbounding bundle pack. Therefore

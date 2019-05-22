@@ -35,7 +35,7 @@ type SimpleRESTResponse struct {
 }
 
 // NewSimpleRESTReponseFromBundle creates a new SimpleRESTResponse for a bundle.
-func NewSimpleRESTReponseFromBundle(b bundle.Bundle) SimpleRESTResponse {
+func NewSimpleRESTReponseFromBundle(b *bundle.Bundle) SimpleRESTResponse {
 	payload, _ := b.PayloadBlock()
 
 	return SimpleRESTResponse{
@@ -99,7 +99,7 @@ func (aa *SimpleRESTAppAgent) handleFetch(respWriter http.ResponseWriter, _ *htt
 
 	resps := make([]SimpleRESTResponse, 0, 0)
 	for _, bndl := range aa.bundles {
-		resps = append(resps, NewSimpleRESTReponseFromBundle(bndl))
+		resps = append(resps, NewSimpleRESTReponseFromBundle(&bndl))
 	}
 	aa.bundles = aa.bundles[:0]
 
@@ -160,7 +160,7 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 		return
 	}
 
-	aa.c.SendBundle(bndl)
+	aa.c.SendBundle(&bndl)
 
 	resp = SimpleRESTRequestResponse{}
 	log.WithFields(log.Fields{
