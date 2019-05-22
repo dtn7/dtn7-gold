@@ -255,16 +255,15 @@ func (b Bundle) ToCbor() []byte {
 // will re-encode this "anonymous" array to CBOR and will decode it to its
 // struct, which is referenced as the target pointer.
 func decodeBundleBlock(data *interface{}, target interface{}) {
-	var cborHandle *codec.CborHandle = new(codec.CborHandle)
 	var r, w = io.Pipe()
 
 	go func() {
 		bw := bufio.NewWriter(w)
-		codec.NewEncoder(bw, cborHandle).MustEncode(data)
+		codec.NewEncoder(bw, new(codec.CborHandle)).MustEncode(data)
 		bw.Flush()
 	}()
 
-	codec.NewDecoder(bufio.NewReader(r), cborHandle).MustDecode(target)
+	codec.NewDecoder(bufio.NewReader(r), new(codec.CborHandle)).MustDecode(target)
 }
 
 // NewBundleFromCborReader decodes the given data from the CBOR into a Bundle.

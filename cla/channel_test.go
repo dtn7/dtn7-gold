@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/dtn7/dtn7/bundle"
 )
@@ -60,9 +59,6 @@ func TestMerge(t *testing.T) {
 						return
 					}
 				}
-
-			case <-time.After(time.Second):
-				t.Fatal("Server timed out")
 			}
 		}
 	}()
@@ -89,8 +85,8 @@ func TestMerge(t *testing.T) {
 
 func TestJoinReceivers(t *testing.T) {
 	const (
-		clients  = 100
-		packages = 10000
+		clients  = 50
+		packages = 250
 	)
 
 	bndl, err := bundle.NewBundle(
@@ -140,9 +136,6 @@ func TestJoinReceivers(t *testing.T) {
 						return
 					}
 				}
-
-			case <-time.After(time.Second):
-				t.Fatal("Server timed out")
 			}
 		}
 	}()

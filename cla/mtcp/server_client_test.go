@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/dtn7/dtn7/bundle"
 )
@@ -33,8 +32,8 @@ func TestMTCPServerClient(t *testing.T) {
 
 	// Bundle
 	const (
-		clients  = 100
-		packages = 1000
+		clients  = 50
+		packages = 250
 	)
 
 	bndl, err := bundle.NewBundle(
@@ -83,9 +82,6 @@ func TestMTCPServerClient(t *testing.T) {
 					wg.Done()
 					return
 				}
-
-			case <-time.After(time.Second):
-				t.Fatal("Server timed out")
 			}
 		}
 	}()
