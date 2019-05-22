@@ -174,7 +174,7 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 
 	outBndlData := outBndl.ToCbor()
 
-	inBndl, err := bundle.NewBundleFromCborBytes(outBndlData)
+	inBndl, err := bundle.NewBundleFromCbor(&outBndlData)
 	if err != nil {
 		t.Errorf("Parsing bundle failed: %v", err)
 	}

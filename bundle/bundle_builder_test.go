@@ -22,7 +22,8 @@ func TestBundleBuilderSimple(t *testing.T) {
 		t.Fatalf("Builder errored: %v", err)
 	}
 
-	bndl2, err := NewBundleFromCborBytes(bndl.ToCbor())
+	bndlCbor := bndl.ToCbor()
+	bndl2, err := NewBundleFromCbor(&bndlCbor)
 	if err != nil {
 		t.Fatalf("Parsing CBOR encoded Bundle errored: %v", err)
 	}

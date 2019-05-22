@@ -1,9 +1,7 @@
 package mtcp
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"net"
 	"time"
 
@@ -92,19 +90,11 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 	for {
 		var dec = codec.NewDecoder(conn, new(codec.CborHandle))
 
-		var du []byte
+		var du = new([]byte)
 		var err error
 
-		if err = dec.Decode(&du); err == nil {
-			r, w := io.Pipe()
-
-			go func() {
-				bw := bufio.NewWriter(w)
-				bw.Write(du)
-				bw.Flush()
-			}()
-
-			if bndl, err := bundle.NewBundleFromCborReader(r); err == nil {
+		if err = dec.Decode(du); err == nil {
+			if bndl, err := bundle.NewBundleFromCbor(du); err == nil {
 				serv.reportChan <- cla.NewRecBundle(&bndl, serv.endpointID)
 			}
 		}

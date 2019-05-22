@@ -69,7 +69,7 @@ func TestBundleCbor(t *testing.T) {
 
 	bundle1Cbor := bundle1.ToCbor()
 
-	bundle2, err := NewBundleFromCborBytes(bundle1Cbor)
+	bundle2, err := NewBundleFromCbor(&bundle1Cbor)
 	if err != nil {
 		t.Error(err)
 	}
@@ -107,7 +107,7 @@ func TestBundleUpcn(t *testing.T) {
 		0x00, 0x00, 0x02, 0x4c, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f,
 		0x72, 0x6c, 0x64, 0x21, 0x44, 0xc3, 0xae, 0xc5, 0x52, 0xff}
 
-	bndl, err := NewBundleFromCborBytes(upcnBytes)
+	bndl, err := NewBundleFromCbor(&upcnBytes)
 	if err != nil {
 		t.Error(err)
 	}
