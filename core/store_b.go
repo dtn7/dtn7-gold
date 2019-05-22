@@ -1,10 +1,38 @@
 package core
 
 import (
+	"time"
+
 	"github.com/dgraph-io/badger"
+	"github.com/dtn7/dtn7/bundle"
 	"github.com/sirupsen/logrus"
 	"github.com/ugorji/go/codec"
 )
+
+// bundlePackMeta is a struct for a BundlePack's meta data, obviously. The meta
+// data and the bundle itself will be stored separatley for performance reasons.
+type bundlePackMeta struct {
+	Receiver    bundle.EndpointID
+	Timestamp   time.Time
+	Constraints map[Constraint]bool
+}
+
+func newBundlePackMeta(bp BundlePack) bundlePackMeta {
+	return bundlePackMeta{
+		Receiver:    bp.Receiver,
+		Timestamp:   bp.Timestamp,
+		Constraints: bp.Constraints,
+	}
+}
+
+func (bpm bundlePackMeta) toBundlePack(bndl *bundle.Bundle) BundlePack {
+	return BundlePack{
+		Bundle:      bndl,
+		Receiver:    bpm.Receiver,
+		Timestamp:   bpm.Timestamp,
+		Constraints: bpm.Constraints,
+	}
+}
 
 // BStore is an implemention of a Store based on the BadgerDB.
 type BStore struct {
@@ -36,68 +64,106 @@ func (store *BStore) Close() error {
 	return store.db.Close()
 }
 
-// bundlePackToEntry stores a BundlePack in a BadgerDB Entry.
-func bundlePackToEntry(bp BundlePack) (entry badger.Entry, err error) {
-	var bpRaw []byte = make([]byte, 0, 64)
-	if err = codec.NewEncoderBytes(&bpRaw, new(codec.CborHandle)).Encode(bp); err != nil {
+// bundlePackToMetaEntry stores a BundlePack in a BadgerDB Entry.
+func bundlePackToMetaEntry(bp BundlePack) (metaEntry badger.Entry, err error) {
+	var bpRaw []byte
+	var enc = codec.NewEncoderBytes(&bpRaw, new(codec.CborHandle))
+
+	if err = enc.Encode(newBundlePackMeta(bp)); err != nil {
 		return
 	}
 
 	// TODO: set ExpiresAt based on the Bundle's fields
-	entry = badger.Entry{
-		Key:       []byte(bp.ID()),
+	metaEntry = badger.Entry{
+		Key:       append([]byte("m"), []byte(bp.ID())...),
 		Value:     bpRaw,
 		ExpiresAt: 0,
 	}
 	return
 }
 
-// entryToBundlePack extracts the wrapped BundlePack from a BadgerDB Entry.
-func entryToBundlePack(entry badger.Entry) (bp BundlePack, err error) {
-	err = codec.NewDecoderBytes(entry.Value, new(codec.CborHandle)).Decode(&bp)
-	return
+func bundlePackToBndlEntry(bp BundlePack) badger.Entry {
+	// TODO: set ExpiresAt based on the Bundle's fields
+	return badger.Entry{
+		Key:       append([]byte("b"), []byte(bp.ID())...),
+		Value:     bp.Bundle.ToCbor(),
+		ExpiresAt: 0,
+	}
 }
 
 func (store *BStore) Push(bp BundlePack) error {
-	return store.db.Update(func(txn *badger.Txn) error {
-		entry, err := bundlePackToEntry(bp)
-		if err != nil {
-			return err
-		}
+	known := store.KnowsBundle(bp)
 
-		return txn.SetEntry(&entry)
+	me, err := bundlePackToMetaEntry(bp)
+	if err != nil {
+		return err
+	}
+
+	err = store.db.Update(func(txn *badger.Txn) error {
+		return txn.SetEntry(&me)
 	})
+	if err != nil {
+		return err
+	}
+
+	if !known {
+		be := bundlePackToBndlEntry(bp)
+		return store.db.Update(func(txn *badger.Txn) error {
+			return txn.SetEntry(&be)
+		})
+	}
+
+	return nil
 }
 
 func (store *BStore) Query(sel func(BundlePack) bool) (bps []BundlePack, err error) {
+	var meta = make(map[string]bundlePackMeta)
+	var bndl = make(map[string]bundle.Bundle)
+
 	err = store.db.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.DefaultIteratorOptions)
 		defer it.Close()
 
 		for it.Rewind(); it.Valid(); it.Next() {
-			val, err := it.Item().ValueCopy(nil)
+			item := it.Item()
+			val, err := item.ValueCopy(nil)
 			if err != nil {
 				return err
 			}
 
-			var bp BundlePack
-			if err := codec.NewDecoderBytes(val, new(codec.CborHandle)).Decode(&bp); err != nil {
-				return err
-			}
-
-			if sel(bp) {
-				bps = append(bps, bp)
+			if key := item.Key(); key[0] == 'm' {
+				var bpm bundlePackMeta
+				err = codec.NewDecoderBytes(val, new(codec.CborHandle)).Decode(&bpm)
+				if err != nil {
+					return err
+				}
+				meta[string(key[1:])] = bpm
+			} else {
+				b, err := bundle.NewBundleFromCbor(&val)
+				if err != nil {
+					return err
+				}
+				bndl[string(key[1:])] = b
 			}
 		}
 
 		return nil
 	})
+
+	for k, m := range meta {
+		b := bndl[k]
+		bp := m.toBundlePack(&b)
+		if sel(bp) {
+			bps = append(bps, bp)
+		}
+	}
+
 	return
 }
 
 func (store *BStore) KnowsBundle(bp BundlePack) bool {
 	return store.db.View(func(txn *badger.Txn) error {
-		_, err := txn.Get([]byte(bp.ID()))
+		_, err := txn.Get(append([]byte("m"), []byte(bp.ID())...))
 		return err
 	}) == nil
 }

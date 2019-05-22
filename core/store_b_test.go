@@ -67,22 +67,6 @@ func testBStoreStoreClean(store *BStore, t *testing.T) {
 	os.RemoveAll(store.dir)
 }
 
-func TestBStoreBundlePackEntry(t *testing.T) {
-	bpIn := testBStoreBundlePack()
-
-	entry, err1 := bundlePackToEntry(bpIn)
-	if err1 != nil {
-		t.Fatalf("Failed to encode BundlePack to Entry: %v", err1)
-	}
-
-	bpOut, err2 := entryToBundlePack(entry)
-	if err2 != nil {
-		t.Fatalf("Failed to decode Entry back to BundlePack: %v", err2)
-	}
-
-	testBStoreBundlePackComp(t, bpIn, bpOut)
-}
-
 func TestBStorePush(t *testing.T) {
 	store := testBStoreStore(t)
 	defer testBStoreStoreClean(store, t)
