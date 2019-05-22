@@ -15,5 +15,5 @@ func newDataUnit(bndl bundle.Bundle) DataUnit {
 
 // toBundle returns the encapsulated bundle.
 func (du DataUnit) toBundle() (bundle.Bundle, error) {
-	return bundle.NewBundleFromCbor(du)
+	return bundle.NewBundleFromCborBytes(du)
 }

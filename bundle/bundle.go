@@ -209,18 +209,15 @@ func (b Bundle) IsAdministrativeRecord() bool {
 	return b.PrimaryBlock.BundleControlFlags.Has(AdministrativeRecordPayload)
 }
 
-// ToCbor creates a byte array representing a CBOR indefinite-length array of
-// this Bundle with all its blocks, as defined in section 4 of the Bundle
-// Protocol Version 7.
-func (b Bundle) ToCbor() []byte {
+// WriteCbor serializes this Bundle as a CBOR indefinite-length array into the
+// given Writer.
+func (b Bundle) WriteCbor(w io.Writer) {
 	// It seems to be tricky using both definite-length and indefinite-length
 	// arays with the codec library. However, an indefinite-length array is just
 	// a byte array wrapped between the start and "break" code, which are
 	// exported as consts from the codec library.
 
-	var buf bytes.Buffer
-	var bw = bufio.NewWriter(&buf)
-
+	var bw = bufio.NewWriter(w)
 	var cborEncoder = codec.NewEncoder(bw, new(codec.CborHandle))
 
 	bw.WriteByte(codec.CborStreamArray)
@@ -232,6 +229,14 @@ func (b Bundle) ToCbor() []byte {
 	bw.WriteByte(codec.CborStreamBreak)
 
 	bw.Flush()
+}
+
+// ToCbor creates a byte array representing a CBOR indefinite-length array of
+// this Bundle with all its blocks, as defined in section 4 of the Bundle
+// Protocol Version 7.
+func (b Bundle) ToCbor() []byte {
+	var buf bytes.Buffer
+	b.WriteCbor(&buf)
 	return buf.Bytes()
 }
 
@@ -254,9 +259,8 @@ func decodeBundleBlock(data *interface{}, target interface{}) {
 	codec.NewDecoder(bufio.NewReader(r), cborHandle).MustDecode(target)
 }
 
-// NewBundleFromCbor tries to decodes the given data from CBOR into a Bundle.
-// It also checks the whole bundle's validity and each block's CRC value.
-func NewBundleFromCbor(data []byte) (b Bundle, err error) {
+// NewBundleFromCborReader decodes the given data from the CBOR into a Bundle.
+func NewBundleFromCborReader(r io.Reader) (b Bundle, err error) {
 	// The decoding might panic and would be recovered in the following function,
 	// which returns an error.
 	defer func() {
@@ -266,7 +270,7 @@ func NewBundleFromCbor(data []byte) (b Bundle, err error) {
 	}()
 
 	var dataArr []interface{}
-	codec.NewDecoderBytes(data, new(codec.CborHandle)).MustDecode(&dataArr)
+	codec.NewDecoder(bufio.NewReader(r), new(codec.CborHandle)).MustDecode(&dataArr)
 
 	var pb PrimaryBlock
 	decodeBundleBlock(&dataArr[0], &pb)
@@ -287,4 +291,17 @@ func NewBundleFromCbor(data []byte) (b Bundle, err error) {
 	}
 
 	return
+}
+
+// NewBundleFromCborBytes decodes the given data from the CBOR into a Bundle.
+func NewBundleFromCborBytes(data []byte) (b Bundle, err error) {
+	var r, w = io.Pipe()
+
+	go func() {
+		bw := bufio.NewWriter(w)
+		bw.Write(data)
+		bw.Flush()
+	}()
+
+	return NewBundleFromCborReader(r)
 }
