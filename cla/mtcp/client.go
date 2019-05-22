@@ -51,7 +51,7 @@ func (client *MTCPClient) Start() (error, bool) {
 }
 
 // Send transmits a bundle to this MTCPClient's endpoint.
-func (client *MTCPClient) Send(bndl bundle.Bundle) (err error) {
+func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 	defer func() {
 		if r := recover(); r != nil && err == nil {
 			err = fmt.Errorf("MTCPClient.Send: %v", r)
@@ -62,7 +62,7 @@ func (client *MTCPClient) Send(bndl bundle.Bundle) (err error) {
 	defer client.mutex.Unlock()
 
 	var enc = codec.NewEncoder(client.conn, new(codec.CborHandle))
-	err = enc.Encode(newDataUnit(bndl))
+	err = enc.Encode(newDataUnit(*bndl))
 
 	return
 }

@@ -19,9 +19,9 @@ type BundlePack struct {
 }
 
 // NewBundlePack returns a BundlePack for the given bundle.
-func NewBundlePack(b bundle.Bundle) BundlePack {
+func NewBundlePack(b *bundle.Bundle) BundlePack {
 	return BundlePack{
-		Bundle:      &b,
+		Bundle:      b,
 		Receiver:    bundle.DtnNone(),
 		Timestamp:   time.Now(),
 		Constraints: make(map[Constraint]bool),

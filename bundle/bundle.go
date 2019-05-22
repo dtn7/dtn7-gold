@@ -211,13 +211,21 @@ func (b Bundle) IsAdministrativeRecord() bool {
 
 // WriteCbor serializes this Bundle as a CBOR indefinite-length array into the
 // given Writer.
-func (b Bundle) WriteCbor(w io.Writer) {
+func (b Bundle) WriteCbor(w io.Writer) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = newBundleError(fmt.Sprintf("Bundle: Encoding CBOR failed, %v", r))
+		}
+	}()
+
 	// It seems to be tricky using both definite-length and indefinite-length
 	// arays with the codec library. However, an indefinite-length array is just
 	// a byte array wrapped between the start and "break" code, which are
 	// exported as consts from the codec library.
 
 	var bw = bufio.NewWriter(w)
+	defer bw.Flush()
+
 	var cborEncoder = codec.NewEncoder(bw, new(codec.CborHandle))
 
 	bw.WriteByte(codec.CborStreamArray)
@@ -228,7 +236,7 @@ func (b Bundle) WriteCbor(w io.Writer) {
 
 	bw.WriteByte(codec.CborStreamBreak)
 
-	bw.Flush()
+	return
 }
 
 // ToCbor creates a byte array representing a CBOR indefinite-length array of

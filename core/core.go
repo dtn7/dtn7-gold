@@ -291,5 +291,5 @@ func (c *Core) SendStatusReport(bp BundlePack,
 		return
 	}
 
-	c.transmit(NewBundlePack(outBndl))
+	c.transmit(NewBundlePack(&outBndl))
 }

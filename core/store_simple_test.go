@@ -35,7 +35,7 @@ func TestSimpleStoreSingle(t *testing.T) {
 		t.Errorf("Creating bundle failed: %v", err)
 	}
 
-	bp := NewBundlePack(bndl)
+	bp := NewBundlePack(&bndl)
 	if err := store.Push(bp); err != nil {
 		t.Errorf("Pushing errored :%v", err)
 	}
@@ -92,7 +92,7 @@ func TestSimpleStoreTwoStores(t *testing.T) {
 		t.Errorf("Creating bundle failed: %v", err)
 	}
 
-	bp := NewBundlePack(bndl)
+	bp := NewBundlePack(&bndl)
 	bp.AddConstraint(DispatchPending)
 	if err := store.Push(bp); err != nil {
 		t.Errorf("Pushing errored :%v", err)

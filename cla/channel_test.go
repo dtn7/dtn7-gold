@@ -29,7 +29,7 @@ func TestMerge(t *testing.T) {
 		t.Error(err)
 	}
 
-	recBndl := NewRecBundle(bndl, bundle.DtnNone())
+	recBndl := NewRecBundle(&bndl, bundle.DtnNone())
 
 	ch0 := make(chan RecBundle)
 	ch1 := make(chan RecBundle)
@@ -51,7 +51,7 @@ func TestMerge(t *testing.T) {
 					cVal := c.(int) - 1
 					counter.Store("counter", cVal)
 
-					if !reflect.DeepEqual(b.Bundle, bndl) {
+					if !reflect.DeepEqual(*b.Bundle, bndl) {
 						t.Errorf("Received bundle differs: %v, %v", b, bndl)
 					}
 
@@ -107,7 +107,7 @@ func TestJoinReceivers(t *testing.T) {
 		t.Error(err)
 	}
 
-	recBndl := NewRecBundle(bndl, bundle.DtnNone())
+	recBndl := NewRecBundle(&bndl, bundle.DtnNone())
 
 	chns := make([]chan RecBundle, clients)
 	for i := 0; i < clients; i++ {
@@ -131,7 +131,7 @@ func TestJoinReceivers(t *testing.T) {
 					cVal := c.(int) - 1
 					counter.Store("counter", cVal)
 
-					if !reflect.DeepEqual(b.Bundle, bndl) {
+					if !reflect.DeepEqual(*b.Bundle, bndl) {
 						t.Errorf("Received bundle differs: %v, %v", b, bndl)
 					}
 

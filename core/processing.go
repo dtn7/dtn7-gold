@@ -11,7 +11,7 @@ import (
 
 // SendBundle transmits an outbounding bundle.
 func (c *Core) SendBundle(bndl bundle.Bundle) {
-	c.transmit(NewBundlePack(bndl))
+	c.transmit(NewBundlePack(&bndl))
 }
 
 // transmit starts the transmission of an outbounding bundle pack. Therefore
@@ -221,7 +221,7 @@ func (c *Core) forward(bp BundlePack) {
 				"cla":    node,
 			}).Info("Sending bundle to a CLA (ConvergenceSender)")
 
-			if err := node.Send(*bp.Bundle); err != nil {
+			if err := node.Send(bp.Bundle); err != nil {
 				log.WithFields(log.Fields{
 					"bundle": bp.ID(),
 					"cla":    node,

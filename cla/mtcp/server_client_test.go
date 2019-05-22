@@ -74,7 +74,7 @@ func TestMTCPServerClient(t *testing.T) {
 				cVal := c.(int) - 1
 				counter.Store("counter", cVal)
 
-				if !reflect.DeepEqual(b.Bundle, bndl) {
+				if !reflect.DeepEqual(*b.Bundle, bndl) {
 					t.Errorf("Received bundle differs: %v, %v", b, bndl)
 				}
 
@@ -99,7 +99,7 @@ func TestMTCPServerClient(t *testing.T) {
 			}
 
 			for i := 0; i < packages; i++ {
-				if err := client.Send(bndl); err != nil {
+				if err := client.Send(&bndl); err != nil {
 					t.Fatal(err)
 				}
 			}

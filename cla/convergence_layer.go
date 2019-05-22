@@ -17,12 +17,12 @@ import "github.com/dtn7/dtn7/bundle"
 // incoming bundle. Each ConvergenceReceiver returns its received bundles as
 // a channel of RecBundles.
 type RecBundle struct {
-	Bundle   bundle.Bundle
+	Bundle   *bundle.Bundle
 	Receiver bundle.EndpointID
 }
 
 // NewRecBundle returns a new RecBundle for the given bundle and CLA.
-func NewRecBundle(b bundle.Bundle, rec bundle.EndpointID) RecBundle {
+func NewRecBundle(b *bundle.Bundle, rec bundle.EndpointID) RecBundle {
 	return RecBundle{
 		Bundle:   b,
 		Receiver: rec,
@@ -71,7 +71,7 @@ type ConvergenceSender interface {
 	// Send transmits a bundle to this ConvergenceSender's endpoint. This method
 	// should be thread safe and finish transmitting one bundle, before acting
 	// on the next. This could be achieved by using a mutex or the like.
-	Send(bndl bundle.Bundle) error
+	Send(bndl *bundle.Bundle) error
 
 	// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
 	// if it's known. Otherwise the zero endpoint will be returned.

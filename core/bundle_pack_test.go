@@ -22,7 +22,7 @@ func TestBundlePackUpdateBundleAge(t *testing.T) {
 		t.Errorf("Bundle creation failed: %v", err)
 	}
 
-	var bp = NewBundlePack(bndl)
+	var bp = NewBundlePack(&bndl)
 
 	time.Sleep(50 * time.Millisecond)
 	age, err := bp.UpdateBundleAge()

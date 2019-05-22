@@ -95,7 +95,7 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 		if err = dec.Decode(du); err == nil {
 			var bndl bundle.Bundle
 			if bndl, err = du.toBundle(); err == nil {
-				serv.reportChan <- cla.NewRecBundle(bndl, serv.endpointID)
+				serv.reportChan <- cla.NewRecBundle(&bndl, serv.endpointID)
 			}
 		}
 

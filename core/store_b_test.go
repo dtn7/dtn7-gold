@@ -20,7 +20,7 @@ func testBStoreBundlePack() BundlePack {
 			bundle.NewPayloadBlock(0, []byte("hello world")),
 		})
 
-	bp := NewBundlePack(bndl)
+	bp := NewBundlePack(&bndl)
 	bp.AddConstraint(ForwardPending)
 
 	return bp

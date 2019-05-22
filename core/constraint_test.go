@@ -21,7 +21,7 @@ func TestBundlePackConstraints(t *testing.T) {
 		t.Errorf("Bundle creation failed: %v", err)
 	}
 
-	var bp = NewBundlePack(bndl)
+	var bp = NewBundlePack(&bndl)
 
 	if len(bp.Constraints) != 0 {
 		t.Errorf("Initial constraints map is not empty")
