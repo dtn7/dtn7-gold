@@ -3,8 +3,6 @@ package mtcp
 import (
 	"fmt"
 	"net"
-	"sync"
-	"time"
 
 	"github.com/dtn7/dtn7/bundle"
 	"github.com/ugorji/go/codec"
@@ -13,12 +11,9 @@ import (
 // MTCPClient is an implementation of a Minimal TCP Convergence-Layer client
 // which connects to a MTCP server to send bundles.
 type MTCPClient struct {
-	conn  net.Conn
-	peer  bundle.EndpointID
-	mutex sync.Mutex
-
-	permanent bool
 	address   string
+	peer      bundle.EndpointID
+	permanent bool
 }
 
 // NewMTCPClient creates a new MTCPClient, connected to the given address for
@@ -26,9 +21,9 @@ type MTCPClient struct {
 // should never be removed from the core.
 func NewMTCPClient(address string, peer bundle.EndpointID, permanent bool) *MTCPClient {
 	return &MTCPClient{
+		address:   address,
 		peer:      peer,
 		permanent: permanent,
-		address:   address,
 	}
 }
 
@@ -39,12 +34,17 @@ func NewAnonymousMTCPClient(address string, permanent bool) *MTCPClient {
 	return NewMTCPClient(address, bundle.DtnNone(), permanent)
 }
 
+// connect establishes a connection.
+func (client *MTCPClient) connect() (net.Conn, error) {
+	return net.Dial("tcp", client.address)
+}
+
 // Start starts this MTCPClient and might return an error and a boolean
 // indicating if another Start should be tried later.
 func (client *MTCPClient) Start() (error, bool) {
-	conn, err := net.DialTimeout("tcp", client.address, time.Second)
+	conn, err := client.connect()
 	if err == nil {
-		client.conn = conn
+		conn.Close()
 	}
 
 	return err, true
@@ -58,21 +58,21 @@ func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 		}
 	}()
 
-	client.mutex.Lock()
-	defer client.mutex.Unlock()
+	conn, connErr := client.connect()
+	if connErr != nil {
+		err = connErr
+		return
+	}
+	defer conn.Close()
 
-	var enc = codec.NewEncoder(client.conn, new(codec.CborHandle))
+	enc := codec.NewEncoder(conn, new(codec.CborHandle))
 	err = enc.Encode(bndl.ToCbor())
 
 	return
 }
 
 // Close closes the MTCPClient's connection.
-func (client *MTCPClient) Close() {
-	client.mutex.Lock()
-	client.conn.Close()
-	client.mutex.Unlock()
-}
+func (_ *MTCPClient) Close() {}
 
 // GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
 // if it's known. Otherwise the zero endpoint will be returned.
@@ -92,9 +92,5 @@ func (client *MTCPClient) IsPermanent() bool {
 }
 
 func (client *MTCPClient) String() string {
-	if client.conn != nil {
-		return fmt.Sprintf("mtcp://%v", client.conn.RemoteAddr())
-	} else {
-		return fmt.Sprintf("mtcp://%s", client.address)
-	}
+	return fmt.Sprintf("mtcp://%s", client.address)
 }

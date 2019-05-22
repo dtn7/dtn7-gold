@@ -2,6 +2,7 @@ package mtcp
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"time"
 
@@ -99,13 +100,18 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 			}
 		}
 
-		if err != nil {
+		if err == io.EOF {
+			log.WithFields(log.Fields{
+				"cla":  serv,
+				"conn": conn,
+			}).Debug("MTCP handleSender connection was closed")
+			return
+		} else if err != nil {
 			log.WithFields(log.Fields{
 				"cla":   serv,
 				"conn":  conn,
 				"error": err,
 			}).Warn("Reception of MTCP data unit failed, closing conn's handler")
-
 			return
 		}
 	}

@@ -32,8 +32,8 @@ func TestMTCPServerClient(t *testing.T) {
 
 	// Bundle
 	const (
-		clients  = 50
-		packages = 250
+		clients  = 25
+		packages = 100
 	)
 
 	bndl, err := bundle.NewBundle(
