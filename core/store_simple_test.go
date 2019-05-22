@@ -62,7 +62,7 @@ func TestSimpleStoreSingle(t *testing.T) {
 		t.Errorf("Store is not empty after pushing bundle pack without constraints")
 	}
 
-	os.Remove(file.Name())
+	os.RemoveAll(file.Name())
 }
 
 func TestSimpleStoreTwoStores(t *testing.T) {
@@ -112,5 +112,5 @@ func TestSimpleStoreTwoStores(t *testing.T) {
 		t.Errorf("Two stores differs.")
 	}
 
-	os.Remove(file.Name())
+	os.RemoveAll(file.Name())
 }
