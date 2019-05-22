@@ -106,7 +106,13 @@ func TestBStoreQuery(t *testing.T) {
 
 	// Check one element
 	bp := testBStoreBundlePack()
+	if store.KnowsBundle(bp) {
+		t.Fatal("Store knows bundle before insertion")
+	}
 	store.Push(bp)
+	if !store.KnowsBundle(bp) {
+		t.Fatal("Store does not know bundle after insertion")
+	}
 
 	bps := QueryAll(store)
 	if l := len(bps); l != 1 {

@@ -95,6 +95,13 @@ func (store *BStore) Query(sel func(BundlePack) bool) (bps []BundlePack, err err
 	return
 }
 
+func (store *BStore) KnowsBundle(bp BundlePack) bool {
+	return store.db.View(func(txn *badger.Txn) error {
+		_, err := txn.Get([]byte(bp.ID()))
+		return err
+	}) == nil
+}
+
 func (store *BStore) logFields() *logrus.Entry {
 	return logrus.WithFields(logrus.Fields{
 		"store": "BStore",

@@ -82,6 +82,14 @@ func (store *SimpleStore) Query(sel func(BundlePack) bool) (bps []BundlePack, er
 	return
 }
 
+func (store *SimpleStore) KnowsBundle(requested BundlePack) bool {
+	bps, err := store.Query(func(bp BundlePack) bool {
+		return bp.Bundle.ID() == requested.Bundle.ID()
+	})
+
+	return err == nil && bps != nil
+}
+
 func (store *SimpleStore) Close() error {
 	// The SimpleStore serializes Bundles on each sync-call. This contains the
 	// opening of a file, the writing and the closing. Therefore, no further

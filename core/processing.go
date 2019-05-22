@@ -46,7 +46,7 @@ func (c *Core) receive(bp BundlePack) {
 		"bundle": bp.ID(),
 	}).Debug("Received new bundle")
 
-	if KnowsBundle(c.store, bp) {
+	if c.store.KnowsBundle(bp) {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
 		}).Debug("Received bundle's ID is already known.")

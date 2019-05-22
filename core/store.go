@@ -16,6 +16,9 @@ type Store interface {
 	// core package.
 	Query(func(BundlePack) bool) ([]BundlePack, error)
 
+	// KnowsBundle checks if an entry with the BundlePack's ID exists.
+	KnowsBundle(BundlePack) bool
+
 	// Close closes the store.
 	Close() error
 }
@@ -64,17 +67,6 @@ func QueryPending(store Store) []BundlePack {
 	return bps
 }
 
-// KnowsBundle returns true if the requested store knows a BundlePack which
-// bundle equals the requested BundlePack's.
-func KnowsBundle(store Store, requested BundlePack) bool {
-	bps, err := store.Query(func(bp BundlePack) bool {
-		return bp.Bundle.ID() == requested.Bundle.ID()
-	})
-
-	queryErrLog(err, "KnowsBundle")
-	return bps != nil
-}
-
 // NoStore is a dummy implemention of the Store interface which represents, as
 // the name indicates, no store whatsoever. Push will produce log messages and
 // Query has no functionality at all.
@@ -89,6 +81,10 @@ func (_ NoStore) Push(bp BundlePack) error {
 
 func (_ NoStore) Query(_ func(BundlePack) bool) ([]BundlePack, error) {
 	return nil, nil
+}
+
+func (_ NoStore) KnowsBundle(_ BundlePack) bool {
+	return false
 }
 
 func (_ NoStore) Close() error {
