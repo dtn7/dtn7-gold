@@ -62,7 +62,7 @@ func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 	defer client.mutex.Unlock()
 
 	var enc = codec.NewEncoder(client.conn, new(codec.CborHandle))
-	err = enc.Encode(newDataUnit(*bndl))
+	err = enc.Encode(bndl.ToCbor())
 
 	return
 }
