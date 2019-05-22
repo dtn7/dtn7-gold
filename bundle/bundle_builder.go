@@ -16,7 +16,7 @@ import (
 //     CreationTimestampNow().
 //     Lifetime("30m").
 //     HopCountBlock(64).
-//     PayloadBlock("hello world!").
+//     PayloadBlock([]byte("hello world!")).
 //     Build()
 //
 type BundleBuilder struct {
