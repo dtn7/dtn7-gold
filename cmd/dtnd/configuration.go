@@ -133,7 +133,8 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, p
 	switch conf.Logging.Format {
 	case "", "text":
 		log.SetFormatter(&log.TextFormatter{
-			FullTimestamp: true,
+			FullTimestamp:   true,
+			TimestampFormat: "15:04:05.000",
 		})
 
 	case "json":
