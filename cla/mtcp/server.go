@@ -1,6 +1,7 @@
 package mtcp
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net"
@@ -89,7 +90,7 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 	}()
 
 	for {
-		var dec = codec.NewDecoder(conn, new(codec.CborHandle))
+		var dec = codec.NewDecoder(bufio.NewReader(conn), new(codec.CborHandle))
 
 		var du = new([]byte)
 		var err error

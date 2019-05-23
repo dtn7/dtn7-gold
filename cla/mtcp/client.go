@@ -1,11 +1,11 @@
 package mtcp
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 
 	"github.com/dtn7/dtn7/bundle"
-	"github.com/ugorji/go/codec"
 )
 
 // MTCPClient is an implementation of a Minimal TCP Convergence-Layer client
@@ -65,8 +65,39 @@ func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 	}
 	defer conn.Close()
 
-	enc := codec.NewEncoder(conn, new(codec.CborHandle))
-	err = enc.Encode(bndl.ToCbor())
+	connWriter := bufio.NewWriter(conn)
+	defer connWriter.Flush()
+
+	bndlData := bndl.ToCbor()
+
+	// CBOR byte string with defined length
+	if bndlLen := len(bndlData); bndlLen >= 1<<16 {
+		_, err = connWriter.Write([]byte{
+			0x5A,
+			byte((bndlLen >> 24) & 0xFF),
+			byte((bndlLen >> 16) & 0xFF),
+			byte((bndlLen >> 8) & 0xFF),
+			byte(bndlLen & 0xFF),
+		})
+	} else if bndlLen >= 1<<8 {
+		_, err = connWriter.Write([]byte{
+			0x59,
+			byte((bndlLen >> 8) & 0xFF),
+			byte(bndlLen & 0xFF),
+		})
+	} else {
+		_, err = connWriter.Write([]byte{
+			0x58,
+			byte(bndlLen & 0xFF),
+		})
+	}
+	if err != nil {
+		return
+	}
+
+	if _, err = connWriter.Write(bndlData); err != nil {
+		return
+	}
 
 	return
 }
