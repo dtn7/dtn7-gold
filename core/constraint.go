@@ -32,6 +32,9 @@ func (c Constraint) String() string {
 	case ReassemblyPending:
 		return "reassembly pending"
 
+	case Contraindicated:
+		return "contraindicated"
+
 	default:
 		return "unknown"
 	}

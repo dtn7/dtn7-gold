@@ -82,6 +82,24 @@ func (c *Core) SetRoutingAlgorithm(routing RoutingAlgorithm) {
 	c.routing = routing
 }
 
+// checkPendingBundles queries pending bundle (packs) from the store and
+// tries to dispatch them.
+func (c *Core) checkPendingBundles() {
+	bps, bpsErr := c.store.QueryPending()
+	if bpsErr != nil {
+		log.WithFields(log.Fields{"err": bpsErr}).Warn(
+			"Failed to fetch pending bundle packs")
+	} else {
+		for _, bp := range bps {
+			log.WithFields(log.Fields{
+				"bundle": bp.ID(),
+			}).Info("Retrying bundle from store")
+
+			c.dispatching(bp)
+		}
+	}
+}
+
 // checkConvergenceReceivers checks all ConvergenceReceivers for new bundles.
 func (c *Core) checkConvergenceReceivers() {
 	var chnl = cla.JoinReceivers()
@@ -152,13 +170,7 @@ func (c *Core) checkConvergenceReceivers() {
 			c.convergenceMutex.Unlock()
 
 			// Bundles
-			for _, bp := range QueryPending(c.store) {
-				log.WithFields(log.Fields{
-					"bundle": bp.ID(),
-				}).Info("Retrying bundle from store")
-
-				c.dispatching(bp)
-			}
+			c.checkPendingBundles()
 
 		// Invoked by RegisterConvergenceReceiver, recreates chnl
 		case <-c.reloadConvRecs:
@@ -169,14 +181,7 @@ func (c *Core) checkConvergenceReceivers() {
 			}
 			c.convergenceMutex.Unlock()
 
-			// Bundles
-			for _, bp := range QueryPending(c.store) {
-				log.WithFields(log.Fields{
-					"bundle": bp.ID(),
-				}).Info("Retrying bundle from store after reloading CLAs")
-
-				c.dispatching(bp)
-			}
+			c.checkPendingBundles()
 		}
 	}
 }

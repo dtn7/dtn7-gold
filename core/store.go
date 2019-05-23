@@ -16,6 +16,10 @@ type Store interface {
 	// core package.
 	Query(func(BundlePack) bool) ([]BundlePack, error)
 
+	// QueryPending queries those bundle packs,which could not be delivered
+	// previously, but are complete (not fragmented).
+	QueryPending() ([]BundlePack, error)
+
 	// KnowsBundle checks if an entry with the BundlePack's ID exists.
 	KnowsBundle(BundlePack) bool
 
@@ -53,17 +57,6 @@ func QueryFromStatusReport(store Store, sr StatusReport) []BundlePack {
 	})
 
 	queryErrLog(err, "QueryFromStatusReport")
-	return bps
-}
-
-// QueryPending is a helper function for Stores and queries those bundle packs,
-// which could not be delivered previously, but are complete (not fragmented).
-func QueryPending(store Store) []BundlePack {
-	bps, err := store.Query(func(bp BundlePack) bool {
-		return !bp.HasConstraint(ReassemblyPending) && bp.HasConstraint(Contraindicated)
-	})
-
-	queryErrLog(err, "QueryPending")
 	return bps
 }
 

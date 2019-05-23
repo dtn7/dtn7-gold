@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/dtn7/bundle"
 	"github.com/ugorji/go/codec"
 )
@@ -29,6 +31,17 @@ type metaBundlePack struct {
 	Receiver    bundle.EndpointID
 	Timestamp   time.Time
 	Constraints map[Constraint]bool
+}
+
+// hasConstraint returns true if the given constraint contains.
+func (mbp metaBundlePack) hasConstraint(c Constraint) bool {
+	_, ok := mbp.Constraints[c]
+	return ok
+}
+
+// hasConstraints returns true if any constraint exists.
+func (mbp metaBundlePack) hasConstraints() bool {
+	return len(mbp.Constraints) != 0
 }
 
 func newMetaBundlePack(bp BundlePack) metaBundlePack {
@@ -142,13 +155,16 @@ func (store *SimpleStore) Push(bp BundlePack) error {
 		}()
 	}
 
-	wg.Add(1)
-	go func() {
-		err1 = store.sync()
-		wg.Done()
-	}()
-
+	err1 = store.sync()
 	wg.Wait()
+
+	log.WithFields(log.Fields{
+		"bundle":      bp.ID(),
+		"constraints": bp.Constraints,
+		"is_known":    isKnown,
+		"err0":        err0,
+		"err1":        err1,
+	}).Debug("SimpleStore got `Push`ed")
 
 	if err0 != nil {
 		return err0
@@ -169,6 +185,31 @@ func (store *SimpleStore) Query(sel func(BundlePack) bool) (bps []BundlePack, er
 
 		if bp := mbp.toBundlePack(&bndl); sel(bp) {
 			bps = append(bps, bp)
+		}
+	}
+
+	return
+}
+
+func (store *SimpleStore) QueryPending() (bps []BundlePack, err error) {
+	store.mutex.Lock()
+	defer store.mutex.Unlock()
+
+	for _, mbp := range store.bundles {
+		chk := !mbp.hasConstraint(ReassemblyPending) && mbp.hasConstraint(Contraindicated)
+		log.WithFields(log.Fields{
+			"bundle": mbp.Id,
+			"check":  chk,
+		}).Debug("QueryPending checks for bundles")
+
+		if chk {
+			bndl, bndlErr := store.getBundle(mbp.Id)
+			if bndlErr != nil {
+				err = bndlErr
+				return
+			}
+
+			bps = append(bps, mbp.toBundlePack(&bndl))
 		}
 	}
 
