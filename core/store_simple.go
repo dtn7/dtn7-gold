@@ -21,6 +21,7 @@ import (
 type SimpleStore struct {
 	bundles map[string]metaBundlePack
 	mutex   sync.Mutex
+	ioMutex sync.Mutex
 
 	directory string
 	meta      string
@@ -114,6 +115,9 @@ func (store *SimpleStore) bundlePath(id string) string {
 }
 
 func (store *SimpleStore) getBundle(id string) (bndl bundle.Bundle, err error) {
+	store.ioMutex.Lock()
+	defer store.ioMutex.Unlock()
+
 	bndlPath := store.bundlePath(id)
 	if _, state := os.Stat(bndlPath); os.IsNotExist(state) {
 		err = state
@@ -131,12 +135,18 @@ func (store *SimpleStore) getBundle(id string) (bndl bundle.Bundle, err error) {
 }
 
 func (store *SimpleStore) setBundle(bp BundlePack) error {
+	store.ioMutex.Lock()
+	defer store.ioMutex.Unlock()
+
 	bndlPath := store.bundlePath(bp.ID())
 	bndlData := bp.Bundle.ToCbor()
 	return ioutil.WriteFile(bndlPath, bndlData, 0755)
 }
 
 func (store *SimpleStore) delBundle(id string) error {
+	store.ioMutex.Lock()
+	defer store.ioMutex.Unlock()
+
 	bndlPath := store.bundlePath(id)
 	return os.Remove(bndlPath)
 }
@@ -150,40 +160,22 @@ func (store *SimpleStore) Push(bp BundlePack) error {
 
 	store.bundles[bp.ID()] = newMetaBundlePack(bp)
 
-	var err0, err1, err2 error
-	var wg sync.WaitGroup
-
 	if !isKnown {
-		wg.Add(1)
-		go func() {
-			err0 = store.setBundle(bp)
-			wg.Done()
-		}()
+		go store.setBundle(bp)
 	} else if deletePayload {
-		wg.Add(1)
-		go func() {
-			err1 = store.delBundle(bp.ID())
-			wg.Done()
-		}()
+		go store.delBundle(bp.ID())
 	}
 
-	err2 = store.sync()
-	wg.Wait()
+	err := store.sync()
 
 	log.WithFields(log.Fields{
 		"bundle":         bp.ID(),
 		"constraints":    bp.Constraints,
 		"is_known":       isKnown,
 		"delete_payload": deletePayload,
-		"err0":           err0,
-		"err1":           err1,
-		"err2":           err2,
 	}).Debug("SimpleStore got `Push`ed")
 
-	if err0 != nil {
-		return err0
-	}
-	return err1
+	return err
 }
 
 func (store *SimpleStore) Query(sel func(BundlePack) bool) (bps []BundlePack, err error) {
