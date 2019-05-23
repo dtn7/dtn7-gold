@@ -136,15 +136,21 @@ func (store *SimpleStore) setBundle(bp BundlePack) error {
 	return ioutil.WriteFile(bndlPath, bndlData, 0755)
 }
 
+func (store *SimpleStore) delBundle(id string) error {
+	bndlPath := store.bundlePath(id)
+	return os.Remove(bndlPath)
+}
+
 func (store *SimpleStore) Push(bp BundlePack) error {
 	isKnown := store.KnowsBundle(bp)
+	deletePayload := !bp.HasConstraints()
 
 	store.mutex.Lock()
 	defer store.mutex.Unlock()
 
 	store.bundles[bp.ID()] = newMetaBundlePack(bp)
 
-	var err0, err1 error
+	var err0, err1, err2 error
 	var wg sync.WaitGroup
 
 	if !isKnown {
@@ -153,17 +159,25 @@ func (store *SimpleStore) Push(bp BundlePack) error {
 			err0 = store.setBundle(bp)
 			wg.Done()
 		}()
+	} else if deletePayload {
+		wg.Add(1)
+		go func() {
+			err1 = store.delBundle(bp.ID())
+			wg.Done()
+		}()
 	}
 
-	err1 = store.sync()
+	err2 = store.sync()
 	wg.Wait()
 
 	log.WithFields(log.Fields{
-		"bundle":      bp.ID(),
-		"constraints": bp.Constraints,
-		"is_known":    isKnown,
-		"err0":        err0,
-		"err1":        err1,
+		"bundle":         bp.ID(),
+		"constraints":    bp.Constraints,
+		"is_known":       isKnown,
+		"delete_payload": deletePayload,
+		"err0":           err0,
+		"err1":           err1,
+		"err2":           err2,
 	}).Debug("SimpleStore got `Push`ed")
 
 	if err0 != nil {
@@ -177,6 +191,10 @@ func (store *SimpleStore) Query(sel func(BundlePack) bool) (bps []BundlePack, er
 	defer store.mutex.Unlock()
 
 	for _, mbp := range store.bundles {
+		if !mbp.hasConstraints() {
+			continue
+		}
+
 		bndl, bndlErr := store.getBundle(mbp.Id)
 		if bndlErr != nil {
 			err = bndlErr
