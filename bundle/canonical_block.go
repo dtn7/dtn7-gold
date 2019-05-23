@@ -135,6 +135,30 @@ func (cb CanonicalBlock) CodecEncodeSelf(enc *codec.Encoder) {
 	}
 }
 
+func (cb *CanonicalBlock) codecDecodeDataPointer(data *interface{}) {
+	switch cb.BlockType {
+	case PreviousNodeBlock:
+		var ep EndpointID
+		setEndpointIDFromCborArray(&ep, (*data).([]interface{}))
+		cb.Data = ep
+
+	case BundleAgeBlock:
+		cb.Data = uint((*data).(uint64))
+
+	case HopCountBlock:
+		tuple := (*data).([]interface{})
+		cb.Data = HopCount{
+			Limit: uint(tuple[0].(uint64)),
+			Count: uint(tuple[1].(uint64)),
+		}
+
+	// blockTypePayload is also a byte array and can be treated like the default.
+	// In some other cases codec was "too smart" and decoded the data by itself.
+	default:
+		cb.Data = (*data).([]byte)
+	}
+}
+
 func (cb *CanonicalBlock) codecDecodeData(data interface{}) {
 	switch cb.BlockType {
 	case PreviousNodeBlock:

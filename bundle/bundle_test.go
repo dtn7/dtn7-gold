@@ -77,7 +77,7 @@ func TestBundleCbor(t *testing.T) {
 	bundle2Cbor := bundle2.ToCbor()
 
 	if !bytes.Equal(bundle1Cbor, bundle2Cbor) {
-		t.Errorf("Cbor-Representations do not match:\n- %v\n- %v",
+		t.Errorf("Cbor-Representations do not match:\n- %x\n- %x",
 			bundle1Cbor, bundle2Cbor)
 	}
 

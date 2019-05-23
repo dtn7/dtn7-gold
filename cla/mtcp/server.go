@@ -101,7 +101,17 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 		var err error
 
 		if err = dec.Decode(du); err == nil {
+			log.WithFields(log.Fields{
+				"cla":  serv,
+				"conn": conn,
+			}).Debug("MTCP handleServer connection received a byte string")
+
 			if bndl, err := bundle.NewBundleFromCbor(du); err == nil {
+				log.WithFields(log.Fields{
+					"cla":  serv,
+					"conn": conn,
+				}).Debug("MTCP handleServer connection received a bundle")
+
 				serv.reportChan <- cla.NewRecBundle(&bndl, serv.endpointID)
 			}
 		}

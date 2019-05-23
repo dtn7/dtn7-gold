@@ -287,18 +287,44 @@ func NewBundleFromCbor(data *[]byte) (b Bundle, err error) {
 		}
 	}()
 
-	var dataArr []interface{}
-	codec.NewDecoderBytes(*data, new(codec.CborHandle)).MustDecode(&dataArr)
+	var reader = bytes.NewReader(*data)
+	var handle = new(codec.CborHandle)
+
+	// Skip array starting symbol
+	reader.ReadByte()
 
 	var pb PrimaryBlock
-	decodeBundleBlock(&dataArr[0], &pb)
-
-	var cb []CanonicalBlock = make([]CanonicalBlock, len(dataArr)-1)
-	for i := 0; i < len(cb); i++ {
-		decodeBundleBlock(&dataArr[i+1], &cb[i])
+	if err = codec.NewDecoder(reader, handle).Decode(&pb); err != nil {
+		return
 	}
 
-	b = Bundle{pb, cb}
+	var cbs []CanonicalBlock
+	for fin := false; !fin; {
+		switch cbType, _ := reader.ReadByte(); cbType {
+		case 0x85:
+			reader.UnreadByte()
+
+			var cb5 canonicalBlock5
+			codec.NewDecoder(reader, handle).Decode(&cb5)
+			cbs = append(cbs, *cb5.toCanonicalBlock())
+
+		case 0x86:
+			reader.UnreadByte()
+
+			var cb6 canonicalBlock6
+			codec.NewDecoder(reader, handle).Decode(&cb6)
+			cbs = append(cbs, *cb6.toCanonicalBlock())
+
+		case 0xFF:
+			fin = true
+
+		default:
+			err = fmt.Errorf("Unexpected cbType %x while decoding canonicals", cbType)
+			return
+		}
+	}
+
+	b = Bundle{pb, cbs}
 
 	if chkVldErr := b.checkValid(); chkVldErr != nil {
 		err = multierror.Append(err, chkVldErr)

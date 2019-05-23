@@ -79,6 +79,19 @@ type canonicalBlock6 struct {
 	CRC               []byte
 }
 
+func (cb6 canonicalBlock6) toCanonicalBlock() *CanonicalBlock {
+	cb := &CanonicalBlock{
+		BlockType:         cb6.BlockType,
+		BlockNumber:       cb6.BlockNumber,
+		BlockControlFlags: cb6.BlockControlFlags,
+		CRCType:           cb6.CRCType,
+		CRC:               cb6.CRC,
+	}
+	cb.codecDecodeDataPointer(&cb6.Data)
+
+	return cb
+}
+
 // canonicalBlock5 is a serialization type with: no CRC
 type canonicalBlock5 struct {
 	_struct bool `codec:",toarray"`
@@ -88,4 +101,16 @@ type canonicalBlock5 struct {
 	BlockControlFlags BlockControlFlags
 	CRCType           CRCType
 	Data              interface{}
+}
+
+func (cb5 canonicalBlock5) toCanonicalBlock() *CanonicalBlock {
+	cb := &CanonicalBlock{
+		BlockType:         cb5.BlockType,
+		BlockNumber:       cb5.BlockNumber,
+		BlockControlFlags: cb5.BlockControlFlags,
+		CRCType:           cb5.CRCType,
+	}
+	cb.codecDecodeDataPointer(&cb5.Data)
+
+	return cb
 }
