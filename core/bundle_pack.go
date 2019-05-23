@@ -94,7 +94,7 @@ func (bp *BundlePack) UpdateBundleAge() (uint, error) {
 func (bp BundlePack) String() string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "BundlePack(%v,", bp.Bundle)
+	fmt.Fprintf(&b, "BundlePack(%v,", bp.ID())
 
 	for c, _ := range bp.Constraints {
 		fmt.Fprintf(&b, " %v", c)

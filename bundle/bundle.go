@@ -69,8 +69,8 @@ func (b *Bundle) PayloadBlock() (*CanonicalBlock, error) {
 // will be calculated and overwritten within this method.
 func (b *Bundle) AddExtensionBlock(block CanonicalBlock) {
 	var blockNumbers []uint
-	for _, cb := range b.CanonicalBlocks {
-		blockNumbers = append(blockNumbers, cb.BlockNumber)
+	for i := 0; i < len(b.CanonicalBlocks); i++ {
+		blockNumbers = append(blockNumbers, b.CanonicalBlocks[i].BlockNumber)
 	}
 
 	var blockNumber uint = 1

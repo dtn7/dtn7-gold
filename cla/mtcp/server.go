@@ -89,6 +89,11 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 		}
 	}()
 
+	log.WithFields(log.Fields{
+		"cla":  serv,
+		"conn": conn,
+	}).Debug("MTCP handleServer connection was established")
+
 	for {
 		var dec = codec.NewDecoder(bufio.NewReader(conn), new(codec.CborHandle))
 

@@ -68,7 +68,7 @@ func (c *Core) receive(bp BundlePack) {
 	}
 
 	for i := len(bp.Bundle.CanonicalBlocks) - 1; i >= 0; i-- {
-		var cb = bp.Bundle.CanonicalBlocks[i]
+		var cb = &bp.Bundle.CanonicalBlocks[i]
 
 		if isKnownBlockType(cb.BlockType) {
 			continue
