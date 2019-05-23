@@ -3,7 +3,7 @@ package mtcp
 import (
 	"bufio"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net"
 	"time"
 
@@ -11,7 +11,6 @@ import (
 
 	"github.com/dtn7/dtn7/bundle"
 	"github.com/dtn7/dtn7/cla"
-	"github.com/ugorji/go/codec"
 )
 
 // MTCPServer is an implementation of a Minimal TCP Convergence-Layer server
@@ -95,18 +94,25 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 	}).Debug("MTCP handleServer connection was established")
 
 	for {
-		var dec = codec.NewDecoder(bufio.NewReader(conn), new(codec.CborHandle))
-
-		var du = new([]byte)
 		var err error
+		if du, err := ioutil.ReadAll(bufio.NewReader(conn)); err == nil {
+			if len(du) == 0 {
+				log.WithFields(log.Fields{
+					"cla":  serv,
+					"conn": conn,
+				}).Debug("MTCP handleServer connection was closed")
+				return
+			}
 
-		if err = dec.Decode(du); err == nil {
 			log.WithFields(log.Fields{
 				"cla":  serv,
 				"conn": conn,
 			}).Debug("MTCP handleServer connection received a byte string")
 
-			if bndl, err := bundle.NewBundleFromCbor(du); err == nil {
+			offset := (1 << (du[0] - 0x58)) + 1
+			bndlData := du[offset:]
+
+			if bndl, err := bundle.NewBundleFromCbor(&bndlData); err == nil {
 				log.WithFields(log.Fields{
 					"cla":  serv,
 					"conn": conn,
@@ -116,13 +122,7 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 			}
 		}
 
-		if err == io.EOF {
-			log.WithFields(log.Fields{
-				"cla":  serv,
-				"conn": conn,
-			}).Debug("MTCP handleSender connection was closed")
-			return
-		} else if err != nil {
+		if err != nil {
 			log.WithFields(log.Fields{
 				"cla":   serv,
 				"conn":  conn,
