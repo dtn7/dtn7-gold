@@ -201,6 +201,26 @@ func (store *SimpleStore) Query(sel func(BundlePack) bool) (bps []BundlePack, er
 	return
 }
 
+func (store *SimpleStore) QueryId(bundleId string) (bp BundlePack, err error) {
+	store.mutex.Lock()
+	defer store.mutex.Unlock()
+
+	mbp, ok := store.bundles[bundleId]
+	if !ok {
+		err = fmt.Errorf("SimpleStore does not contain a bundle pack for %s", bundleId)
+		return
+	}
+
+	bndl, bndlErr := store.getBundle(mbp.Id)
+	if bndlErr != nil {
+		err = bndlErr
+		return
+	}
+
+	bp = mbp.toBundlePack(&bndl)
+	return
+}
+
 func (store *SimpleStore) QueryPending() (bps []BundlePack, err error) {
 	store.mutex.Lock()
 	defer store.mutex.Unlock()

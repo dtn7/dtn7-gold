@@ -68,10 +68,12 @@ func (bp *BundlePack) RemoveConstraint(c Constraint) {
 	delete(bp.Constraints, c)
 }
 
-// PurgeConstraints removes all constraints.
+// PurgeConstraints removes all constraints, except LocalEndpoint.
 func (bp *BundlePack) PurgeConstraints() {
 	for c, _ := range bp.Constraints {
-		bp.RemoveConstraint(c)
+		if c != LocalEndpoint {
+			bp.RemoveConstraint(c)
+		}
 	}
 }
 

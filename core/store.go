@@ -16,6 +16,9 @@ type Store interface {
 	// core package.
 	Query(func(BundlePack) bool) ([]BundlePack, error)
 
+	// QueryId returns a bundle pack for the given bundle ID.
+	QueryId(bundleId string) (BundlePack, error)
+
 	// QueryPending queries those bundle packs,which could not be delivered
 	// previously, but are complete (not fragmented).
 	QueryPending() ([]BundlePack, error)

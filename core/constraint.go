@@ -19,6 +19,10 @@ const (
 	// was moved to the contraindicated stage. This Constraint was not defined
 	// in draft-ietf-dtn-bpbis-13, but seemed reasonable for this implementation.
 	Contraindicated Constraint = iota
+
+	// LocalEndpoint is assigned to a bundle after delivery to a local endpoint.
+	// This constraint demands storage until the endpoint removes this constraint.
+	LocalEndpoint Constraint = iota
 )
 
 func (c Constraint) String() string {
@@ -34,6 +38,9 @@ func (c Constraint) String() string {
 
 	case Contraindicated:
 		return "contraindicated"
+
+	case LocalEndpoint:
+		return "local endpoint"
 
 	default:
 		return "unknown"

@@ -10,5 +10,5 @@ type ApplicationAgent interface {
 
 	// Deliver delivers a received bundle to this ApplicationAgent. This bundle
 	// may contain an application specific payload or an administrative record.
-	Deliver(bndl *bundle.Bundle) error
+	Deliver(bp BundlePack) error
 }

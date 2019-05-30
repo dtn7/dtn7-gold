@@ -394,9 +394,12 @@ func (c *Core) localDelivery(bp BundlePack) {
 		}
 	}
 
+	bp.AddConstraint(LocalEndpoint)
+	c.store.Push(bp)
+
 	for _, agent := range c.Agents {
 		if agent.EndpointID() == bp.Bundle.PrimaryBlock.Destination {
-			agent.Deliver(bp.Bundle)
+			agent.Deliver(bp)
 		}
 	}
 

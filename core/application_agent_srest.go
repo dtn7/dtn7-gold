@@ -68,7 +68,7 @@ type SimpleRESTAppAgent struct {
 	c          *Core
 
 	serv        *http.Server
-	bundles     []bundle.Bundle
+	bundleIds   []string
 	bundleMutex sync.Mutex
 }
 
@@ -78,7 +78,7 @@ func NewSimpleRESTAppAgent(endpointID bundle.EndpointID, c *Core, addr string) (
 	aa = &SimpleRESTAppAgent{
 		endpointID: endpointID,
 		c:          c,
-		bundles:    make([]bundle.Bundle, 0, 0),
+		bundleIds:  make([]string, 0, 0),
 	}
 
 	mux := http.NewServeMux()
@@ -98,10 +98,20 @@ func (aa *SimpleRESTAppAgent) handleFetch(respWriter http.ResponseWriter, _ *htt
 	aa.bundleMutex.Lock()
 
 	resps := make([]SimpleRESTResponse, 0, 0)
-	for _, bndl := range aa.bundles {
-		resps = append(resps, NewSimpleRESTReponseFromBundle(&bndl))
+	for _, bndlId := range aa.bundleIds {
+		if bp, err := aa.c.store.QueryId(bndlId); err != nil {
+			log.WithFields(log.Fields{
+				"bundle": bndlId,
+				"error":  err,
+			}).Warn("SimpleRESTAppAgent failed to fetch bundle from store")
+		} else {
+			resps = append(resps, NewSimpleRESTReponseFromBundle(bp.Bundle))
+
+			bp.RemoveConstraint(LocalEndpoint)
+			aa.c.store.Push(bp)
+		}
 	}
-	aa.bundles = aa.bundles[:0]
+	aa.bundleIds = aa.bundleIds[:0]
 
 	aa.bundleMutex.Unlock()
 
@@ -176,14 +186,14 @@ func (aa *SimpleRESTAppAgent) EndpointID() bundle.EndpointID {
 
 // Deliver delivers a received bundle to this SimpleRESTAppAgent. This bundle
 // may contain an application specific payload or an administrative record.
-func (aa *SimpleRESTAppAgent) Deliver(bndl *bundle.Bundle) error {
+func (aa *SimpleRESTAppAgent) Deliver(bp BundlePack) error {
 	log.WithFields(log.Fields{
 		"srest":  aa.EndpointID(),
-		"bundle": bndl.ID(),
+		"bundle": bp.ID(),
 	}).Info("SimpleRESTAppAgent received a bundle")
 
 	aa.bundleMutex.Lock()
-	aa.bundles = append(aa.bundles, *bndl)
+	aa.bundleIds = append(aa.bundleIds, bp.ID())
 	aa.bundleMutex.Unlock()
 
 	return nil
