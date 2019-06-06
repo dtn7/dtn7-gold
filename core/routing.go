@@ -16,4 +16,8 @@ type RoutingAlgorithm interface {
 	// be deleted afterwards.
 	// The CLA selection is based on the algorithm's design.
 	SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool)
+
+	// ReportFailure notifies the RoutingAlgorithm about a failed transmission to
+	// a previously selected CLA. Compare: SenderForBundle.
+	ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
 }

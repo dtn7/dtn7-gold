@@ -92,3 +92,25 @@ func (er EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.ConvergenceS
 	del = false
 	return
 }
+
+func (er EpidemicRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
+	sentEids, ok := er.sentMap[bp.ID()]
+	if !ok {
+		return
+	}
+
+	log.WithFields(log.Fields{
+		"bundle":  bp.ID(),
+		"bad_cla": sender,
+		"sent":    sentEids,
+	}).Debug("EpidemicRouting failed to transmit to CLA")
+
+	for i := 0; i < len(sentEids); i++ {
+		if sentEids[i] == sender.GetPeerEndpointID() {
+			sentEids = append(sentEids[:i], sentEids[i+1:]...)
+			break
+		}
+	}
+
+	er.sentMap[bp.ID()] = sentEids
+}

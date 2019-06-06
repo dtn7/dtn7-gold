@@ -228,6 +228,8 @@ func (c *Core) forward(bp BundlePack) {
 					"error":  err,
 				}).Warn("Sending bundle failed")
 
+				c.routing.ReportFailure(bp, node)
+
 				node.Close()
 				c.RestartConvergence(node)
 			} else {
