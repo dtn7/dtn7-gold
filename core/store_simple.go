@@ -226,7 +226,9 @@ func (store *SimpleStore) QueryPending() (bps []BundlePack, err error) {
 	defer store.mutex.Unlock()
 
 	for _, mbp := range store.bundles {
-		chk := !mbp.hasConstraint(ReassemblyPending) && mbp.hasConstraint(Contraindicated)
+		chk := !mbp.hasConstraint(ReassemblyPending) &&
+			(mbp.hasConstraint(ForwardPending) || mbp.hasConstraint(Contraindicated))
+
 		log.WithFields(log.Fields{
 			"bundle": mbp.Id,
 			"check":  chk,
