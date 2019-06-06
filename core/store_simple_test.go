@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dtn7/dtn7/bundle"
+	"github.com/dtn7/dtn7-go/bundle"
 )
 
 func TestSimpleStoreSingle(t *testing.T) {

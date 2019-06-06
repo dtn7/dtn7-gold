@@ -10,7 +10,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/dtn7/dtn7/core"
+	"github.com/dtn7/dtn7-go/core"
 	"github.com/ugorji/go/codec"
 )
 

@@ -1,6 +1,6 @@
 package core
 
-import "github.com/dtn7/dtn7/cla"
+import "github.com/dtn7/dtn7-go/cla"
 
 // RoutingAlgorithm is an interface to specify routing algorithms for
 // delay-tolerant networks. An implementation might store a reference to a Core

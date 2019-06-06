@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	"github.com/dtn7/dtn7/bundle"
+	"github.com/dtn7/dtn7-go/bundle"
 )
 
 func TestIdKeeper(t *testing.T) {

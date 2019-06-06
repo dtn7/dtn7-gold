@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/dtn7/dtn7/bundle"
+	"github.com/dtn7/dtn7-go/bundle"
 )
 
 // MTCPClient is an implementation of a Minimal TCP Convergence-Layer client

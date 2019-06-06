@@ -11,7 +11,7 @@
 // specification and is an implemention matter.
 package cla
 
-import "github.com/dtn7/dtn7/bundle"
+import "github.com/dtn7/dtn7-go/bundle"
 
 // RecBundle is a tuple struct to attach the receiving CLA's node ID  to an
 // incoming bundle. Each ConvergenceReceiver returns its received bundles as

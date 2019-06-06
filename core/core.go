@@ -6,8 +6,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7/bundle"
-	"github.com/dtn7/dtn7/cla"
+	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 // isKnownBlockType checks if this program's core knows the given block type.

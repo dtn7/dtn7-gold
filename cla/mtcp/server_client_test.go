@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dtn7/dtn7/bundle"
+	"github.com/dtn7/dtn7-go/bundle"
 )
 
 func getRandomPort(t *testing.T) int {

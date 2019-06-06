@@ -1,6 +1,6 @@
-# dtn7 [![Build Status](https://travis-ci.com/dtn7/dtn7.svg?branch=master)](https://travis-ci.com/dtn7/dtn7) [![GoDoc](https://godoc.org/github.com/dtn7/dtn7?status.svg)](https://godoc.org/github.com/dtn7/dtn7)
+# dtn7-go [![Build Status](https://travis-ci.com/dtn7/dtn7-go.svg?branch=master)](https://travis-ci.com/dtn7/dtn7-go) [![GoDoc](https://godoc.org/github.com/dtn7/dtn7-go?status.svg)](https://godoc.org/github.com/dtn7/dtn7-go)
 
-Delay-tolerant networking software suite and library based on the Bundle
+Delay-Tolerant Networking software suite and library based on the Bundle
 Protocol Version 7.
 
 
@@ -19,7 +19,7 @@ Install the [Go programming language][golang], version 1.11 or later. Also
 install the [`codecgen` tool][codecgen] in your `PATH`.
 
 ```bash
-git clone https://github.com/dtn7/dtn7.git && cd dtn7
+git clone https://github.com/dtn7/dtn7-go.git && cd dtn7-go
 
 go generate ./...
 go build ./cmd/dtncat && go build ./cmd/dtnd
@@ -78,6 +78,6 @@ interested in working with this code, check out the
 [codecgen]: https://github.com/ugorji/go/tree/master/codec/codecgen
 [dtn-bpbis-13]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-13
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
-[dtnd-configuration]: https://github.com/dtn7/dtn7/blob/master/cmd/dtnd/configuration.toml
-[godoc]: https://godoc.org/github.com/dtn7/dtn7
+[dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
+[godoc]: https://godoc.org/github.com/dtn7/dtn7-go
 [golang]: https://golang.org/

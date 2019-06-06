@@ -1,4 +1,4 @@
-module github.com/dtn7/dtn7
+module github.com/dtn7/dtn7-go
 
 require (
 	github.com/BurntSushi/toml v0.3.1

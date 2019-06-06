@@ -1,6 +1,6 @@
 package core
 
-import "github.com/dtn7/dtn7/bundle"
+import "github.com/dtn7/dtn7-go/bundle"
 
 // ApplicationAgent is an interface which describes application agent, which can
 // both receive and transmit bundles in interaction with the Core.

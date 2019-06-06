@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dtn7/dtn7/bundle"
+	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/ugorji/go/codec"
 )
 

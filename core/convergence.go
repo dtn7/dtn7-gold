@@ -5,7 +5,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7/cla"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 // queueTTL is the amount of retries to add a CLA.
