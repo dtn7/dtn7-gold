@@ -1,11 +1,12 @@
 package bundle
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"testing"
 
-	"github.com/ugorji/go/codec"
+	"github.com/dtn7/cboring"
 )
 
 func TestEndpointDtnNone(t *testing.T) {
@@ -117,98 +118,6 @@ func TestEndpointInvalid(t *testing.T) {
 	}
 }
 
-func TestEndpointCborDtnNone(t *testing.T) {
-	var b []byte = make([]byte, 0, 64)
-	var h codec.Handle = new(codec.CborHandle)
-	var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
-
-	ep, _ := NewEndpointID("dtn:none")
-
-	err := enc.Encode(ep)
-	if err != nil {
-		t.Errorf("CBOR encoding failed: %v", err)
-	}
-
-	var dec interface{}
-	err = codec.NewDecoderBytes(b, new(codec.CborHandle)).Decode(&dec)
-	if err != nil {
-		t.Errorf("CBOR decoding failed: %v", err)
-	}
-
-	if ty := reflect.TypeOf(dec); ty.Kind() != reflect.Slice {
-		t.Errorf("Decoded CBOR has wrong type: %v instead of slice", ty.Kind())
-	}
-
-	var arr []interface{} = dec.([]interface{})
-	if arr[0].(uint64) != 1 || arr[1].(uint64) != 0 {
-		t.Errorf("Decoded CBOR values are wrong: %d instead of 1, %d instead of 0",
-			arr[0].(uint64), arr[1].(uint64))
-	}
-}
-
-func TestEndpointCborDtn(t *testing.T) {
-	var b []byte = make([]byte, 0, 64)
-	var h codec.Handle = new(codec.CborHandle)
-	var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
-
-	ep, _ := NewEndpointID("dtn:foobar")
-
-	err := enc.Encode(ep)
-	if err != nil {
-		t.Errorf("CBOR encoding failed: %v", err)
-	}
-
-	var dec interface{}
-	err = codec.NewDecoderBytes(b, new(codec.CborHandle)).Decode(&dec)
-	if err != nil {
-		t.Errorf("CBOR decoding failed: %v", err)
-	}
-
-	if ty := reflect.TypeOf(dec); ty.Kind() != reflect.Slice {
-		t.Errorf("Decoded CBOR has wrong type: %v instead of slice", ty.Kind())
-	}
-
-	var arr []interface{} = dec.([]interface{})
-	if arr[0].(uint64) != 1 || arr[1].(string) != "foobar" {
-		t.Errorf("Decoded CBOR values are wrong: %d instead of 1, %s instead of \"foobar\"",
-			arr[0].(uint64), arr[1].(string))
-	}
-}
-
-func TestEndpointCborIpn(t *testing.T) {
-	var b []byte = make([]byte, 0, 64)
-	var h codec.Handle = new(codec.CborHandle)
-	var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
-
-	ep, _ := NewEndpointID("ipn:23.42")
-
-	err := enc.Encode(ep)
-	if err != nil {
-		t.Errorf("CBOR encoding failed: %v", err)
-	}
-
-	var dec interface{}
-	err = codec.NewDecoderBytes(b, new(codec.CborHandle)).Decode(&dec)
-	if err != nil {
-		t.Errorf("CBOR decoding failed: %v", err)
-	}
-
-	if ty := reflect.TypeOf(dec); ty.Kind() != reflect.Slice {
-		t.Errorf("Decoded CBOR has wrong type: %v instead of slice", ty.Kind())
-	}
-
-	var arr []interface{} = dec.([]interface{})
-	if arr[0].(uint64) != 2 {
-		t.Errorf("Decoded CBOR values are wrong: %d instead of 2", arr[0].(uint64))
-	}
-
-	var subarr []interface{} = arr[1].([]interface{})
-	if subarr[0].(uint64) != 23 || subarr[1].(uint64) != 42 {
-		t.Errorf("Decoded CBOR values are wrong: %d instead of 23, %d instead of 42",
-			subarr[0].(uint64), subarr[1].(uint64))
-	}
-}
-
 func TestEndpointCheckValid(t *testing.T) {
 	tests := []struct {
 		ep    EndpointID
@@ -227,5 +136,46 @@ func TestEndpointCheckValid(t *testing.T) {
 		if err := test.ep.checkValid(); (err == nil) != test.valid {
 			t.Errorf("Endpoint ID %v resulted in error: %v", test.ep, err)
 		}
+	}
+}
+
+var endpointTests = []struct {
+	eid  string
+	cbor []byte
+}{
+	{"dtn:none", []byte{0x82, 0x01, 0x00}},
+	{"dtn:foo", []byte{0x82, 0x01, 0x63, 0x66, 0x6F, 0x6F}},
+	{"dtn:foo/bar", []byte{0x82, 0x01, 0x67, 0x66, 0x6F, 0x6F, 0x2F, 0x62, 0x61, 0x72}},
+	{"ipn:1.1", []byte{0x82, 0x02, 0x82, 0x01, 0x01}},
+	{"ipn:23.42", []byte{0x82, 0x02, 0x82, 0x17, 0x18, 0x2A}},
+}
+
+func TestEndpointCbor(t *testing.T) {
+	for _, test := range endpointTests {
+		t.Run(fmt.Sprintf("marshal-%s", test.eid), func(t *testing.T) {
+			e, _ := NewEndpointID(test.eid)
+
+			buff := new(bytes.Buffer)
+			if err := cboring.Marshal(&e, buff); err != nil {
+				t.Fatalf("Marshaling %s failed: %v", test.eid, err)
+			}
+
+			if data := buff.Bytes(); !reflect.DeepEqual(data, test.cbor) {
+				t.Fatalf("CBOR differs: %x != %x", data, test.cbor)
+			}
+		})
+
+		t.Run(fmt.Sprintf("unmarshal-%s", test.eid), func(t *testing.T) {
+			e := EndpointID{}
+
+			buff := bytes.NewBuffer(test.cbor)
+			if err := cboring.Unmarshal(&e, buff); err != nil {
+				t.Fatalf("Unmarshaling %s failed: %v", test.eid, err)
+			}
+
+			if e.String() != test.eid {
+				t.Fatalf("EID differs: %s != %s", e.String(), test.eid)
+			}
+		})
 	}
 }
