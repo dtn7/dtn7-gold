@@ -79,14 +79,14 @@ func (bp *BundlePack) PurgeConstraints() {
 
 // UpdateBundleAge updates the bundle's Bundle Age block based on its reception
 // timestamp, if such a block exists.
-func (bp *BundlePack) UpdateBundleAge() (uint, error) {
+func (bp *BundlePack) UpdateBundleAge() (uint64, error) {
 	ageBlock, err := bp.Bundle.ExtensionBlock(bundle.BundleAgeBlock)
 	if err != nil {
 		return 0, newCoreError("No such block")
 	}
 
-	age := ageBlock.Data.(uint)
-	offset := uint(time.Now().Sub(bp.Timestamp) / 1000)
+	age := ageBlock.Data.(uint64)
+	offset := uint64(time.Now().Sub(bp.Timestamp) / 1000)
 
 	(*ageBlock).Data = age + offset
 

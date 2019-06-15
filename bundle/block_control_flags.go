@@ -1,8 +1,8 @@
 package bundle
 
-// BlockControlFlags is an uint8 which represents the Block Processing Control
+// BlockControlFlags is an uint which represents the Block Processing Control
 // Flags as specified in 4.1.4.
-type BlockControlFlags uint8
+type BlockControlFlags uint64
 
 const (
 	// DeleteBundle: Bundle must be deleted if this block can't be processed.

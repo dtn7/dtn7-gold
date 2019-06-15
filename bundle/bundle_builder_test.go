@@ -74,11 +74,11 @@ func TestBldrParseEndpoint(t *testing.T) {
 func TestBldrParseLifetime(t *testing.T) {
 	tests := []struct {
 		val interface{}
-		us  uint
+		us  uint64
 		err bool
 	}{
 		{1000, 1000, false},
-		{uint(1000), 1000, false},
+		{uint64(1000), 1000, false},
 		{"1000µs", 1000, false},
 		{"1000us", 1000, false},
 		{-23, 0, true},

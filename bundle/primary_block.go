@@ -9,21 +9,21 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
-const dtnVersion uint = 7
+const dtnVersion uint64 = 7
 
 // PrimaryBlock is a representation of the primary bundle block as defined in
 // section 4.2.2.
 type PrimaryBlock struct {
-	Version            uint
+	Version            uint64
 	BundleControlFlags BundleControlFlags
 	CRCType            CRCType
 	Destination        EndpointID
 	SourceNode         EndpointID
 	ReportTo           EndpointID
 	CreationTimestamp  CreationTimestamp
-	Lifetime           uint
-	FragmentOffset     uint
-	TotalDataLength    uint
+	Lifetime           uint64
+	FragmentOffset     uint64
+	TotalDataLength    uint64
 	CRC                []byte
 }
 
@@ -32,7 +32,7 @@ type PrimaryBlock struct {
 // microseconds.
 func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
 	destination EndpointID, sourceNode EndpointID,
-	creationTimestamp CreationTimestamp, lifetime uint) PrimaryBlock {
+	creationTimestamp CreationTimestamp, lifetime uint64) PrimaryBlock {
 	return PrimaryBlock{
 		Version:            dtnVersion,
 		BundleControlFlags: bundleControlFlags,
@@ -164,23 +164,23 @@ func (pb *PrimaryBlock) CodecDecodeSelf(dec *codec.Decoder) {
 	pb.Version = dtnVersion
 	pb.BundleControlFlags = BundleControlFlags(pbx[1].(uint64))
 	pb.CRCType = CRCType(pbx[2].(uint64))
-	pb.Lifetime = uint(pbx[7].(uint64))
+	pb.Lifetime = pbx[7].(uint64)
 
 	setEndpointIDFromCborArray(&pb.Destination, pbx[3].([]interface{}))
 	setEndpointIDFromCborArray(&pb.SourceNode, pbx[4].([]interface{}))
 	setEndpointIDFromCborArray(&pb.ReportTo, pbx[5].([]interface{}))
 
 	ct := pbx[6].([]interface{})
-	pb.CreationTimestamp[0] = uint(ct[0].(uint64))
-	pb.CreationTimestamp[1] = uint(ct[1].(uint64))
+	pb.CreationTimestamp[0] = ct[0].(uint64)
+	pb.CreationTimestamp[1] = ct[1].(uint64)
 
 	if l := len(pbx); l == 11 {
-		pb.FragmentOffset = uint(pbx[8].(uint64))
-		pb.TotalDataLength = uint(pbx[9].(uint64))
+		pb.FragmentOffset = pbx[8].(uint64)
+		pb.TotalDataLength = pbx[9].(uint64)
 		pb.CRC = pbx[10].([]byte)
 	} else if l == 10 {
-		pb.FragmentOffset = uint(pbx[8].(uint64))
-		pb.TotalDataLength = uint(pbx[9].(uint64))
+		pb.FragmentOffset = pbx[8].(uint64)
+		pb.TotalDataLength = pbx[9].(uint64)
 	} else if l == 9 {
 		pb.CRC = pbx[8].([]byte)
 	}

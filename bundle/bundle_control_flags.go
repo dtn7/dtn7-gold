@@ -6,9 +6,9 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-// BundleControlFlags is an uint16 which represents the Bundle Processing
+// BundleControlFlags is an uint which represents the Bundle Processing
 // Control Flags as specified in section 4.1.3.
-type BundleControlFlags uint16
+type BundleControlFlags uint64
 
 const (
 	// StatusRequestDeletion: Request reporting of bundle deletion.

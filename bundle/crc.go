@@ -11,7 +11,7 @@ import (
 
 // CRCType indicates which CRC type is used. Only the three defined consts
 // CRCNo, CRC16 and CRC32 are valid, as specified in section 4.1.1.
-type CRCType uint
+type CRCType uint64
 
 const (
 	CRCNo CRCType = 0

@@ -24,7 +24,7 @@ func newIdTuple(bndl *bundle.Bundle) idTuple {
 // IdKeeper keeps track of the creation timestamp's sequence number for
 // outbounding bundles.
 type IdKeeper struct {
-	data      map[idTuple]uint
+	data      map[idTuple]uint64
 	mutex     sync.Mutex
 	autoClean bool
 }
@@ -32,7 +32,7 @@ type IdKeeper struct {
 // NewIdKeeper creates a new, empty IdKeeper.
 func NewIdKeeper() IdKeeper {
 	return IdKeeper{
-		data:      make(map[idTuple]uint),
+		data:      make(map[idTuple]uint64),
 		autoClean: true,
 	}
 }

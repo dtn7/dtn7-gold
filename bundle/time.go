@@ -7,7 +7,7 @@ import (
 
 // DtnTime is an integer indicating the time like the Unix time, just starting
 // from the year 2000 instead of 1970. It is specified in section 4.1.6.
-type DtnTime uint
+type DtnTime uint64
 
 const (
 	seconds1970To2k = 946684800
@@ -44,12 +44,12 @@ func DtnTimeNow() DtnTime {
 // CreationTimestamp is a tuple of a DtnTime and a sequence number (to differ
 // bundles with the same DtnTime (seconds) from the same endpoint). It is
 // specified in section 4.1.7.
-type CreationTimestamp [2]uint
+type CreationTimestamp [2]uint64
 
 // NewCreationTimestamp creates a new creation timestamp from a given DTN time
 // and a sequence number, resulting in a hopefully unique tuple.
-func NewCreationTimestamp(time DtnTime, sequence uint) CreationTimestamp {
-	return [2]uint{uint(time), sequence}
+func NewCreationTimestamp(time DtnTime, sequence uint64) CreationTimestamp {
+	return [2]uint64{uint64(time), sequence}
 }
 
 // DtnTime returns the creation timestamp's DTN time part.
@@ -58,7 +58,7 @@ func (ct CreationTimestamp) DtnTime() DtnTime {
 }
 
 // SequenceNumber returns the creation timestamp's sequence number.
-func (ct CreationTimestamp) SequenceNumber() uint {
+func (ct CreationTimestamp) SequenceNumber() uint64 {
 	return ct[1]
 }
 

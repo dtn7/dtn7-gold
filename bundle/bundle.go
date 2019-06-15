@@ -68,12 +68,12 @@ func (b *Bundle) PayloadBlock() (*CanonicalBlock, error) {
 // AddExtensionBlock adds a new ExtensionBlock to this Bundle. The block number
 // will be calculated and overwritten within this method.
 func (b *Bundle) AddExtensionBlock(block CanonicalBlock) {
-	var blockNumbers []uint
+	var blockNumbers []uint64
 	for i := 0; i < len(b.CanonicalBlocks); i++ {
 		blockNumbers = append(blockNumbers, b.CanonicalBlocks[i].BlockNumber)
 	}
 
-	var blockNumber uint = 1
+	var blockNumber uint64 = 1
 	for {
 		flag := true
 		for _, no := range blockNumbers {
@@ -170,7 +170,7 @@ func (b Bundle) checkValid() (errs error) {
 	}
 
 	// Check uniqueness of block numbers
-	var cbBlockNumbers = make(map[uint]bool)
+	var cbBlockNumbers = make(map[uint64]bool)
 	// Check max 1 occurrence of extension blocks
 	var cbBlockTypes = make(map[CanonicalBlockType]bool)
 

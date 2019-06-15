@@ -31,7 +31,7 @@ func TestBundlePackUpdateBundleAge(t *testing.T) {
 	}
 
 	ageBlock, _ := bp.Bundle.ExtensionBlock(bundle.BundleAgeBlock)
-	ageFromBlock := ageBlock.Data.(uint)
+	ageFromBlock := ageBlock.Data.(uint64)
 
 	if age != ageFromBlock {
 		t.Errorf("Returning value differs from block")

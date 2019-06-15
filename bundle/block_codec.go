@@ -9,16 +9,16 @@ package bundle
 type primaryBlock11 struct {
 	_struct bool `codec:",toarray"`
 
-	Version            uint
+	Version            uint64
 	BundleControlFlags BundleControlFlags
 	CRCType            CRCType
 	Destination        EndpointID
 	SourceNode         EndpointID
 	ReportTo           EndpointID
 	CreationTimestamp  CreationTimestamp
-	Lifetime           uint
-	FragmentOffset     uint
-	TotalDataLength    uint
+	Lifetime           uint64
+	FragmentOffset     uint64
+	TotalDataLength    uint64
 	CRC                []byte
 }
 
@@ -26,30 +26,30 @@ type primaryBlock11 struct {
 type primaryBlock10 struct {
 	_struct bool `codec:",toarray"`
 
-	Version            uint
+	Version            uint64
 	BundleControlFlags BundleControlFlags
 	CRCType            CRCType
 	Destination        EndpointID
 	SourceNode         EndpointID
 	ReportTo           EndpointID
 	CreationTimestamp  CreationTimestamp
-	Lifetime           uint
-	FragmentOffset     uint
-	TotalDataLength    uint
+	Lifetime           uint64
+	FragmentOffset     uint64
+	TotalDataLength    uint64
 }
 
 // primaryBlock09 is a serialization type with: CRC and no Fragmentation
 type primaryBlock09 struct {
 	_struct bool `codec:",toarray"`
 
-	Version            uint
+	Version            uint64
 	BundleControlFlags BundleControlFlags
 	CRCType            CRCType
 	Destination        EndpointID
 	SourceNode         EndpointID
 	ReportTo           EndpointID
 	CreationTimestamp  CreationTimestamp
-	Lifetime           uint
+	Lifetime           uint64
 	CRC                []byte
 }
 
@@ -57,14 +57,14 @@ type primaryBlock09 struct {
 type primaryBlock08 struct {
 	_struct bool `codec:",toarray"`
 
-	Version            uint
+	Version            uint64
 	BundleControlFlags BundleControlFlags
 	CRCType            CRCType
 	Destination        EndpointID
 	SourceNode         EndpointID
 	ReportTo           EndpointID
 	CreationTimestamp  CreationTimestamp
-	Lifetime           uint
+	Lifetime           uint64
 }
 
 // canonicalBlock6 is a serialization type with: CRC
@@ -72,7 +72,7 @@ type canonicalBlock6 struct {
 	_struct bool `codec:",toarray"`
 
 	BlockType         CanonicalBlockType
-	BlockNumber       uint
+	BlockNumber       uint64
 	BlockControlFlags BlockControlFlags
 	CRCType           CRCType
 	Data              interface{}
@@ -97,7 +97,7 @@ type canonicalBlock5 struct {
 	_struct bool `codec:",toarray"`
 
 	BlockType         CanonicalBlockType
-	BlockNumber       uint
+	BlockNumber       uint64
 	BlockControlFlags BlockControlFlags
 	CRCType           CRCType
 	Data              interface{}

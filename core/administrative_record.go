@@ -9,7 +9,7 @@ import (
 
 // AdministrativeRecordTypeCode specifies the type of an AdministrativeRecord.
 // However, currently the Bundle Status Report is the only known type.
-type AdministrativeRecordTypeCode uint
+type AdministrativeRecordTypeCode uint64
 
 const (
 	// BundleStatusReportTypeCode is the Bundle Status Report's type code, used in

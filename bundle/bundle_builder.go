@@ -24,7 +24,7 @@ type BundleBuilder struct {
 
 	primary          PrimaryBlock
 	canonicals       []CanonicalBlock
-	canonicalCounter uint
+	canonicalCounter uint64
 	crcType          CRCType
 }
 
@@ -101,15 +101,15 @@ func bldrParseEndpoint(eid interface{}) (e EndpointID, err error) {
 
 // bldrParseLifetime returns a microsecond as an uint for a given microsecond
 // or a duration string, which will be parsed.
-func bldrParseLifetime(duration interface{}) (us uint, err error) {
+func bldrParseLifetime(duration interface{}) (us uint64, err error) {
 	switch duration.(type) {
-	case uint:
-		us = duration.(uint)
+	case uint64:
+		us = duration.(uint64)
 	case int:
 		if duration.(int) < 0 {
 			err = fmt.Errorf("Lifetime's duratoin %d <= 0", duration.(int))
 		} else {
-			us = uint(duration.(int))
+			us = uint64(duration.(int))
 		}
 	case string:
 		dur, durErr := time.ParseDuration(duration.(string))
@@ -118,7 +118,7 @@ func bldrParseLifetime(duration interface{}) (us uint, err error) {
 		} else if dur <= 0 {
 			err = fmt.Errorf("Lifetime's duration %d <= 0", dur)
 		} else {
-			us = uint(dur.Nanoseconds() / 1000)
+			us = uint64(dur.Nanoseconds() / 1000)
 		}
 	default:
 		err = fmt.Errorf(
@@ -248,7 +248,7 @@ func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 	}
 
 	var (
-		blockNumber    uint
+		blockNumber    uint64
 		blockType      CanonicalBlockType
 		data           interface{}
 		blockCtrlFlags BlockControlFlags
@@ -332,7 +332,7 @@ func (bldr *BundleBuilder) HopCountBlock(args ...interface{}) *BundleBuilder {
 
 	// Read the comment in BundleAgeBlock to grasp the following madness
 	return bldr.Canonical(append(
-		[]interface{}{HopCountBlock, NewHopCount(uint(limit))}, args[1:]...)...)
+		[]interface{}{HopCountBlock, NewHopCount(uint64(limit))}, args[1:]...)...)
 }
 
 // PayloadBlock adds a payload block to this bundle. The parameters are:

@@ -79,7 +79,7 @@ func NewTimeReportingBundleStatusItem(time bundle.DtnTime) BundleStatusItem {
 
 // StatusReportReason is the bundle status report reason code, which is used as
 // the second element of the bundle status report array.
-type StatusReportReason uint
+type StatusReportReason uint64
 
 const (
 	// NoInformation is the "No additional information" bundle status report

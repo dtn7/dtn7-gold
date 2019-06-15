@@ -149,7 +149,7 @@ func TestBundleUpcn(t *testing.T) {
 			creaTs, creaTsExpected)
 	}
 
-	lifeExpected := uint(24 * 60 * 60) // defined in PrimaryBlock's constructor
+	lifeExpected := uint64(24 * 60 * 60) // defined in PrimaryBlock's constructor
 	if life := pb.Lifetime; life != lifeExpected {
 		t.Errorf("Primary Block's lifetime mismatches: %v instead of %v",
 			life, lifeExpected)
@@ -190,8 +190,8 @@ func TestBundleUpcn(t *testing.T) {
 		case BundleAgeBlock:
 			chkBundleAge = true
 
-			ageExpected := uint(0)
-			if age := cb.Data.(uint); age != ageExpected {
+			ageExpected := uint64(0)
+			if age := cb.Data.(uint64); age != ageExpected {
 				t.Errorf("Bundle Age Block's value mismatches: %d instead of %d",
 					age, ageExpected)
 			}

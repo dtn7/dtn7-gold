@@ -17,7 +17,7 @@ func setupPrimaryBlock() PrimaryBlock {
 	source, _ := NewEndpointID("dtn:me")
 
 	creationTimestamp := NewCreationTimestamp(DtnTimeEpoch, 0)
-	lifetime := uint(10 * 60 * 1000)
+	lifetime := uint64(10 * 60 * 1000)
 
 	return NewPrimaryBlock(bcf, destination, source, creationTimestamp, lifetime)
 }

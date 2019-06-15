@@ -10,7 +10,7 @@ import (
 
 // CanonicalBlockType is an uint which is used as "block type code" for the
 // canonical block. The BlockType-consts may be used.
-type CanonicalBlockType uint
+type CanonicalBlockType uint64
 
 const (
 	// PayloadBlock is a BlockType for a payload block as defined in 4.2.3.
@@ -49,7 +49,7 @@ const (
 // in section 4.2.3.
 type CanonicalBlock struct {
 	BlockType         CanonicalBlockType
-	BlockNumber       uint
+	BlockNumber       uint64
 	BlockControlFlags BlockControlFlags
 	CRCType           CRCType
 	Data              interface{}
@@ -57,7 +57,7 @@ type CanonicalBlock struct {
 }
 
 // NewCanonicalBlock creates a new canonical block with the given parameters.
-func NewCanonicalBlock(blockType CanonicalBlockType, blockNumber uint,
+func NewCanonicalBlock(blockType CanonicalBlockType, blockNumber uint64,
 	blockControlFlags BlockControlFlags, data interface{}) CanonicalBlock {
 	return CanonicalBlock{
 		BlockType:         blockType,
@@ -143,13 +143,13 @@ func (cb *CanonicalBlock) codecDecodeDataPointer(data *interface{}) {
 		cb.Data = ep
 
 	case BundleAgeBlock:
-		cb.Data = uint((*data).(uint64))
+		cb.Data = (*data).(uint64)
 
 	case HopCountBlock:
 		tuple := (*data).([]interface{})
 		cb.Data = HopCount{
-			Limit: uint(tuple[0].(uint64)),
-			Count: uint(tuple[1].(uint64)),
+			Limit: tuple[0].(uint64),
+			Count: tuple[1].(uint64),
 		}
 
 	// blockTypePayload is also a byte array and can be treated like the default.
@@ -167,13 +167,13 @@ func (cb *CanonicalBlock) codecDecodeData(data interface{}) {
 		cb.Data = ep
 
 	case BundleAgeBlock:
-		cb.Data = uint(data.(uint64))
+		cb.Data = data.(uint64)
 
 	case HopCountBlock:
 		tuple := data.([]interface{})
 		cb.Data = HopCount{
-			Limit: uint(tuple[0].(uint64)),
-			Count: uint(tuple[1].(uint64)),
+			Limit: tuple[0].(uint64),
+			Count: tuple[1].(uint64),
 		}
 
 	// blockTypePayload is also a byte array and can be treated like the default.
@@ -194,7 +194,7 @@ func (cb *CanonicalBlock) CodecDecodeSelf(dec *codec.Decoder) {
 	}
 
 	cb.BlockType = CanonicalBlockType(blockArr[0].(uint64))
-	cb.BlockNumber = uint(blockArr[1].(uint64))
+	cb.BlockNumber = blockArr[1].(uint64)
 	cb.BlockControlFlags = BlockControlFlags(blockArr[2].(uint64))
 	cb.CRCType = CRCType(blockArr[3].(uint64))
 
@@ -270,8 +270,8 @@ func (cb CanonicalBlock) String() string {
 type HopCount struct {
 	_struct struct{} `codec:",toarray"`
 
-	Limit uint
-	Count uint
+	Limit uint64
+	Count uint64
 }
 
 // IsExceeded returns true if the hop limit exceeded.
@@ -295,7 +295,7 @@ func (hc *HopCount) Decrement() {
 
 // NewHopCount returns a new Hop Count block as defined in section 4.3.3. The
 // hop count will be set to zero, as specified for new blocks.
-func NewHopCount(limit uint) HopCount {
+func NewHopCount(limit uint64) HopCount {
 	return HopCount{
 		Limit: limit,
 		Count: 0,
@@ -313,7 +313,7 @@ func NewPayloadBlock(blockControlFlags BlockControlFlags, data []byte) Canonical
 }
 
 // NewPreviousNodeBlock creates a new Previous Node block.
-func NewPreviousNodeBlock(blockNumber uint, blockControlFlags BlockControlFlags,
+func NewPreviousNodeBlock(blockNumber uint64, blockControlFlags BlockControlFlags,
 	prevNodeId EndpointID) CanonicalBlock {
 	return NewCanonicalBlock(
 		PreviousNodeBlock, blockNumber, blockControlFlags, prevNodeId)
@@ -321,14 +321,14 @@ func NewPreviousNodeBlock(blockNumber uint, blockControlFlags BlockControlFlags,
 
 // NewBundleAgeBlock creates a new Bundle Age block to hold the bundle's lifetime
 // in microseconds.
-func NewBundleAgeBlock(blockNumber uint, blockControlFlags BlockControlFlags,
-	time uint) CanonicalBlock {
+func NewBundleAgeBlock(blockNumber uint64, blockControlFlags BlockControlFlags,
+	time uint64) CanonicalBlock {
 	return NewCanonicalBlock(
 		BundleAgeBlock, blockNumber, blockControlFlags, time)
 }
 
 // NewHopCountBlock creates a new Hop Count block.
-func NewHopCountBlock(blockNumber uint, blockControlFlags BlockControlFlags,
+func NewHopCountBlock(blockNumber uint64, blockControlFlags BlockControlFlags,
 	hopCount HopCount) CanonicalBlock {
 	return NewCanonicalBlock(
 		HopCountBlock, blockNumber, blockControlFlags, hopCount)
