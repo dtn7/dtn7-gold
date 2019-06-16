@@ -2,8 +2,10 @@ package bundle
 
 import (
 	"bytes"
-	"fmt"
+	"reflect"
 	"testing"
+
+	"github.com/dtn7/cboring"
 )
 
 func TestBundleApplyCRC(t *testing.T) {
@@ -67,25 +69,30 @@ func TestBundleCbor(t *testing.T) {
 	bundle1.SetCRCType(CRC32)
 	bundle1.CalculateCRC()
 
-	bundle1Cbor := bundle1.ToCbor()
+	buff := new(bytes.Buffer)
+	if err := cboring.Marshal(&bundle1, buff); err != nil {
+		t.Fatal(err)
+	}
+	bundle1Cbor := buff.Bytes()
 
-	bundle2, err := NewBundleFromCbor(&bundle1Cbor)
-	if err != nil {
-		t.Error(err)
+	bundle2 := Bundle{}
+	if err := cboring.Unmarshal(&bundle2, buff); err != nil {
+		t.Fatal(err)
 	}
 
-	bundle2Cbor := bundle2.ToCbor()
+	buff.Reset()
+	if err := cboring.Marshal(&bundle2, buff); err != nil {
+		t.Fatal(err)
+	}
+	bundle2Cbor := buff.Bytes()
 
 	if !bytes.Equal(bundle1Cbor, bundle2Cbor) {
-		t.Errorf("Cbor-Representations do not match:\n- %x\n- %x",
+		t.Fatalf("Cbor-Representations do not match:\n- %x\n- %x",
 			bundle1Cbor, bundle2Cbor)
 	}
 
-	s1 := fmt.Sprintf("%v", bundle1)
-	s2 := fmt.Sprintf("%v", bundle2)
-
-	if s1 != s2 {
-		t.Errorf("String representations do not match:%v and %v", s1, s2)
+	if !reflect.DeepEqual(bundle1, bundle2) {
+		t.Fatalf("Bundles do not match:\n%v\n%v", bundle1, bundle2)
 	}
 }
 
@@ -107,9 +114,9 @@ func TestBundleUpcn(t *testing.T) {
 		0x00, 0x00, 0x02, 0x4c, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f,
 		0x72, 0x6c, 0x64, 0x21, 0x44, 0xc3, 0xae, 0xc5, 0x52, 0xff}
 
-	bndl, err := NewBundleFromCbor(&upcnBytes)
-	if err != nil {
-		t.Error(err)
+	bndl := Bundle{}
+	if err := cboring.Unmarshal(&bndl, bytes.NewBuffer(upcnBytes)); err != nil {
+		t.Fatal(err)
 	}
 
 	if !bndl.CheckCRC() {
@@ -345,7 +352,11 @@ func benchmarkBundleCreation(b *testing.B, crcType CRCType, validity bool) {
 		bndl.SetCRCType(crcType)
 		bndl.CalculateCRC()
 
-		bndl.ToCbor()
+		// bndl.ToCbor()
+		buff := new(bytes.Buffer)
+		if err := cboring.Marshal(&bndl, buff); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 

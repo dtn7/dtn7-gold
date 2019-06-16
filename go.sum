@@ -3,8 +3,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dtn7/cboring v0.1.0 h1:Bm/EPnmBrXwN03sZCTaG/qWnUvwScmQks3fypRSBttA=
-github.com/dtn7/cboring v0.1.0/go.mod h1:in0CbowKLmRSo0x0UTJyeWZBAY7tptldG4IU0LtqAOo=
+github.com/dtn7/cboring v0.1.1 h1:IxF4vb3x9/A75sIXg5bAC7hMZ0H5HxvlM8yP432+Dcc=
+github.com/dtn7/cboring v0.1.1/go.mod h1:in0CbowKLmRSo0x0UTJyeWZBAY7tptldG4IU0LtqAOo=
 github.com/hashicorp/errwrap v1.0.0 h1:hLrqtEDnRye3+sgx6z4qVLNuviH3MR5aQ0ykNJa/UYA=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/go-multierror v1.0.0 h1:iVjPR7a6H0tWELX5NxNe7bYopibicUzc7uPribsnS6o=

@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/dtn7/cboring"
 	"github.com/hashicorp/go-multierror"
 	"github.com/ugorji/go/codec"
 )
@@ -335,4 +336,49 @@ func NewBundleFromCbor(data *[]byte) (b Bundle, err error) {
 	}
 
 	return
+}
+
+func (b *Bundle) MarshalCbor(w io.Writer) error {
+	if _, err := w.Write([]byte{cboring.IndefiniteArray}); err != nil {
+		return err
+	}
+
+	if err := cboring.Marshal(&b.PrimaryBlock, w); err != nil {
+		return fmt.Errorf("PrimaryBlock failed: %v", err)
+	}
+
+	for i := 0; i < len(b.CanonicalBlocks); i++ {
+		if err := cboring.Marshal(&b.CanonicalBlocks[i], w); err != nil {
+			return fmt.Errorf("CanonicalBlock failed: %v", err)
+		}
+	}
+
+	if _, err := w.Write([]byte{cboring.BreakCode}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *Bundle) UnmarshalCbor(r io.Reader) error {
+	if err := cboring.ReadExpect(cboring.IndefiniteArray, r); err != nil {
+		return err
+	}
+
+	if err := cboring.Unmarshal(&b.PrimaryBlock, r); err != nil {
+		return fmt.Errorf("PrimaryBlock failed: %v", err)
+	}
+
+	for {
+		cb := CanonicalBlock{}
+		if err := cboring.Unmarshal(&cb, r); err == cboring.FlagBreakCode {
+			break
+		} else if err != nil {
+			return fmt.Errorf("CanonicalBlock failed: %v", err)
+		} else {
+			b.CanonicalBlocks = append(b.CanonicalBlocks, cb)
+		}
+	}
+
+	return nil
 }
