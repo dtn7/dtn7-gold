@@ -2,8 +2,10 @@ package bundle
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
+	"github.com/dtn7/cboring"
 	"github.com/hashicorp/go-multierror"
 	"github.com/ugorji/go/codec"
 )
@@ -205,6 +207,148 @@ func (cb *CanonicalBlock) CodecDecodeSelf(dec *codec.Decoder) {
 	}
 }
 
+func (cb *CanonicalBlock) MarshalCbor(w io.Writer) error {
+	var blockLen uint64 = 5
+	if cb.HasCRC() {
+		blockLen = 6
+	}
+
+	if err := cboring.WriteArrayLength(blockLen, w); err != nil {
+		return err
+	}
+
+	fields := []uint64{uint64(cb.BlockType), cb.BlockNumber,
+		uint64(cb.BlockControlFlags), uint64(cb.CRCType)}
+	for _, f := range fields {
+		if err := cboring.WriteUInt(f, w); err != nil {
+			return err
+		}
+	}
+
+	switch cb.BlockType {
+	case PayloadBlock:
+		// byte array
+		if err := cboring.WriteByteString(cb.Data.([]byte), w); err != nil {
+			return err
+		}
+
+	case BundleAgeBlock:
+		// uint
+		if err := cboring.WriteUInt(cb.Data.(uint64), w); err != nil {
+			return err
+		}
+
+	case PreviousNodeBlock:
+		// endpoint
+		ep := cb.Data.(EndpointID)
+		if err := cboring.Marshal(&ep, w); err != nil {
+			return fmt.Errorf("EndpointID failed: %v", err)
+		}
+
+	case HopCountBlock:
+		// hop count
+		hc := cb.Data.(HopCount)
+		if err := cboring.Marshal(&hc, w); err != nil {
+			return fmt.Errorf("HopCount failed: %v", err)
+		}
+
+	default:
+		return fmt.Errorf("Unsupported block type code: %d", cb.BlockType)
+	}
+
+	if cb.HasCRC() {
+		if err := cboring.WriteByteString(cb.CRC, w); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
+	var blockLen uint64
+	if bl, err := cboring.ReadArrayLength(r); err != nil {
+		return err
+	} else if bl != 5 && bl != 6 {
+		return fmt.Errorf("Expected array with length 5 or 6, got %d", bl)
+	} else {
+		blockLen = bl
+	}
+
+	if bt, err := cboring.ReadUInt(r); err != nil {
+		return err
+	} else {
+		cb.BlockType = CanonicalBlockType(bt)
+	}
+
+	if bn, err := cboring.ReadUInt(r); err != nil {
+		return err
+	} else {
+		cb.BlockNumber = bn
+	}
+
+	if bcf, err := cboring.ReadUInt(r); err != nil {
+		return err
+	} else {
+		cb.BlockControlFlags = BlockControlFlags(bcf)
+	}
+
+	if crcT, err := cboring.ReadUInt(r); err != nil {
+		return err
+	} else {
+		cb.CRCType = CRCType(crcT)
+	}
+
+	switch cb.BlockType {
+	case PayloadBlock:
+		// byte array
+		if pl, err := cboring.ReadByteString(r); err != nil {
+			return err
+		} else {
+			cb.Data = pl
+		}
+
+	case BundleAgeBlock:
+		// uint
+		if ba, err := cboring.ReadUInt(r); err != nil {
+			return err
+		} else {
+			cb.Data = ba
+		}
+
+	case PreviousNodeBlock:
+		// endpoint
+		ep := EndpointID{}
+		if err := cboring.Unmarshal(&ep, r); err != nil {
+			return fmt.Errorf("EndpointID failed: %v", err)
+		} else {
+			cb.Data = ep
+		}
+
+	case HopCountBlock:
+		// hop count
+		hc := HopCount{}
+		if err := cboring.Unmarshal(&hc, r); err != nil {
+			return fmt.Errorf("HopCount failed: %v", err)
+		} else {
+			cb.Data = hc
+		}
+
+	default:
+		return fmt.Errorf("Unsupported block type code: %d", cb.BlockType)
+	}
+
+	if blockLen == 6 {
+		if crcV, err := cboring.ReadByteString(r); err != nil {
+			return err
+		} else {
+			cb.CRC = crcV
+		}
+	}
+
+	return nil
+}
+
 func (cb CanonicalBlock) checkValidExtensionBlocks() error {
 	switch cb.BlockType {
 	case PayloadBlock:
@@ -304,6 +448,40 @@ func NewHopCount(limit uint64) HopCount {
 
 func (hc HopCount) String() string {
 	return fmt.Sprintf("(%d, %d)", hc.Limit, hc.Count)
+}
+
+func (hc *HopCount) MarshalCbor(w io.Writer) error {
+	if err := cboring.WriteArrayLength(2, w); err != nil {
+		return err
+	}
+
+	fields := []uint64{hc.Limit, hc.Count}
+	for _, f := range fields {
+		if err := cboring.WriteUInt(f, w); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (hc *HopCount) UnmarshalCbor(r io.Reader) error {
+	if l, err := cboring.ReadArrayLength(r); err != nil {
+		return err
+	} else if l != 2 {
+		return fmt.Errorf("Expected array with length 2, got %d", l)
+	}
+
+	fields := []*uint64{&hc.Limit, &hc.Count}
+	for _, f := range fields {
+		if x, err := cboring.ReadUInt(r); err != nil {
+			return err
+		} else {
+			*f = x
+		}
+	}
+
+	return nil
 }
 
 // NewPayloadBlock creates a new payload block.
