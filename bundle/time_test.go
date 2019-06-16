@@ -1,9 +1,14 @@
 package bundle
 
 import (
+	"bytes"
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/dtn7/cboring"
 )
 
 func TestDtnTime(t *testing.T) {
@@ -27,5 +32,39 @@ func TestDtnTime(t *testing.T) {
 	ttime = ttime.Add(durr)
 	if epoch+((48*60+30)*60) != DtnTimeFromTime(ttime) {
 		t.Errorf("Converting time.Time back to DTNTime diverges: %d", epoch2)
+	}
+}
+
+func TestCreationTimestampCbor(t *testing.T) {
+	tests := []struct {
+		ct   CreationTimestamp
+		cbor []byte
+	}{
+		{NewCreationTimestamp(DtnTimeEpoch, 0), []byte{0x82, 0x00, 0x00}},
+		{NewCreationTimestamp(DtnTime(23), 42), []byte{0x82, 0x17, 0x18, 0x2A}},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("serialize-%v", test.ct), func(t *testing.T) {
+			buff := new(bytes.Buffer)
+			if err := cboring.Marshal(&test.ct, buff); err != nil {
+				t.Fatal(err)
+			}
+
+			if data := buff.Bytes(); !reflect.DeepEqual(data, test.cbor) {
+				t.Fatalf("Serialization failed: %v != %v", data, test.cbor)
+			}
+		})
+
+		t.Run(fmt.Sprintf("deserialize-%v", test.ct), func(t *testing.T) {
+			ct := CreationTimestamp{}
+			if err := cboring.Unmarshal(&ct, bytes.NewBuffer(test.cbor)); err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(ct, test.ct) {
+				t.Fatalf("Deserialization failed: %v != %v", ct, test.ct)
+			}
+		})
 	}
 }

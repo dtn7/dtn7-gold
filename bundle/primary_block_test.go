@@ -1,11 +1,11 @@
 package bundle
 
 import (
-	"fmt"
+	"bytes"
 	"reflect"
 	"testing"
 
-	"github.com/ugorji/go/codec"
+	"github.com/dtn7/cboring"
 )
 
 func setupPrimaryBlock() PrimaryBlock {
@@ -71,67 +71,22 @@ func TestPrimaryBlockCbor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		var b []byte = make([]byte, 0, 64)
-		var h codec.Handle = new(codec.CborHandle)
-		var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
-
-		// If we are going to test block's with a CRC value, we also have to
-		// calculate it.
 		if test.pb1.HasCRC() {
 			test.pb1.CalculateCRC()
 		}
 
-		err := enc.Encode(test.pb1)
-		if err != nil {
-			t.Errorf("CBOR encoding failed: %v", err)
-		}
-
-		var decGeneric interface{}
-		err = codec.NewDecoderBytes(b, h).Decode(&decGeneric)
-		if err != nil {
-			t.Errorf("Generic CBOR decoding failed: %v", err)
-		}
-
-		if ty := reflect.TypeOf(decGeneric); ty.Kind() != reflect.Slice {
-			t.Errorf("Decoded CBOR has wrong type: %v instead of slice", ty.Kind())
-		}
-
-		var arr []interface{} = decGeneric.([]interface{})
-		if len(arr) != test.len {
-			t.Errorf("CBOR-Array has wrong length: %d instead of %d",
-				len(arr), test.len)
+		buff := new(bytes.Buffer)
+		if err := cboring.Marshal(&test.pb1, buff); err != nil {
+			t.Fatal(err)
 		}
 
 		var pb2 PrimaryBlock
-		err = codec.NewDecoderBytes(b, h).Decode(&pb2)
-		if err != nil {
-			t.Errorf("CBOR decoding failed: %v", err)
+		if err := cboring.Unmarshal(&pb2, buff); err != nil {
+			t.Fatalf("CBOR decoding failed: %v", err)
 		}
 
-		v1 := reflect.ValueOf(test.pb1)
-		v2 := reflect.ValueOf(pb2)
-
-		if v1.NumField() != v2.NumField() {
-			t.Errorf("PrimaryBlock's number of fields changed after CBOR: %d to %d",
-				v1.NumField(), v2.NumField())
-		}
-
-		for i := 0; i < v1.NumField(); i++ {
-			val1 := v1.Field(i)
-			val2 := v2.Field(i)
-
-			if val1.Type() != val2.Type() {
-				t.Errorf("Type of value no %d differs: %T and %T",
-					i, val1.Type(), val2.Type())
-			}
-
-			s1 := fmt.Sprintf("%v", val1)
-			s2 := fmt.Sprintf("%v", val2)
-
-			if s1 != s2 {
-				t.Errorf("String representation of value no %d differs: %v and %v",
-					i, s1, s2)
-			}
+		if !reflect.DeepEqual(test.pb1, pb2) {
+			t.Fatalf("PrimaryBlocks differ:\n%v\n%v", test.pb1, pb2)
 		}
 	}
 }

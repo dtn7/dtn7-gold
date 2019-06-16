@@ -2,9 +2,11 @@ package bundle
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
+	"github.com/dtn7/cboring"
 	"github.com/hashicorp/go-multierror"
 	"github.com/ugorji/go/codec"
 )
@@ -184,6 +186,129 @@ func (pb *PrimaryBlock) CodecDecodeSelf(dec *codec.Decoder) {
 	} else if l == 9 {
 		pb.CRC = pbx[8].([]byte)
 	}
+}
+
+func (pb *PrimaryBlock) MarshalCbor(w io.Writer) error {
+	var blockLen uint64 = 8
+	if pb.HasCRC() && pb.HasFragmentation() {
+		blockLen = 11
+	} else if pb.HasFragmentation() {
+		blockLen = 10
+	} else if pb.HasCRC() {
+		blockLen = 9
+	}
+
+	if err := cboring.WriteArrayLength(blockLen, w); err != nil {
+		return err
+	}
+
+	fields := []uint64{7, uint64(pb.BundleControlFlags), uint64(pb.CRCType)}
+	for _, f := range fields {
+		if err := cboring.WriteUInt(f, w); err != nil {
+			return err
+		}
+	}
+
+	eids := []*EndpointID{&pb.Destination, &pb.SourceNode, &pb.ReportTo}
+	for _, eid := range eids {
+		if err := cboring.Marshal(eid, w); err != nil {
+			return fmt.Errorf("EndpointID failed: %v", err)
+		}
+	}
+
+	if err := cboring.Marshal(&pb.CreationTimestamp, w); err != nil {
+		return fmt.Errorf("CreationTimestamp failed: %v", err)
+	}
+
+	if err := cboring.WriteUInt(pb.Lifetime, w); err != nil {
+		return err
+	}
+
+	if pb.HasFragmentation() {
+		fields = []uint64{pb.FragmentOffset, pb.TotalDataLength}
+		for _, f := range fields {
+			if err := cboring.WriteUInt(f, w); err != nil {
+				return err
+			}
+		}
+	}
+
+	if pb.HasCRC() {
+		if err := cboring.WriteByteString(pb.CRC, w); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
+	var blockLen uint64
+	if bl, err := cboring.ReadArrayLength(r); err != nil {
+		return err
+	} else if bl < 8 || bl > 11 {
+		return fmt.Errorf("Expected array with length 8-11, got %d", bl)
+	} else {
+		blockLen = bl
+	}
+
+	if version, err := cboring.ReadUInt(r); err != nil {
+		return err
+	} else if version != 7 {
+		return fmt.Errorf("Expected version 7, got %d", version)
+	} else {
+		pb.Version = 7
+	}
+
+	if bcf, err := cboring.ReadUInt(r); err != nil {
+		return err
+	} else {
+		pb.BundleControlFlags = BundleControlFlags(bcf)
+	}
+
+	if crcT, err := cboring.ReadUInt(r); err != nil {
+		return err
+	} else {
+		pb.CRCType = CRCType(crcT)
+	}
+
+	eids := []*EndpointID{&pb.Destination, &pb.SourceNode, &pb.ReportTo}
+	for _, eid := range eids {
+		if err := cboring.Unmarshal(eid, r); err != nil {
+			return fmt.Errorf("EndpointID failed: %v", err)
+		}
+	}
+
+	if err := cboring.Unmarshal(&pb.CreationTimestamp, r); err != nil {
+		return fmt.Errorf("CreationTimestamp failed: %v", err)
+	}
+
+	if lt, err := cboring.ReadUInt(r); err != nil {
+		return err
+	} else {
+		pb.Lifetime = lt
+	}
+
+	if blockLen == 10 || blockLen == 11 {
+		fields := []*uint64{&pb.FragmentOffset, &pb.TotalDataLength}
+		for _, f := range fields {
+			if x, err := cboring.ReadUInt(r); err != nil {
+				return err
+			} else {
+				*f = x
+			}
+		}
+	}
+
+	if blockLen == 9 || blockLen == 11 {
+		if crcV, err := cboring.ReadByteString(r); err != nil {
+			return err
+		} else {
+			pb.CRC = crcV
+		}
+	}
+
+	return nil
 }
 
 func (pb PrimaryBlock) checkValid() (errs error) {

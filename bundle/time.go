@@ -2,7 +2,10 @@ package bundle
 
 import (
 	"fmt"
+	"io"
 	"time"
+
+	"github.com/dtn7/cboring"
 )
 
 // DtnTime is an integer indicating the time like the Unix time, just starting
@@ -64,4 +67,36 @@ func (ct CreationTimestamp) SequenceNumber() uint64 {
 
 func (ct CreationTimestamp) String() string {
 	return fmt.Sprintf("(%v, %d)", DtnTime(ct[0]), ct[1])
+}
+
+func (ct *CreationTimestamp) MarshalCbor(w io.Writer) error {
+	if err := cboring.WriteArrayLength(2, w); err != nil {
+		return err
+	}
+
+	for _, f := range ct {
+		if err := cboring.WriteUInt(f, w); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ct *CreationTimestamp) UnmarshalCbor(r io.Reader) error {
+	if l, err := cboring.ReadArrayLength(r); err != nil {
+		return err
+	} else if l != 2 {
+		return fmt.Errorf("Expected array with length 2, got %d", l)
+	}
+
+	for i := 0; i < 2; i++ {
+		if f, err := cboring.ReadUInt(r); err != nil {
+			return err
+		} else {
+			ct[i] = f
+		}
+	}
+
+	return nil
 }
