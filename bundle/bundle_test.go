@@ -2,6 +2,8 @@ package bundle
 
 import (
 	"bytes"
+	"fmt"
+	"math/rand"
 	"reflect"
 	"testing"
 
@@ -323,63 +325,145 @@ func TestBundleCheckValid(t *testing.T) {
 	}
 }
 
-func benchmarkBundleCreation(b *testing.B, crcType CRCType, validity bool) {
-	var (
-		primary    PrimaryBlock
-		canonicals []CanonicalBlock
-		bndl       Bundle
-	)
+func BenchmarkBundleSerializationCodec(b *testing.B) {
+	var sizes = []int{0, 1024, 1048576, 10485760, 104857600}
 
-	canonicals = make([]CanonicalBlock, 2)
+	for _, size := range sizes {
+		payload := make([]byte, size)
 
-	for i := 0; i < b.N; i++ {
-		primary = NewPrimaryBlock(
+		rand.Seed(0)
+		rand.Read(payload)
+
+		primary := NewPrimaryBlock(
 			0,
 			MustNewEndpointID("dtn:dest"),
 			MustNewEndpointID("dtn:src"),
 			NewCreationTimestamp(DtnTimeEpoch, 0),
 			60*60*1000000)
 
-		canonicals[0] = NewBundleAgeBlock(1, 0, 0)
-		canonicals[1] = NewPayloadBlock(0, []byte("uff"))
-
-		if validity {
-			bndl, _ = NewBundle(primary, canonicals)
-		} else {
-			bndl = MustNewBundle(primary, canonicals)
+		canonicals := []CanonicalBlock{
+			NewBundleAgeBlock(1, 0, 0),
+			NewPreviousNodeBlock(2, 0, MustNewEndpointID("dtn:prev")),
+			NewPayloadBlock(0, payload),
 		}
 
-		bndl.SetCRCType(crcType)
-		bndl.CalculateCRC()
+		bndl := MustNewBundle(primary, canonicals)
 
-		// bndl.ToCbor()
-		buff := new(bytes.Buffer)
-		if err := cboring.Marshal(&bndl, buff); err != nil {
-			b.Fatal(err)
-		}
+		b.Run(fmt.Sprintf("%d", size), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				bndl.ToCbor()
+			}
+		})
 	}
 }
 
-func BenchmarkBundleCreationCRCNoValidity(b *testing.B) {
-	benchmarkBundleCreation(b, CRCNo, true)
+func BenchmarkBundleDeserializationCboring(b *testing.B) {
+	var sizes = []int{0, 1024, 1048576, 10485760, 104857600}
+
+	for _, size := range sizes {
+		payload := make([]byte, size)
+
+		rand.Seed(0)
+		rand.Read(payload)
+
+		primary := NewPrimaryBlock(
+			0,
+			MustNewEndpointID("dtn:dest"),
+			MustNewEndpointID("dtn:src"),
+			NewCreationTimestamp(DtnTimeEpoch, 0),
+			60*60*1000000)
+
+		canonicals := []CanonicalBlock{
+			NewBundleAgeBlock(1, 0, 0),
+			NewPreviousNodeBlock(2, 0, MustNewEndpointID("dtn:prev")),
+			NewPayloadBlock(0, payload),
+		}
+
+		bndl := MustNewBundle(primary, canonicals)
+
+		buff := new(bytes.Buffer)
+		cboring.Marshal(&bndl, buff)
+		data := buff.Bytes()
+
+		b.Run(fmt.Sprintf("%d", size), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				tmpBuff := bytes.NewBuffer(data)
+				tmpBndl := Bundle{}
+
+				if err := cboring.Unmarshal(&tmpBndl, tmpBuff); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
 }
 
-func BenchmarkBundleCreationCRC16Validity(b *testing.B) {
-	benchmarkBundleCreation(b, CRC16, true)
+func BenchmarkBundleDeserializationCodec(b *testing.B) {
+	var sizes = []int{0, 1024, 1048576, 10485760, 104857600}
+
+	for _, size := range sizes {
+		payload := make([]byte, size)
+
+		rand.Seed(0)
+		rand.Read(payload)
+
+		primary := NewPrimaryBlock(
+			0,
+			MustNewEndpointID("dtn:dest"),
+			MustNewEndpointID("dtn:src"),
+			NewCreationTimestamp(DtnTimeEpoch, 0),
+			60*60*1000000)
+
+		canonicals := []CanonicalBlock{
+			NewBundleAgeBlock(1, 0, 0),
+			NewPreviousNodeBlock(2, 0, MustNewEndpointID("dtn:prev")),
+			NewPayloadBlock(0, payload),
+		}
+
+		bndl := MustNewBundle(primary, canonicals)
+
+		buff := new(bytes.Buffer)
+		cboring.Marshal(&bndl, buff)
+		data := buff.Bytes()
+
+		b.Run(fmt.Sprintf("%d", size), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				if _, err := NewBundleFromCbor(&data); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
 }
 
-func BenchmarkBundleCreationCRC32Validity(b *testing.B) {
-	benchmarkBundleCreation(b, CRC32, true)
-}
+func BenchmarkBundleSerializationCboring(b *testing.B) {
+	var sizes = []int{0, 1024, 1048576, 10485760, 104857600}
 
-func BenchmarkBundleCreationCRCNoNoValidity(b *testing.B) {
-	benchmarkBundleCreation(b, CRCNo, false)
-}
+	for _, size := range sizes {
+		payload := make([]byte, size)
 
-func BenchmarkBundleCreationCRC16NoValidity(b *testing.B) {
-	benchmarkBundleCreation(b, CRC16, false)
-}
+		rand.Seed(0)
+		rand.Read(payload)
 
-func BenchmarkBundleCreationCRC32NoValidity(b *testing.B) {
-	benchmarkBundleCreation(b, CRC32, false)
+		primary := NewPrimaryBlock(
+			0,
+			MustNewEndpointID("dtn:dest"),
+			MustNewEndpointID("dtn:src"),
+			NewCreationTimestamp(DtnTimeEpoch, 0),
+			60*60*1000000)
+
+		canonicals := []CanonicalBlock{
+			NewBundleAgeBlock(1, 0, 0),
+			NewPreviousNodeBlock(2, 0, MustNewEndpointID("dtn:prev")),
+			NewPayloadBlock(0, payload),
+		}
+
+		bndl := MustNewBundle(primary, canonicals)
+
+		b.Run(fmt.Sprintf("%d", size), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				cboring.Marshal(&bndl, new(bytes.Buffer))
+			}
+		})
+	}
 }
