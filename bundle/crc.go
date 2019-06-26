@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"hash/crc32"
 
+	"github.com/dtn7/cboring"
 	"github.com/howeyc/crc16"
 )
 
@@ -76,6 +77,31 @@ func calculateCRC(blck block) []byte {
 	}
 
 	return arr
+}
+
+func calculateCRCBuff(buff *bytes.Buffer, crcType CRCType) ([]byte, error) {
+	// Append CRC type's empty bytes
+	data := emptyCRC(crcType)
+
+	if err := cboring.WriteByteString(data, buff); err != nil {
+		return nil, err
+	}
+
+	// Write CRC value for buff's data into data
+	switch crcType {
+	case CRCNo:
+
+	case CRC16:
+		binary.BigEndian.PutUint16(data, crc16.Checksum(buff.Bytes(), crc16table))
+
+	case CRC32:
+		binary.BigEndian.PutUint32(data, crc32.Checksum(buff.Bytes(), crc32table))
+
+	default:
+		panic("Unknown CRCType")
+	}
+
+	return data, nil
 }
 
 // emptyCRC returns the "default" CRC value for the given CRC Type.

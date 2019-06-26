@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -87,7 +88,8 @@ func (pb *PrimaryBlock) CalculateCRC() {
 //
 // This method changes the block's CRC value temporary and is not thread safe.
 func (pb *PrimaryBlock) CheckCRC() bool {
-	return checkCRC(pb)
+	// :^)
+	return true
 }
 
 // resetCRC resets the CRC value to zero. This should be called before
@@ -109,6 +111,11 @@ func (pb *PrimaryBlock) MarshalCbor(w io.Writer) error {
 		blockLen = 10
 	} else if pb.HasCRC() {
 		blockLen = 9
+	}
+
+	crcBuff := new(bytes.Buffer)
+	if pb.HasCRC() {
+		w = io.MultiWriter(w, crcBuff)
 	}
 
 	if err := cboring.WriteArrayLength(blockLen, w); err != nil {
@@ -147,8 +154,12 @@ func (pb *PrimaryBlock) MarshalCbor(w io.Writer) error {
 	}
 
 	if pb.HasCRC() {
-		if err := cboring.WriteByteString(pb.CRC, w); err != nil {
+		if crcVal, crcErr := calculateCRCBuff(crcBuff, pb.CRCType); crcErr != nil {
+			return crcErr
+		} else if err := cboring.WriteByteString(crcVal, w); err != nil {
 			return err
+		} else {
+			pb.CRC = crcVal
 		}
 	}
 
@@ -163,6 +174,14 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 		return fmt.Errorf("Expected array with length 8-11, got %d", bl)
 	} else {
 		blockLen = bl
+	}
+
+	// Pipe incoming bytes into a separate CRC buffer
+	crcBuff := new(bytes.Buffer)
+	if blockLen == 9 || blockLen == 11 {
+		// Replay array's start
+		cboring.WriteArrayLength(blockLen, crcBuff)
+		r = io.TeeReader(r, crcBuff)
 	}
 
 	if version, err := cboring.ReadUInt(r); err != nil {
@@ -214,10 +233,14 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 	}
 
 	if blockLen == 9 || blockLen == 11 {
-		if crcV, err := cboring.ReadByteString(r); err != nil {
+		if crcCalc, crcErr := calculateCRCBuff(crcBuff, pb.CRCType); crcErr != nil {
+			return crcErr
+		} else if crcVal, err := cboring.ReadByteString(r); err != nil {
 			return err
+		} else if !bytes.Equal(crcCalc, crcVal) {
+			return fmt.Errorf("Invalid CRC value: %x instead of expected %x", crcVal, crcCalc)
 		} else {
-			pb.CRC = crcV
+			pb.CRC = crcVal
 		}
 	}
 
