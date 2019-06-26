@@ -7,7 +7,6 @@ import (
 
 	"github.com/dtn7/cboring"
 	"github.com/hashicorp/go-multierror"
-	"github.com/ugorji/go/codec"
 )
 
 // CanonicalBlockType is an uint which is used as "block type code" for the
@@ -114,97 +113,6 @@ func (cb *CanonicalBlock) resetCRC() {
 // setCRC sets the CRC value to the given value.
 func (cb *CanonicalBlock) setCRC(crc []byte) {
 	cb.CRC = crc
-}
-
-func (cb CanonicalBlock) CodecEncodeSelf(enc *codec.Encoder) {
-	if cb.HasCRC() {
-		enc.MustEncode(canonicalBlock6{
-			BlockType:         cb.BlockType,
-			BlockNumber:       cb.BlockNumber,
-			BlockControlFlags: cb.BlockControlFlags,
-			CRCType:           cb.CRCType,
-			Data:              cb.Data,
-			CRC:               cb.CRC,
-		})
-	} else {
-		enc.MustEncode(canonicalBlock5{
-			BlockType:         cb.BlockType,
-			BlockNumber:       cb.BlockNumber,
-			BlockControlFlags: cb.BlockControlFlags,
-			CRCType:           cb.CRCType,
-			Data:              cb.Data,
-		})
-	}
-}
-
-func (cb *CanonicalBlock) codecDecodeDataPointer(data *interface{}) {
-	switch cb.BlockType {
-	case PreviousNodeBlock:
-		var ep EndpointID
-		setEndpointIDFromCborArray(&ep, (*data).([]interface{}))
-		cb.Data = ep
-
-	case BundleAgeBlock:
-		cb.Data = (*data).(uint64)
-
-	case HopCountBlock:
-		tuple := (*data).([]interface{})
-		cb.Data = HopCount{
-			Limit: tuple[0].(uint64),
-			Count: tuple[1].(uint64),
-		}
-
-	// blockTypePayload is also a byte array and can be treated like the default.
-	// In some other cases codec was "too smart" and decoded the data by itself.
-	default:
-		cb.Data = (*data).([]byte)
-	}
-}
-
-func (cb *CanonicalBlock) codecDecodeData(data interface{}) {
-	switch cb.BlockType {
-	case PreviousNodeBlock:
-		var ep EndpointID
-		setEndpointIDFromCborArray(&ep, data.([]interface{}))
-		cb.Data = ep
-
-	case BundleAgeBlock:
-		cb.Data = data.(uint64)
-
-	case HopCountBlock:
-		tuple := data.([]interface{})
-		cb.Data = HopCount{
-			Limit: tuple[0].(uint64),
-			Count: tuple[1].(uint64),
-		}
-
-	// blockTypePayload is also a byte array and can be treated like the default.
-	// In some other cases codec was "too smart" and decoded the data by itself.
-	default:
-		cb.Data = data.([]byte)
-	}
-}
-
-func (cb *CanonicalBlock) CodecDecodeSelf(dec *codec.Decoder) {
-	var blockArrPt = new([]interface{})
-	dec.MustDecode(blockArrPt)
-
-	var blockArr = *blockArrPt
-
-	if len(blockArr) != 5 && len(blockArr) != 6 {
-		panic("blockArr has wrong length (!= 5, 6)")
-	}
-
-	cb.BlockType = CanonicalBlockType(blockArr[0].(uint64))
-	cb.BlockNumber = blockArr[1].(uint64)
-	cb.BlockControlFlags = BlockControlFlags(blockArr[2].(uint64))
-	cb.CRCType = CRCType(blockArr[3].(uint64))
-
-	cb.codecDecodeData(blockArr[4])
-
-	if len(blockArr) == 6 {
-		cb.CRC = blockArr[5].([]byte)
-	}
 }
 
 func (cb *CanonicalBlock) MarshalCbor(w io.Writer) error {
@@ -412,8 +320,6 @@ func (cb CanonicalBlock) String() string {
 // HopCount represents the tuple of a hop limit and hop count defined in 4.3.3
 // for the Hop Count block.
 type HopCount struct {
-	_struct struct{} `codec:",toarray"`
-
 	Limit uint64
 	Count uint64
 }

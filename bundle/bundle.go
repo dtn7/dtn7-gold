@@ -1,15 +1,12 @@
 package bundle
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"strings"
 
 	"github.com/dtn7/cboring"
 	"github.com/hashicorp/go-multierror"
-	"github.com/ugorji/go/codec"
 )
 
 // Bundle represents a bundle as defined in section 4.2.1. Each Bundle contains
@@ -208,134 +205,6 @@ func (b Bundle) checkValid() (errs error) {
 // has an administrative record payload.
 func (b Bundle) IsAdministrativeRecord() bool {
 	return b.PrimaryBlock.BundleControlFlags.Has(AdministrativeRecordPayload)
-}
-
-// WriteCbor serializes this Bundle as a CBOR indefinite-length array into the
-// given Writer.
-func (b Bundle) writeCbor(w io.Writer) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = newBundleError(fmt.Sprintf("Bundle: Encoding CBOR failed, %v", r))
-		}
-	}()
-
-	// It seems to be tricky using both definite-length and indefinite-length
-	// arays with the codec library. However, an indefinite-length array is just
-	// a byte array wrapped between the start and "break" code, which are
-	// exported as consts from the codec library.
-
-	var bw = bufio.NewWriter(w)
-	defer bw.Flush()
-
-	var cborEncoder = codec.NewEncoder(bw, new(codec.CborHandle))
-
-	bw.WriteByte(codec.CborStreamArray)
-
-	b.forEachBlock(func(blck block) {
-		cborEncoder.MustEncode(blck)
-	})
-
-	bw.WriteByte(codec.CborStreamBreak)
-
-	return
-}
-
-// ToCbor creates a byte array representing a CBOR indefinite-length array of
-// this Bundle with all its blocks, as defined in section 4 of the Bundle
-// Protocol Version 7.
-func (b Bundle) ToCbor() []byte {
-	var blocks []byte
-	var cborEncoder = codec.NewEncoderBytes(&blocks, new(codec.CborHandle))
-
-	b.forEachBlock(func(blck block) {
-		cborEncoder.MustEncode(blck)
-	})
-
-	var buf bytes.Buffer
-
-	buf.WriteByte(codec.CborStreamArray)
-	buf.Write(blocks)
-	buf.WriteByte(codec.CborStreamBreak)
-
-	return buf.Bytes()
-}
-
-// decodeBundleBlock decodes an already generic decoded block to its
-// determinated data structure.
-// The NewBundleFromCbor function decodes an array of interface{} which results
-// in an array of arrays, as codec tries to decode the whole data. This method
-// will re-encode this "anonymous" array to CBOR and will decode it to its
-// struct, which is referenced as the target pointer.
-func decodeBundleBlock(data *interface{}, target interface{}) {
-	var r, w = io.Pipe()
-
-	go func() {
-		bw := bufio.NewWriter(w)
-		codec.NewEncoder(bw, new(codec.CborHandle)).MustEncode(data)
-		bw.Flush()
-	}()
-
-	codec.NewDecoder(bufio.NewReader(r), new(codec.CborHandle)).MustDecode(target)
-}
-
-// NewBundleFromCbor decodes the given data from the CBOR into a Bundle.
-func NewBundleFromCbor(data *[]byte) (b Bundle, err error) {
-	// The decoding might panic and would be recovered in the following function,
-	// which returns an error.
-	defer func() {
-		if r := recover(); r != nil {
-			err = newBundleError(fmt.Sprintf("Bundle: Decoding CBOR failed, %v", r))
-		}
-	}()
-
-	var reader = bytes.NewReader(*data)
-	var handle = new(codec.CborHandle)
-
-	// Skip array starting symbol
-	reader.ReadByte()
-
-	var pb PrimaryBlock
-	if err = codec.NewDecoder(reader, handle).Decode(&pb); err != nil {
-		return
-	}
-
-	var cbs []CanonicalBlock
-	for fin := false; !fin; {
-		switch cbType, _ := reader.ReadByte(); cbType {
-		case 0x85:
-			reader.UnreadByte()
-
-			var cb5 canonicalBlock5
-			codec.NewDecoder(reader, handle).Decode(&cb5)
-			cbs = append(cbs, *cb5.toCanonicalBlock())
-
-		case 0x86:
-			reader.UnreadByte()
-
-			var cb6 canonicalBlock6
-			codec.NewDecoder(reader, handle).Decode(&cb6)
-			cbs = append(cbs, *cb6.toCanonicalBlock())
-
-		case 0xFF:
-			fin = true
-
-		default:
-			err = fmt.Errorf("Unexpected cbType %x while decoding canonicals", cbType)
-			return
-		}
-	}
-
-	b = Bundle{pb, cbs}
-
-	if chkVldErr := b.checkValid(); chkVldErr != nil {
-		err = multierror.Append(err, chkVldErr)
-	}
-
-	if !b.CheckCRC() {
-		err = multierror.Append(err, newBundleError("CRC failed"))
-	}
-
-	return
 }
 
 func (b *Bundle) MarshalCbor(w io.Writer) error {

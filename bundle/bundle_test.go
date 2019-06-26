@@ -215,7 +215,11 @@ func TestBundleUpcn(t *testing.T) {
 	}
 
 	// Serialize CBOR again
-	var recreatedBytes = bndl.ToCbor()
+	buff := new(bytes.Buffer)
+	if err := bndl.MarshalCbor(buff); err != nil {
+		t.Fatal(err)
+	}
+	recreatedBytes := buff.Bytes()
 
 	if !bytes.Equal(upcnBytes, recreatedBytes) {
 		t.Errorf("Serialization of uPCN's bundle differs: %v instead of %v",
@@ -325,7 +329,7 @@ func TestBundleCheckValid(t *testing.T) {
 	}
 }
 
-func BenchmarkBundleSerializationCodec(b *testing.B) {
+func BenchmarkBundleSerializationCboring(b *testing.B) {
 	var sizes = []int{0, 1024, 1048576, 10485760, 104857600}
 
 	for _, size := range sizes {
@@ -351,7 +355,7 @@ func BenchmarkBundleSerializationCodec(b *testing.B) {
 
 		b.Run(fmt.Sprintf("%d", size), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				bndl.ToCbor()
+				cboring.Marshal(&bndl, new(bytes.Buffer))
 			}
 		})
 	}
@@ -393,76 +397,6 @@ func BenchmarkBundleDeserializationCboring(b *testing.B) {
 				if err := cboring.Unmarshal(&tmpBndl, tmpBuff); err != nil {
 					b.Fatal(err)
 				}
-			}
-		})
-	}
-}
-
-func BenchmarkBundleDeserializationCodec(b *testing.B) {
-	var sizes = []int{0, 1024, 1048576, 10485760, 104857600}
-
-	for _, size := range sizes {
-		payload := make([]byte, size)
-
-		rand.Seed(0)
-		rand.Read(payload)
-
-		primary := NewPrimaryBlock(
-			0,
-			MustNewEndpointID("dtn:dest"),
-			MustNewEndpointID("dtn:src"),
-			NewCreationTimestamp(DtnTimeEpoch, 0),
-			60*60*1000000)
-
-		canonicals := []CanonicalBlock{
-			NewBundleAgeBlock(1, 0, 0),
-			NewPreviousNodeBlock(2, 0, MustNewEndpointID("dtn:prev")),
-			NewPayloadBlock(0, payload),
-		}
-
-		bndl := MustNewBundle(primary, canonicals)
-
-		buff := new(bytes.Buffer)
-		cboring.Marshal(&bndl, buff)
-		data := buff.Bytes()
-
-		b.Run(fmt.Sprintf("%d", size), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				if _, err := NewBundleFromCbor(&data); err != nil {
-					b.Fatal(err)
-				}
-			}
-		})
-	}
-}
-
-func BenchmarkBundleSerializationCboring(b *testing.B) {
-	var sizes = []int{0, 1024, 1048576, 10485760, 104857600}
-
-	for _, size := range sizes {
-		payload := make([]byte, size)
-
-		rand.Seed(0)
-		rand.Read(payload)
-
-		primary := NewPrimaryBlock(
-			0,
-			MustNewEndpointID("dtn:dest"),
-			MustNewEndpointID("dtn:src"),
-			NewCreationTimestamp(DtnTimeEpoch, 0),
-			60*60*1000000)
-
-		canonicals := []CanonicalBlock{
-			NewBundleAgeBlock(1, 0, 0),
-			NewPreviousNodeBlock(2, 0, MustNewEndpointID("dtn:prev")),
-			NewPayloadBlock(0, payload),
-		}
-
-		bndl := MustNewBundle(primary, canonicals)
-
-		b.Run(fmt.Sprintf("%d", size), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				cboring.Marshal(&bndl, new(bytes.Buffer))
 			}
 		})
 	}

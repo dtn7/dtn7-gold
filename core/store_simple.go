@@ -3,7 +3,6 @@ package core
 import (
 	"crypto/sha1"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"sync"
@@ -124,13 +123,13 @@ func (store *SimpleStore) getBundle(id string) (bndl bundle.Bundle, err error) {
 		return
 	}
 
-	bndlBytes, bndlBytesErr := ioutil.ReadFile(bndlPath)
-	if bndlBytesErr != nil {
-		err = bndlBytesErr
+	bndlFile, bndlErr := os.Open(bndlPath)
+	if bndlErr != nil {
+		err = bndlErr
 		return
 	}
 
-	bndl, err = bundle.NewBundleFromCbor(&bndlBytes)
+	err = bndl.UnmarshalCbor(bndlFile)
 	return
 }
 
@@ -139,8 +138,11 @@ func (store *SimpleStore) setBundle(bp BundlePack) error {
 	defer store.ioMutex.Unlock()
 
 	bndlPath := store.bundlePath(bp.ID())
-	bndlData := bp.Bundle.ToCbor()
-	return ioutil.WriteFile(bndlPath, bndlData, 0755)
+	bndlFile, bndlErr := os.OpenFile(bndlPath, os.O_WRONLY|os.O_CREATE, 755)
+	if bndlErr != nil {
+		return bndlErr
+	}
+	return bp.Bundle.MarshalCbor(bndlFile)
 }
 
 func (store *SimpleStore) delBundle(id string) error {

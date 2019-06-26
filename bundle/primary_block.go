@@ -8,7 +8,6 @@ import (
 
 	"github.com/dtn7/cboring"
 	"github.com/hashicorp/go-multierror"
-	"github.com/ugorji/go/codec"
 )
 
 const dtnVersion uint64 = 7
@@ -100,92 +99,6 @@ func (pb *PrimaryBlock) resetCRC() {
 // setCRC sets the CRC value to the given value.
 func (pb *PrimaryBlock) setCRC(crc []byte) {
 	pb.CRC = crc
-}
-
-func (pb *PrimaryBlock) CodecEncodeSelf(enc *codec.Encoder) {
-	if pb.HasFragmentation() && pb.HasCRC() {
-		enc.MustEncode(primaryBlock11{
-			Version:            pb.Version,
-			BundleControlFlags: pb.BundleControlFlags,
-			CRCType:            pb.CRCType,
-			Destination:        pb.Destination,
-			SourceNode:         pb.SourceNode,
-			ReportTo:           pb.ReportTo,
-			CreationTimestamp:  pb.CreationTimestamp,
-			Lifetime:           pb.Lifetime,
-			FragmentOffset:     pb.FragmentOffset,
-			TotalDataLength:    pb.TotalDataLength,
-			CRC:                pb.CRC,
-		})
-	} else if pb.HasFragmentation() {
-		enc.MustEncode(primaryBlock10{
-			Version:            pb.Version,
-			BundleControlFlags: pb.BundleControlFlags,
-			CRCType:            pb.CRCType,
-			Destination:        pb.Destination,
-			SourceNode:         pb.SourceNode,
-			ReportTo:           pb.ReportTo,
-			CreationTimestamp:  pb.CreationTimestamp,
-			Lifetime:           pb.Lifetime,
-			FragmentOffset:     pb.FragmentOffset,
-			TotalDataLength:    pb.TotalDataLength,
-		})
-	} else if pb.HasCRC() {
-		enc.MustEncode(primaryBlock09{
-			Version:            pb.Version,
-			BundleControlFlags: pb.BundleControlFlags,
-			CRCType:            pb.CRCType,
-			Destination:        pb.Destination,
-			SourceNode:         pb.SourceNode,
-			ReportTo:           pb.ReportTo,
-			CreationTimestamp:  pb.CreationTimestamp,
-			Lifetime:           pb.Lifetime,
-			CRC:                pb.CRC,
-		})
-	} else {
-		enc.MustEncode(primaryBlock08{
-			Version:            pb.Version,
-			BundleControlFlags: pb.BundleControlFlags,
-			CRCType:            pb.CRCType,
-			Destination:        pb.Destination,
-			SourceNode:         pb.SourceNode,
-			ReportTo:           pb.ReportTo,
-			CreationTimestamp:  pb.CreationTimestamp,
-			Lifetime:           pb.Lifetime,
-		})
-	}
-}
-
-func (pb *PrimaryBlock) CodecDecodeSelf(dec *codec.Decoder) {
-	// The implementation of the deserialization still sucks. I don't get codec
-	// to decode a PrimaryBlock into primaryBlock{08-11}, because reasons.
-
-	var pbx []interface{}
-	dec.MustDecode(&pbx)
-
-	pb.Version = dtnVersion
-	pb.BundleControlFlags = BundleControlFlags(pbx[1].(uint64))
-	pb.CRCType = CRCType(pbx[2].(uint64))
-	pb.Lifetime = pbx[7].(uint64)
-
-	setEndpointIDFromCborArray(&pb.Destination, pbx[3].([]interface{}))
-	setEndpointIDFromCborArray(&pb.SourceNode, pbx[4].([]interface{}))
-	setEndpointIDFromCborArray(&pb.ReportTo, pbx[5].([]interface{}))
-
-	ct := pbx[6].([]interface{})
-	pb.CreationTimestamp[0] = ct[0].(uint64)
-	pb.CreationTimestamp[1] = ct[1].(uint64)
-
-	if l := len(pbx); l == 11 {
-		pb.FragmentOffset = pbx[8].(uint64)
-		pb.TotalDataLength = pbx[9].(uint64)
-		pb.CRC = pbx[10].([]byte)
-	} else if l == 10 {
-		pb.FragmentOffset = pbx[8].(uint64)
-		pb.TotalDataLength = pbx[9].(uint64)
-	} else if l == 9 {
-		pb.CRC = pbx[8].([]byte)
-	}
 }
 
 func (pb *PrimaryBlock) MarshalCbor(w io.Writer) error {

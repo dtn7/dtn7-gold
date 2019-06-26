@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 
@@ -172,11 +173,14 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 		t.Errorf("Creating new bundle failed: %v", err)
 	}
 
-	outBndlData := outBndl.ToCbor()
+	buff := new(bytes.Buffer)
+	if err := outBndl.MarshalCbor(buff); err != nil {
+		t.Fatal(err)
+	}
 
-	inBndl, err := bundle.NewBundleFromCbor(&outBndlData)
-	if err != nil {
-		t.Errorf("Parsing bundle failed: %v", err)
+	inBndl := bundle.Bundle{}
+	if err := inBndl.UnmarshalCbor(buff); err != nil {
+		t.Fatal(err)
 	}
 
 	if !reflect.DeepEqual(outBndl, inBndl) {

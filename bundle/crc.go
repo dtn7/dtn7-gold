@@ -6,7 +6,6 @@ import (
 	"hash/crc32"
 
 	"github.com/howeyc/crc16"
-	"github.com/ugorji/go/codec"
 )
 
 // CRCType indicates which CRC type is used. Only the three defined consts
@@ -40,17 +39,18 @@ var (
 // blockToBytes encodes a Block to a byte array based on the CBOR encoding. It
 // temporary sets the present CRC value to zero. Therefore this function is not
 // thread safe.
-func blockToBytes(blck block) []byte {
-	var b []byte = make([]byte, 0, 64)
-	var enc *codec.Encoder = codec.NewEncoderBytes(&b, new(codec.CborHandle))
-
+func blockToBytes(blck block) (b []byte) {
 	var blockCRC = blck.getCRC()
 
 	blck.resetCRC()
-	enc.MustEncode(blck)
+
+	buff := new(bytes.Buffer)
+	blck.MarshalCbor(buff)
+	b = buff.Bytes()
+
 	blck.setCRC(blockCRC)
 
-	return b
+	return
 }
 
 // calculateCRC calculates a Block's CRC value based on its CRCType. The CRC

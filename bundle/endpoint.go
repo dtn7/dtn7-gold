@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/dtn7/cboring"
-	"github.com/ugorji/go/codec"
 )
 
 const (
@@ -110,37 +109,6 @@ func MustNewEndpointID(eid string) EndpointID {
 	}
 
 	return ep
-}
-
-// setEndpointIDFromCborArray sets the fields of the EndpointID addressed by
-// the EndpointID-pointer based on the given array. This function is used for
-// the CBOR decoding of the PrimaryBlock and some Extension Blocks.
-func setEndpointIDFromCborArray(ep *EndpointID, arr []interface{}) {
-	(*ep).SchemeName = arr[0].(uint64)
-	(*ep).SchemeSpecificPart = arr[1]
-
-	// In case of an IPN endpoint we need to recast the anonymous interface
-	// array to an uint64 array.
-	if (*ep).SchemeName == endpointURISchemeIPN {
-		ssp := (*ep).SchemeSpecificPart.([]interface{})
-		(*ep).SchemeSpecificPart = [2]uint64{ssp[0].(uint64), ssp[1].(uint64)}
-	}
-}
-
-func (eid *EndpointID) CodecEncodeSelf(enc *codec.Encoder) {
-	var blockArr = []interface{}{
-		eid.SchemeName,
-		eid.SchemeSpecificPart,
-	}
-
-	enc.MustEncode(blockArr)
-}
-
-func (eid *EndpointID) CodecDecodeSelf(dec *codec.Decoder) {
-	var blockArrPt = new([]interface{})
-	dec.MustDecode(blockArrPt)
-
-	setEndpointIDFromCborArray(eid, *blockArrPt)
 }
 
 func (eid *EndpointID) MarshalCbor(w io.Writer) error {

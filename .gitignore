@@ -46,6 +46,3 @@ tags
 /dtnd
 /conf*.toml
 /store*
-
-# Generated files
-**/*_codecgen.go

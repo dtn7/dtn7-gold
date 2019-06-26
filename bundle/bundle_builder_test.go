@@ -1,7 +1,7 @@
 package bundle
 
 import (
-	"encoding/hex"
+	"bytes"
 	"reflect"
 	"testing"
 )
@@ -22,10 +22,14 @@ func TestBundleBuilderSimple(t *testing.T) {
 		t.Fatalf("Builder errored: %v", err)
 	}
 
-	bndlCbor := bndl.ToCbor()
-	bndl2, err := NewBundleFromCbor(&bndlCbor)
-	if err != nil {
-		t.Fatalf("Parsing CBOR encoded Bundle errored: %v", err)
+	buff := new(bytes.Buffer)
+	if err := bndl.MarshalCbor(buff); err != nil {
+		t.Fatal(err)
+	}
+
+	bndl2 := Bundle{}
+	if bndl2.UnmarshalCbor(buff); err != nil {
+		t.Fatal(err)
 	}
 
 	if !reflect.DeepEqual(bndl, bndl2) {
@@ -51,9 +55,6 @@ func TestBundleBuilderSimple(t *testing.T) {
 	if !reflect.DeepEqual(bndl, bndl3) {
 		t.Fatalf("Bundles differ: %v, %v", bndl, bndl3)
 	}
-
-	t.Log(hex.EncodeToString(bndl.ToCbor()))
-	t.Log(hex.EncodeToString(bndl3.ToCbor()))
 }
 
 func TestBldrParseEndpoint(t *testing.T) {
