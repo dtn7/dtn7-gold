@@ -24,7 +24,7 @@ func TestBundleApplyCRC(t *testing.T) {
 	var payload = NewPayloadBlock(
 		DeleteBundle, []byte("GuMo"))
 
-	var bundle, err = NewBundle(
+	var bndle, err = NewBundle(
 		primary, []CanonicalBlock{prevNode, payload})
 
 	if err != nil {
@@ -32,16 +32,21 @@ func TestBundleApplyCRC(t *testing.T) {
 	}
 
 	for _, crcTest := range []CRCType{CRCNo, CRC16, CRC32, CRCNo} {
-		bundle.SetCRCType(crcTest)
-		bundle.CalculateCRC()
+		bndle.SetCRCType(crcTest)
 
-		if ty := bundle.PrimaryBlock.GetCRCType(); ty != crcTest {
+		if ty := bndle.PrimaryBlock.GetCRCType(); ty != crcTest {
 			t.Errorf("Bundle's primary block has wrong CRCType, %v instead of %v",
 				ty, crcTest)
 		}
 
-		if !bundle.CheckCRC() {
-			t.Errorf("For %v the CRC mismatchs", crcTest)
+		buff := new(bytes.Buffer)
+		if err := cboring.Marshal(&bndle, buff); err != nil {
+			t.Fatal(err)
+		}
+
+		bndl2 := Bundle{}
+		if err := cboring.Unmarshal(&bndl2, buff); err != nil {
+			t.Fatal(err)
 		}
 	}
 }
@@ -69,7 +74,6 @@ func TestBundleCbor(t *testing.T) {
 	}
 
 	bundle1.SetCRCType(CRC32)
-	bundle1.CalculateCRC()
 
 	buff := new(bytes.Buffer)
 	if err := cboring.Marshal(&bundle1, buff); err != nil {
@@ -119,10 +123,6 @@ func TestBundleUpcn(t *testing.T) {
 	bndl := Bundle{}
 	if err := cboring.Unmarshal(&bndl, bytes.NewBuffer(upcnBytes)); err != nil {
 		t.Fatal(err)
-	}
-
-	if !bndl.CheckCRC() {
-		t.Errorf("Decoded uPCN bundle's CRC mismatches")
 	}
 
 	// Check PrimaryBlock fields
@@ -331,73 +331,81 @@ func TestBundleCheckValid(t *testing.T) {
 
 func BenchmarkBundleSerializationCboring(b *testing.B) {
 	var sizes = []int{0, 1024, 1048576, 10485760, 104857600}
+	var crcs = []CRCType{CRCNo, CRC16, CRC32}
 
 	for _, size := range sizes {
-		payload := make([]byte, size)
+		for _, crc := range crcs {
+			payload := make([]byte, size)
 
-		rand.Seed(0)
-		rand.Read(payload)
+			rand.Seed(0)
+			rand.Read(payload)
 
-		primary := NewPrimaryBlock(
-			0,
-			MustNewEndpointID("dtn:dest"),
-			MustNewEndpointID("dtn:src"),
-			NewCreationTimestamp(DtnTimeEpoch, 0),
-			60*60*1000000)
+			primary := NewPrimaryBlock(
+				0,
+				MustNewEndpointID("dtn:dest"),
+				MustNewEndpointID("dtn:src"),
+				NewCreationTimestamp(DtnTimeEpoch, 0),
+				60*60*1000000)
 
-		canonicals := []CanonicalBlock{
-			NewBundleAgeBlock(1, 0, 0),
-			NewPreviousNodeBlock(2, 0, MustNewEndpointID("dtn:prev")),
-			NewPayloadBlock(0, payload),
-		}
-
-		bndl := MustNewBundle(primary, canonicals)
-
-		b.Run(fmt.Sprintf("%d", size), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				cboring.Marshal(&bndl, new(bytes.Buffer))
+			canonicals := []CanonicalBlock{
+				NewBundleAgeBlock(1, 0, 0),
+				NewPreviousNodeBlock(2, 0, MustNewEndpointID("dtn:prev")),
+				NewPayloadBlock(0, payload),
 			}
-		})
+
+			bndl := MustNewBundle(primary, canonicals)
+			bndl.SetCRCType(crc)
+
+			b.Run(fmt.Sprintf("%d-%v", size, crc), func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					cboring.Marshal(&bndl, new(bytes.Buffer))
+				}
+			})
+		}
 	}
 }
 
 func BenchmarkBundleDeserializationCboring(b *testing.B) {
 	var sizes = []int{0, 1024, 1048576, 10485760, 104857600}
+	var crcs = []CRCType{CRCNo, CRC16, CRC32}
 
 	for _, size := range sizes {
-		payload := make([]byte, size)
+		for _, crc := range crcs {
+			payload := make([]byte, size)
 
-		rand.Seed(0)
-		rand.Read(payload)
+			rand.Seed(0)
+			rand.Read(payload)
 
-		primary := NewPrimaryBlock(
-			0,
-			MustNewEndpointID("dtn:dest"),
-			MustNewEndpointID("dtn:src"),
-			NewCreationTimestamp(DtnTimeEpoch, 0),
-			60*60*1000000)
+			primary := NewPrimaryBlock(
+				0,
+				MustNewEndpointID("dtn:dest"),
+				MustNewEndpointID("dtn:src"),
+				NewCreationTimestamp(DtnTimeEpoch, 0),
+				60*60*1000000)
 
-		canonicals := []CanonicalBlock{
-			NewBundleAgeBlock(1, 0, 0),
-			NewPreviousNodeBlock(2, 0, MustNewEndpointID("dtn:prev")),
-			NewPayloadBlock(0, payload),
-		}
-
-		bndl := MustNewBundle(primary, canonicals)
-
-		buff := new(bytes.Buffer)
-		cboring.Marshal(&bndl, buff)
-		data := buff.Bytes()
-
-		b.Run(fmt.Sprintf("%d", size), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				tmpBuff := bytes.NewBuffer(data)
-				tmpBndl := Bundle{}
-
-				if err := cboring.Unmarshal(&tmpBndl, tmpBuff); err != nil {
-					b.Fatal(err)
-				}
+			canonicals := []CanonicalBlock{
+				NewBundleAgeBlock(1, 0, 0),
+				NewPreviousNodeBlock(2, 0, MustNewEndpointID("dtn:prev")),
+				NewPayloadBlock(0, payload),
 			}
-		})
+
+			bndl := MustNewBundle(primary, canonicals)
+			bndl.SetCRCType(crc)
+
+			buff := new(bytes.Buffer)
+			cboring.Marshal(&bndl, buff)
+			data := buff.Bytes()
+
+			b.Run(fmt.Sprintf("%d-%v", size, crc), func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					tmpBuff := bytes.NewBuffer(data)
+					tmpBndl := Bundle{}
+
+					if err := cboring.Unmarshal(&tmpBndl, tmpBuff); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+		}
 	}
 }

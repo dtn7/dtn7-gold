@@ -3,6 +3,7 @@ package bundle
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"hash/crc32"
 
 	"github.com/dtn7/cboring"
@@ -37,51 +38,13 @@ var (
 	crc32table = crc32.MakeTable(crc32.Castagnoli)
 )
 
-// blockToBytes encodes a Block to a byte array based on the CBOR encoding. It
-// temporary sets the present CRC value to zero. Therefore this function is not
-// thread safe.
-func blockToBytes(blck block) (b []byte) {
-	var blockCRC = blck.getCRC()
-
-	blck.resetCRC()
-
-	buff := new(bytes.Buffer)
-	blck.MarshalCbor(buff)
-	b = buff.Bytes()
-
-	blck.setCRC(blockCRC)
-
-	return
-}
-
-// calculateCRC calculates a Block's CRC value based on its CRCType. The CRC
-// value will be set to zero temporary during calcuation. Thereforce this
-// function is not thread safe.
-// The returned value is a byte array containing the CRC in network byte order
-// (big endian) and its length is 4 for CRC32 or 2 for CRC16.
-func calculateCRC(blck block) []byte {
-	var data = blockToBytes(blck)
-	var arr = emptyCRC(blck.GetCRCType())
-
-	switch blck.GetCRCType() {
-	case CRCNo:
-
-	case CRC16:
-		binary.BigEndian.PutUint16(arr, crc16.Checksum(data, crc16table))
-
-	case CRC32:
-		binary.BigEndian.PutUint32(arr, crc32.Checksum(data, crc32table))
-
-	default:
-		panic("Unknown CRCType")
-	}
-
-	return arr
-}
-
+// calculateCRCBuff calculates a block's CRC value for serialization.
 func calculateCRCBuff(buff *bytes.Buffer, crcType CRCType) ([]byte, error) {
 	// Append CRC type's empty bytes
-	data := emptyCRC(crcType)
+	data, typeErr := emptyCRC(crcType)
+	if typeErr != nil {
+		return nil, typeErr
+	}
 
 	if err := cboring.WriteByteString(data, buff); err != nil {
 		return nil, err
@@ -105,7 +68,7 @@ func calculateCRCBuff(buff *bytes.Buffer, crcType CRCType) ([]byte, error) {
 }
 
 // emptyCRC returns the "default" CRC value for the given CRC Type.
-func emptyCRC(crcType CRCType) (arr []byte) {
+func emptyCRC(crcType CRCType) (arr []byte, err error) {
 	switch crcType {
 	case CRCNo:
 		arr = nil
@@ -117,19 +80,8 @@ func emptyCRC(crcType CRCType) (arr []byte) {
 		arr = make([]byte, 4)
 
 	default:
-		panic("Unknown CRCType")
+		err = fmt.Errorf("Unknown CRCType %d", crcType)
 	}
 
 	return
-}
-
-// checkCRC returns true if the stored CRC value matches the calculated one or
-// the CRC Type is none.
-// This method changes the block's CRC value temporary and is not thread safe.
-func checkCRC(blck block) bool {
-	if !blck.HasCRC() {
-		return true
-	}
-
-	return bytes.Equal(blck.getCRC(), calculateCRC(blck))
 }

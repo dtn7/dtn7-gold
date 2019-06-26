@@ -77,7 +77,6 @@ func (bldr *BundleBuilder) Build() (bndl Bundle, err error) {
 	bndl, err = NewBundle(bldr.primary, bldr.canonicals)
 	if err == nil {
 		bndl.SetCRCType(bldr.crcType)
-		bndl.CalculateCRC()
 	}
 
 	return

@@ -100,13 +100,6 @@ func (b *Bundle) SetCRCType(crcType CRCType) {
 	})
 }
 
-// CalculateCRC calculates and sets the CRC value for each block.
-func (b *Bundle) CalculateCRC() {
-	b.forEachBlock(func(blck block) {
-		blck.CalculateCRC()
-	})
-}
-
 // ID returns a kind of uniquene representation of this bundle, containing
 // the souce node and creation timestamp. If this bundle is a fragment, the
 // offset is also present.
@@ -127,21 +120,6 @@ func (b Bundle) ID() string {
 
 func (b Bundle) String() string {
 	return b.ID()
-}
-
-// CheckCRC checks the CRC value of each block and returns false if some
-// value does not match. This method changes the block's CRC value temporary
-// and is not thread safe.
-func (b *Bundle) CheckCRC() bool {
-	var flag = true
-
-	b.forEachBlock(func(blck block) {
-		if !blck.CheckCRC() {
-			flag = false
-		}
-	})
-
-	return flag
 }
 
 func (b Bundle) checkValid() (errs error) {

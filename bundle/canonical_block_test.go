@@ -46,10 +46,6 @@ func TestCanonicalBlockCbor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if test.cb1.HasCRC() {
-			test.cb1.CalculateCRC()
-		}
-
 		buff := new(bytes.Buffer)
 		if err := cboring.Marshal(&test.cb1, buff); err != nil {
 			t.Fatal(err)

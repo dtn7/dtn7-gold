@@ -71,10 +71,6 @@ func TestPrimaryBlockCbor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if test.pb1.HasCRC() {
-			test.pb1.CalculateCRC()
-		}
-
 		buff := new(bytes.Buffer)
 		if err := cboring.Marshal(&test.pb1, buff); err != nil {
 			t.Fatal(err)

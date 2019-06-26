@@ -50,12 +50,7 @@ func TestBundleBuilderSimple(t *testing.T) {
 
 	bndl3.PrimaryBlock.ReportTo = bndl3.PrimaryBlock.SourceNode
 	bndl3.SetCRCType(CRC32)
-
-	// CalculateCRC does not work as intended for the PrimaryBlock anymore.
-	// TODO: modify CanonicalBlock, CRC at all
-	//bndl3.CalculateCRC()
-	bndl.forEachBlock(func(b block) { b.resetCRC() })
-	bndl3.forEachBlock(func(b block) { b.resetCRC() })
+	bndl3.MarshalCbor(new(bytes.Buffer))
 
 	if !reflect.DeepEqual(bndl, bndl3) {
 		t.Fatalf("Bundles differ: %v, %v", bndl, bndl3)

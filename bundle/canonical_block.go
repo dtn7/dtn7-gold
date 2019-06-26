@@ -82,38 +82,9 @@ func (cb CanonicalBlock) GetCRCType() CRCType {
 	return cb.CRCType
 }
 
-// getCRC retruns the CRC value.
-func (cb CanonicalBlock) getCRC() []byte {
-	return cb.CRC
-}
-
 // SetCRCType sets the CRC type.
 func (cb *CanonicalBlock) SetCRCType(crcType CRCType) {
 	cb.CRCType = crcType
-}
-
-// CalculateCRC calculates and writes the CRC-value for this block.
-func (cb *CanonicalBlock) CalculateCRC() {
-	cb.setCRC(calculateCRC(cb))
-}
-
-// CheckCRC returns true if the CRC value matches to its CRCType or the
-// CRCType is CRCNo.
-//
-// This method changes the block's CRC value temporary and is not thread safe.
-func (cb *CanonicalBlock) CheckCRC() bool {
-	return true
-}
-
-// resetCRC resets the CRC value to zero. This should be called before
-// calculating the CRC value of this Block.
-func (cb *CanonicalBlock) resetCRC() {
-	cb.CRC = emptyCRC(cb.GetCRCType())
-}
-
-// setCRC sets the CRC value to the given value.
-func (cb *CanonicalBlock) setCRC(crc []byte) {
-	cb.CRC = crc
 }
 
 func (cb *CanonicalBlock) MarshalCbor(w io.Writer) error {

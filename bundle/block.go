@@ -18,25 +18,6 @@ type block interface {
 	// GetCRCType returns the CRCType of this block.
 	GetCRCType() CRCType
 
-	// getCRC retruns the CRC value.
-	getCRC() []byte
-
 	// SetCRCType sets the CRC type.
 	SetCRCType(CRCType)
-
-	// CalculateCRC calculates and writes the CRC-value for this block.
-	CalculateCRC()
-
-	// CheckCRC returns true if the CRC value matches to its CRCType or the
-	// CRCType is CRCNo.
-	//
-	// This method changes the block's CRC value temporary and is not thread safe.
-	CheckCRC() bool
-
-	// resetCRC resets the CRC value to zero. This should be called before
-	// calculating the CRC value of this Block.
-	resetCRC()
-
-	// setCRC sets the CRC value to the given value.
-	setCRC([]byte)
 }

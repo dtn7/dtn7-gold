@@ -68,39 +68,9 @@ func (pb PrimaryBlock) GetCRCType() CRCType {
 	return pb.CRCType
 }
 
-// getCRC retruns the CRC value.
-func (pb PrimaryBlock) getCRC() []byte {
-	return pb.CRC
-}
-
 // SetCRCType sets the CRC type.
 func (pb *PrimaryBlock) SetCRCType(crcType CRCType) {
 	pb.CRCType = crcType
-}
-
-// CalculateCRC calculates and writes the CRC-value for this block.
-func (pb *PrimaryBlock) CalculateCRC() {
-	pb.setCRC(calculateCRC(pb))
-}
-
-// CheckCRC returns true if the CRC value matches to its CRCType or the
-// CRCType is CRCNo.
-//
-// This method changes the block's CRC value temporary and is not thread safe.
-func (pb *PrimaryBlock) CheckCRC() bool {
-	// :^)
-	return true
-}
-
-// resetCRC resets the CRC value to zero. This should be called before
-// calculating the CRC value of this Block.
-func (pb *PrimaryBlock) resetCRC() {
-	pb.CRC = emptyCRC(pb.GetCRCType())
-}
-
-// setCRC sets the CRC value to the given value.
-func (pb *PrimaryBlock) setCRC(crc []byte) {
-	pb.CRC = crc
 }
 
 func (pb *PrimaryBlock) MarshalCbor(w io.Writer) error {
