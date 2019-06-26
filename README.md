@@ -1,4 +1,4 @@
-# dtn7-go [![Build Status](https://travis-ci.com/dtn7/dtn7-go.svg?branch=master)](https://travis-ci.com/dtn7/dtn7-go) [![GoDoc](https://godoc.org/github.com/dtn7/dtn7-go?status.svg)](https://godoc.org/github.com/dtn7/dtn7-go)
+# dtn7-go [![Build Status](https://travis-ci.org/dtn7/dtn7-go.svg?branch=master)](https://travis-ci.org/dtn7/dtn7-go) [![GoDoc](https://godoc.org/github.com/dtn7/dtn7-go?status.svg)](https://godoc.org/github.com/dtn7/dtn7-go)
 
 Delay-Tolerant Networking software suite and library based on the Bundle
 Protocol Version 7.
@@ -15,8 +15,7 @@ Protocol and the MTCP Convergence Layer to exchange bundles between nodes.
 
 ## Software
 ### Installation
-Install the [Go programming language][golang], version 1.11 or later. Also
-install the [`codecgen` tool][codecgen] in your `PATH`.
+Install the [Go programming language][golang], version 1.11 or later.
 
 ```bash
 git clone https://github.com/dtn7/dtn7-go.git && cd dtn7-go
