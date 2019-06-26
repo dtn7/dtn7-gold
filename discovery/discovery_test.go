@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/ugorji/go/codec"
 )
 
 func TestDiscoveryMessageCbor(t *testing.T) {
@@ -16,10 +15,9 @@ func TestDiscoveryMessageCbor(t *testing.T) {
 			Port:     8000,
 		},
 		DiscoveryMessage{
-			Type:        MTCP,
-			Endpoint:    bundle.MustNewEndpointID("dtn:foobar"),
-			Port:        8000,
-			Additionals: []byte("gumo"),
+			Type:     MTCP,
+			Endpoint: bundle.MustNewEndpointID("dtn:foobar"),
+			Port:     8000,
 		},
 		DiscoveryMessage{
 			Type:     TCPCLV4,
@@ -27,10 +25,9 @@ func TestDiscoveryMessageCbor(t *testing.T) {
 			Port:     12345,
 		},
 		DiscoveryMessage{
-			Type:        TCPCLV4,
-			Endpoint:    bundle.MustNewEndpointID("ipn:1337.23"),
-			Port:        12345,
-			Additionals: []byte("gumo"),
+			Type:     TCPCLV4,
+			Endpoint: bundle.MustNewEndpointID("ipn:1337.23"),
+			Port:     12345,
 		},
 	}
 
@@ -53,32 +50,5 @@ func TestDiscoveryMessageCbor(t *testing.T) {
 		if !reflect.DeepEqual(dmIn, dmsOut[0]) {
 			t.Fatalf("Decoded DiscoveryMessage differs: %v became %v", dmIn, dmsOut[0])
 		}
-
-		// Decode as unknown
-		var dmGeneric interface{}
-		var dec = codec.NewDecoderBytes(buff, new(codec.CborHandle))
-
-		if err := dec.Decode(&dmGeneric); err != nil {
-			t.Fatalf("Decoding into an interface failed: %v", err)
-		}
-
-		if ty := reflect.TypeOf(dmGeneric); ty.Kind() != reflect.Slice {
-			t.Errorf("Decoded CBOR has wrong type: %v instead of slice", ty.Kind())
-		}
-
-		const outerLen = 1
-		const innerLen = 4
-		if arr := dmGeneric.([]interface{}); len(arr) != outerLen {
-			t.Errorf("CBOR-Array has wrong length: %d instead of %d",
-				len(arr), outerLen)
-
-			innerArr := arr[0].([]interface{})
-			if len(innerArr) != innerLen {
-				t.Errorf("CBOR-Array has wrong length: %d instead of %d",
-					len(innerArr), innerLen)
-			}
-		}
-
-		t.Logf("%x", buff)
 	}
 }
