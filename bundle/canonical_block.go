@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -101,7 +102,7 @@ func (cb *CanonicalBlock) CalculateCRC() {
 //
 // This method changes the block's CRC value temporary and is not thread safe.
 func (cb *CanonicalBlock) CheckCRC() bool {
-	return checkCRC(cb)
+	return true
 }
 
 // resetCRC resets the CRC value to zero. This should be called before
@@ -119,6 +120,11 @@ func (cb *CanonicalBlock) MarshalCbor(w io.Writer) error {
 	var blockLen uint64 = 5
 	if cb.HasCRC() {
 		blockLen = 6
+	}
+
+	crcBuff := new(bytes.Buffer)
+	if cb.HasCRC() {
+		w = io.MultiWriter(w, crcBuff)
 	}
 
 	if err := cboring.WriteArrayLength(blockLen, w); err != nil {
@@ -165,8 +171,12 @@ func (cb *CanonicalBlock) MarshalCbor(w io.Writer) error {
 	}
 
 	if cb.HasCRC() {
-		if err := cboring.WriteByteString(cb.CRC, w); err != nil {
+		if crcVal, crcErr := calculateCRCBuff(crcBuff, cb.CRCType); crcErr != nil {
+			return crcErr
+		} else if err := cboring.WriteByteString(crcVal, w); err != nil {
 			return err
+		} else {
+			cb.CRC = crcVal
 		}
 	}
 
@@ -181,6 +191,14 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 		return fmt.Errorf("Expected array with length 5 or 6, got %d", bl)
 	} else {
 		blockLen = bl
+	}
+
+	// Pipe incoming bytes into a separate CRC buffer
+	crcBuff := new(bytes.Buffer)
+	if blockLen == 6 {
+		// Replay array's start
+		cboring.WriteArrayLength(blockLen, crcBuff)
+		r = io.TeeReader(r, crcBuff)
 	}
 
 	if bt, err := cboring.ReadUInt(r); err != nil {
@@ -247,10 +265,14 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 	}
 
 	if blockLen == 6 {
-		if crcV, err := cboring.ReadByteString(r); err != nil {
+		if crcCalc, crcErr := calculateCRCBuff(crcBuff, cb.CRCType); crcErr != nil {
+			return crcErr
+		} else if crcVal, err := cboring.ReadByteString(r); err != nil {
 			return err
+		} else if !bytes.Equal(crcCalc, crcVal) {
+			return fmt.Errorf("Invalid CRC value: %x instead of expected %x", crcVal, crcCalc)
 		} else {
-			cb.CRC = crcV
+			cb.CRC = crcVal
 		}
 	}
 
