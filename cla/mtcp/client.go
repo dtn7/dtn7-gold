@@ -2,9 +2,11 @@ package mtcp
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"net"
 
+	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
@@ -68,34 +70,19 @@ func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 	connWriter := bufio.NewWriter(conn)
 	defer connWriter.Flush()
 
-	bndlData := bndl.ToCbor()
-
-	// CBOR byte string with defined length
-	if bndlLen := len(bndlData); bndlLen >= 1<<16 {
-		_, err = connWriter.Write([]byte{
-			0x5A,
-			byte((bndlLen >> 24) & 0xFF),
-			byte((bndlLen >> 16) & 0xFF),
-			byte((bndlLen >> 8) & 0xFF),
-			byte(bndlLen & 0xFF),
-		})
-	} else if bndlLen >= 1<<8 {
-		_, err = connWriter.Write([]byte{
-			0x59,
-			byte((bndlLen >> 8) & 0xFF),
-			byte(bndlLen & 0xFF),
-		})
-	} else {
-		_, err = connWriter.Write([]byte{
-			0x58,
-			byte(bndlLen & 0xFF),
-		})
-	}
-	if err != nil {
+	buff := new(bytes.Buffer)
+	if cborErr := cboring.Marshal(bndl, buff); cborErr != nil {
+		err = cborErr
 		return
 	}
 
-	if _, err = connWriter.Write(bndlData); err != nil {
+	if bsErr := cboring.WriteByteStringLen(uint64(buff.Len()), connWriter); bsErr != nil {
+		err = bsErr
+		return
+	}
+
+	if _, plErr := buff.WriteTo(connWriter); plErr != nil {
+		err = plErr
 		return
 	}
 

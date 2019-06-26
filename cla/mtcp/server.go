@@ -3,12 +3,13 @@ package mtcp
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 )
@@ -94,41 +95,35 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 	}).Debug("MTCP handleServer connection was established")
 
 	for {
-		var err error
-		if du, err := ioutil.ReadAll(bufio.NewReader(conn)); err == nil {
-			if len(du) == 0 {
+		connReader := bufio.NewReader(conn)
+		if _, err := cboring.ReadByteStringLen(connReader); err != nil {
+			if err != io.EOF {
 				log.WithFields(log.Fields{
-					"cla":  serv,
-					"conn": conn,
-				}).Debug("MTCP handleServer connection was closed")
-				return
+					"cla":   serv,
+					"conn":  conn,
+					"error": err,
+				}).Warn("MTCP handleServer connection failed to read byte string len")
 			}
 
-			log.WithFields(log.Fields{
-				"cla":  serv,
-				"conn": conn,
-			}).Debug("MTCP handleServer connection received a byte string")
-
-			offset := (1 << (du[0] - 0x58)) + 1
-			bndlData := du[offset:]
-
-			if bndl, err := bundle.NewBundleFromCbor(&bndlData); err == nil {
-				log.WithFields(log.Fields{
-					"cla":  serv,
-					"conn": conn,
-				}).Debug("MTCP handleServer connection received a bundle")
-
-				serv.reportChan <- cla.NewRecBundle(&bndl, serv.endpointID)
-			}
+			return
 		}
 
-		if err != nil {
+		bndl := new(bundle.Bundle)
+		if err := cboring.Unmarshal(bndl, connReader); err != nil {
 			log.WithFields(log.Fields{
 				"cla":   serv,
 				"conn":  conn,
 				"error": err,
-			}).Warn("Reception of MTCP data unit failed, closing conn's handler")
+			}).Warn("MTCP handleServer connection failed to read bundle")
+
 			return
+		} else {
+			log.WithFields(log.Fields{
+				"cla":  serv,
+				"conn": conn,
+			}).Debug("MTCP handleServer connection received a bundle")
+
+			serv.reportChan <- cla.NewRecBundle(bndl, serv.endpointID)
 		}
 	}
 }
