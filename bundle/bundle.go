@@ -53,8 +53,7 @@ func (b *Bundle) ExtensionBlock(blockType CanonicalBlockType) (*CanonicalBlock, 
 		}
 	}
 
-	return nil, newBundleError(fmt.Sprintf(
-		"No CanonicalBlock with block type %d was found in Bundle", blockType))
+	return nil, fmt.Errorf("No CanonicalBlock with block type %d was found in Bundle", blockType)
 }
 
 // PayloadBlock returns this Bundle's payload block or an error, if it does
@@ -136,7 +135,7 @@ func (b Bundle) checkValid() (errs error) {
 		for _, cb := range b.CanonicalBlocks {
 			if cb.BlockControlFlags.Has(StatusReportBlock) {
 				errs = multierror.Append(errs,
-					newBundleError("Bundle: Bundle Processing Control Flags indicate that "+
+					fmt.Errorf("Bundle: Bundle Processing Control Flags indicate that "+
 						"this bundle's payload is an administrative record or the source "+
 						"node is omitted, but the \"Transmit status report if block canot "+
 						"be processed\" Block Processing Control Flag was set in a "+
@@ -153,8 +152,7 @@ func (b Bundle) checkValid() (errs error) {
 	for _, cb := range b.CanonicalBlocks {
 		if _, ok := cbBlockNumbers[cb.BlockNumber]; ok {
 			errs = multierror.Append(errs,
-				newBundleError(fmt.Sprintf(
-					"Bundle: Block number %d occurred multiple times", cb.BlockNumber)))
+				fmt.Errorf("Bundle: Block number %d occurred multiple times", cb.BlockNumber))
 		}
 		cbBlockNumbers[cb.BlockNumber] = true
 
@@ -162,8 +160,7 @@ func (b Bundle) checkValid() (errs error) {
 		case PreviousNodeBlock, BundleAgeBlock, HopCountBlock:
 			if _, ok := cbBlockTypes[cb.BlockType]; ok {
 				errs = multierror.Append(errs,
-					newBundleError(fmt.Sprintf(
-						"Bundle: Block type %d occurred multiple times", cb.BlockType)))
+					fmt.Errorf("Bundle: Block type %d occurred multiple times", cb.BlockType))
 			}
 			cbBlockTypes[cb.BlockType] = true
 		}
@@ -171,7 +168,7 @@ func (b Bundle) checkValid() (errs error) {
 
 	if b.PrimaryBlock.CreationTimestamp[0] == 0 {
 		if _, ok := cbBlockTypes[BundleAgeBlock]; !ok {
-			errs = multierror.Append(errs, newBundleError(
+			errs = multierror.Append(errs, fmt.Errorf(
 				"Bundle: Creation Timestamp is zero, but no Bundle Age block is present"))
 		}
 	}

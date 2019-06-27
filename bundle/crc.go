@@ -61,7 +61,7 @@ func calculateCRCBuff(buff *bytes.Buffer, crcType CRCType) ([]byte, error) {
 		binary.BigEndian.PutUint32(data, crc32.Checksum(buff.Bytes(), crc32table))
 
 	default:
-		panic("Unknown CRCType")
+		return nil, fmt.Errorf("Unknown CRCType %d", crcType)
 	}
 
 	return data, nil

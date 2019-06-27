@@ -220,8 +220,7 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 func (pb PrimaryBlock) checkValid() (errs error) {
 	if pb.Version != dtnVersion {
 		errs = multierror.Append(errs,
-			newBundleError(fmt.Sprintf("PrimaryBlock: Wrong Version, %d instead of %d",
-				pb.Version, dtnVersion)))
+			fmt.Errorf("PrimaryBlock: Wrong Version, %d instead of %d", pb.Version, dtnVersion))
 	}
 
 	if bcfErr := pb.BundleControlFlags.checkValid(); bcfErr != nil {
@@ -254,7 +253,7 @@ func (pb PrimaryBlock) checkValid() (errs error) {
 			!pb.BundleControlFlags.Has(StatusRequestDeletion))
 	if !bpcfImpl {
 		errs = multierror.Append(errs,
-			newBundleError("PrimaryBlock: Source Node is dtn:none, but Bundle could "+
+			fmt.Errorf("PrimaryBlock: Source Node is dtn:none, but Bundle could "+
 				"be fragmented or status report flags are not zero"))
 	}
 

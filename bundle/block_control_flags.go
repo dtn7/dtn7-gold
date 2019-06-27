@@ -1,5 +1,10 @@
 package bundle
 
+import (
+	"fmt"
+	"strings"
+)
+
 // BlockControlFlags is an uint which represents the Block Processing Control
 // Flags as specified in 4.1.4.
 type BlockControlFlags uint64
@@ -21,11 +26,6 @@ const (
 	blckCFReservedFields BlockControlFlags = 0xF0
 )
 
-func blockControlFlagsCheck(flag BlockControlFlags) error {
-
-	return nil
-}
-
 // Has returns true if a given flag or mask of flags is set.
 func (bcf BlockControlFlags) Has(flag BlockControlFlags) bool {
 	return (bcf & flag) != 0
@@ -33,8 +33,30 @@ func (bcf BlockControlFlags) Has(flag BlockControlFlags) bool {
 
 func (bcf BlockControlFlags) checkValid() error {
 	if bcf.Has(blckCFReservedFields) {
-		return newBundleError("BlockControlFlags: Given flag contains reserved bits")
+		return fmt.Errorf("BlockControlFlags: Given flag %x contains reserved bits", bcf)
 	}
 
 	return nil
+}
+
+func (bcf BlockControlFlags) String() string {
+	var fields []string
+
+	checks := []struct {
+		field BlockControlFlags
+		text  string
+	}{
+		{DeleteBundle, "DELETE_BUNDLE"},
+		{StatusReportBlock, "REQUEST_STATUS_REPORT"},
+		{RemoveBlock, "REMOVE_BLOCK"},
+		{ReplicateBlock, "REPLICATE_BLOCK"},
+	}
+
+	for _, check := range checks {
+		if bcf.Has(check.field) {
+			fields = append(fields, check.text)
+		}
+	}
+
+	return strings.Join(fields, ",")
 }

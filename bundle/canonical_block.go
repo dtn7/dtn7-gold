@@ -254,8 +254,7 @@ func (cb CanonicalBlock) checkValidExtensionBlocks() error {
 	switch cb.BlockType {
 	case PayloadBlock:
 		if cb.BlockNumber != 0 {
-			return newBundleError(
-				"CanonicalBlock: Payload Block's block number is not zero")
+			return fmt.Errorf("CanonicalBlock: Payload Block's block number is not zero")
 		}
 
 		return nil
@@ -275,7 +274,7 @@ func (cb CanonicalBlock) checkValidExtensionBlocks() error {
 		// "Block type codes 192 through 255 are not reserved and are available for
 		// private and/or experimental use.", draft-ietf-dtn-bpbis-13#section-4.2.3
 		if !(192 <= cb.BlockType && cb.BlockType <= 255) {
-			return newBundleError("CanonicalBlock: Unknown block type")
+			return fmt.Errorf("CanonicalBlock: Unknown block type %d", cb.BlockType)
 		}
 	}
 

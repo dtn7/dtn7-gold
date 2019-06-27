@@ -47,7 +47,7 @@ func newEndpointIDIPN(ssp string) (ep EndpointID, err error) {
 	re := regexp.MustCompile(`^(\d+)\.(\d+)$`)
 	matches := re.FindStringSubmatch(ssp)
 	if len(matches) != 3 {
-		err = newBundleError("IPN does not satisfy given regex")
+		err = fmt.Errorf("IPN does not satisfy given regex")
 		return
 	}
 
@@ -62,7 +62,7 @@ func newEndpointIDIPN(ssp string) (ep EndpointID, err error) {
 	}
 
 	if nodeNo < 1 || serviceNo < 1 {
-		err = newBundleError("IPN's node and service number must be >= 1")
+		err = fmt.Errorf("IPN's node and service number must be >= 1")
 		return
 	}
 
@@ -83,7 +83,7 @@ func NewEndpointID(eid string) (e EndpointID, err error) {
 	matches := re.FindStringSubmatch(eid)
 
 	if len(matches) != 3 {
-		err = newBundleError("eid does not satisfy regex")
+		err = fmt.Errorf("eid does not satisfy regex")
 		return
 	}
 
@@ -96,7 +96,7 @@ func NewEndpointID(eid string) (e EndpointID, err error) {
 	case "ipn":
 		return newEndpointIDIPN(ssp)
 	default:
-		return EndpointID{}, newBundleError("Unknown scheme type")
+		return EndpointID{}, fmt.Errorf("Unknown scheme type \"%s", name)
 	}
 }
 
@@ -211,7 +211,7 @@ func (eid EndpointID) checkValidDtn() error {
 	switch eid.SchemeSpecificPart.(type) {
 	case string:
 		if eid.SchemeSpecificPart.(string) == "none" {
-			return newBundleError("EndpointID: equals dtn:none, with none as a string")
+			return fmt.Errorf("EndpointID: equals dtn:none, with none as a string")
 		}
 	}
 
@@ -221,7 +221,7 @@ func (eid EndpointID) checkValidDtn() error {
 func (eid EndpointID) checkValidIpn() error {
 	ssp := eid.SchemeSpecificPart.([2]uint64)
 	if ssp[0] < 1 || ssp[1] < 1 {
-		return newBundleError("EndpointID: IPN's node and service number must be >= 1")
+		return fmt.Errorf("EndpointID: IPN's node and service number must be >= 1")
 	}
 
 	return nil
@@ -236,7 +236,7 @@ func (eid EndpointID) checkValid() error {
 		return eid.checkValidIpn()
 
 	default:
-		return newBundleError("EndpointID: unknown scheme name")
+		return fmt.Errorf("EndpointID: unknown scheme name")
 	}
 }
 

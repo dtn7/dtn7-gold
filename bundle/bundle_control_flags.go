@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
@@ -54,13 +55,12 @@ func (bcf BundleControlFlags) Has(flag BundleControlFlags) bool {
 func (bcf BundleControlFlags) checkValid() (errs error) {
 	if bcf.Has(bndlCFReservedFields) {
 		errs = multierror.Append(
-			errs, newBundleError(
-				"BundleControlFlags: Given flag contains reserved bits"))
+			errs, fmt.Errorf("BundleControlFlags: Given flag contains reserved bits"))
 	}
 
 	if bcf.Has(IsFragment) && bcf.Has(MustNotFragmented) {
 		errs = multierror.Append(errs,
-			newBundleError("BundleControlFlags: both 'bundle is a fragment' and "+
+			fmt.Errorf("BundleControlFlags: both 'bundle is a fragment' and "+
 				"'bundle must not be fragmented' flags are set"))
 	}
 
@@ -71,7 +71,7 @@ func (bcf BundleControlFlags) checkValid() (errs error) {
 			!bcf.Has(StatusRequestDelivery) &&
 			!bcf.Has(StatusRequestDeletion))
 	if !adminRecCheck {
-		errs = multierror.Append(errs, newBundleError(
+		errs = multierror.Append(errs, fmt.Errorf(
 			"BundleControlFlags: \"payload is administrative record => "+
 				"no status report request flags\" failed"))
 	}
@@ -80,7 +80,7 @@ func (bcf BundleControlFlags) checkValid() (errs error) {
 }
 
 func (bcf BundleControlFlags) String() string {
-	fields := make([]string, 0, 0)
+	var fields []string
 
 	checks := []struct {
 		field BundleControlFlags
