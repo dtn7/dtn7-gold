@@ -138,7 +138,7 @@ func (store *SimpleStore) setBundle(bp BundlePack) error {
 	defer store.ioMutex.Unlock()
 
 	bndlPath := store.bundlePath(bp.ID())
-	bndlFile, bndlErr := os.OpenFile(bndlPath, os.O_WRONLY|os.O_CREATE, 755)
+	bndlFile, bndlErr := os.OpenFile(bndlPath, os.O_WRONLY|os.O_CREATE, 0755)
 	if bndlErr != nil {
 		return bndlErr
 	}
