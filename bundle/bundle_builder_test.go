@@ -26,6 +26,7 @@ func TestBundleBuilderSimple(t *testing.T) {
 	if err := bndl.MarshalCbor(buff); err != nil {
 		t.Fatal(err)
 	}
+	bndlCbor := buff.Bytes()
 
 	bndl2 := Bundle{}
 	if bndl2.UnmarshalCbor(buff); err != nil {
@@ -44,13 +45,19 @@ func TestBundleBuilderSimple(t *testing.T) {
 			NewCreationTimestamp(DtnTimeEpoch, 0),
 			1000000*60*10),
 		[]CanonicalBlock{
-			NewHopCountBlock(1, 0, NewHopCount(64)),
-			NewBundleAgeBlock(2, 0, 0),
-			NewPayloadBlock(0, []byte("hello world!"))})
+			NewCanonicalBlock(2, 0, NewHopCountBlock(64)),
+			NewCanonicalBlock(3, 0, NewBundleAgeBlock(0)),
+			NewCanonicalBlock(1, 0, NewPayloadBlock([]byte("hello world!")))})
 
+	buff.Reset()
 	bndl3.PrimaryBlock.ReportTo = bndl3.PrimaryBlock.SourceNode
 	bndl3.SetCRCType(CRC32)
-	bndl3.MarshalCbor(new(bytes.Buffer))
+	bndl3.MarshalCbor(buff)
+	bndl3Cbor := buff.Bytes()
+
+	if !bytes.Equal(bndlCbor, bndl3Cbor) {
+		t.Fatalf("CBOR has changed:\n%x\n%x", bndlCbor, bndl3Cbor)
+	}
 
 	if !reflect.DeepEqual(bndl, bndl3) {
 		t.Fatalf("Bundles differ: %v, %v", bndl, bndl3)

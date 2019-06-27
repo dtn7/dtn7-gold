@@ -35,7 +35,7 @@ func Builder() *BundleBuilder {
 
 		primary:          PrimaryBlock{Version: dtnVersion},
 		canonicals:       []CanonicalBlock{},
-		canonicalCounter: 1,
+		canonicalCounter: 2,
 		crcType:          CRCNo,
 	}
 }
@@ -235,10 +235,9 @@ func (bldr *BundleBuilder) BundleCtrlFlags(bcf BundleControlFlags) *BundleBuilde
 
 // Canonical adds a canonical block to this bundle. The parameters are:
 //
-//   BlockType, Data[, BlockControlFlags]
+//   ExtensionBlock[, BlockControlFlags]
 //
-//   where BlockType is a bundle.CanonicalBlockType,
-//   Data is the block's data in its specific type and
+//   where ExtensionBlock is a bundle.ExtensionBlock and
 //   BlockControlFlags are _optional_ block processing controll flags
 //
 func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
@@ -248,24 +247,21 @@ func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 
 	var (
 		blockNumber    uint64
-		blockType      CanonicalBlockType
-		data           interface{}
+		data           ExtensionBlock
 		blockCtrlFlags BlockControlFlags
 
 		chk0, chk1 bool = true, true
 	)
 
 	switch l := len(args); l {
+	case 1:
+		data, chk0 = args[0].(ExtensionBlock)
 	case 2:
-		blockType, chk0 = args[0].(CanonicalBlockType)
-		data = args[1]
-	case 3:
-		blockType, chk0 = args[0].(CanonicalBlockType)
-		data = args[1]
-		blockCtrlFlags, chk1 = args[2].(BlockControlFlags)
+		data, chk0 = args[0].(ExtensionBlock)
+		blockCtrlFlags, chk1 = args[1].(BlockControlFlags)
 	default:
 		bldr.err = fmt.Errorf(
-			"Canonical was called with neither two nor three parameters")
+			"Canonical was called with neither one nor two parameters")
 		return bldr
 	}
 
@@ -274,15 +270,15 @@ func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 		return bldr
 	}
 
-	if blockType == PayloadBlock {
-		blockNumber = 0
+	if data.BlockTypeCode() == ExtBlockTypePayloadBlock {
+		blockNumber = 1
 	} else {
 		blockNumber = bldr.canonicalCounter
 		bldr.canonicalCounter++
 	}
 
 	bldr.canonicals = append(bldr.canonicals,
-		NewCanonicalBlock(blockType, blockNumber, blockCtrlFlags, data))
+		NewCanonicalBlock(blockNumber, blockCtrlFlags, data))
 
 	return bldr
 }
@@ -305,11 +301,10 @@ func (bldr *BundleBuilder) BundleAgeBlock(args ...interface{}) *BundleBuilder {
 	}
 
 	// Call Canonical as a variadic function with:
-	// - BlockType: BundleAgeBlock,
-	// - Data: us (us parsed from given age)
+	// - ExtensionBlock: BundleAgeBlock with parsed microseconds
 	// - BlockControlFlags: BlockControlFlags, if given
 	return bldr.Canonical(
-		append([]interface{}{BundleAgeBlock, us}, args[1:]...)...)
+		append([]interface{}{NewBundleAgeBlock(us)}, args[1:]...)...)
 }
 
 // HopCountBlock adds a hop count block to this bundle. The parameters are:
@@ -331,7 +326,7 @@ func (bldr *BundleBuilder) HopCountBlock(args ...interface{}) *BundleBuilder {
 
 	// Read the comment in BundleAgeBlock to grasp the following madness
 	return bldr.Canonical(append(
-		[]interface{}{HopCountBlock, NewHopCount(uint64(limit))}, args[1:]...)...)
+		[]interface{}{NewHopCountBlock(uint64(limit))}, args[1:]...)...)
 }
 
 // PayloadBlock adds a payload block to this bundle. The parameters are:
@@ -349,7 +344,7 @@ func (bldr *BundleBuilder) PayloadBlock(args ...interface{}) *BundleBuilder {
 
 	// Call Canonical, but add PayloadBlock as the first variadic parameter
 	return bldr.Canonical(append(
-		[]interface{}{PayloadBlock, []byte(buf.Bytes())}, args[1:]...)...)
+		[]interface{}{NewPayloadBlock(buf.Bytes())}, args[1:]...)...)
 }
 
 // PreviousNodeBlock adds a previous node block to this bundle. The parameters
@@ -371,5 +366,5 @@ func (bldr *BundleBuilder) PreviousNodeBlock(args ...interface{}) *BundleBuilder
 	}
 
 	return bldr.Canonical(
-		append([]interface{}{PreviousNodeBlock, eid}, args[1:]...)...)
+		append([]interface{}{NewPreviousNodeBlock(eid)}, args[1:]...)...)
 }

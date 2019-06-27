@@ -10,69 +10,31 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-// CanonicalBlockType is an uint which is used as "block type code" for the
-// canonical block. The BlockType-consts may be used.
-type CanonicalBlockType uint64
-
-const (
-	// PayloadBlock is a BlockType for a payload block as defined in 4.2.3.
-	PayloadBlock CanonicalBlockType = 1
-
-	// IntegrityBlock is a BlockType defined in the Bundle Security Protocol
-	// specifiation.
-	IntegrityBlock CanonicalBlockType = 2
-
-	// ConfidentialityBlock is a BlockType defined in the Bundle Security
-	// Protocol specifiation.
-	ConfidentialityBlock CanonicalBlockType = 3
-
-	// ManifestBlock is a BlockType defined in the Manifest Extension Block
-	// specifiation.
-	ManifestBlock CanonicalBlockType = 4
-
-	// FlowLabelBlock is a BlockType defined in the Flow Label Extension Block
-	// specification.
-	FlowLabelBlock CanonicalBlockType = 6
-
-	// PreviousNodeBlock is a BlockType for a Previous Node block as defined
-	// in section 4.3.1.
-	PreviousNodeBlock CanonicalBlockType = 7
-
-	// BundleAgeBlock is a BlockType for a Bundle Age block as defined in
-	// section 4.3.2.
-	BundleAgeBlock CanonicalBlockType = 8
-
-	// HopCountBlock is a BlockType for a Hop Count block as defined in
-	// section 4.3.3.
-	HopCountBlock CanonicalBlockType = 9
-)
-
-// CanonicalBlock represents the canonical bundle block defined
-// in section 4.2.3.
+// CanonicalBlock represents the canonical bundle block defined in section 4.2.3.
 type CanonicalBlock struct {
-	BlockType         CanonicalBlockType
 	BlockNumber       uint64
 	BlockControlFlags BlockControlFlags
 	CRCType           CRCType
-	Data              interface{}
 	CRC               []byte
+	Value             ExtensionBlock
 }
 
-// NewCanonicalBlock creates a new canonical block with the given parameters.
-func NewCanonicalBlock(blockType CanonicalBlockType, blockNumber uint64,
-	blockControlFlags BlockControlFlags, data interface{}) CanonicalBlock {
+func NewCanonicalBlock(no uint64, bcf BlockControlFlags, value ExtensionBlock) CanonicalBlock {
 	return CanonicalBlock{
-		BlockType:         blockType,
-		BlockNumber:       blockNumber,
-		BlockControlFlags: blockControlFlags,
+		BlockNumber:       no,
+		BlockControlFlags: bcf,
 		CRCType:           CRCNo,
-		Data:              data,
 		CRC:               nil,
+		Value:             value,
 	}
 }
 
+// BlockTypeCode returns the block type code.
+func (cb CanonicalBlock) BlockTypeCode() uint64 {
+	return cb.Value.BlockTypeCode()
+}
+
 // HasCRC retruns true if the CRCType indicates a CRC present for this block.
-// In this case the CRC value should become relevant.
 func (cb CanonicalBlock) HasCRC() bool {
 	return cb.GetCRCType() != CRCNo
 }
@@ -102,7 +64,7 @@ func (cb *CanonicalBlock) MarshalCbor(w io.Writer) error {
 		return err
 	}
 
-	fields := []uint64{uint64(cb.BlockType), cb.BlockNumber,
+	fields := []uint64{cb.BlockTypeCode(), cb.BlockNumber,
 		uint64(cb.BlockControlFlags), uint64(cb.CRCType)}
 	for _, f := range fields {
 		if err := cboring.WriteUInt(f, w); err != nil {
@@ -110,35 +72,8 @@ func (cb *CanonicalBlock) MarshalCbor(w io.Writer) error {
 		}
 	}
 
-	switch cb.BlockType {
-	case PayloadBlock:
-		// byte array
-		if err := cboring.WriteByteString(cb.Data.([]byte), w); err != nil {
-			return err
-		}
-
-	case BundleAgeBlock:
-		// uint
-		if err := cboring.WriteUInt(cb.Data.(uint64), w); err != nil {
-			return err
-		}
-
-	case PreviousNodeBlock:
-		// endpoint
-		ep := cb.Data.(EndpointID)
-		if err := cboring.Marshal(&ep, w); err != nil {
-			return fmt.Errorf("EndpointID failed: %v", err)
-		}
-
-	case HopCountBlock:
-		// hop count
-		hc := cb.Data.(HopCount)
-		if err := cboring.Marshal(&hc, w); err != nil {
-			return fmt.Errorf("HopCount failed: %v", err)
-		}
-
-	default:
-		return fmt.Errorf("Unsupported block type code: %d", cb.BlockType)
+	if err := cboring.Marshal(cb.Value, w); err != nil {
+		return fmt.Errorf("Marshalling value failed: %v", err)
 	}
 
 	if cb.HasCRC() {
@@ -172,10 +107,11 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 		r = io.TeeReader(r, crcBuff)
 	}
 
+	var blockType uint64
 	if bt, err := cboring.ReadUInt(r); err != nil {
 		return err
 	} else {
-		cb.BlockType = CanonicalBlockType(bt)
+		blockType = bt
 	}
 
 	if bn, err := cboring.ReadUInt(r); err != nil {
@@ -196,43 +132,38 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 		cb.CRCType = CRCType(crcT)
 	}
 
-	switch cb.BlockType {
-	case PayloadBlock:
-		// byte array
-		if pl, err := cboring.ReadByteString(r); err != nil {
-			return err
-		} else {
-			cb.Data = pl
+	// TODO: generic factory or the like
+	switch blockType {
+	case ExtBlockTypePayloadBlock:
+		var pb PayloadBlock
+		if err := cboring.Unmarshal(&pb, r); err != nil {
+			return fmt.Errorf("Unmarshalling PayloadBlock failed: %v", err)
 		}
+		cb.Value = &pb
 
-	case BundleAgeBlock:
-		// uint
-		if ba, err := cboring.ReadUInt(r); err != nil {
-			return err
-		} else {
-			cb.Data = ba
+	case ExtBlockTypePreviousNodeBlock:
+		var pnb PreviousNodeBlock
+		if err := cboring.Unmarshal(&pnb, r); err != nil {
+			return fmt.Errorf("Unmarshalling PreviousNodeBlock failed: %v", err)
 		}
+		cb.Value = &pnb
 
-	case PreviousNodeBlock:
-		// endpoint
-		ep := EndpointID{}
-		if err := cboring.Unmarshal(&ep, r); err != nil {
-			return fmt.Errorf("EndpointID failed: %v", err)
-		} else {
-			cb.Data = ep
+	case ExtBlockTypeBundleAgeBlock:
+		var bab BundleAgeBlock
+		if err := cboring.Unmarshal(&bab, r); err != nil {
+			return fmt.Errorf("Unmarshalling BundleAgeBlock failed: %v", err)
 		}
+		cb.Value = &bab
 
-	case HopCountBlock:
-		// hop count
-		hc := HopCount{}
-		if err := cboring.Unmarshal(&hc, r); err != nil {
-			return fmt.Errorf("HopCount failed: %v", err)
-		} else {
-			cb.Data = hc
+	case ExtBlockTypeHopCountBlock:
+		var hcb HopCountBlock
+		if err := cboring.Unmarshal(&hcb, r); err != nil {
+			return fmt.Errorf("Unmarshalling HopCountBlock failed: %v", err)
 		}
+		cb.Value = &hcb
 
 	default:
-		return fmt.Errorf("Unsupported block type code: %d", cb.BlockType)
+		return fmt.Errorf("Unsupported block type code: %d", blockType)
 	}
 
 	if blockLen == 6 {
@@ -251,32 +182,35 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 }
 
 func (cb CanonicalBlock) checkValidExtensionBlocks() error {
-	switch cb.BlockType {
-	case PayloadBlock:
-		if cb.BlockNumber != 0 {
-			return fmt.Errorf("CanonicalBlock: Payload Block's block number is not zero")
+	// TODO
+	/*
+		switch cb.BlockType {
+		case PayloadBlock:
+			if cb.BlockNumber != 0 {
+				return fmt.Errorf("CanonicalBlock: Payload Block's block number is not zero")
+			}
+
+			return nil
+
+		case IntegrityBlock, ConfidentialityBlock, ManifestBlock, FlowLabelBlock:
+			// These extension blocks are defined in other specifications
+			return nil
+
+		case PreviousNodeBlock:
+			return cb.Data.(EndpointID).checkValid()
+
+		case BundleAgeBlock, HopCountBlock:
+			// Nothing to check here
+			return nil
+
+		default:
+			// "Block type codes 192 through 255 are not reserved and are available for
+			// private and/or experimental use.", draft-ietf-dtn-bpbis-13#section-4.2.3
+			if !(192 <= cb.BlockType && cb.BlockType <= 255) {
+				return fmt.Errorf("CanonicalBlock: Unknown block type %d", cb.BlockType)
+			}
 		}
-
-		return nil
-
-	case IntegrityBlock, ConfidentialityBlock, ManifestBlock, FlowLabelBlock:
-		// These extension blocks are defined in other specifications
-		return nil
-
-	case PreviousNodeBlock:
-		return cb.Data.(EndpointID).checkValid()
-
-	case BundleAgeBlock, HopCountBlock:
-		// Nothing to check here
-		return nil
-
-	default:
-		// "Block type codes 192 through 255 are not reserved and are available for
-		// private and/or experimental use.", draft-ietf-dtn-bpbis-13#section-4.2.3
-		if !(192 <= cb.BlockType && cb.BlockType <= 255) {
-			return fmt.Errorf("CanonicalBlock: Unknown block type %d", cb.BlockType)
-		}
-	}
+	*/
 
 	return nil
 }
@@ -296,116 +230,15 @@ func (cb CanonicalBlock) checkValid() (errs error) {
 func (cb CanonicalBlock) String() string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "block type code: %d, ", cb.BlockType)
+	fmt.Fprintf(&b, "block type code: %d, ", cb.Value.BlockTypeCode())
 	fmt.Fprintf(&b, "block number: %d, ", cb.BlockNumber)
 	fmt.Fprintf(&b, "block processing control flags: %b, ", cb.BlockControlFlags)
 	fmt.Fprintf(&b, "crc type: %v, ", cb.CRCType)
-	fmt.Fprintf(&b, "data: %v", cb.Data)
+	fmt.Fprintf(&b, "data: %v", cb.Value)
 
 	if cb.HasCRC() {
 		fmt.Fprintf(&b, ", crc: %x", cb.CRC)
 	}
 
 	return b.String()
-}
-
-// HopCount represents the tuple of a hop limit and hop count defined in 4.3.3
-// for the Hop Count block.
-type HopCount struct {
-	Limit uint64
-	Count uint64
-}
-
-// IsExceeded returns true if the hop limit exceeded.
-func (hc HopCount) IsExceeded() bool {
-	return hc.Count > hc.Limit
-}
-
-// Increment increments the hop counter and returns false, if the hop limit is
-// exceeded after incrementing the counter.
-func (hc *HopCount) Increment() bool {
-	hc.Count++
-
-	return hc.IsExceeded()
-}
-
-// Decrement decrements the hop counter. This could be usefull if you want to
-// reset the HopCount's state after sending a modified bundle.
-func (hc *HopCount) Decrement() {
-	hc.Count--
-}
-
-// NewHopCount returns a new Hop Count block as defined in section 4.3.3. The
-// hop count will be set to zero, as specified for new blocks.
-func NewHopCount(limit uint64) HopCount {
-	return HopCount{
-		Limit: limit,
-		Count: 0,
-	}
-}
-
-func (hc HopCount) String() string {
-	return fmt.Sprintf("(%d, %d)", hc.Limit, hc.Count)
-}
-
-func (hc *HopCount) MarshalCbor(w io.Writer) error {
-	if err := cboring.WriteArrayLength(2, w); err != nil {
-		return err
-	}
-
-	fields := []uint64{hc.Limit, hc.Count}
-	for _, f := range fields {
-		if err := cboring.WriteUInt(f, w); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (hc *HopCount) UnmarshalCbor(r io.Reader) error {
-	if l, err := cboring.ReadArrayLength(r); err != nil {
-		return err
-	} else if l != 2 {
-		return fmt.Errorf("Expected array with length 2, got %d", l)
-	}
-
-	fields := []*uint64{&hc.Limit, &hc.Count}
-	for _, f := range fields {
-		if x, err := cboring.ReadUInt(r); err != nil {
-			return err
-		} else {
-			*f = x
-		}
-	}
-
-	return nil
-}
-
-// NewPayloadBlock creates a new payload block.
-func NewPayloadBlock(blockControlFlags BlockControlFlags, data []byte) CanonicalBlock {
-	// A payload block's block number is always 0 (4.2.3)
-	return NewCanonicalBlock(PayloadBlock, 0, blockControlFlags, data)
-}
-
-// NewPreviousNodeBlock creates a new Previous Node block.
-func NewPreviousNodeBlock(blockNumber uint64, blockControlFlags BlockControlFlags,
-	prevNodeId EndpointID) CanonicalBlock {
-	return NewCanonicalBlock(
-		PreviousNodeBlock, blockNumber, blockControlFlags, prevNodeId)
-}
-
-// NewBundleAgeBlock creates a new Bundle Age block to hold the bundle's lifetime
-// in microseconds.
-func NewBundleAgeBlock(blockNumber uint64, blockControlFlags BlockControlFlags,
-	time uint64) CanonicalBlock {
-	return NewCanonicalBlock(
-		BundleAgeBlock, blockNumber, blockControlFlags, time)
-}
-
-// NewHopCountBlock creates a new Hop Count block.
-func NewHopCountBlock(blockNumber uint64, blockControlFlags BlockControlFlags,
-	hopCount HopCount) CanonicalBlock {
-	return NewCanonicalBlock(
-		HopCountBlock, blockNumber, blockControlFlags, hopCount)
 }

@@ -45,10 +45,10 @@ func (b *Bundle) forEachBlock(f func(block)) {
 // ExtensionBlock returns this Bundle's canonical block/extension block
 // matching the requested block type code. If no such block was found,
 // an error will be returned.
-func (b *Bundle) ExtensionBlock(blockType CanonicalBlockType) (*CanonicalBlock, error) {
+func (b *Bundle) ExtensionBlock(blockType uint64) (*CanonicalBlock, error) {
 	for i := 0; i < len(b.CanonicalBlocks); i++ {
 		cb := &b.CanonicalBlocks[i]
-		if (*cb).BlockType == blockType {
+		if cb.BlockTypeCode() == blockType {
 			return cb, nil
 		}
 	}
@@ -59,7 +59,7 @@ func (b *Bundle) ExtensionBlock(blockType CanonicalBlockType) (*CanonicalBlock, 
 // PayloadBlock returns this Bundle's payload block or an error, if it does
 // not exists.
 func (b *Bundle) PayloadBlock() (*CanonicalBlock, error) {
-	return b.ExtensionBlock(PayloadBlock)
+	return b.ExtensionBlock(ExtBlockTypePayloadBlock)
 }
 
 // AddExtensionBlock adds a new ExtensionBlock to this Bundle. The block number
@@ -146,8 +146,9 @@ func (b Bundle) checkValid() (errs error) {
 
 	// Check uniqueness of block numbers
 	var cbBlockNumbers = make(map[uint64]bool)
+	// TODO
 	// Check max 1 occurrence of extension blocks
-	var cbBlockTypes = make(map[CanonicalBlockType]bool)
+	// var cbBlockTypes = make(map[uint64]bool)
 
 	for _, cb := range b.CanonicalBlocks {
 		if _, ok := cbBlockNumbers[cb.BlockNumber]; ok {
@@ -156,22 +157,26 @@ func (b Bundle) checkValid() (errs error) {
 		}
 		cbBlockNumbers[cb.BlockNumber] = true
 
-		switch cb.BlockType {
-		case PreviousNodeBlock, BundleAgeBlock, HopCountBlock:
-			if _, ok := cbBlockTypes[cb.BlockType]; ok {
-				errs = multierror.Append(errs,
-					fmt.Errorf("Bundle: Block type %d occurred multiple times", cb.BlockType))
+		/*
+			switch cb.BlockType {
+			case PreviousNodeBlock, BundleAgeBlock, HopCountBlock:
+				if _, ok := cbBlockTypes[cb.BlockType]; ok {
+					errs = multierror.Append(errs,
+						fmt.Errorf("Bundle: Block type %d occurred multiple times", cb.BlockType))
+				}
+				cbBlockTypes[cb.BlockType] = true
 			}
-			cbBlockTypes[cb.BlockType] = true
-		}
+		*/
 	}
 
-	if b.PrimaryBlock.CreationTimestamp[0] == 0 {
-		if _, ok := cbBlockTypes[BundleAgeBlock]; !ok {
-			errs = multierror.Append(errs, fmt.Errorf(
-				"Bundle: Creation Timestamp is zero, but no Bundle Age block is present"))
+	/*
+		if b.PrimaryBlock.CreationTimestamp[0] == 0 {
+			if _, ok := cbBlockTypes[BundleAgeBlock]; !ok {
+				errs = multierror.Append(errs, fmt.Errorf(
+					"Bundle: Creation Timestamp is zero, but no Bundle Age block is present"))
+			}
 		}
-	}
+	*/
 
 	return
 }
