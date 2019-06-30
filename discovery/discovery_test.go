@@ -9,22 +9,22 @@ import (
 
 func TestDiscoveryMessageCbor(t *testing.T) {
 	var tests = []DiscoveryMessage{
-		DiscoveryMessage{
+		{
 			Type:     MTCP,
 			Endpoint: bundle.MustNewEndpointID("dtn:foobar"),
 			Port:     8000,
 		},
-		DiscoveryMessage{
+		{
 			Type:     MTCP,
 			Endpoint: bundle.MustNewEndpointID("dtn:foobar"),
 			Port:     8000,
 		},
-		DiscoveryMessage{
+		{
 			Type:     TCPCLV4,
 			Endpoint: bundle.MustNewEndpointID("ipn:1337.23"),
 			Port:     12345,
 		},
-		DiscoveryMessage{
+		{
 			Type:     TCPCLV4,
 			Endpoint: bundle.MustNewEndpointID("ipn:1337.23"),
 			Port:     12345,

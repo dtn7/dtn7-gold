@@ -63,7 +63,7 @@ func (idk *IdKeeper) clean() {
 
 	var threshold = bundle.DtnTimeNow() - 60*60*24
 
-	for tpl, _ := range idk.data {
+	for tpl := range idk.data {
 		if tpl.time < threshold && tpl.time != bundle.DtnTimeEpoch {
 			delete(idk.data, tpl)
 		}

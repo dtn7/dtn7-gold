@@ -70,7 +70,7 @@ func (bp *BundlePack) RemoveConstraint(c Constraint) {
 
 // PurgeConstraints removes all constraints, except LocalEndpoint.
 func (bp *BundlePack) PurgeConstraints() {
-	for c, _ := range bp.Constraints {
+	for c := range bp.Constraints {
 		if c != LocalEndpoint {
 			bp.RemoveConstraint(c)
 		}
@@ -94,7 +94,7 @@ func (bp BundlePack) String() string {
 
 	fmt.Fprintf(&b, "BundlePack(%v,", bp.ID())
 
-	for c, _ := range bp.Constraints {
+	for c := range bp.Constraints {
 		fmt.Fprintf(&b, " %v", c)
 	}
 
