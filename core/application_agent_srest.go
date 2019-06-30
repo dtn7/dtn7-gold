@@ -157,15 +157,14 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 		return
 	}
 
-	var bndl, bndlErr = bundle.NewBundle(
-		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented|bundle.StatusRequestDelivery,
-			dest,
-			aa.endpointID,
-			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0),
-			60*60*1000000),
-		[]bundle.CanonicalBlock{
-			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock(payload))})
+	var bndl, bndlErr = bundle.Builder().
+		Source(aa.endpointID).
+		Destination(dest).
+		CreationTimestampNow().
+		Lifetime("60m").
+		BundleCtrlFlags(bundle.MustNotFragmented | bundle.StatusRequestDelivery).
+		PayloadBlock(payload).
+		Build()
 	if bndlErr != nil {
 		handleErr(fmt.Sprintf("Creating bundle failed: %v", bndlErr))
 		return

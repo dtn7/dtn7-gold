@@ -22,15 +22,14 @@ func TestSimpleStoreSingle(t *testing.T) {
 		t.Errorf("Creating SimpleStore failed: %v", err)
 	}
 
-	bndl, err := bundle.NewBundle(
-		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn:dest"),
-			bundle.MustNewEndpointID("dtn:src"),
-			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
-		[]bundle.CanonicalBlock{
-			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
-		})
+	bndl, err := bundle.Builder().
+		Source("dtn:src").
+		Destination("dtn:dest").
+		CreationTimestampNow().
+		Lifetime("60s").
+		BundleCtrlFlags(bundle.MustNotFragmented | bundle.RequestStatusTime).
+		PayloadBlock([]byte("hello world!")).
+		Build()
 	if err != nil {
 		t.Errorf("Creating bundle failed: %v", err)
 	}
@@ -79,15 +78,14 @@ func TestSimpleStoreTwoStores(t *testing.T) {
 		t.Errorf("Creating SimpleStore failed: %v", err)
 	}
 
-	bndl, err := bundle.NewBundle(
-		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn:dest"),
-			bundle.MustNewEndpointID("dtn:src"),
-			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
-		[]bundle.CanonicalBlock{
-			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
-		})
+	bndl, err := bundle.Builder().
+		Source("dtn:src").
+		Destination("dtn:dest").
+		CreationTimestampNow().
+		Lifetime("60s").
+		BundleCtrlFlags(bundle.MustNotFragmented | bundle.RequestStatusTime).
+		PayloadBlock([]byte("hello world!")).
+		Build()
 	if err != nil {
 		t.Errorf("Creating bundle failed: %v", err)
 	}

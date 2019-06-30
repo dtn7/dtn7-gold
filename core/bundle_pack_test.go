@@ -8,16 +8,15 @@ import (
 )
 
 func TestBundlePackUpdateBundleAge(t *testing.T) {
-	var bndl, err = bundle.NewBundle(
-		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented,
-			bundle.MustNewEndpointID("dtn:dest"),
-			bundle.MustNewEndpointID("dtn:src"),
-			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 24*60*60),
-		[]bundle.CanonicalBlock{
-			bundle.NewCanonicalBlock(2, bundle.DeleteBundle, bundle.NewBundleAgeBlock(0)),
-			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
-		})
+	var bndl, err = bundle.Builder().
+		Source("dtn:src").
+		Destination("dtn:dest").
+		CreationTimestampEpoch().
+		Lifetime("60m").
+		BundleCtrlFlags(bundle.MustNotFragmented).
+		BundleAgeBlock(0).
+		PayloadBlock([]byte("hello world!")).
+		Build()
 	if err != nil {
 		t.Errorf("Bundle creation failed: %v", err)
 	}

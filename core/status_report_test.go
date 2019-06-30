@@ -61,15 +61,14 @@ func TestBundleStatusItemCbor(t *testing.T) {
 }
 
 func TestStatusReportCreation(t *testing.T) {
-	var bndl, err = bundle.NewBundle(
-		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn:dest"),
-			bundle.MustNewEndpointID("dtn:src"),
-			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
-		[]bundle.CanonicalBlock{
-			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
-		})
+	var bndl, err = bundle.Builder().
+		Source("dtn:src").
+		Destination("dtn:dest").
+		CreationTimestampNow().
+		Lifetime("60s").
+		BundleCtrlFlags(bundle.MustNotFragmented | bundle.RequestStatusTime).
+		PayloadBlock([]byte("hello world!")).
+		Build()
 	if err != nil {
 		panic(err)
 	}
@@ -114,15 +113,14 @@ func TestStatusReportCreation(t *testing.T) {
 }
 
 func TestStatusReportCreationNoTime(t *testing.T) {
-	var bndl, err = bundle.NewBundle(
-		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented,
-			bundle.MustNewEndpointID("dtn:dest"),
-			bundle.MustNewEndpointID("dtn:src"),
-			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
-		[]bundle.CanonicalBlock{
-			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
-		})
+	var bndl, err = bundle.Builder().
+		Source("dtn:src").
+		Destination("dtn:dest").
+		CreationTimestampNow().
+		Lifetime("60s").
+		BundleCtrlFlags(bundle.MustNotFragmented).
+		PayloadBlock([]byte("hello world!")).
+		Build()
 	if err != nil {
 		panic(err)
 	}
@@ -138,15 +136,14 @@ func TestStatusReportCreationNoTime(t *testing.T) {
 }
 
 func TestStatusReportApplicationRecord(t *testing.T) {
-	bndl, err := bundle.NewBundle(
-		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn:dest"),
-			bundle.MustNewEndpointID("dtn:src"),
-			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
-		[]bundle.CanonicalBlock{
-			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
-		})
+	bndl, err := bundle.Builder().
+		Source("dtn:src").
+		Destination("dtn:dest").
+		CreationTimestampNow().
+		Lifetime("60s").
+		BundleCtrlFlags(bundle.MustNotFragmented | bundle.RequestStatusTime).
+		PayloadBlock([]byte("hello world!")).
+		Build()
 	if err != nil {
 		t.Errorf("Creating bundle failed: %v", err)
 	}
@@ -157,18 +154,14 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 
 	adminRec := NewAdministrativeRecord(BundleStatusReportTypeCode, statusRep)
 
-	primary := bundle.NewPrimaryBlock(
-		bundle.AdministrativeRecordPayload,
-		bndl.PrimaryBlock.ReportTo,
-		bundle.MustNewEndpointID("dtn:foo"),
-		bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0),
-		60*60*1000000)
-
-	outBndl, err := bundle.NewBundle(
-		primary,
-		[]bundle.CanonicalBlock{
-			adminRec.ToCanonicalBlock(),
-		})
+	outBndl, err := bundle.Builder().
+		Source("dtn:foo").
+		Destination(bndl.PrimaryBlock.ReportTo).
+		CreationTimestampNow().
+		Lifetime("60m").
+		BundleCtrlFlags(bundle.AdministrativeRecordPayload).
+		Canonical(adminRec.ToCanonicalBlock()).
+		Build()
 	if err != nil {
 		t.Errorf("Creating new bundle failed: %v", err)
 	}

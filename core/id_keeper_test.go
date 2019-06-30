@@ -7,30 +7,28 @@ import (
 )
 
 func TestIdKeeper(t *testing.T) {
-	bndl0, err := bundle.NewBundle(
-		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn:dest"),
-			bundle.MustNewEndpointID("dtn:src"),
-			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
-		[]bundle.CanonicalBlock{
-			bundle.NewCanonicalBlock(2, bundle.DeleteBundle, bundle.NewBundleAgeBlock(0)),
-			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
-		})
+	bndl0, err := bundle.Builder().
+		Source("dtn:src").
+		Destination("dtn:dest").
+		CreationTimestampEpoch().
+		Lifetime("60s").
+		BundleCtrlFlags(bundle.MustNotFragmented|bundle.RequestStatusTime).
+		BundleAgeBlock(0, bundle.DeleteBundle).
+		PayloadBlock([]byte("hello world!")).
+		Build()
 	if err != nil {
 		t.Errorf("Creating bundle failed: %v", err)
 	}
 
-	bndl1, err := bundle.NewBundle(
-		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented|bundle.RequestStatusTime,
-			bundle.MustNewEndpointID("dtn:dest"),
-			bundle.MustNewEndpointID("dtn:src"),
-			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
-		[]bundle.CanonicalBlock{
-			bundle.NewCanonicalBlock(2, bundle.DeleteBundle, bundle.NewBundleAgeBlock(0)),
-			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
-		})
+	bndl1, err := bundle.Builder().
+		Source("dtn:src").
+		Destination("dtn:dest").
+		CreationTimestampEpoch().
+		Lifetime("60s").
+		BundleCtrlFlags(bundle.MustNotFragmented|bundle.RequestStatusTime).
+		BundleAgeBlock(0, bundle.DeleteBundle).
+		PayloadBlock([]byte("hello world!")).
+		Build()
 	if err != nil {
 		t.Errorf("Creating bundle failed: %v", err)
 	}

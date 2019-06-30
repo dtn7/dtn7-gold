@@ -235,10 +235,12 @@ func (bldr *BundleBuilder) BundleCtrlFlags(bcf BundleControlFlags) *BundleBuilde
 
 // Canonical adds a canonical block to this bundle. The parameters are:
 //
-//   ExtensionBlock[, BlockControlFlags]
+//   ExtensionBlock[, BlockControlFlags] or
+//   CanonicalBlock
 //
 //   where ExtensionBlock is a bundle.ExtensionBlock and
-//   BlockControlFlags are _optional_ block processing controll flags
+//   BlockControlFlags are _optional_ block processing controll flags or
+//   CanonicalBlock is a CanonicalBlock
 //
 func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
@@ -253,32 +255,55 @@ func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 		chk0, chk1 bool = true, true
 	)
 
-	switch l := len(args); l {
-	case 1:
-		data, chk0 = args[0].(ExtensionBlock)
-	case 2:
-		data, chk0 = args[0].(ExtensionBlock)
-		blockCtrlFlags, chk1 = args[1].(BlockControlFlags)
+	if len(args) == 0 {
+		bldr.err = fmt.Errorf("Canonical was called with no parameters")
+		return bldr
+	}
+
+	switch args[0].(type) {
+	case ExtensionBlock:
+		switch l := len(args); l {
+		case 1:
+			data, chk0 = args[0].(ExtensionBlock)
+		case 2:
+			data, chk0 = args[0].(ExtensionBlock)
+			blockCtrlFlags, chk1 = args[1].(BlockControlFlags)
+		default:
+			bldr.err = fmt.Errorf(
+				"Canonical was called with neither one nor two parameters")
+			return bldr
+		}
+
+		if !(chk0 && chk1) {
+			bldr.err = fmt.Errorf("Canonical received wrong parameter types, %v %v", chk0, chk1)
+			return bldr
+		}
+
+		if data.BlockTypeCode() == ExtBlockTypePayloadBlock {
+			blockNumber = 1
+		} else {
+			blockNumber = bldr.canonicalCounter
+			bldr.canonicalCounter++
+		}
+
+		bldr.canonicals = append(bldr.canonicals,
+			NewCanonicalBlock(blockNumber, blockCtrlFlags, data))
+
+	case CanonicalBlock:
+		cb := args[0].(CanonicalBlock)
+		if cb.BlockTypeCode() == ExtBlockTypePayloadBlock {
+			blockNumber = 1
+		} else {
+			blockNumber = bldr.canonicalCounter
+			bldr.canonicalCounter++
+		}
+		cb.BlockNumber = blockNumber
+
+		bldr.canonicals = append(bldr.canonicals, cb)
+
 	default:
-		bldr.err = fmt.Errorf(
-			"Canonical was called with neither one nor two parameters")
-		return bldr
+		bldr.err = fmt.Errorf("Canonicals received unknown type")
 	}
-
-	if !(chk0 && chk1) {
-		bldr.err = fmt.Errorf("Canonical received wrong parameter types, %v %v", chk0, chk1)
-		return bldr
-	}
-
-	if data.BlockTypeCode() == ExtBlockTypePayloadBlock {
-		blockNumber = 1
-	} else {
-		blockNumber = bldr.canonicalCounter
-		bldr.canonicalCounter++
-	}
-
-	bldr.canonicals = append(bldr.canonicals,
-		NewCanonicalBlock(blockNumber, blockCtrlFlags, data))
 
 	return bldr
 }

@@ -14,16 +14,15 @@ func TestMerge(t *testing.T) {
 		packages1 = 4000
 	)
 
-	bndl, err := bundle.NewBundle(
-		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented,
-			bundle.MustNewEndpointID("dtn:dest"),
-			bundle.MustNewEndpointID("dtn:src"),
-			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
-		[]bundle.CanonicalBlock{
-			bundle.NewCanonicalBlock(2, bundle.DeleteBundle, bundle.NewBundleAgeBlock(0)),
-			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
-		})
+	bndl, err := bundle.Builder().
+		Source("dtn:src").
+		Destination("dtn:dest").
+		CreationTimestampEpoch().
+		Lifetime("60s").
+		BundleCtrlFlags(bundle.MustNotFragmented).
+		BundleAgeBlock(0).
+		PayloadBlock([]byte("hello world!")).
+		Build()
 	if err != nil {
 		t.Error(err)
 	}
@@ -89,16 +88,15 @@ func TestJoinReceivers(t *testing.T) {
 		packages = 250
 	)
 
-	bndl, err := bundle.NewBundle(
-		bundle.NewPrimaryBlock(
-			bundle.MustNotFragmented,
-			bundle.MustNewEndpointID("dtn:dest"),
-			bundle.MustNewEndpointID("dtn:src"),
-			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
-		[]bundle.CanonicalBlock{
-			bundle.NewCanonicalBlock(2, bundle.DeleteBundle, bundle.NewBundleAgeBlock(0)),
-			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
-		})
+	bndl, err := bundle.Builder().
+		Source("dtn:src").
+		Destination("dtn:dest").
+		CreationTimestampEpoch().
+		Lifetime("60s").
+		BundleCtrlFlags(bundle.MustNotFragmented).
+		BundleAgeBlock(0).
+		PayloadBlock([]byte("hello world!")).
+		Build()
 	if err != nil {
 		t.Error(err)
 	}

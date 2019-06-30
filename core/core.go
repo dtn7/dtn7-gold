@@ -262,15 +262,14 @@ func (c *Core) SendStatusReport(bp BundlePack,
 		return
 	}
 
-	var primary = bundle.NewPrimaryBlock(
-		bundle.AdministrativeRecordPayload,
-		inBndl.PrimaryBlock.ReportTo,
-		aaEndpoint,
-		bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0),
-		60*60*1000000)
-
-	var outBndl, err = bundle.NewBundle(
-		primary, []bundle.CanonicalBlock{ar.ToCanonicalBlock()})
+	var outBndl, err = bundle.Builder().
+		BundleCtrlFlags(bundle.AdministrativeRecordPayload).
+		Source(aaEndpoint).
+		Destination(inBndl.PrimaryBlock.ReportTo).
+		CreationTimestampEpoch().
+		Lifetime("60m").
+		Canonical(ar.ToCanonicalBlock()).
+		Build()
 
 	if err != nil {
 		log.WithFields(log.Fields{
