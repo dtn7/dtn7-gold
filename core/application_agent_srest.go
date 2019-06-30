@@ -45,7 +45,7 @@ func NewSimpleRESTReponseFromBundle(b *bundle.Bundle) SimpleRESTResponse {
 		Timestamp: [2]string{
 			bundle.DtnTime(b.PrimaryBlock.CreationTimestamp[0]).String(),
 			fmt.Sprintf("%d", b.PrimaryBlock.CreationTimestamp[1])},
-		Payload: payload.Data.([]byte),
+		Payload: payload.Value.(*bundle.PayloadBlock).Data(),
 	}
 }
 
@@ -164,7 +164,8 @@ func (aa *SimpleRESTAppAgent) handleSend(respWriter http.ResponseWriter, req *ht
 			aa.endpointID,
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0),
 			60*60*1000000),
-		[]bundle.CanonicalBlock{bundle.NewPayloadBlock(0, payload)})
+		[]bundle.CanonicalBlock{
+			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock(payload))})
 	if bndlErr != nil {
 		handleErr(fmt.Sprintf("Creating bundle failed: %v", bndlErr))
 		return

@@ -19,6 +19,16 @@ func NewBundleAgeBlock(us uint64) *BundleAgeBlock {
 	return &bab
 }
 
+func (bab *BundleAgeBlock) Age() uint64 {
+	return uint64(*bab)
+}
+
+func (bab *BundleAgeBlock) Increment(offset uint64) uint64 {
+	newBabVal := uint64(*bab) + offset
+	*bab = BundleAgeBlock(newBabVal)
+	return newBabVal
+}
+
 func (bab *BundleAgeBlock) MarshalCbor(w io.Writer) error {
 	return cboring.WriteUInt(uint64(*bab), w)
 }

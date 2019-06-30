@@ -70,21 +70,21 @@ func (c *Core) receive(bp BundlePack) {
 	for i := len(bp.Bundle.CanonicalBlocks) - 1; i >= 0; i-- {
 		var cb = &bp.Bundle.CanonicalBlocks[i]
 
-		if isKnownBlockType(cb.BlockType) {
+		if bundle.GetExtensionBlockManager().IsKnown(cb.BlockTypeCode()) {
 			continue
 		}
 
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
 			"number": i,
-			"type":   cb.BlockType,
+			"type":   cb.BlockTypeCode(),
 		}).Warn("Bundle's canonical block is unknown")
 
 		if cb.BlockControlFlags.Has(bundle.StatusReportBlock) {
 			log.WithFields(log.Fields{
 				"bundle": bp.ID(),
 				"number": i,
-				"type":   cb.BlockType,
+				"type":   cb.BlockTypeCode(),
 			}).Info("Bundle's unknown canonical block requested reporting")
 
 			c.SendStatusReport(bp, ReceivedBundle, BlockUnintelligible)
@@ -94,7 +94,7 @@ func (c *Core) receive(bp BundlePack) {
 			log.WithFields(log.Fields{
 				"bundle": bp.ID(),
 				"number": i,
-				"type":   cb.BlockType,
+				"type":   cb.BlockTypeCode(),
 			}).Info("Bundle's unknown canonical block requested bundle deletion")
 
 			c.bundleDeletion(bp, BlockUnintelligible)
@@ -105,7 +105,7 @@ func (c *Core) receive(bp BundlePack) {
 			log.WithFields(log.Fields{
 				"bundle": bp.ID(),
 				"number": i,
-				"type":   cb.BlockType,
+				"type":   cb.BlockTypeCode(),
 			}).Info("Bundle's unknown canonical block requested to be removed")
 
 			bp.Bundle.CanonicalBlocks = append(
@@ -141,10 +141,10 @@ func (c *Core) forward(bp BundlePack) {
 	bp.RemoveConstraint(DispatchPending)
 	c.store.Push(bp)
 
-	if hcBlock, err := bp.Bundle.ExtensionBlock(bundle.HopCountBlock); err == nil {
-		hc := hcBlock.Data.(bundle.HopCount)
+	if hcBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypeHopCountBlock); err == nil {
+		hc := hcBlock.Value.(*bundle.HopCountBlock)
 		hc.Increment()
-		hcBlock.Data = hc
+		hcBlock.Value = hc
 
 		log.WithFields(log.Fields{
 			"bundle":    bp.ID(),
@@ -183,10 +183,10 @@ func (c *Core) forward(bp BundlePack) {
 		}
 	}
 
-	if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.PreviousNodeBlock); err == nil {
+	if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
 		// Replace the PreviousNodeBlock
-		prevEid := pnBlock.Data.(bundle.EndpointID)
-		pnBlock.Data = c.NodeId
+		prevEid := pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
+		pnBlock.Value = bundle.NewPreviousNodeBlock(c.NodeId)
 
 		log.WithFields(log.Fields{
 			"bundle":  bp.ID(),
@@ -195,7 +195,8 @@ func (c *Core) forward(bp BundlePack) {
 		}).Debug("Previous Node Block was updated")
 	} else {
 		// Append a new PreviousNodeBlock
-		bp.Bundle.AddExtensionBlock(bundle.NewPreviousNodeBlock(0, 0, c.NodeId))
+		bp.Bundle.AddExtensionBlock(bundle.NewCanonicalBlock(
+			0, 0, bundle.NewPreviousNodeBlock(c.NodeId)))
 	}
 
 	var nodes []cla.ConvergenceSender
@@ -247,10 +248,10 @@ func (c *Core) forward(bp BundlePack) {
 
 	wg.Wait()
 
-	if hcBlock, err := bp.Bundle.ExtensionBlock(bundle.HopCountBlock); err == nil {
-		hc := hcBlock.Data.(bundle.HopCount)
+	if hcBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypeHopCountBlock); err == nil {
+		hc := hcBlock.Value.(*bundle.HopCountBlock)
 		hc.Decrement()
-		hcBlock.Data = hc
+		hcBlock.Value = hc
 
 		log.WithFields(log.Fields{
 			"bundle":    bp.ID(),
@@ -298,7 +299,8 @@ func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
 		return false
 	}
 
-	ar, err := NewAdministrativeRecordFromCbor(canonicalAr.Data.([]byte))
+	payload := canonicalAr.Value.(*bundle.PayloadBlock).Data()
+	ar, err := NewAdministrativeRecordFromCbor(payload)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),

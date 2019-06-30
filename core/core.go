@@ -10,21 +10,6 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 )
 
-// isKnownBlockType checks if this program's core knows the given block type.
-func isKnownBlockType(blocktype bundle.CanonicalBlockType) bool {
-	switch blocktype {
-	case
-		bundle.PayloadBlock,
-		bundle.PreviousNodeBlock,
-		bundle.BundleAgeBlock,
-		bundle.HopCountBlock:
-		return true
-
-	default:
-		return false
-	}
-}
-
 // Core is the inner core of our DTN which handles transmission, reception and
 // reception of bundles.
 type Core struct {

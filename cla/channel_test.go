@@ -21,8 +21,8 @@ func TestMerge(t *testing.T) {
 			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
 		[]bundle.CanonicalBlock{
-			bundle.NewBundleAgeBlock(1, bundle.DeleteBundle, 0),
-			bundle.NewPayloadBlock(0, []byte("hello world!")),
+			bundle.NewCanonicalBlock(2, bundle.DeleteBundle, bundle.NewBundleAgeBlock(0)),
+			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
 		})
 	if err != nil {
 		t.Error(err)
@@ -96,8 +96,8 @@ func TestJoinReceivers(t *testing.T) {
 			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
 		[]bundle.CanonicalBlock{
-			bundle.NewBundleAgeBlock(1, bundle.DeleteBundle, 0),
-			bundle.NewPayloadBlock(0, []byte("hello world!")),
+			bundle.NewCanonicalBlock(2, bundle.DeleteBundle, bundle.NewBundleAgeBlock(0)),
+			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
 		})
 	if err != nil {
 		t.Error(err)

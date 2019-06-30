@@ -3,6 +3,7 @@ package bundle
 import (
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/dtn7/cboring"
 )
@@ -23,17 +24,23 @@ type ExtensionBlock interface {
 //
 // A singleton ExtensionBlockManager can be fetched by GetExtensionBlockManager.
 type ExtensionBlockManager struct {
-	data map[uint64]reflect.Type
+	data  map[uint64]reflect.Type
+	mutex sync.Mutex
 }
 
 // NewExtensionBlockManager creates an empty ExtensionBlockManager. To use a
 // singleton ExtensionBlockManager one can use GetExtensionBlockManager.
 func NewExtensionBlockManager() *ExtensionBlockManager {
-	return &ExtensionBlockManager{make(map[uint64]reflect.Type)}
+	return &ExtensionBlockManager{
+		data: make(map[uint64]reflect.Type),
+	}
 }
 
 // Register a new ExtensionBlock type through an exemplary instance.
 func (ebm *ExtensionBlockManager) Register(eb ExtensionBlock) error {
+	ebm.mutex.Lock()
+	defer ebm.mutex.Unlock()
+
 	extCode := eb.BlockTypeCode()
 	extType := reflect.TypeOf(eb).Elem()
 
@@ -48,7 +55,19 @@ func (ebm *ExtensionBlockManager) Register(eb ExtensionBlock) error {
 
 // Register an ExtensionBlock type through an exemplary instance.
 func (ebm *ExtensionBlockManager) Unregister(eb ExtensionBlock) {
+	ebm.mutex.Lock()
+	defer ebm.mutex.Unlock()
+
 	delete(ebm.data, eb.BlockTypeCode())
+}
+
+// IsKnown returns true if the ExtensionBlock for this block type code is known.
+func (ebm *ExtensionBlockManager) IsKnown(typeCode uint64) bool {
+	ebm.mutex.Lock()
+	defer ebm.mutex.Unlock()
+
+	_, known := ebm.data[typeCode]
+	return known
 }
 
 // CreateBlock returns an instance of the ExtensionBlock for the requested
@@ -64,13 +83,18 @@ func (ebm *ExtensionBlockManager) CreateBlock(typeCode uint64) (eb ExtensionBloc
 	return
 }
 
-// extensionBlockManager is the pointer to the singleton ExtensionBlockManager
-var extensionBlockManager *ExtensionBlockManager
+var (
+	extensionBlockManager      *ExtensionBlockManager
+	extensionBlockManagerMutex sync.Mutex
+)
 
 // GetExtensionBlockManager returns the singleton ExtensionBlockManager. If none
 // exists, a new ExtensionBlockManager will be generated with a knowledge of the
 // PayloadBlock, PreviousNodeBlock, BundleAgeBlock and HopCountBlock.
 func GetExtensionBlockManager() *ExtensionBlockManager {
+	extensionBlockManagerMutex.Lock()
+	defer extensionBlockManagerMutex.Unlock()
+
 	if extensionBlockManager == nil {
 		extensionBlockManager = NewExtensionBlockManager()
 

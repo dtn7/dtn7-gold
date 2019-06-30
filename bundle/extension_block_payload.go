@@ -19,6 +19,10 @@ func NewPayloadBlock(data []byte) *PayloadBlock {
 	return &pb
 }
 
+func (pb *PayloadBlock) Data() []byte {
+	return []byte(*pb)
+}
+
 func (pb *PayloadBlock) MarshalCbor(w io.Writer) error {
 	return cboring.WriteByteString([]byte(*pb), w)
 }

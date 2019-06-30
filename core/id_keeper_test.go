@@ -14,8 +14,8 @@ func TestIdKeeper(t *testing.T) {
 			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
 		[]bundle.CanonicalBlock{
-			bundle.NewPayloadBlock(0, []byte("hello world!")),
-			bundle.NewBundleAgeBlock(1, bundle.DeleteBundle, 0),
+			bundle.NewCanonicalBlock(2, bundle.DeleteBundle, bundle.NewBundleAgeBlock(0)),
+			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
 		})
 	if err != nil {
 		t.Errorf("Creating bundle failed: %v", err)
@@ -28,8 +28,8 @@ func TestIdKeeper(t *testing.T) {
 			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeEpoch, 0), 60*1000000),
 		[]bundle.CanonicalBlock{
-			bundle.NewPayloadBlock(0, []byte("hello world!")),
-			bundle.NewBundleAgeBlock(1, bundle.DeleteBundle, 0),
+			bundle.NewCanonicalBlock(2, bundle.DeleteBundle, bundle.NewBundleAgeBlock(0)),
+			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
 		})
 	if err != nil {
 		t.Errorf("Creating bundle failed: %v", err)

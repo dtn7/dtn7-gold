@@ -28,8 +28,8 @@ func NewEpidemicRouting(c *Core) EpidemicRouting {
 func (er EpidemicRouting) NotifyIncoming(bp BundlePack) {
 	// Check if we got a PreviousNodeBlock and extract its EndpointID
 	var prevNode bundle.EndpointID
-	if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.PreviousNodeBlock); err == nil {
-		prevNode = pnBlock.Data.(bundle.EndpointID)
+	if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
+		prevNode = pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
 	} else {
 		return
 	}

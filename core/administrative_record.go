@@ -64,7 +64,7 @@ func (ar AdministrativeRecord) ToCanonicalBlock() bundle.CanonicalBlock {
 	var data []byte
 	codec.NewEncoderBytes(&data, new(codec.CborHandle)).Encode(ar)
 
-	return bundle.NewCanonicalBlock(bundle.PayloadBlock, 0, 0, data)
+	return bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock(data))
 }
 
 func (ar AdministrativeRecord) String() string {

@@ -14,6 +14,10 @@ func (pnb *PreviousNodeBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypePreviousNodeBlock
 }
 
+func (pnb *PreviousNodeBlock) Endpoint() EndpointID {
+	return EndpointID(*pnb)
+}
+
 func NewPreviousNodeBlock(prev EndpointID) *PreviousNodeBlock {
 	pnb := PreviousNodeBlock(prev)
 	return &pnb

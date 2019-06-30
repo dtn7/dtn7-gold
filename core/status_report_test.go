@@ -68,7 +68,7 @@ func TestStatusReportCreation(t *testing.T) {
 			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
 		[]bundle.CanonicalBlock{
-			bundle.NewPayloadBlock(0, []byte("hello world!")),
+			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
 		})
 	if err != nil {
 		panic(err)
@@ -121,7 +121,7 @@ func TestStatusReportCreationNoTime(t *testing.T) {
 			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
 		[]bundle.CanonicalBlock{
-			bundle.NewPayloadBlock(0, []byte("hello world!")),
+			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
 		})
 	if err != nil {
 		panic(err)
@@ -145,7 +145,7 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 			bundle.MustNewEndpointID("dtn:src"),
 			bundle.NewCreationTimestamp(bundle.DtnTimeNow(), 0), 60*1000000),
 		[]bundle.CanonicalBlock{
-			bundle.NewPayloadBlock(0, []byte("hello world!")),
+			bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock([]byte("hello world!"))),
 		})
 	if err != nil {
 		t.Errorf("Creating bundle failed: %v", err)
