@@ -132,38 +132,13 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 		cb.CRCType = CRCType(crcT)
 	}
 
-	// TODO: generic factory or the like
-	switch blockType {
-	case ExtBlockTypePayloadBlock:
-		var pb PayloadBlock
-		if err := cboring.Unmarshal(&pb, r); err != nil {
-			return fmt.Errorf("Unmarshalling PayloadBlock failed: %v", err)
-		}
-		cb.Value = &pb
-
-	case ExtBlockTypePreviousNodeBlock:
-		var pnb PreviousNodeBlock
-		if err := cboring.Unmarshal(&pnb, r); err != nil {
-			return fmt.Errorf("Unmarshalling PreviousNodeBlock failed: %v", err)
-		}
-		cb.Value = &pnb
-
-	case ExtBlockTypeBundleAgeBlock:
-		var bab BundleAgeBlock
-		if err := cboring.Unmarshal(&bab, r); err != nil {
-			return fmt.Errorf("Unmarshalling BundleAgeBlock failed: %v", err)
-		}
-		cb.Value = &bab
-
-	case ExtBlockTypeHopCountBlock:
-		var hcb HopCountBlock
-		if err := cboring.Unmarshal(&hcb, r); err != nil {
-			return fmt.Errorf("Unmarshalling HopCountBlock failed: %v", err)
-		}
-		cb.Value = &hcb
-
-	default:
+	if eb, ebErr := GetExtensionBlockManager().CreateBlock(blockType); ebErr != nil {
 		return fmt.Errorf("Unsupported block type code: %d", blockType)
+	} else {
+		cb.Value = eb
+		if err := cboring.Unmarshal(cb.Value, r); err != nil {
+			return fmt.Errorf("Unmarshalling block type %d failed: %v", blockType, err)
+		}
 	}
 
 	if blockLen == 6 {
