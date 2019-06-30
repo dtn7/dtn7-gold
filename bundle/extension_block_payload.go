@@ -31,3 +31,7 @@ func (pb *PayloadBlock) UnmarshalCbor(r io.Reader) error {
 		return nil
 	}
 }
+
+func (pb *PayloadBlock) CheckValid() error {
+	return nil
+}

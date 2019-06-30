@@ -111,12 +111,12 @@ func TestBundleUpcn(t *testing.T) {
 	var upcnBytes = []byte{
 		0x9f, 0x89, 0x07, 0x18, 0x84, 0x01, 0x82, 0x01, 0x63, 0x47, 0x53, 0x32,
 		0x82, 0x01, 0x00, 0x82, 0x01, 0x00, 0x82, 0x00, 0x00, 0x1a, 0x00, 0x01,
-		0x51, 0x80, 0x42, 0x45, 0x39, 0x86, 0x07, 0x01, 0x00, 0x02, 0x82, 0x01,
-		0x63, 0x47, 0x53, 0x34, 0x44, 0x6a, 0xc6, 0x13, 0x2a, 0x86, 0x09, 0x02,
-		0x00, 0x02, 0x82, 0x18, 0x1e, 0x00, 0x44, 0xae, 0x37, 0xa0, 0xf7, 0x86,
-		0x08, 0x03, 0x00, 0x02, 0x00, 0x44, 0x68, 0xfb, 0x71, 0x6e, 0x86, 0x01,
-		0x00, 0x00, 0x02, 0x4c, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f,
-		0x72, 0x6c, 0x64, 0x21, 0x44, 0xc3, 0xae, 0xc5, 0x52, 0xff}
+		0x51, 0x80, 0x42, 0x45, 0x39, 0x86, 0x07, 0x02, 0x00, 0x02, 0x82, 0x01,
+		0x63, 0x47, 0x53, 0x34, 0x44, 0x96, 0xcf, 0xec, 0xe0, 0x86, 0x09, 0x03,
+		0x00, 0x02, 0x82, 0x18, 0x1e, 0x00, 0x44, 0x9f, 0x46, 0x74, 0xc7, 0x86,
+		0x08, 0x04, 0x00, 0x02, 0x00, 0x44, 0xaf, 0x9b, 0xbf, 0x74, 0x86, 0x01,
+		0x01, 0x00, 0x02, 0x4c, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f,
+		0x72, 0x6c, 0x64, 0x21, 0x44, 0xce, 0xa4, 0xb8, 0xbf, 0xff}
 
 	bndl := Bundle{}
 	if err := cboring.Unmarshal(&bndl, bytes.NewBuffer(upcnBytes)); err != nil {
@@ -170,47 +170,46 @@ func TestBundleUpcn(t *testing.T) {
 		case ExtBlockTypePayloadBlock:
 			chkPayload = true
 
-			// TODO
-			/*
-				payloadExpected := NewPayloadBlock([]byte("Hello world!"))
-				if payload := cb.Value; !bytes.Equal([]byte(payload), payloadExpected) {
-					t.Errorf("Payload Block's payload mismatches: %v instead of %v",
-						payload, payloadExpected)
-				}
-			*/
+			payloadExpected := NewPayloadBlock([]byte("Hello world!"))
+			payloadData := cb.Value.(*PayloadBlock)
+
+			if !bytes.Equal(*payloadData, *payloadExpected) {
+				t.Errorf("Payload Block's payload mismatches: %v instead of %v",
+					payloadData, payloadExpected)
+			}
 
 		case ExtBlockTypePreviousNodeBlock:
 			chkPreviousNode = true
 
-			/*
-				prevExpected, _ := NewEndpointID("dtn:GS4")
-				if prev := cb.Data.(EndpointID); prev != prevExpected {
-					t.Errorf("Previous Node Block's EID mismatches: %v instead of %v",
-						prev, prevExpected)
-				}
-			*/
+			prevExpected := NewPreviousNodeBlock(MustNewEndpointID("dtn:GS4"))
+			prevData := cb.Value.(*PreviousNodeBlock)
+
+			if *prevData != *prevExpected {
+				t.Errorf("Previous Node Block's EID mismatches: %v instead of %v",
+					prevData, prevExpected)
+			}
 
 		case ExtBlockTypeHopCountBlock:
 			chkHopCount = true
 
-			/*
-				hopExpected := NewHopCount(30)
-				if hop := cb.Data.(HopCount); hop != hopExpected {
-					t.Errorf("Hop Count Block mismatches: %v instead of %v",
-						hop, hopExpected)
-				}
-			*/
+			hopExpected := NewHopCountBlock(30)
+			hopData := cb.Value.(*HopCountBlock)
+
+			if *hopData != *hopExpected {
+				t.Errorf("Hop Count Block mismatches: %v instead of %v",
+					hopData, hopExpected)
+			}
 
 		case ExtBlockTypeBundleAgeBlock:
 			chkBundleAge = true
 
-			/*
-				ageExpected := uint64(0)
-				if age := cb.Data.(uint64); age != ageExpected {
-					t.Errorf("Bundle Age Block's value mismatches: %d instead of %d",
-						age, ageExpected)
-				}
-			*/
+			ageExpected := NewBundleAgeBlock(0)
+			ageData := cb.Value.(*BundleAgeBlock)
+
+			if *ageData != *ageExpected {
+				t.Errorf("Bundle Age Block's value mismatches: %d instead of %d",
+					ageData, ageExpected)
+			}
 
 		default:
 			t.Errorf("Unexpected Canonical Block: %v", cb)
@@ -275,8 +274,6 @@ func createNewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) Bundle {
 	return b
 }
 
-// TODO
-/*
 func TestBundleCheckValid(t *testing.T) {
 	tests := []struct {
 		b     Bundle
@@ -332,13 +329,12 @@ func TestBundleCheckValid(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if err := test.b.checkValid(); (err == nil) != test.valid {
+		if err := test.b.CheckValid(); (err == nil) != test.valid {
 			t.Errorf("Block validation failed: %v resulted in %v",
 				test.b, err)
 		}
 	}
 }
-*/
 
 func BenchmarkBundleSerializationCboring(b *testing.B) {
 	var sizes = []int{0, 1024, 1048576, 10485760, 104857600}

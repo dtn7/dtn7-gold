@@ -181,47 +181,18 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 	return nil
 }
 
-func (cb CanonicalBlock) checkValidExtensionBlocks() error {
-	// TODO
-	/*
-		switch cb.BlockType {
-		case PayloadBlock:
-			if cb.BlockNumber != 0 {
-				return fmt.Errorf("CanonicalBlock: Payload Block's block number is not zero")
-			}
-
-			return nil
-
-		case IntegrityBlock, ConfidentialityBlock, ManifestBlock, FlowLabelBlock:
-			// These extension blocks are defined in other specifications
-			return nil
-
-		case PreviousNodeBlock:
-			return cb.Data.(EndpointID).checkValid()
-
-		case BundleAgeBlock, HopCountBlock:
-			// Nothing to check here
-			return nil
-
-		default:
-			// "Block type codes 192 through 255 are not reserved and are available for
-			// private and/or experimental use.", draft-ietf-dtn-bpbis-13#section-4.2.3
-			if !(192 <= cb.BlockType && cb.BlockType <= 255) {
-				return fmt.Errorf("CanonicalBlock: Unknown block type %d", cb.BlockType)
-			}
-		}
-	*/
-
-	return nil
-}
-
-func (cb CanonicalBlock) checkValid() (errs error) {
-	if bcfErr := cb.BlockControlFlags.checkValid(); bcfErr != nil {
+func (cb CanonicalBlock) CheckValid() (errs error) {
+	if bcfErr := cb.BlockControlFlags.CheckValid(); bcfErr != nil {
 		errs = multierror.Append(errs, bcfErr)
 	}
 
-	if extErr := cb.checkValidExtensionBlocks(); extErr != nil {
+	if extErr := cb.Value.CheckValid(); extErr != nil {
 		errs = multierror.Append(errs, extErr)
+	}
+
+	if cb.Value.BlockTypeCode() == ExtBlockTypePayloadBlock && cb.BlockNumber != 1 {
+		errs = multierror.Append(errs, fmt.Errorf(
+			"CanonicalBlock is a PayloadBlock with a block number %d != 1", cb.BlockNumber))
 	}
 
 	return

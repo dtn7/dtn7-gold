@@ -32,19 +32,19 @@ func TestBundleControlFlagsImplications(t *testing.T) {
 	)
 
 	cf |= AdministrativeRecordPayload
-	if errs := cf.checkValid(); errs != nil {
+	if errs := cf.CheckValid(); errs != nil {
 		t.Errorf("Initial set resulted in an invalid state: %v", errs)
 	}
 
 	cf |= IsFragment
-	if errs := cf.checkValid(); errs != nil {
+	if errs := cf.CheckValid(); errs != nil {
 		t.Errorf("Unrelated set resulted in an invalid state: %v", errs)
 	}
 
 	for _, flg := range reportReqs {
 		cf |= flg
 
-		if errs := cf.checkValid(); errs == nil {
+		if errs := cf.CheckValid(); errs == nil {
 			t.Errorf("Setting %d does not resulted in an failed state", flg)
 		} else {
 			errFlag := false
@@ -60,7 +60,7 @@ func TestBundleControlFlagsImplications(t *testing.T) {
 		}
 
 		cf &^= flg
-		if errs := cf.checkValid(); errs != nil {
+		if errs := cf.CheckValid(); errs != nil {
 			t.Errorf("Resetting %d does not resolved in a valid state: %v", flg, errs)
 		}
 	}
@@ -69,7 +69,7 @@ func TestBundleControlFlagsImplications(t *testing.T) {
 		cf |= flg
 	}
 
-	if errs := cf.checkValid(); errs == nil {
+	if errs := cf.CheckValid(); errs == nil {
 		t.Errorf("Setting all report flags should result in an invalid state")
 	}
 }

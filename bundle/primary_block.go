@@ -217,25 +217,25 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 	return nil
 }
 
-func (pb PrimaryBlock) checkValid() (errs error) {
+func (pb PrimaryBlock) CheckValid() (errs error) {
 	if pb.Version != dtnVersion {
 		errs = multierror.Append(errs,
 			fmt.Errorf("PrimaryBlock: Wrong Version, %d instead of %d", pb.Version, dtnVersion))
 	}
 
-	if bcfErr := pb.BundleControlFlags.checkValid(); bcfErr != nil {
+	if bcfErr := pb.BundleControlFlags.CheckValid(); bcfErr != nil {
 		errs = multierror.Append(errs, bcfErr)
 	}
 
-	if destErr := pb.Destination.checkValid(); destErr != nil {
+	if destErr := pb.Destination.CheckValid(); destErr != nil {
 		errs = multierror.Append(errs, destErr)
 	}
 
-	if srcErr := pb.SourceNode.checkValid(); srcErr != nil {
+	if srcErr := pb.SourceNode.CheckValid(); srcErr != nil {
 		errs = multierror.Append(errs, srcErr)
 	}
 
-	if rprtToErr := pb.ReportTo.checkValid(); rprtToErr != nil {
+	if rprtToErr := pb.ReportTo.CheckValid(); rprtToErr != nil {
 		errs = multierror.Append(errs, rprtToErr)
 	}
 

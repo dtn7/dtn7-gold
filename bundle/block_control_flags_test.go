@@ -30,7 +30,7 @@ func TestBlockControlFlagsCheckValid(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if err := test.cf.checkValid(); (err == nil) != test.valid {
+		if err := test.cf.CheckValid(); (err == nil) != test.valid {
 			t.Errorf("BlockControlFlags validation failed: %v resulted in %v",
 				test.cf, err)
 		}

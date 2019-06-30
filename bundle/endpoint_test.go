@@ -133,7 +133,7 @@ func TestEndpointCheckValid(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if err := test.ep.checkValid(); (err == nil) != test.valid {
+		if err := test.ep.CheckValid(); (err == nil) != test.valid {
 			t.Errorf("Endpoint ID %v resulted in error: %v", test.ep, err)
 		}
 	}

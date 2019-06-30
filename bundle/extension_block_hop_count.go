@@ -73,3 +73,10 @@ func (hcb *HopCountBlock) UnmarshalCbor(r io.Reader) error {
 
 	return nil
 }
+
+func (pb *HopCountBlock) CheckValid() error {
+	if pb.IsExceeded() {
+		return fmt.Errorf("HopCountBlock is exceeded")
+	}
+	return nil
+}

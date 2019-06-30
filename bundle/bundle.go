@@ -20,7 +20,7 @@ type Bundle struct {
 // checked and an error might be returned.
 func NewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) (b Bundle, err error) {
 	b = MustNewBundle(primary, canonicals)
-	err = b.checkValid()
+	err = b.CheckValid()
 
 	return
 }
@@ -121,10 +121,10 @@ func (b Bundle) String() string {
 	return b.ID()
 }
 
-func (b Bundle) checkValid() (errs error) {
+func (b Bundle) CheckValid() (errs error) {
 	// Check blocks for errors
 	b.forEachBlock(func(blck block) {
-		if blckErr := blck.checkValid(); blckErr != nil {
+		if blckErr := blck.CheckValid(); blckErr != nil {
 			errs = multierror.Append(errs, blckErr)
 		}
 	})
@@ -146,9 +146,8 @@ func (b Bundle) checkValid() (errs error) {
 
 	// Check uniqueness of block numbers
 	var cbBlockNumbers = make(map[uint64]bool)
-	// TODO
 	// Check max 1 occurrence of extension blocks
-	// var cbBlockTypes = make(map[uint64]bool)
+	var cbBlockTypes = make(map[uint64]bool)
 
 	for _, cb := range b.CanonicalBlocks {
 		if _, ok := cbBlockNumbers[cb.BlockNumber]; ok {
@@ -157,26 +156,20 @@ func (b Bundle) checkValid() (errs error) {
 		}
 		cbBlockNumbers[cb.BlockNumber] = true
 
-		/*
-			switch cb.BlockType {
-			case PreviousNodeBlock, BundleAgeBlock, HopCountBlock:
-				if _, ok := cbBlockTypes[cb.BlockType]; ok {
-					errs = multierror.Append(errs,
-						fmt.Errorf("Bundle: Block type %d occurred multiple times", cb.BlockType))
-				}
-				cbBlockTypes[cb.BlockType] = true
-			}
-		*/
+		blockType := cb.Value.BlockTypeCode()
+		if _, ok := cbBlockTypes[blockType]; ok {
+			errs = multierror.Append(errs,
+				fmt.Errorf("Bundle: Block type %d occurred multiple times", blockType))
+		}
+		cbBlockTypes[blockType] = true
 	}
 
-	/*
-		if b.PrimaryBlock.CreationTimestamp[0] == 0 {
-			if _, ok := cbBlockTypes[BundleAgeBlock]; !ok {
-				errs = multierror.Append(errs, fmt.Errorf(
-					"Bundle: Creation Timestamp is zero, but no Bundle Age block is present"))
-			}
+	if b.PrimaryBlock.CreationTimestamp[0] == 0 {
+		if _, ok := cbBlockTypes[ExtBlockTypeBundleAgeBlock]; !ok {
+			errs = multierror.Append(errs, fmt.Errorf(
+				"Bundle: Creation Timestamp is zero, but no Bundle Age block is present"))
 		}
-	*/
+	}
 
 	return
 }
@@ -229,5 +222,5 @@ func (b *Bundle) UnmarshalCbor(r io.Reader) error {
 		}
 	}
 
-	return nil
+	return b.CheckValid()
 }

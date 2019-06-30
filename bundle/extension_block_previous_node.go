@@ -33,3 +33,7 @@ func (pnb *PreviousNodeBlock) UnmarshalCbor(r io.Reader) error {
 		return nil
 	}
 }
+
+func (pb *PreviousNodeBlock) CheckValid() error {
+	return EndpointID(*pb).CheckValid()
+}

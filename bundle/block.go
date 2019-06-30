@@ -6,7 +6,7 @@ import "github.com/dtn7/cboring"
 // and each kind of CanonicalBlock have the CRC-fields in common.
 type block interface {
 	// block extends valid, "checkValid() error" method is required
-	valid
+	Valid
 
 	// block extends cboring's CborMarshaler for MarshalCbor, UnmarshalCbor
 	cboring.CborMarshaler

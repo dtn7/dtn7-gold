@@ -227,7 +227,7 @@ func (eid EndpointID) checkValidIpn() error {
 	return nil
 }
 
-func (eid EndpointID) checkValid() error {
+func (eid EndpointID) CheckValid() error {
 	switch eid.SchemeName {
 	case endpointURISchemeDTN:
 		return eid.checkValidDtn()

@@ -52,7 +52,7 @@ func (bcf BundleControlFlags) Has(flag BundleControlFlags) bool {
 	return (bcf & flag) != 0
 }
 
-func (bcf BundleControlFlags) checkValid() (errs error) {
+func (bcf BundleControlFlags) CheckValid() (errs error) {
 	if bcf.Has(bndlCFReservedFields) {
 		errs = multierror.Append(
 			errs, fmt.Errorf("BundleControlFlags: Given flag contains reserved bits"))

@@ -6,6 +6,7 @@ import "github.com/dtn7/cboring"
 // Block or a more generic Extension Block as defined in section 4.3.
 type ExtensionBlock interface {
 	cboring.CborMarshaler
+	Valid
 
 	// BlockTypeCode must return a constant integer, indicating the block type code.
 	BlockTypeCode() uint64

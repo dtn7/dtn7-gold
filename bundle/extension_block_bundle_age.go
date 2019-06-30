@@ -31,3 +31,7 @@ func (bab *BundleAgeBlock) UnmarshalCbor(r io.Reader) error {
 		return nil
 	}
 }
+
+func (pb *BundleAgeBlock) CheckValid() error {
+	return nil
+}

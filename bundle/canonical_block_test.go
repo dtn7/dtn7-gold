@@ -15,8 +15,6 @@ func TestNewCanonicalBlock(t *testing.T) {
 	}
 }
 
-// TODO
-/*
 func TestCanonicalBlockCheckValid(t *testing.T) {
 	tests := []struct {
 		cb    CanonicalBlock
@@ -37,13 +35,12 @@ func TestCanonicalBlockCheckValid(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if err := test.cb.checkValid(); (err == nil) != test.valid {
+		if err := test.cb.CheckValid(); (err == nil) != test.valid {
 			t.Errorf("CanonicalBlock validation failed: %v resulted in %v",
 				test.cb, err)
 		}
 	}
 }
-*/
 
 func TestHopCountBlock(t *testing.T) {
 	tests := []struct {

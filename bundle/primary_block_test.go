@@ -132,7 +132,7 @@ func TestPrimaryBlockCheckValid(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if err := test.pb.checkValid(); (err == nil) != test.valid {
+		if err := test.pb.CheckValid(); (err == nil) != test.valid {
 			t.Errorf("PrimaryBlock validation failed: %v resulted in %v",
 				test.pb, err)
 		}

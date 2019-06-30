@@ -31,7 +31,7 @@ func (bcf BlockControlFlags) Has(flag BlockControlFlags) bool {
 	return (bcf & flag) != 0
 }
 
-func (bcf BlockControlFlags) checkValid() error {
+func (bcf BlockControlFlags) CheckValid() error {
 	if bcf.Has(blckCFReservedFields) {
 		return fmt.Errorf("BlockControlFlags: Given flag %x contains reserved bits", bcf)
 	}
