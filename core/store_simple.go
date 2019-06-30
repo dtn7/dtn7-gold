@@ -129,7 +129,7 @@ func (store *SimpleStore) getBundle(id string) (bndl bundle.Bundle, err error) {
 		return
 	}
 
-	err = bndl.UnmarshalCbor(bndlFile)
+	bndl, err = bundle.ParseBundle(bndlFile)
 	return
 }
 
@@ -142,7 +142,7 @@ func (store *SimpleStore) setBundle(bp BundlePack) error {
 	if bndlErr != nil {
 		return bndlErr
 	}
-	return bp.Bundle.MarshalCbor(bndlFile)
+	return bp.Bundle.WriteBundle(bndlFile)
 }
 
 func (store *SimpleStore) delBundle(id string) error {

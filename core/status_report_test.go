@@ -167,12 +167,12 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 	}
 
 	buff := new(bytes.Buffer)
-	if err := outBndl.MarshalCbor(buff); err != nil {
+	if err := outBndl.WriteBundle(buff); err != nil {
 		t.Fatal(err)
 	}
 
-	inBndl := bundle.Bundle{}
-	if err := inBndl.UnmarshalCbor(buff); err != nil {
+	inBndl, inBndlErr := bundle.ParseBundle(buff)
+	if inBndlErr != nil {
 		t.Fatal(err)
 	}
 

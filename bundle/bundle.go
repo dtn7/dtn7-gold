@@ -34,6 +34,17 @@ func MustNewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) Bundle {
 	}
 }
 
+// ParseBundle reads a new CBOR encoded Bundle from a Reader.
+func ParseBundle(r io.Reader) (b Bundle, err error) {
+	err = cboring.Unmarshal(&b, r)
+	return
+}
+
+// WriteBundle writes this Bundle CBOR encoded into a Writer.
+func (b *Bundle) WriteBundle(w io.Writer) error {
+	return cboring.Marshal(b, w)
+}
+
 // forEachBlock applies the given function for each of this Bundle's blocks.
 func (b *Bundle) forEachBlock(f func(block)) {
 	f(&b.PrimaryBlock)
