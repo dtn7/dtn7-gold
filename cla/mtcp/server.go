@@ -3,7 +3,6 @@ package mtcp
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"net"
 	"time"
 
@@ -96,17 +95,15 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 
 	connReader := bufio.NewReader(conn)
 	for {
-		if _, err := cboring.ReadByteStringLen(connReader); err != nil {
-			if err != io.EOF {
-				log.WithFields(log.Fields{
-					"cla":   serv,
-					"conn":  conn,
-					"error": err,
-				}).Warn("MTCP handleServer connection failed to read byte string len")
+		if n, err := cboring.ReadByteStringLen(connReader); err != nil {
+			log.WithFields(log.Fields{
+				"cla":   serv,
+				"conn":  conn,
+				"error": err,
+			}).Warn("MTCP handleServer connection failed to read byte string len")
 
-				return
-			}
-
+			return
+		} else if n == 0 {
 			continue
 		}
 
