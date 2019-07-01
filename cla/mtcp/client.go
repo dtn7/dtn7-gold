@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
 )
@@ -21,12 +19,8 @@ type MTCPClient struct {
 	peer  bundle.EndpointID
 	mutex sync.Mutex
 
-	address   string
 	permanent bool
-	keepalive time.Duration
-
-	stopSyn chan struct{}
-	stopAck chan struct{}
+	address   string
 }
 
 // NewMTCPClient creates a new MTCPClient, connected to the given address for
@@ -35,11 +29,8 @@ type MTCPClient struct {
 func NewMTCPClient(address string, peer bundle.EndpointID, permanent bool) *MTCPClient {
 	return &MTCPClient{
 		peer:      peer,
-		address:   address,
 		permanent: permanent,
-		keepalive: time.Minute,
-		stopSyn:   make(chan struct{}),
-		stopAck:   make(chan struct{}),
+		address:   address,
 	}
 }
 
@@ -50,53 +41,15 @@ func NewAnonymousMTCPClient(address string, permanent bool) *MTCPClient {
 	return NewMTCPClient(address, bundle.DtnNone(), permanent)
 }
 
-// SetKeepalive defines the interval between keepalive probes will be sent to
-// check the connection. A good value depends on the link. If nothing is
-// configured, the default keepalive period is one minute.
-func (client *MTCPClient) SetKeepalive(keepalive time.Duration) {
-	client.keepalive = keepalive
-}
-
 // Start starts this MTCPClient and might return an error and a boolean
 // indicating if another Start should be tried later.
 func (client *MTCPClient) Start() (error, bool) {
 	conn, err := net.DialTimeout("tcp", client.address, time.Second)
 	if err == nil {
 		client.conn = conn
-
-		go client.keepaliveProbe()
 	}
 
 	return err, true
-}
-
-func (client *MTCPClient) keepaliveProbe() {
-	for {
-		select {
-		case <-client.stopSyn:
-			client.conn.Close()
-			close(client.stopAck)
-
-			return
-
-		case <-time.After(client.keepalive):
-			client.mutex.Lock()
-			err := cboring.WriteByteStringLen(0, client.conn)
-			client.mutex.Unlock()
-
-			if err != nil {
-				log.WithFields(log.Fields{
-					"error":  err,
-					"client": client.String(),
-				}).Warn("MTCPClient: Keepalive errored")
-
-				client.conn.Close()
-				close(client.stopAck)
-
-				return
-			}
-		}
-	}
 }
 
 // Send transmits a bundle to this MTCPClient's endpoint.
@@ -110,6 +63,13 @@ func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 	client.mutex.Lock()
 	defer client.mutex.Unlock()
 
+	// Check if the connection is still alive with an empty packet
+	if probeErr := cboring.WriteByteStringLen(0, client.conn); probeErr != nil {
+		err = probeErr
+		return
+	}
+
+	// Finally, transmit the bundle over a buffered writer
 	connWriter := bufio.NewWriter(client.conn)
 
 	buff := new(bytes.Buffer)
@@ -138,8 +98,9 @@ func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 
 // Close closes the MTCPClient's connection.
 func (client *MTCPClient) Close() {
-	close(client.stopSyn)
-	<-client.stopAck
+	client.mutex.Lock()
+	client.conn.Close()
+	client.mutex.Unlock()
 }
 
 // GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
