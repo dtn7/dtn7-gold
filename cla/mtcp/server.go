@@ -94,8 +94,8 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 		"conn": conn,
 	}).Debug("MTCP handleServer connection was established")
 
+	connReader := bufio.NewReader(conn)
 	for {
-		connReader := bufio.NewReader(conn)
 		if _, err := cboring.ReadByteStringLen(connReader); err != nil {
 			if err != io.EOF {
 				log.WithFields(log.Fields{
@@ -103,9 +103,11 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 					"conn":  conn,
 					"error": err,
 				}).Warn("MTCP handleServer connection failed to read byte string len")
+
+				return
 			}
 
-			return
+			continue
 		}
 
 		bndl := new(bundle.Bundle)
