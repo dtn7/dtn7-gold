@@ -155,6 +155,7 @@ func (store *SimpleStore) delBundle(id string) error {
 
 func (store *SimpleStore) Push(bp BundlePack) error {
 	isKnown := store.KnowsBundle(bp)
+	// deletePayload is currently not in use, because race conditions.
 	deletePayload := !bp.HasConstraints()
 
 	store.mutex.Lock()
@@ -163,9 +164,7 @@ func (store *SimpleStore) Push(bp BundlePack) error {
 	store.bundles[bp.ID()] = newMetaBundlePack(bp)
 
 	if !isKnown {
-		go store.setBundle(bp)
-	} else if deletePayload {
-		go store.delBundle(bp.ID())
+		store.setBundle(bp)
 	}
 
 	err := store.sync()
@@ -185,10 +184,6 @@ func (store *SimpleStore) Query(sel func(BundlePack) bool) (bps []BundlePack, er
 	defer store.mutex.Unlock()
 
 	for _, mbp := range store.bundles {
-		if !mbp.hasConstraints() {
-			continue
-		}
-
 		bndl, bndlErr := store.getBundle(mbp.Id)
 		if bndlErr != nil {
 			err = bndlErr
