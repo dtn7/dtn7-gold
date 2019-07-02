@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/ugorji/go/codec"
 )
 
 func TestBundleStatusItemCbor(t *testing.T) {
@@ -21,41 +21,21 @@ func TestBundleStatusItemCbor(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		// CBOR encoding
-		var b []byte = make([]byte, 0, 64)
-		var enc = codec.NewEncoderBytes(&b, new(codec.CborHandle))
+		buff := new(bytes.Buffer)
 
-		if err := enc.Encode(test.bsi); err != nil {
-			t.Errorf("Encoding %v failed: %v", test.bsi, err)
+		// CBOR encoding
+		if err := cboring.Marshal(&test.bsi, buff); err != nil {
+			t.Fatalf("Encoding %v failed: %v", test.bsi, err)
 		}
 
-		// CBOR decoding back to BundleStatusItem
-		var dec = codec.NewDecoderBytes(b, new(codec.CborHandle))
+		// CBOR decoding
 		var bsiComp BundleStatusItem
-
-		if err := dec.Decode(&bsiComp); err != nil {
-			t.Errorf("Decoding %v failed: %v", test.bsi, err)
+		if err := cboring.Unmarshal(&bsiComp, buff); err != nil {
+			t.Fatalf("Decoding %v failed: %v", test.bsi, err)
 		}
 
 		if test.bsi.Asserted != bsiComp.Asserted || test.bsi.Time != bsiComp.Time {
-			t.Errorf("Decoded BundleStatusItem differs: %v, %v", test.bsi, bsiComp)
-		}
-
-		// CBOR decoding to unknown array
-		var unknown interface{}
-
-		dec = codec.NewDecoderBytes(b, new(codec.CborHandle))
-		if err := dec.Decode(&unknown); err != nil {
-			t.Errorf("Decoding %v into interface failed: %v", test.bsi, err)
-		}
-
-		if ty := reflect.TypeOf(unknown).Kind(); ty != reflect.Slice {
-			t.Errorf("Decoded BundleStatusItem is not a slice, %v", ty)
-		}
-
-		if arr := unknown.([]interface{}); len(arr) != test.len {
-			t.Errorf("Decoded array has wrong length: %d instead of %d",
-				len(arr), test.len)
+			t.Fatalf("Decoded BundleStatusItem differs: %v, %v", test.bsi, bsiComp)
 		}
 	}
 }
@@ -70,7 +50,7 @@ func TestStatusReportCreation(t *testing.T) {
 		PayloadBlock([]byte("hello world!")).
 		Build()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	var initTime = bundle.DtnTimeNow()
@@ -80,7 +60,7 @@ func TestStatusReportCreation(t *testing.T) {
 	// Check bundle status report's fields
 	bsi := statusRep.StatusInformation[ReceivedBundle]
 	if bsi.Asserted != true || bsi.Time != initTime {
-		t.Errorf("ReceivedBundle's status item is incorrect: %v", bsi)
+		t.Fatalf("ReceivedBundle's status item is incorrect: %v", bsi)
 	}
 
 	for i := 0; i < maxStatusInformationPos; i++ {
@@ -88,27 +68,23 @@ func TestStatusReportCreation(t *testing.T) {
 			continue
 		}
 		if statusRep.StatusInformation[i].Asserted == true {
-			t.Errorf("Invalid status item is asserted: %d", i)
+			t.Fatalf("Invalid status item is asserted: %d", i)
 		}
 	}
 
 	// CBOR
-	var b []byte = make([]byte, 0, 64)
-	var enc = codec.NewEncoderBytes(&b, new(codec.CborHandle))
-
-	if err := enc.Encode(statusRep); err != nil {
-		t.Errorf("Encoding failed: %v", err)
+	buff := new(bytes.Buffer)
+	if err := cboring.Marshal(&statusRep, buff); err != nil {
+		t.Fatal(err)
 	}
 
-	var dec = codec.NewDecoderBytes(b, new(codec.CborHandle))
 	var statusRepDec StatusReport
-
-	if err := dec.Decode(&statusRepDec); err != nil {
-		t.Errorf("Decoding failed: %v", err)
+	if err := cboring.Unmarshal(&statusRepDec, buff); err != nil {
+		t.Fatal(err)
 	}
 
 	if !reflect.DeepEqual(statusRep, statusRepDec) {
-		t.Errorf("CBOR result differs: %v, %v", statusRep, statusRepDec)
+		t.Fatalf("CBOR result differs:\n%v\n%v", statusRep, statusRepDec)
 	}
 }
 

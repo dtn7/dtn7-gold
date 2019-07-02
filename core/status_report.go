@@ -2,10 +2,11 @@ package core
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
+	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/ugorji/go/codec"
 )
 
 // BundleStatusItem represents the a bundle status item, as used as an element
@@ -16,37 +17,58 @@ type BundleStatusItem struct {
 	StatusRequested bool
 }
 
-func (bsi BundleStatusItem) CodecEncodeSelf(enc *codec.Encoder) {
-	var arr = []interface{}{bsi.Asserted}
-
+func (bsi *BundleStatusItem) MarshalCbor(w io.Writer) error {
+	var arrLen uint64 = 1
 	if bsi.Asserted && bsi.StatusRequested {
-		arr = append(arr, bsi.Time)
+		arrLen = 2
 	}
 
-	enc.MustEncode(arr)
+	if err := cboring.WriteArrayLength(arrLen, w); err != nil {
+		return err
+	}
+
+	if err := cboring.WriteBoolean(bsi.Asserted, w); err != nil {
+		return err
+	}
+
+	if arrLen == 2 {
+		if err := cboring.WriteUInt(uint64(bsi.Time), w); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (bsi *BundleStatusItem) CodecDecodeSelf(dec *codec.Decoder) {
-	var arrPt = new([]interface{})
-	dec.MustDecode(arrPt)
+func (bsi *BundleStatusItem) UnmarshalCbor(r io.Reader) error {
+	var arrLen uint64
+	if n, err := cboring.ReadArrayLength(r); err != nil {
+		return err
+	} else if n != 1 && n != 2 {
+		return fmt.Errorf("BundleStatusItem: Array's length is %d, not 1 or 2", n)
+	} else {
+		arrLen = n
+	}
 
-	var arr = *arrPt
+	if b, err := cboring.ReadBoolean(r); err != nil {
+		return err
+	} else {
+		bsi.Asserted = b
+	}
 
-	switch len(arr) {
-	case 1:
-		bsi.Asserted = arr[0].(bool)
-
-		bsi.StatusRequested = false
-
-	case 2:
-		bsi.Asserted = arr[0].(bool)
-		bsi.Time = bundle.DtnTime(arr[1].(uint64))
+	if arrLen == 2 {
+		if n, err := cboring.ReadUInt(r); err != nil {
+			return err
+		} else {
+			bsi.Time = bundle.DtnTime(n)
+		}
 
 		bsi.StatusRequested = true
-
-	default:
-		panic("arr has wrong length, neither 1 nor 2")
+	} else {
+		bsi.StatusRequested = false
 	}
+
+	return nil
 }
 
 func (bsi BundleStatusItem) String() string {
@@ -205,8 +227,6 @@ func (sip StatusInformationPos) String() string {
 
 // StatusReport is the bundle status report, used in an administrative record.
 type StatusReport struct {
-	_struct struct{} `codec:",toarray"`
-
 	StatusInformation []BundleStatusItem
 	ReportReason      StatusReportReason
 	SourceNode        bundle.EndpointID
@@ -256,6 +276,71 @@ func (sr StatusReport) StatusInformations() (sips []StatusInformationPos) {
 	}
 
 	return
+}
+
+func (sr *StatusReport) MarshalCbor(w io.Writer) error {
+	// TODO: support fragmentation
+	if err := cboring.WriteArrayLength(4, w); err != nil {
+		return err
+	}
+
+	if err := cboring.WriteArrayLength(uint64(len(sr.StatusInformation)), w); err != nil {
+		return err
+	}
+	for _, si := range sr.StatusInformation {
+		if err := cboring.Marshal(&si, w); err != nil {
+			return fmt.Errorf("Marshalling BundleStatusItem failed: %v", err)
+		}
+	}
+
+	if err := cboring.WriteUInt(uint64(sr.ReportReason), w); err != nil {
+		return err
+	}
+
+	if err := cboring.Marshal(&sr.SourceNode, w); err != nil {
+		return fmt.Errorf("Marshalling EndpointID failed: %v", err)
+	}
+
+	if err := cboring.Marshal(&sr.Timestamp, w); err != nil {
+		return fmt.Errorf("Marshalling CreationTimestamp failed: %v", err)
+	}
+
+	return nil
+}
+
+func (sr *StatusReport) UnmarshalCbor(r io.Reader) error {
+	if n, err := cboring.ReadArrayLength(r); err != nil {
+		return err
+	} else if n != 4 {
+		return fmt.Errorf("Expected array length 4, got %d", n)
+	}
+
+	if n, err := cboring.ReadArrayLength(r); err != nil {
+		return err
+	} else {
+		sr.StatusInformation = make([]BundleStatusItem, int(n))
+	}
+	for i := 0; i < len(sr.StatusInformation); i++ {
+		if err := cboring.Unmarshal(&sr.StatusInformation[i], r); err != nil {
+			return fmt.Errorf("Unmarshalling BundleStatusItem failed: %v", err)
+		}
+	}
+
+	if n, err := cboring.ReadUInt(r); err != nil {
+		return err
+	} else {
+		sr.ReportReason = StatusReportReason(n)
+	}
+
+	if err := cboring.Unmarshal(&sr.SourceNode, r); err != nil {
+		return fmt.Errorf("Unmarshalling EndpointID failed: %v", err)
+	}
+
+	if err := cboring.Unmarshal(&sr.Timestamp, r); err != nil {
+		return fmt.Errorf("Unmarshalling CreationTimestamp failed: %v", err)
+	}
+
+	return nil
 }
 
 func (sr StatusReport) String() string {

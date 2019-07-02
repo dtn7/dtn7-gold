@@ -266,7 +266,7 @@ func (c *Core) SendStatusReport(bp BundlePack,
 		BundleCtrlFlags(bundle.AdministrativeRecordPayload).
 		Source(aaEndpoint).
 		Destination(inBndl.PrimaryBlock.ReportTo).
-		CreationTimestampEpoch().
+		CreationTimestampNow().
 		Lifetime("60m").
 		Canonical(ar.ToCanonicalBlock()).
 		Build()
