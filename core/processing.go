@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bundle/arecord"
 	"github.com/dtn7/dtn7-go/cla"
 )
 
@@ -33,7 +34,7 @@ func (c *Core) transmit(bp BundlePack) {
 			"source": src,
 		}).Info("Bundle's source is neither dtn:none nor an endpoint of this node")
 
-		c.bundleDeletion(bp, NoInformation)
+		c.bundleDeletion(bp, arecord.NoInformation)
 		return
 	}
 
@@ -64,7 +65,7 @@ func (c *Core) receive(bp BundlePack) {
 	c.store.Push(bp)
 
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestReception) {
-		c.SendStatusReport(bp, ReceivedBundle, NoInformation)
+		c.SendStatusReport(bp, arecord.ReceivedBundle, arecord.NoInformation)
 	}
 
 	for i := len(bp.Bundle.CanonicalBlocks) - 1; i >= 0; i-- {
@@ -87,7 +88,7 @@ func (c *Core) receive(bp BundlePack) {
 				"type":   cb.BlockTypeCode(),
 			}).Info("Bundle's unknown canonical block requested reporting")
 
-			c.SendStatusReport(bp, ReceivedBundle, BlockUnintelligible)
+			c.SendStatusReport(bp, arecord.ReceivedBundle, arecord.BlockUnintelligible)
 		}
 
 		if cb.BlockControlFlags.Has(bundle.DeleteBundle) {
@@ -97,7 +98,7 @@ func (c *Core) receive(bp BundlePack) {
 				"type":   cb.BlockTypeCode(),
 			}).Info("Bundle's unknown canonical block requested bundle deletion")
 
-			c.bundleDeletion(bp, BlockUnintelligible)
+			c.bundleDeletion(bp, arecord.BlockUnintelligible)
 			return
 		}
 
@@ -157,7 +158,7 @@ func (c *Core) forward(bp BundlePack) {
 				"hop_count": hc,
 			}).Info("Bundle contains an exceeded hop count block")
 
-			c.bundleDeletion(bp, HopLimitExceeded)
+			c.bundleDeletion(bp, arecord.HopLimitExceeded)
 			return
 		}
 	}
@@ -168,7 +169,7 @@ func (c *Core) forward(bp BundlePack) {
 			"primary_block": bp.Bundle.PrimaryBlock,
 		}).Warn("Bundle's primary block's lifetime is exceeded")
 
-		c.bundleDeletion(bp, LifetimeExpired)
+		c.bundleDeletion(bp, arecord.LifetimeExpired)
 		return
 	}
 
@@ -178,7 +179,7 @@ func (c *Core) forward(bp BundlePack) {
 				"bundle": bp.ID(),
 			}).Warn("Bundle's lifetime is expired")
 
-			c.bundleDeletion(bp, LifetimeExpired)
+			c.bundleDeletion(bp, arecord.LifetimeExpired)
 			return
 		}
 	}
@@ -261,7 +262,7 @@ func (c *Core) forward(bp BundlePack) {
 
 	if bundleSent {
 		if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestForward) {
-			c.SendStatusReport(bp, ForwardedBundle, NoInformation)
+			c.SendStatusReport(bp, arecord.ForwardedBundle, arecord.NoInformation)
 		}
 
 		if deleteAfterwards {
@@ -300,7 +301,7 @@ func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
 	}
 
 	payload := canonicalAr.Value.(*bundle.PayloadBlock).Data()
-	ar, err := NewAdministrativeRecordFromCbor(payload)
+	ar, err := arecord.NewAdministrativeRecordFromCbor(payload)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -322,7 +323,7 @@ func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
 	return true
 }
 
-func (c *Core) inspectStatusReport(bp BundlePack, ar AdministrativeRecord) {
+func (c *Core) inspectStatusReport(bp BundlePack, ar arecord.AdministrativeRecord) {
 	var status = ar.Content
 	var sips = status.StatusInformations()
 
@@ -360,10 +361,10 @@ func (c *Core) inspectStatusReport(bp BundlePack, ar AdministrativeRecord) {
 		}).Info("Parsing status report")
 
 		switch sip {
-		case ReceivedBundle, ForwardedBundle, DeletedBundle:
+		case arecord.ReceivedBundle, arecord.ForwardedBundle, arecord.DeletedBundle:
 			// Nothing to do
 
-		case DeliveredBundle:
+		case arecord.DeliveredBundle:
 			log.WithFields(log.Fields{
 				"bundle":        bp.ID(),
 				"status_rep":    status,
@@ -393,7 +394,7 @@ func (c *Core) localDelivery(bp BundlePack) {
 
 	if bp.Bundle.IsAdministrativeRecord() {
 		if !c.checkAdministrativeRecord(bp) {
-			c.bundleDeletion(bp, NoInformation)
+			c.bundleDeletion(bp, arecord.NoInformation)
 			return
 		}
 	}
@@ -408,7 +409,7 @@ func (c *Core) localDelivery(bp BundlePack) {
 	}
 
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDelivery) {
-		c.SendStatusReport(bp, DeliveredBundle, NoInformation)
+		c.SendStatusReport(bp, arecord.DeliveredBundle, arecord.NoInformation)
 	}
 
 	bp.PurgeConstraints()
@@ -424,9 +425,9 @@ func (c *Core) bundleContraindicated(bp BundlePack) {
 	c.store.Push(bp)
 }
 
-func (c *Core) bundleDeletion(bp BundlePack, reason StatusReportReason) {
+func (c *Core) bundleDeletion(bp BundlePack, reason arecord.StatusReportReason) {
 	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDeletion) {
-		c.SendStatusReport(bp, DeletedBundle, reason)
+		c.SendStatusReport(bp, arecord.DeletedBundle, reason)
 	}
 
 	bp.PurgeConstraints()

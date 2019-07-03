@@ -1,6 +1,10 @@
 package core
 
-import log "github.com/sirupsen/logrus"
+import (
+	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/dtn7-go/bundle/arecord"
+)
 
 // Store is an interface for a bundle storage.
 type Store interface {
@@ -53,7 +57,7 @@ func QueryAll(store Store) []BundlePack {
 
 // QueryFromStatusReport returns all (hopefully <= 1) bundles related to the
 // given StatusReport.
-func QueryFromStatusReport(store Store, sr StatusReport) []BundlePack {
+func QueryFromStatusReport(store Store, sr arecord.StatusReport) []BundlePack {
 	bps, err := store.Query(func(bp BundlePack) bool {
 		pb := bp.Bundle.PrimaryBlock
 		return pb.SourceNode == sr.SourceNode && pb.CreationTimestamp == sr.Timestamp
