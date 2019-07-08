@@ -1,7 +1,9 @@
 package core
 
 import (
+	"github.com/dtn7/cboring"
 	log "github.com/sirupsen/logrus"
+	"io"
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
@@ -53,8 +55,8 @@ func (sw SprayAndWait) NotifyIncoming(bp BundlePack) {
 		}
 
 		// if the bundle has a PreviousNodeBlock, add it to the list of nodes which we know to have the bundle
-		if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.PreviousNodeBlock); err == nil {
-			metadata.sent = append(metadata.sent, pnBlock.Data.(bundle.EndpointID))
+		if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
+			metadata.sent = append(metadata.sent, pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint())
 		}
 
 		sw.bundleData[bp.ID()] = metadata
@@ -147,15 +149,16 @@ func NewBinarySpray(c *Core) BinarySpray {
 // If yes, then we initialise the remaining Copies to L
 // If not we attempt to ready the routing-metadata-block end get the remaining copies
 func (bs BinarySpray) NotifyIncoming(bp BundlePack) {
-	if metadatBlock, err := bp.Bundle.ExtensionBlock(bundle.BinarySprayBlock); err == nil {
+	if metadataBlock, err := bp.Bundle.ExtensionBlock(ExtBlockTypeBinarySprayBlock); err == nil {
+		binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 		metadata := sprayMetaData{
 			sent:            make([]bundle.EndpointID, 0),
-			remainingCopies: metadatBlock.Data.(uint64),
+			remainingCopies: binarySprayBlock.RemainingCopies(),
 		}
 
 		// if the bundle has a PreviousNodeBlock, add it to the list of nodes which we know to have the bundle
-		if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.PreviousNodeBlock); err == nil {
-			metadata.sent = append(metadata.sent, pnBlock.Data.(bundle.EndpointID))
+		if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
+			metadata.sent = append(metadata.sent, pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint())
 		}
 
 		bs.bundleData[bp.ID()] = metadata
@@ -202,12 +205,13 @@ func (bs BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSende
 			metadata.remainingCopies = metadata.remainingCopies - sendCopies
 
 			// if the bundle already has a metadata-block
-			if metadataBlock, err := bp.Bundle.ExtensionBlock(bundle.BinarySprayBlock); err == nil {
-				metadataBlock.Data = sendCopies
+			if metadataBlock, err := bp.Bundle.ExtensionBlock(ExtBlockTypeBinarySprayBlock); err == nil {
+				binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
+				binarySprayBlock.SetCopies(sendCopies)
 			} else {
 				// if it doesn't, then create one
-				NewMetadataBlock := bundle.NewCanonicalBlock(bundle.BinarySprayBlock, 0, 0, sendCopies)
-				bp.Bundle.AddExtensionBlock(NewMetadataBlock)
+				metadataBlock := NewBinarySprayBlock(sendCopies)
+				bp.Bundle.AddExtensionBlock(bundle.NewCanonicalBlock(0, 0, metadataBlock))
 			}
 
 			// we currently only send a bundle to a single peer at once
@@ -233,10 +237,11 @@ func (bs BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
 		"bad_cla": sender,
 	}).Debug("Transmission failure")
 
-	metadataBlock, _ := bp.Bundle.ExtensionBlock(bundle.BinarySprayBlock)
+	metadataBlock, _ := bp.Bundle.ExtensionBlock(ExtBlockTypeBinarySprayBlock)
+	binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 
 	metadata, _ := bs.bundleData[bp.ID()]
-	metadata.remainingCopies = metadata.remainingCopies + metadataBlock.Data.(uint64)
+	binarySprayBlock.SetCopies(metadata.remainingCopies + binarySprayBlock.RemainingCopies())
 
 	for i := 0; i < len(metadata.sent); i++ {
 		if metadata.sent[i] == sender.GetPeerEndpointID() {
@@ -246,4 +251,42 @@ func (bs BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
 	}
 
 	bs.bundleData[bp.ID()] = metadata
+}
+
+const ExtBlockTypeBinarySprayBlock uint64 = 8
+
+type BinarySprayBlock uint64
+
+func NewBinarySprayBlock(copies uint64) *BinarySprayBlock {
+	newBlock := BinarySprayBlock(copies)
+	return &newBlock
+}
+
+func (bsb *BinarySprayBlock) BlockTypeCode() uint64 {
+	return ExtBlockTypeBinarySprayBlock
+}
+
+func (bsb *BinarySprayBlock) CheckValid() error {
+	return nil
+}
+
+func (bsb *BinarySprayBlock) MarshalCbor(w io.Writer) error {
+	return cboring.WriteUInt(uint64(*bsb), w)
+}
+
+func (bsb *BinarySprayBlock) UnmarshalCbor(r io.Reader) error {
+	if us, err := cboring.ReadUInt(r); err != nil {
+		return err
+	} else {
+		*bsb = BinarySprayBlock(us)
+		return nil
+	}
+}
+
+func (bsb *BinarySprayBlock) RemainingCopies() uint64 {
+	return uint64(*bsb)
+}
+
+func (bsb *BinarySprayBlock) SetCopies(newValue uint64) {
+	*bsb = BinarySprayBlock(newValue)
 }
