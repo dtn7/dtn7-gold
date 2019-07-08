@@ -279,8 +279,7 @@ func (sr StatusReport) StatusInformations() (sips []StatusInformationPos) {
 }
 
 func (sr *StatusReport) MarshalCbor(w io.Writer) error {
-	// TODO: support fragmentation
-	if err := cboring.WriteArrayLength(4, w); err != nil {
+	if err := cboring.WriteArrayLength(2+sr.RefBundle.Len(), w); err != nil {
 		return err
 	}
 
@@ -297,8 +296,6 @@ func (sr *StatusReport) MarshalCbor(w io.Writer) error {
 		return err
 	}
 
-	// XXX: remove with fragmentation support
-	sr.RefBundle.IsFragment = false
 	if err := cboring.Marshal(&sr.RefBundle, w); err != nil {
 		return fmt.Errorf("Marshalling BundleID failed: %v", err)
 	}
@@ -309,8 +306,12 @@ func (sr *StatusReport) MarshalCbor(w io.Writer) error {
 func (sr *StatusReport) UnmarshalCbor(r io.Reader) error {
 	if n, err := cboring.ReadArrayLength(r); err != nil {
 		return err
-	} else if n != 4 {
-		return fmt.Errorf("Expected array length 4, got %d", n)
+	} else if n == 4 {
+		sr.RefBundle.IsFragment = false
+	} else if n == 6 {
+		sr.RefBundle.IsFragment = true
+	} else {
+		return fmt.Errorf("Expected array of length 4 or 6, got %d", n)
 	}
 
 	if n, err := cboring.ReadArrayLength(r); err != nil {
@@ -330,8 +331,6 @@ func (sr *StatusReport) UnmarshalCbor(r io.Reader) error {
 		sr.ReportReason = StatusReportReason(n)
 	}
 
-	// XXX: remove with fragmentation support
-	sr.RefBundle.IsFragment = false
 	if err := cboring.Unmarshal(&sr.RefBundle, r); err != nil {
 		return fmt.Errorf("Unmarshalling BundleID failed: %v", err)
 	}
