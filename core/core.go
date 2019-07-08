@@ -251,7 +251,15 @@ func (c *Core) SendStatusReport(bp BundlePack,
 
 	var inBndl = *bp.Bundle
 	var sr = arecord.NewStatusReport(inBndl, status, reason, bundle.DtnTimeNow())
-	var ar = arecord.NewAdministrativeRecord(arecord.BundleStatusReportTypeCode, sr)
+	var ar, arErr = arecord.AdministrativeRecordToCbor(&sr)
+	if arErr != nil {
+		log.WithFields(log.Fields{
+			"bundle": bp.ID(),
+			"error":  arErr,
+		}).Warn("Serializing administrative record failed")
+
+		return
+	}
 
 	var aaEndpoint = bp.Receiver
 	if !c.HasEndpoint(aaEndpoint) {
@@ -269,7 +277,7 @@ func (c *Core) SendStatusReport(bp BundlePack,
 		Destination(inBndl.PrimaryBlock.ReportTo).
 		CreationTimestampNow().
 		Lifetime("60m").
-		Canonical(ar.ToCanonicalBlock()).
+		Canonical(ar).
 		Build()
 
 	if err != nil {

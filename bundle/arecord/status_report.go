@@ -9,6 +9,8 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
+const ARTypeStatusReport uint64 = 1
+
 // BundleStatusItem represents the a bundle status item, as used as an element
 // in the bundle status information array of each Bundle Status Report.
 type BundleStatusItem struct {
@@ -341,6 +343,10 @@ func (sr *StatusReport) UnmarshalCbor(r io.Reader) error {
 	}
 
 	return nil
+}
+
+func (sr *StatusReport) TypeCode() uint64 {
+	return ARTypeStatusReport
 }
 
 func (sr StatusReport) String() string {

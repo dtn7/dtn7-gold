@@ -107,7 +107,7 @@ func TestStatusReportCreationNoTime(t *testing.T) {
 	// Test no time is present.
 	bsi := statusRep.StatusInformation[ReceivedBundle]
 	if bsi.Asserted != true || bsi.Time != bundle.DtnTimeEpoch {
-		t.Errorf("ReceivedBundle's status item is incorrect: %v", bsi)
+		t.Fatalf("ReceivedBundle's status item is incorrect: %v", bsi)
 	}
 }
 
@@ -121,14 +121,17 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 		PayloadBlock([]byte("hello world!")).
 		Build()
 	if err != nil {
-		t.Errorf("Creating bundle failed: %v", err)
+		t.Fatalf("Creating bundle failed: %v", err)
 	}
 
 	initTime := bundle.DtnTimeNow()
 	statusRep := NewStatusReport(
 		bndl, ReceivedBundle, NoInformation, initTime)
 
-	adminRec := NewAdministrativeRecord(BundleStatusReportTypeCode, statusRep)
+	adminRec, adminRecErr := AdministrativeRecordToCbor(&statusRep)
+	if adminRecErr != nil {
+		t.Fatal(adminRecErr)
+	}
 
 	outBndl, err := bundle.Builder().
 		Source("dtn:foo").
@@ -136,10 +139,10 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 		CreationTimestampNow().
 		Lifetime("60m").
 		BundleCtrlFlags(bundle.AdministrativeRecordPayload).
-		Canonical(adminRec.ToCanonicalBlock()).
+		Canonical(adminRec).
 		Build()
 	if err != nil {
-		t.Errorf("Creating new bundle failed: %v", err)
+		t.Fatalf("Creating new bundle failed: %v", err)
 	}
 
 	buff := new(bytes.Buffer)
@@ -153,6 +156,6 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(outBndl, inBndl) {
-		t.Errorf("CBOR result differs: %v, %v", outBndl, inBndl)
+		t.Fatalf("CBOR result differs: %v, %v", outBndl, inBndl)
 	}
 }
