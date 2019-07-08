@@ -231,8 +231,7 @@ func (sip StatusInformationPos) String() string {
 type StatusReport struct {
 	StatusInformation []BundleStatusItem
 	ReportReason      StatusReportReason
-	SourceNode        bundle.EndpointID
-	Timestamp         bundle.CreationTimestamp
+	RefBundle         bundle.BundleID
 }
 
 // NewStatusReport creates a bundle status report for the given bundle and
@@ -244,8 +243,7 @@ func NewStatusReport(bndl bundle.Bundle, statusItem StatusInformationPos,
 	var sr = StatusReport{
 		StatusInformation: make([]BundleStatusItem, maxStatusInformationPos),
 		ReportReason:      reason,
-		SourceNode:        bndl.PrimaryBlock.SourceNode,
-		Timestamp:         bndl.PrimaryBlock.CreationTimestamp,
+		RefBundle:         bndl.ID(),
 	}
 
 	for i := 0; i < maxStatusInformationPos; i++ {
@@ -299,12 +297,10 @@ func (sr *StatusReport) MarshalCbor(w io.Writer) error {
 		return err
 	}
 
-	if err := cboring.Marshal(&sr.SourceNode, w); err != nil {
-		return fmt.Errorf("Marshalling EndpointID failed: %v", err)
-	}
-
-	if err := cboring.Marshal(&sr.Timestamp, w); err != nil {
-		return fmt.Errorf("Marshalling CreationTimestamp failed: %v", err)
+	// XXX: remove with fragmentation support
+	sr.RefBundle.IsFragment = false
+	if err := cboring.Marshal(&sr.RefBundle, w); err != nil {
+		return fmt.Errorf("Marshalling BundleID failed: %v", err)
 	}
 
 	return nil
@@ -334,12 +330,10 @@ func (sr *StatusReport) UnmarshalCbor(r io.Reader) error {
 		sr.ReportReason = StatusReportReason(n)
 	}
 
-	if err := cboring.Unmarshal(&sr.SourceNode, r); err != nil {
-		return fmt.Errorf("Unmarshalling EndpointID failed: %v", err)
-	}
-
-	if err := cboring.Unmarshal(&sr.Timestamp, r); err != nil {
-		return fmt.Errorf("Unmarshalling CreationTimestamp failed: %v", err)
+	// XXX: remove with fragmentation support
+	sr.RefBundle.IsFragment = false
+	if err := cboring.Unmarshal(&sr.RefBundle, r); err != nil {
+		return fmt.Errorf("Unmarshalling BundleID failed: %v", err)
 	}
 
 	return nil
@@ -369,7 +363,7 @@ func (sr StatusReport) String() string {
 	}
 	fmt.Fprintf(&b, "], ")
 
-	fmt.Fprintf(&b, "%v, %v, %v", sr.ReportReason, sr.SourceNode, sr.Timestamp)
+	fmt.Fprintf(&b, "%v, %v", sr.ReportReason, sr.RefBundle)
 
 	return b.String()
 }

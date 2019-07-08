@@ -58,9 +58,10 @@ func QueryAll(store Store) []BundlePack {
 // QueryFromStatusReport returns all (hopefully <= 1) bundles related to the
 // given StatusReport.
 func QueryFromStatusReport(store Store, sr arecord.StatusReport) []BundlePack {
+	// TODO: fragmentation support
 	bps, err := store.Query(func(bp BundlePack) bool {
 		pb := bp.Bundle.PrimaryBlock
-		return pb.SourceNode == sr.SourceNode && pb.CreationTimestamp == sr.Timestamp
+		return pb.SourceNode == sr.RefBundle.SourceNode && pb.CreationTimestamp == sr.RefBundle.Timestamp
 	})
 
 	queryErrLog(err, "QueryFromStatusReport")

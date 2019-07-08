@@ -3,7 +3,6 @@ package bundle
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/dtn7/cboring"
 	"github.com/hashicorp/go-multierror"
@@ -110,26 +109,20 @@ func (b *Bundle) SetCRCType(crcType CRCType) {
 	})
 }
 
-// ID returns a kind of uniquene representation of this bundle, containing
-// the souce node and creation timestamp. If this bundle is a fragment, the
-// offset is also present.
-func (b Bundle) ID() string {
-	var bldr strings.Builder
+// ID returns a BundleID representing this Bundle.
+func (b Bundle) ID() BundleID {
+	return BundleID{
+		SourceNode: b.PrimaryBlock.SourceNode,
+		Timestamp:  b.PrimaryBlock.CreationTimestamp,
 
-	fmt.Fprintf(&bldr, "%v-%d-%d",
-		b.PrimaryBlock.SourceNode,
-		b.PrimaryBlock.CreationTimestamp[0],
-		b.PrimaryBlock.CreationTimestamp[1])
-
-	if pb := b.PrimaryBlock; pb.BundleControlFlags.Has(IsFragment) {
-		fmt.Fprintf(&bldr, "-%d", pb.FragmentOffset)
+		IsFragment:      b.PrimaryBlock.BundleControlFlags.Has(IsFragment),
+		FragmentOffset:  b.PrimaryBlock.FragmentOffset,
+		TotalDataLength: b.PrimaryBlock.TotalDataLength,
 	}
-
-	return bldr.String()
 }
 
 func (b Bundle) String() string {
-	return b.ID()
+	return b.ID().String()
 }
 
 func (b Bundle) CheckValid() (errs error) {
