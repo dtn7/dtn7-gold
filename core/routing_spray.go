@@ -138,6 +138,12 @@ type BinarySpray struct {
 
 // NewBinarySpray creates new instance of BinarySpray
 func NewBinarySpray(c *Core) BinarySpray {
+	// register our custom metadata-block
+	extensionBlockManager := bundle.GetExtensionBlockManager()
+	if !extensionBlockManager.IsKnown(ExtBlockTypeBinarySprayBlock) {
+		// since we already checked if the block type exists, this really shouldn't ever fail...
+		_ = extensionBlockManager.Register(NewBinarySprayBlock(0))
+	}
 	return BinarySpray{
 		c:          c,
 		bundleData: make(map[string]sprayMetaData),
