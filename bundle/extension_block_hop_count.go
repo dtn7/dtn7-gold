@@ -9,6 +9,7 @@ import (
 
 const ExtBlockTypeHopCountBlock uint64 = 9
 
+// HopCountBlock implements the Bundle Protocol's Hop Count Block.
 type HopCountBlock struct {
 	Limit uint64
 	Count uint64
@@ -18,9 +19,12 @@ func (hcb *HopCountBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypeHopCountBlock
 }
 
+// NewHopCountBlock creates a new HopCountBlock with a given hop limit.
 func NewHopCountBlock(limit uint64) *HopCountBlock {
-	hcb := HopCountBlock{limit, 0}
-	return &hcb
+	return &HopCountBlock{
+		Limit: limit,
+		Count: 0,
+	}
 }
 
 // IsExceeded returns true if the hop limit exceeded.

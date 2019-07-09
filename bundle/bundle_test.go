@@ -293,7 +293,7 @@ func TestBundleCheckValid(t *testing.T) {
 			[]CanonicalBlock{NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
 			true},
 
-		// Block number (1) occures twice
+		// Block number (1) occurs twice
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
@@ -365,7 +365,9 @@ func BenchmarkBundleSerializationCboring(b *testing.B) {
 
 			b.Run(fmt.Sprintf("%d-%v", size, crc), func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					cboring.Marshal(&bndl, new(bytes.Buffer))
+					if err := cboring.Marshal(&bndl, new(bytes.Buffer)); err != nil {
+						b.Fatal(err)
+					}
 				}
 			})
 		}
@@ -400,7 +402,9 @@ func BenchmarkBundleDeserializationCboring(b *testing.B) {
 			bndl.SetCRCType(crc)
 
 			buff := new(bytes.Buffer)
-			cboring.Marshal(&bndl, buff)
+			if err := cboring.Marshal(&bndl, buff); err != nil {
+				b.Fatal(err)
+			}
 			data := buff.Bytes()
 
 			b.Run(fmt.Sprintf("%d-%v", size, crc), func(b *testing.B) {

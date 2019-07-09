@@ -222,7 +222,7 @@ func (bldr *BundleBuilder) Lifetime(duration interface{}) *BundleBuilder {
 	return bldr
 }
 
-// BundleBuilder sets the bundle processing controll flags in the primary block.
+// BundleBuilder sets the bundle processing control flags in the primary block.
 func (bldr *BundleBuilder) BundleCtrlFlags(bcf BundleControlFlags) *BundleBuilder {
 	if bldr.err == nil {
 		bldr.primary.BundleControlFlags = bcf
@@ -239,7 +239,7 @@ func (bldr *BundleBuilder) BundleCtrlFlags(bcf BundleControlFlags) *BundleBuilde
 //   CanonicalBlock
 //
 //   where ExtensionBlock is a bundle.ExtensionBlock and
-//   BlockControlFlags are _optional_ block processing controll flags or
+//   BlockControlFlags are _optional_ block processing control flags or
 //   CanonicalBlock is a CanonicalBlock
 //
 func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
@@ -313,7 +313,7 @@ func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 //   Age[, BlockControlFlags]
 //
 //   where Age is the age as an uint in microsecond or a format string and
-//   BlockControlFlags are _optional_ block processing controll flags
+//   BlockControlFlags are _optional_ block processing control flags
 //
 func (bldr *BundleBuilder) BundleAgeBlock(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
@@ -337,7 +337,7 @@ func (bldr *BundleBuilder) BundleAgeBlock(args ...interface{}) *BundleBuilder {
 //   Limit[, BlockControlFlags]
 //
 //   where Limit is the limit of this Hop Count Block and
-//   BlockControlFlags are _optional_ block processing controll flags
+//   BlockControlFlags are _optional_ block processing control flags
 //
 func (bldr *BundleBuilder) HopCountBlock(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
@@ -359,7 +359,7 @@ func (bldr *BundleBuilder) HopCountBlock(args ...interface{}) *BundleBuilder {
 //   Data[, BlockControlFlags]
 //
 //   where Data is the payload's data and
-//   BlockControlFlags are _optional_ block processing controll flags
+//   BlockControlFlags are _optional_ block processing control flags
 func (bldr *BundleBuilder) PayloadBlock(args ...interface{}) *BundleBuilder {
 	var buf bytes.Buffer
 	if err := binary.Write(&buf, binary.LittleEndian, args[0]); err != nil {
@@ -378,7 +378,7 @@ func (bldr *BundleBuilder) PayloadBlock(args ...interface{}) *BundleBuilder {
 //   PrevNode[, BlockControlFlags]
 //
 //   where PrevNode is an EndpointID or a string describing an endpoint and
-//   BlockControlFlags are _optional_ block processing controll flags
+//   BlockControlFlags are _optional_ block processing control flags
 //
 func (bldr *BundleBuilder) PreviousNodeBlock(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {

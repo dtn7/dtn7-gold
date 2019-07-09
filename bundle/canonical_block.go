@@ -34,7 +34,7 @@ func (cb CanonicalBlock) BlockTypeCode() uint64 {
 	return cb.Value.BlockTypeCode()
 }
 
-// HasCRC retruns true if the CRCType indicates a CRC present for this block.
+// HasCRC returns if the CRCType indicates a CRC is present for this block.
 func (cb CanonicalBlock) HasCRC() bool {
 	return cb.GetCRCType() != CRCNo
 }
@@ -103,7 +103,9 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 	crcBuff := new(bytes.Buffer)
 	if blockLen == 6 {
 		// Replay array's start
-		cboring.WriteArrayLength(blockLen, crcBuff)
+		if err := cboring.WriteArrayLength(blockLen, crcBuff); err != nil {
+			return err
+		}
 		r = io.TeeReader(r, crcBuff)
 	}
 

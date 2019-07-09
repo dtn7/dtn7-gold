@@ -39,7 +39,7 @@ func newEndpointIDDTN(ssp string) (EndpointID, error) {
 }
 
 func newEndpointIDIPN(ssp string) (ep EndpointID, err error) {
-	// As definied in RFC 6260, section 2.1:
+	// As defined in RFC 6260, section 2.1:
 	// - node number: ASCII numeric digits between 1 and (2^64-1)
 	// - an ASCII dot
 	// - service number: ASCII numeric digits between 1 and (2^64-1)

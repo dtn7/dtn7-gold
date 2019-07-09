@@ -59,7 +59,7 @@ func TestStatusReportCreation(t *testing.T) {
 
 	// Check bundle status report's fields
 	bsi := statusRep.StatusInformation[ReceivedBundle]
-	if bsi.Asserted != true || bsi.Time != initTime {
+	if !bsi.Asserted || bsi.Time != initTime {
 		t.Fatalf("ReceivedBundle's status item is incorrect: %v", bsi)
 	}
 
@@ -67,7 +67,7 @@ func TestStatusReportCreation(t *testing.T) {
 		if StatusInformationPos(i) == ReceivedBundle {
 			continue
 		}
-		if statusRep.StatusInformation[i].Asserted == true {
+		if statusRep.StatusInformation[i].Asserted {
 			t.Fatalf("Invalid status item is asserted: %d", i)
 		}
 	}
@@ -106,7 +106,7 @@ func TestStatusReportCreationNoTime(t *testing.T) {
 
 	// Test no time is present.
 	bsi := statusRep.StatusInformation[ReceivedBundle]
-	if bsi.Asserted != true || bsi.Time != bundle.DtnTimeEpoch {
+	if !bsi.Asserted || bsi.Time != bundle.DtnTimeEpoch {
 		t.Fatalf("ReceivedBundle's status item is incorrect: %v", bsi)
 	}
 }

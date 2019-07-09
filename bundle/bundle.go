@@ -141,8 +141,8 @@ func (b Bundle) CheckValid() (errs error) {
 				errs = multierror.Append(errs,
 					fmt.Errorf("Bundle: Bundle Processing Control Flags indicate that "+
 						"this bundle's payload is an administrative record or the source "+
-						"node is omitted, but the \"Transmit status report if block canot "+
-						"be processed\" Block Processing Control Flag was set in a "+
+						"node is omitted, but the \"Transmit status report if block "+
+						"cannot be processed\" Block Processing Control Flag was set in a "+
 						"Canonical Block"))
 			}
 		}

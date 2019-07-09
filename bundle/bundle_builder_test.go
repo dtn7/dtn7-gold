@@ -31,7 +31,7 @@ func TestBundleBuilderSimple(t *testing.T) {
 	bndlCbor := buff.Bytes()
 
 	bndl2 := Bundle{}
-	if bndl2.UnmarshalCbor(buff); err != nil {
+	if err = bndl2.UnmarshalCbor(buff); err != nil {
 		t.Fatal(err)
 	}
 
@@ -50,11 +50,17 @@ func TestBundleBuilderSimple(t *testing.T) {
 			NewCanonicalBlock(2, 0, NewHopCountBlock(64)),
 			NewCanonicalBlock(3, 0, NewBundleAgeBlock(0)),
 			NewCanonicalBlock(1, 0, NewPayloadBlock([]byte("hello world!")))})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	buff.Reset()
 	bndl3.PrimaryBlock.ReportTo = bndl3.PrimaryBlock.SourceNode
 	bndl3.SetCRCType(CRC32)
-	bndl3.MarshalCbor(buff)
+
+	if err := bndl3.MarshalCbor(buff); err != nil {
+		t.Fatal(err)
+	}
 	bndl3Cbor := buff.Bytes()
 
 	if !bytes.Equal(bndlCbor, bndl3Cbor) {

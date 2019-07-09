@@ -8,19 +8,22 @@ import (
 
 const ExtBlockTypePreviousNodeBlock uint64 = 7
 
+// PreviousNodeBlock implements the Bundle Protocol's Previous Node Block.
 type PreviousNodeBlock EndpointID
 
 func (pnb *PreviousNodeBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypePreviousNodeBlock
 }
 
-func (pnb *PreviousNodeBlock) Endpoint() EndpointID {
-	return EndpointID(*pnb)
-}
-
+// NewPreviousNodeBlock creates a new Previous Node Block for an Endpoint ID.
 func NewPreviousNodeBlock(prev EndpointID) *PreviousNodeBlock {
 	pnb := PreviousNodeBlock(prev)
 	return &pnb
+}
+
+// Endpoint returns this Previous Node Block's Endpoint ID.
+func (pnb *PreviousNodeBlock) Endpoint() EndpointID {
+	return EndpointID(*pnb)
 }
 
 func (pnb *PreviousNodeBlock) MarshalCbor(w io.Writer) error {

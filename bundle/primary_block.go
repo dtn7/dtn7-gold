@@ -57,7 +57,7 @@ func (pb PrimaryBlock) HasFragmentation() bool {
 	return pb.BundleControlFlags.Has(IsFragment)
 }
 
-// HasCRC retruns true if the CRCType indicates a CRC present for this block.
+// HasCRC returns if the CRCType indicates a CRC is present for this block.
 // In this case the CRC value should become relevant.
 func (pb PrimaryBlock) HasCRC() bool {
 	return pb.GetCRCType() != CRCNo
@@ -150,7 +150,9 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 	crcBuff := new(bytes.Buffer)
 	if blockLen == 9 || blockLen == 11 {
 		// Replay array's start
-		cboring.WriteArrayLength(blockLen, crcBuff)
+		if err := cboring.WriteArrayLength(blockLen, crcBuff); err != nil {
+			return err
+		}
 		r = io.TeeReader(r, crcBuff)
 	}
 
