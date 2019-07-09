@@ -38,7 +38,7 @@ type Core struct {
 // at the given path. The inspectAllBundles flag indicates if all
 // administrative records - next to the bundles addressed to this node - should
 // be inspected. This allows bundle deletion for forwarding bundles.
-func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool) (*Core, error) {
+func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool, routing string) (*Core, error) {
 	var c = new(Core)
 
 	c.InspectAllBundles = inspectAllBundles
@@ -53,7 +53,14 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool)
 	c.idKeeper = NewIdKeeper()
 	c.reloadConvRecs = make(chan struct{}, 9000)
 
-	c.routing = NewEpidemicRouting(c)
+	switch routing {
+	case "spray":
+		c.routing = NewSprayAndWait(c)
+	case "binary_spray":
+		c.routing = NewBinarySpray(c)
+	default:
+		c.routing = NewEpidemicRouting(c)
+	}
 
 	c.stopSyn = make(chan struct{})
 	c.stopAck = make(chan struct{})
