@@ -24,6 +24,7 @@ type Core struct {
 	convergenceQueue     []*convergenceQueueElement
 	convergenceMutex     sync.Mutex
 
+	cron     *Cron
 	idKeeper IdKeeper
 	store    Store
 	routing  RoutingAlgorithm
@@ -57,6 +58,10 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool)
 	c.stopSyn = make(chan struct{})
 	c.stopAck = make(chan struct{})
 
+	c.cron = NewCron()
+	c.cron.Register("pending_bundles", c.checkPendingBundles, time.Second*10)
+	c.cron.Register("pending_clas", c.checkPendingCLAs, time.Second*10)
+
 	go c.checkConvergenceReceivers()
 
 	return c, nil
@@ -66,6 +71,45 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool)
 // EpidemicRouting.
 func (c *Core) SetRoutingAlgorithm(routing RoutingAlgorithm) {
 	c.routing = routing
+}
+
+// checkPendingCLAs queries pending CLAs and tries to activate them.
+func (c *Core) checkPendingCLAs() {
+	var tmpQueue = make([]*convergenceQueueElement, len(c.convergenceQueue))
+	var delQueue = make([]*convergenceQueueElement, 0, 0)
+
+	c.convergenceMutex.Lock()
+	copy(tmpQueue, c.convergenceQueue)
+	c.convergenceMutex.Unlock()
+
+	for _, cqe := range tmpQueue {
+		log.WithFields(log.Fields{
+			"cla": cqe.conv,
+		}).Debug("Getting CLA from queue")
+
+		if retry := cqe.activate(c); !retry {
+			delQueue = append(delQueue, cqe)
+
+			log.WithFields(log.Fields{
+				"cla": cqe.conv,
+			}).Debug("Removing CLA from queue")
+		} else {
+			log.WithFields(log.Fields{
+				"cla": cqe.conv,
+			}).Debug("CLA stays in the queue")
+		}
+	}
+
+	c.convergenceMutex.Lock()
+	for _, cqe := range delQueue {
+		for i := len(c.convergenceQueue) - 1; i >= 0; i-- {
+			if cqe == c.convergenceQueue[i] {
+				c.convergenceQueue = append(
+					c.convergenceQueue[:i], c.convergenceQueue[i+1:]...)
+			}
+		}
+	}
+	c.convergenceMutex.Unlock()
 }
 
 // checkPendingBundles queries pending bundle (packs) from the store and
@@ -89,13 +133,12 @@ func (c *Core) checkPendingBundles() {
 // checkConvergenceReceivers checks all ConvergenceReceivers for new bundles.
 func (c *Core) checkConvergenceReceivers() {
 	var chnl = cla.JoinReceivers()
-	var tick = time.NewTicker(10 * time.Second)
 
 	for {
 		select {
 		// Invoked by Close(), shuts down
 		case <-c.stopSyn:
-			tick.Stop()
+			c.cron.Stop()
 
 			c.convergenceMutex.Lock()
 			for _, claRec := range c.convergenceReceivers {
@@ -115,48 +158,6 @@ func (c *Core) checkConvergenceReceivers() {
 		// Handle a received bundle, also checks if the channel is open
 		case bndl := <-chnl:
 			c.receive(NewRecBundlePack(bndl))
-
-		// Check back on enqueued CLAs and contraindicated bundles
-		case <-tick.C:
-			// CLAs
-			var tmpQueue = make([]*convergenceQueueElement, len(c.convergenceQueue))
-			var delQueue = make([]*convergenceQueueElement, 0, 0)
-
-			c.convergenceMutex.Lock()
-			copy(tmpQueue, c.convergenceQueue)
-			c.convergenceMutex.Unlock()
-
-			for _, cqe := range tmpQueue {
-				log.WithFields(log.Fields{
-					"cla": cqe.conv,
-				}).Debug("Getting CLA from queue")
-
-				if retry := cqe.activate(c); !retry {
-					delQueue = append(delQueue, cqe)
-
-					log.WithFields(log.Fields{
-						"cla": cqe.conv,
-					}).Debug("Removing CLA from queue")
-				} else {
-					log.WithFields(log.Fields{
-						"cla": cqe.conv,
-					}).Debug("CLA stays in the queue")
-				}
-			}
-
-			c.convergenceMutex.Lock()
-			for _, cqe := range delQueue {
-				for i := len(c.convergenceQueue) - 1; i >= 0; i-- {
-					if cqe == c.convergenceQueue[i] {
-						c.convergenceQueue = append(
-							c.convergenceQueue[:i], c.convergenceQueue[i+1:]...)
-					}
-				}
-			}
-			c.convergenceMutex.Unlock()
-
-			// Bundles
-			c.checkPendingBundles()
 
 		// Invoked by RegisterConvergenceReceiver, recreates chnl
 		case <-c.reloadConvRecs:
