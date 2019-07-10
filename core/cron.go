@@ -79,7 +79,8 @@ func (cron *Cron) Stop() {
 }
 
 // Register a new task by its name, function and interval. The interval must be
-// at least one second.
+// at least one second. The function will be executed in a new Goroutine and
+// must be thread-safe.
 func (cron *Cron) Register(name string, task func(), interval time.Duration) error {
 	cron.mutex.Lock()
 	defer cron.mutex.Unlock()
