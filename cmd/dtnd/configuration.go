@@ -24,9 +24,7 @@ type tomlConfig struct {
 	SimpleRest simpleRestConf `toml:"simple-rest"`
 	Listen     []convergenceConf
 	Peer       []convergenceConf
-	// Routing is one of the implemented routing-algorithms
-	// May be: "epidemic", "spray", "binary_spray"
-	Routing string
+	Routing    routingConf
 }
 
 // coreConf describes the Core-configuration block.
@@ -62,6 +60,13 @@ type convergenceConf struct {
 	Node     string
 	Protocol string
 	Endpoint string
+}
+
+// routingConf contains algorithm selection & parametrisation
+type routingConf struct {
+	// Algorithm is one of the implemented routing-algorithms
+	// May be: "epidemic", "spray", "binary_spray"
+	Algorithm string
 }
 
 // parseListen inspects a "listen" convergenceConf and returns a ConvergenceReceiver.
@@ -157,7 +162,7 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 	}
 
 	log.WithFields(log.Fields{
-		"routing": conf.Routing,
+		"routing": conf.Routing.Algorithm,
 	}).Debug("Selected routing algorithm")
 
 	nodeId, nodeErr := bundle.NewEndpointID(conf.Core.NodeId)
@@ -166,7 +171,7 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		return
 	}
 
-	c, err = core.NewCore(conf.Core.Store, nodeId, conf.Core.InspectAllBundles, conf.Routing)
+	c, err = core.NewCore(conf.Core.Store, nodeId, conf.Core.InspectAllBundles, conf.Routing.Algorithm)
 	if err != nil {
 		return
 	}
