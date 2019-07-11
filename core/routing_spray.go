@@ -10,7 +10,7 @@ import (
 )
 
 // sprayl is the number of copies that are sprayed
-const sprayl = 10
+const sprayl = 4
 
 // SprayAndWait implements the vanilla Spray and Wait routing protocol
 // In this case, the bundle originator distributes all L copies themselves
@@ -29,6 +29,9 @@ type sprayMetaData struct {
 
 // NewSprayAndWait creates new instance of SprayAndWait
 func NewSprayAndWait(c *Core) SprayAndWait {
+	log.WithFields(log.Fields{
+		"L": sprayl,
+	}).Debug("Initialised SprayAndWait")
 	return SprayAndWait{
 		c:          c,
 		bundleData: make(map[string]sprayMetaData),
@@ -72,13 +75,16 @@ func (sw SprayAndWait) NotifyIncoming(bp BundlePack) {
 func (sw SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
 	metadata, _ := sw.bundleData[bp.ID()]
 	// if there are no copies left, we just wait until we meet the recipient
-	if !(metadata.remainingCopies > 1) {
+	if metadata.remainingCopies < 2 {
+		log.WithFields(log.Fields{
+			"bundle": bp.ID(),
+		}).Debug("Not relaying bundle because there are copies left")
 		return nil, false
 	}
 
 	for _, cs := range sw.c.convergenceSenders {
 		// if we ran out of copies, then don't send it to any further peers
-		if !(metadata.remainingCopies > 1) {
+		if metadata.remainingCopies < 2 {
 			break
 		}
 
@@ -102,6 +108,7 @@ func (sw SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSend
 	log.WithFields(log.Fields{
 		"bundle":              bp.ID(),
 		"convergence-senders": css,
+		"remaining copies":    metadata.remainingCopies,
 	}).Debug("SprayAndWait selected Convergence Senders for an outgoing bundle")
 
 	del = false
@@ -138,6 +145,9 @@ type BinarySpray struct {
 
 // NewBinarySpray creates new instance of BinarySpray
 func NewBinarySpray(c *Core) BinarySpray {
+	log.WithFields(log.Fields{
+		"L": sprayl,
+	}).Debug("Initialised BinarySpray")
 	// register our custom metadata-block
 	extensionBlockManager := bundle.GetExtensionBlockManager()
 	if !extensionBlockManager.IsKnown(ExtBlockTypeBinarySprayBlock) {
@@ -189,7 +199,10 @@ func (bs BinarySpray) NotifyIncoming(bp BundlePack) {
 func (bs BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
 	metadata, _ := bs.bundleData[bp.ID()]
 	// if there are no copies left, we just wait until we meet the recipient
-	if !(metadata.remainingCopies > 1) {
+	if metadata.remainingCopies < 2 {
+		log.WithFields(log.Fields{
+			"bundle": bp.ID(),
+		}).Debug("Not relaying bundle because there are copies left")
 		return nil, false
 	}
 
@@ -230,6 +243,7 @@ func (bs BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSende
 	log.WithFields(log.Fields{
 		"bundle":              bp.ID(),
 		"convergence-senders": css,
+		"remaining copies":    metadata.remainingCopies,
 	}).Debug("BinarySpray selected Convergence Sender for an outgoing bundle")
 
 	del = false
@@ -261,6 +275,7 @@ func (bs BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
 
 const ExtBlockTypeBinarySprayBlock uint64 = 8
 
+// BinarySprayBlock contains metadata to let the next forwarder know their remaining copies
 type BinarySprayBlock uint64
 
 func NewBinarySprayBlock(copies uint64) *BinarySprayBlock {

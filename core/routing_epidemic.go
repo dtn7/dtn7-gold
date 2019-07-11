@@ -17,6 +17,7 @@ type EpidemicRouting struct {
 // NewEpidemicRouting creates a new EpidemicRouting RoutingAlgorithm interacting
 // with the given Core.
 func NewEpidemicRouting(c *Core) EpidemicRouting {
+	log.Debug("Initialised epidemic routing")
 	return EpidemicRouting{
 		c:       c,
 		sentMap: make(map[string][]bundle.EndpointID),

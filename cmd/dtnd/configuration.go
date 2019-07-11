@@ -26,7 +26,7 @@ type tomlConfig struct {
 	Peer       []convergenceConf
 	// Routing is one of the implemented routing-algorithms
 	// May be: "epidemic", "spray", "binary_spray"
-	Routing    string
+	Routing string
 }
 
 // coreConf describes the Core-configuration block.
@@ -155,6 +155,10 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		err = fmt.Errorf("core.store is empty")
 		return
 	}
+
+	log.WithFields(log.Fields{
+		"routing": conf.Routing,
+	}).Debug("Selected routing algorithm")
 
 	nodeId, nodeErr := bundle.NewEndpointID(conf.Core.NodeId)
 	if nodeErr != nil {
