@@ -84,7 +84,7 @@ func (sw SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSend
 	if metadata.remainingCopies < 2 {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
-		}).Debug("Not relaying bundle because there are copies left")
+		}).Debug("Not relaying bundle because there are no copies left")
 		return nil, false
 	}
 
@@ -193,6 +193,7 @@ func (bs BinarySpray) NotifyIncoming(bp BundlePack) {
 		bs.bundleData[bp.ID()] = metadata
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
+			"remaining_copies": metadata.remainingCopies,
 		}).Debug("SprayAndWait received bundle from foreign host")
 	} else {
 		metadata := sprayMetaData{
@@ -222,7 +223,7 @@ func (bs BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSende
 	if metadata.remainingCopies < 2 {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
-		}).Debug("Not relaying bundle because there are copies left")
+		}).Debug("Not relaying bundle because there are no copies left")
 		return nil, false
 	}
 
