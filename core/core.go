@@ -54,12 +54,16 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 	c.reloadConvRecs = make(chan struct{}, 9000)
 
 	switch routing {
+	case "epidemic":
+		c.routing = NewEpidemicRouting(c)
 	case "spray":
 		c.routing = NewSprayAndWait(c)
 	case "binary_spray":
 		c.routing = NewBinarySpray(c)
 	default:
-		c.routing = NewEpidemicRouting(c)
+		log.WithFields(log.Fields{
+			"routing_string": routing,
+		}).Fatal("Unknown routing algorithm")
 	}
 
 	c.stopSyn = make(chan struct{})
