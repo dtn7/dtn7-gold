@@ -12,7 +12,10 @@ import (
 
 // SendBundle transmits an outbounding bundle.
 func (c *Core) SendBundle(bndl *bundle.Bundle) {
-	c.transmit(NewBundlePack(bndl))
+	bp := NewBundlePack(bndl)
+
+	c.routing.NotifyIncoming(bp)
+	c.transmit(bp)
 }
 
 // transmit starts the transmission of an outbounding bundle pack. Therefore
@@ -114,6 +117,8 @@ func (c *Core) receive(bp BundlePack) {
 		}
 	}
 
+	c.routing.NotifyIncoming(bp)
+
 	c.dispatching(bp)
 }
 
@@ -122,8 +127,6 @@ func (c *Core) dispatching(bp BundlePack) {
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),
 	}).Info("Dispatching bundle")
-
-	c.routing.NotifyIncoming(bp)
 
 	if c.HasEndpoint(bp.Bundle.PrimaryBlock.Destination) {
 		c.localDelivery(bp)
