@@ -307,7 +307,7 @@ func (bs BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
 	bs.bundleData[bp.ID()] = metadata
 }
 
-const ExtBlockTypeBinarySprayBlock uint64 = 8
+const ExtBlockTypeBinarySprayBlock uint64 = 192
 
 // BinarySprayBlock contains metadata to let the next forwarder know their remaining copies
 type BinarySprayBlock uint64
