@@ -73,7 +73,13 @@ func (sw SprayAndWait) NotifyIncoming(bp BundlePack) {
 // The bundle's originator will distribute L copies amongst its peers
 // Forwarders will only every deliver the bundle to its final destination
 func (sw SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
-	metadata, _ := sw.bundleData[bp.ID()]
+	metadata, ok := sw.bundleData[bp.ID()]
+	if !ok {
+		log.WithFields(log.Fields{
+			"bundle":  bp.ID(),
+		}).Warn("No metadata")
+		return
+	}
 	// if there are no copies left, we just wait until we meet the recipient
 	if metadata.remainingCopies < 2 {
 		log.WithFields(log.Fields{
@@ -122,7 +128,14 @@ func (sw SprayAndWait) ReportFailure(bp BundlePack, sender cla.ConvergenceSender
 		"bad_cla": sender,
 	}).Debug("Transmission failure")
 
-	metadata, _ := sw.bundleData[bp.ID()]
+	metadata, ok := sw.bundleData[bp.ID()]
+	if !ok {
+		log.WithFields(log.Fields{
+			"bundle":  bp.ID(),
+		}).Warn("No metadata")
+		return
+	}
+
 	metadata.remainingCopies = metadata.remainingCopies + 1
 
 	for i := 0; i < len(metadata.sent); i++ {
@@ -197,7 +210,14 @@ func (bs BinarySpray) NotifyIncoming(bp BundlePack) {
 // If a node has more than 1 copy left it will send floor(copies/2) to the peer
 // and keep roof(copies/2) for itself
 func (bs BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
-	metadata, _ := bs.bundleData[bp.ID()]
+	metadata, ok := bs.bundleData[bp.ID()]
+	if !ok {
+		log.WithFields(log.Fields{
+			"bundle":  bp.ID(),
+		}).Warn("No metadata")
+		return
+	}
+
 	// if there are no copies left, we just wait until we meet the recipient
 	if metadata.remainingCopies < 2 {
 		log.WithFields(log.Fields{
@@ -257,10 +277,24 @@ func (bs BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
 		"bad_cla": sender,
 	}).Debug("Transmission failure")
 
-	metadataBlock, _ := bp.Bundle.ExtensionBlock(ExtBlockTypeBinarySprayBlock)
+	metadataBlock, err := bp.Bundle.ExtensionBlock(ExtBlockTypeBinarySprayBlock)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"bundle": bp.ID(),
+		}).Warn("Bundle has not metadata Block")
+		return
+	}
+
 	binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 
-	metadata, _ := bs.bundleData[bp.ID()]
+	metadata, ok := bs.bundleData[bp.ID()]
+	if !ok {
+		log.WithFields(log.Fields{
+			"bundle":  bp.ID(),
+			"bad_cla": sender,
+		}).Warn("No metadata")
+		return
+	}
 	binarySprayBlock.SetCopies(metadata.remainingCopies + binarySprayBlock.RemainingCopies())
 
 	for i := 0; i < len(metadata.sent); i++ {
