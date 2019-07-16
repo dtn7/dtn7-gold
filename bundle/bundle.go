@@ -168,10 +168,19 @@ func (b Bundle) CheckValid() (errs error) {
 		cbBlockTypes[blockType] = true
 	}
 
-	if b.PrimaryBlock.CreationTimestamp[0] == 0 {
-		if _, ok := cbBlockTypes[ExtBlockTypeBundleAgeBlock]; !ok {
+	if b.PrimaryBlock.CreationTimestamp.IsZeroTime() {
+		if _, err := b.ExtensionBlock(ExtBlockTypeBundleAgeBlock); err != nil {
 			errs = multierror.Append(errs, fmt.Errorf(
-				"Bundle: Creation Timestamp is zero, but no Bundle Age block is present"))
+				"Bundle: Creation Timestamp is zero, but fetching Bundle Age block errored: %v", err))
+		}
+	}
+
+	if canBab, err := b.ExtensionBlock(ExtBlockTypeBundleAgeBlock); err == nil {
+		bundleAge := canBab.Value.(*BundleAgeBlock).Age()
+		if bundleAge > b.PrimaryBlock.Lifetime {
+			errs = multierror.Append(errs, fmt.Errorf(
+				"Bundle: Bundle Age Block's value %d exceeded lifetime %d",
+				bundleAge, b.PrimaryBlock.Lifetime))
 		}
 	}
 

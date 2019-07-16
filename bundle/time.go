@@ -60,6 +60,12 @@ func (ct CreationTimestamp) DtnTime() DtnTime {
 	return DtnTime(ct[0])
 }
 
+// IsZeroTime returns if the time part is set to zero, indicating the lack of
+// an accurate clock.
+func (ct CreationTimestamp) IsZeroTime() bool {
+	return ct.DtnTime() == DtnTimeEpoch
+}
+
 // SequenceNumber returns the creation timestamp's sequence number.
 func (ct CreationTimestamp) SequenceNumber() uint64 {
 	return ct[1]

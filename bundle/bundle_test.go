@@ -12,7 +12,7 @@ import (
 
 func TestBundleApplyCRC(t *testing.T) {
 	var epPrim, _ = NewEndpointID("dtn:foo/bar")
-	var creationTs = NewCreationTimestamp(4200, 23)
+	var creationTs = NewCreationTimestamp(42000000000, 23)
 
 	var primary = NewPrimaryBlock(
 		StatusRequestDelivery,
@@ -53,7 +53,7 @@ func TestBundleApplyCRC(t *testing.T) {
 func TestBundleCbor(t *testing.T) {
 	var epDest, _ = NewEndpointID("dtn:desty")
 	var epSource, _ = NewEndpointID("dtn:gumo")
-	var creationTs = NewCreationTimestamp(4200, 23)
+	var creationTs = NewCreationTimestamp(42000000000, 23)
 
 	var primary = NewPrimaryBlock(
 		StatusRequestDelivery,
@@ -282,21 +282,21 @@ func TestBundleCheckValid(t *testing.T) {
 		// Administrative record
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
+				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000, 0), 3600),
 			[]CanonicalBlock{
 				NewCanonicalBlock(1, StatusReportBlock, NewPayloadBlock(nil))}),
 			false},
 
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
+				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000, 0), 3600),
 			[]CanonicalBlock{NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
 			true},
 
 		// Block number (1) occurs twice
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
+				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000, 0), 3600),
 			[]CanonicalBlock{
 				NewCanonicalBlock(1, 0, NewPayloadBlock(nil)),
 				NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
@@ -305,7 +305,7 @@ func TestBundleCheckValid(t *testing.T) {
 		// Two Hop Count blocks
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42, 0), 3600),
+				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000, 0), 3600),
 			[]CanonicalBlock{
 				NewCanonicalBlock(23, 0, NewHopCountBlock(23)),
 				NewCanonicalBlock(24, 0, NewHopCountBlock(23)),
@@ -317,7 +317,7 @@ func TestBundleCheckValid(t *testing.T) {
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(0, 0), 3600),
 			[]CanonicalBlock{
-				NewCanonicalBlock(2, 0, NewBundleAgeBlock(42000)),
+				NewCanonicalBlock(2, 0, NewBundleAgeBlock(420)),
 				NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
 			true},
 		{createNewBundle(

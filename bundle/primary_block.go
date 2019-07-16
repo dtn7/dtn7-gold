@@ -241,6 +241,10 @@ func (pb PrimaryBlock) CheckValid() (errs error) {
 		errs = multierror.Append(errs, rprtToErr)
 	}
 
+	if pb.IsLifetimeExceeded() {
+		errs = multierror.Append(errs, fmt.Errorf("PrimaryBlock: Lifetime is exceeded"))
+	}
+
 	// 4.1.3 says that "if the bundle's source node is omitted [src = dtn:none]
 	// [...] the "Bundle must not be fragmented" flag value must be 1 and all
 	// status report request flag values must be zero.
@@ -266,9 +270,13 @@ func (pb PrimaryBlock) CheckValid() (errs error) {
 // This method only compares the tuple of the CreationTimestamp and Lifetime
 // against the current time.
 //
-// The hop count block and the bundle age block are not inspected by this method
-// and should also be checked.
+// If the creatoin timestamp's time value is zero, this method will always
+// return false.
 func (pb PrimaryBlock) IsLifetimeExceeded() bool {
+	if pb.CreationTimestamp.IsZeroTime() {
+		return false
+	}
+
 	currentTs := time.Now()
 	supremumTs := pb.CreationTimestamp.DtnTime().Time().Add(
 		time.Duration(pb.Lifetime) * time.Microsecond)
