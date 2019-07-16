@@ -62,3 +62,7 @@ endpoint = "10.0.0.2:35037"
 node = "dtn://gamma/"
 protocol = "mtcp"
 endpoint = "[fc23::2]:35037"
+
+# Specify routing algorithm
+[routing]
+algorithm = "epidemic"
