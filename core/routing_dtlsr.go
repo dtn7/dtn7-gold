@@ -1,7 +1,9 @@
 package core
 
 import (
+	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
+	"io"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -40,6 +42,10 @@ type peerData struct {
 	peers map[bundle.EndpointID]uint64
 }
 
+func (pd *peerData) isNewerThan(other peerData) bool {
+	return pd.timestamp > other.timestamp
+}
+
 func NewDTLSR(c *Core) DTLSR {
 	log.Debug("Initialised DTLSR")
 	return DTLSR{
@@ -54,4 +60,77 @@ func NewDTLSR(c *Core) DTLSR {
 		receivedChange: false,
 		receivedData:   make(map[bundle.EndpointID]peerData),
 	}
+}
+
+const ExtBlockTypeDTLSRBlock uint64 = 193
+
+// DTLSRBlock contains routing metadata
+type DTLSRBlock peerData
+
+func NewDTLSRBlock(data peerData) *DTLSRBlock {
+	newBlock := DTLSRBlock(data)
+	return &newBlock
+}
+
+func (dtlsrb *DTLSRBlock) BlockTypeCode() uint64 {
+	return ExtBlockTypeDTLSRBlock
+}
+
+func (dtlsrb *DTLSRBlock) CheckValid() error {
+	return nil
+}
+
+func (dtlsrb *DTLSRBlock) MarshalCbor(w io.Writer) error {
+	// write our won endpoint id
+	if err := cboring.Marshal(&dtlsrb.id, w); err != nil {
+		return err
+	}
+
+	// write the timestamp
+	if err := cboring.WriteUInt(dtlsrb.timestamp, w); err != nil {
+		return err
+	}
+
+	// write the peer data keys
+	if err := cboring.WriteArrayLength(uint64(len(dtlsrb.peers)), w); err != nil {
+		return err
+	}
+	for peerID := range dtlsrb.peers {
+		if err := cboring.Marshal(&peerID, w); err != nil {
+			return err
+		}
+	}
+
+	// write the peer data
+	if err := cboring.WriteArrayLength(uint64(len(dtlsrb.peers)), w); err != nil {
+		return err
+	}
+	for _, timestamp := range dtlsrb.peers {
+		if err := cboring.WriteUInt(timestamp, w); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
+	// read endpoint id
+	id := bundle.EndpointID{}
+	if err := cboring.Unmarshal(&id, r); err != nil {
+		return err
+	} else {
+		dtlsrb.id = id
+	}
+
+	// read the timestamp
+	if timestamp, err := cboring.ReadUInt(r); err != nil {
+		return err
+	} else {
+		dtlsrb.timestamp = timestamp
+	}
+
+	// TODO: figure out how to actually read a variable length array
+
+	return nil
 }
