@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla"
 	"io"
 	"time"
 
@@ -43,7 +44,7 @@ type peerData struct {
 	peers map[bundle.EndpointID]uint64
 }
 
-func (pd *peerData) isNewerThan(other peerData) bool {
+func (pd peerData) isNewerThan(other peerData) bool {
 	return pd.timestamp > other.timestamp
 }
 
@@ -61,6 +62,68 @@ func NewDTLSR(c *Core) DTLSR {
 		receivedChange: false,
 		receivedData:   make(map[bundle.EndpointID]peerData),
 	}
+}
+
+func (dtlsr DTLSR) NotifyIncoming(bp BundlePack) {
+	if metaDataBlock, err := bp.Bundle.ExtensionBlock(ExtBlockTypeDTLSRBlock); err == nil {
+		dtlsrBlock := metaDataBlock.Value.(*DTLSRBlock)
+		data := dtlsrBlock.getPeerData()
+
+		storedData, present := dtlsr.receivedData[data.id]
+
+		if !present {
+			// if we didn't have any data for that peer, we simply add it
+			dtlsr.receivedData[data.id] = data
+			dtlsr.receivedChange = true
+		} else {
+			// check if the received data is newer and replace it if it is
+			if data.isNewerThan(storedData) {
+				dtlsr.receivedData[data.id] = data
+				dtlsr.receivedChange = true
+			}
+		}
+	}
+}
+
+func (dtlsr DTLSR) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
+	// if the transmission failed, that is sad, but we don't really care...
+	return
+}
+
+func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool) {
+	delete = false
+
+	// TODO: handle broadcasts?
+
+	recipient := bp.Bundle.PrimaryBlock.Destination
+	forwarder, present := dtlsr.routingTable[recipient]
+	if !present {
+		// we don't know where to forward this bundle
+		log.WithFields(log.Fields{
+			"bundle":    bp.ID(),
+			"recipient": recipient,
+		}).Debug("DTLSR could not find a node to forward to")
+		return
+	}
+
+	for _, cs := range dtlsr.c.convergenceSenders {
+		if cs.GetPeerEndpointID() == forwarder {
+			sender = append(sender, cs)
+			log.WithFields(log.Fields{
+				"bundle":              bp.ID(),
+				"recipient":           recipient,
+				"convergence-senders": sender,
+			}).Debug("DTLSR selected Convergence Sender for an outgoing bundle")
+			// we only ever forward to a single node
+			return
+		}
+	}
+
+	log.WithFields(log.Fields{
+		"bundle":    bp.ID(),
+		"recipient": recipient,
+	}).Debug("DTLSR could not find forwarder amongst connected nodes")
+	return
 }
 
 const ExtBlockTypeDTLSRBlock uint64 = 193
@@ -91,7 +154,7 @@ func (dtlsrb *DTLSRBlock) MarshalCbor(w io.Writer) error {
 		return err
 	}
 
-	// write our won endpoint id
+	// write our own endpoint id
 	if err := cboring.Marshal(&dtlsrb.id, w); err != nil {
 		return err
 	}
