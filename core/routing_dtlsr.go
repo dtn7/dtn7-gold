@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
 	"io"
@@ -72,6 +73,10 @@ func NewDTLSRBlock(data peerData) *DTLSRBlock {
 	return &newBlock
 }
 
+func (dtlsrb *DTLSRBlock) getPeerData() peerData {
+	return peerData(*dtlsrb)
+}
+
 func (dtlsrb *DTLSRBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypeDTLSRBlock
 }
@@ -81,6 +86,11 @@ func (dtlsrb *DTLSRBlock) CheckValid() error {
 }
 
 func (dtlsrb *DTLSRBlock) MarshalCbor(w io.Writer) error {
+	// start with the (apparently) required outer array
+	if err := cboring.WriteArrayLength(3, w); err != nil {
+		return err
+	}
+
 	// write our won endpoint id
 	if err := cboring.Marshal(&dtlsrb.id, w); err != nil {
 		return err
@@ -115,6 +125,13 @@ func (dtlsrb *DTLSRBlock) MarshalCbor(w io.Writer) error {
 }
 
 func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
+	// read the (apparently) required outer array
+	if l, err := cboring.ReadArrayLength(r); err != nil {
+		return err
+	} else if l != 3 {
+		return fmt.Errorf("expected 3 fields, got %d", l)
+	}
+
 	// read endpoint id
 	id := bundle.EndpointID{}
 	if err := cboring.Unmarshal(&id, r); err != nil {
@@ -130,7 +147,53 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 		dtlsrb.timestamp = timestamp
 	}
 
-	// TODO: figure out how to actually read a variable length array
+	var lenKeys uint64
+	var lenData uint64
+
+	// read length of key array
+	lenKeys, err := cboring.ReadArrayLength(r)
+	if err != nil {
+		return err
+	}
+
+	// read key array
+	var i uint64
+	keys := make([]bundle.EndpointID, lenKeys)
+	for i = 0; i < lenKeys; i++ {
+		key := bundle.EndpointID{}
+		if err := cboring.Unmarshal(&key, r); err != nil {
+			return err
+		}
+		keys[i] = key
+	}
+
+	// read length of data array
+	lenData, err = cboring.ReadArrayLength(r)
+	if err != nil {
+		return err
+	}
+
+	// both arrays must be of the same size
+	if lenKeys != lenData {
+		return fmt.Errorf("Key-Value array size mismatch: Keys: %d, Values: %d", lenKeys, lenData)
+	}
+
+	data := make([]uint64, lenData)
+	for i = 0; i < lenData; i++ {
+		value, err := cboring.ReadUInt(r)
+		if err != nil {
+			return err
+		}
+		data[i] = value
+	}
+
+	// recreate map from two arrays
+	peers := make(map[bundle.EndpointID]uint64)
+	for i = 0; i < lenKeys; i++ {
+		peers[keys[i]] = data[i]
+	}
+
+	dtlsrb.peers = peers
 
 	return nil
 }
