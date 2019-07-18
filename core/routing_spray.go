@@ -4,6 +4,8 @@ import (
 	"github.com/dtn7/cboring"
 	log "github.com/sirupsen/logrus"
 	"io"
+	"sync"
+	"time"
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
@@ -18,8 +20,11 @@ type SprayAndWait struct {
 	c *Core
 	// bundleData stores the metadata for each bundle
 	bundleData map[string]sprayMetaData
+	// Mutex for concurrent modification of data by multiple goroutines
+	dataMutex *sync.Mutex
 }
 
+// sprayMetaData stores bundle-specific metadata
 type sprayMetaData struct {
 	// sent is the list of nodes to which we have already relayed this bundle
 	sent []bundle.EndpointID
@@ -27,15 +32,49 @@ type sprayMetaData struct {
 	remainingCopies uint64
 }
 
+// cleanupMetaData goes through stored metadata, determines if the corresponding bundle is still alive
+// and deletes metadata for expired bundles
+func cleanupMetaData(c *Core, metadata map[string]sprayMetaData) map[string]sprayMetaData {
+	cleanedMetaData := make(map[string]sprayMetaData)
+
+	for bundleId, data := range metadata {
+		if _, err := c.store.QueryId(bundleId); err == nil {
+			cleanedMetaData[bundleId] = data
+		}
+	}
+
+	return cleanedMetaData
+}
+
 // NewSprayAndWait creates new instance of SprayAndWait
 func NewSprayAndWait(c *Core) SprayAndWait {
 	log.WithFields(log.Fields{
 		"L": sprayl,
 	}).Debug("Initialised SprayAndWait")
-	return SprayAndWait{
+
+	sprayAndWait := SprayAndWait{
 		c:          c,
 		bundleData: make(map[string]sprayMetaData),
+		dataMutex:  &sync.Mutex{},
 	}
+
+	err := c.cron.Register("SprayAndWait_gc", sprayAndWait.GarbageCollect, time.Second*60)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"reason": err,
+		}).Warn("Could not register SprayAndWait gc-cron")
+	}
+
+	return sprayAndWait
+}
+
+// GarbageCollect performs periodical cleanup of Bundle metadata
+func (sw SprayAndWait) GarbageCollect() {
+	cleanedMetaData := cleanupMetaData(sw.c, sw.bundleData)
+
+	sw.dataMutex.Lock()
+	sw.bundleData = cleanedMetaData
+	sw.dataMutex.Unlock()
 }
 
 // NotifyIncoming tells the routing algorithm about new bundles.
@@ -47,7 +86,11 @@ func (sw SprayAndWait) NotifyIncoming(bp BundlePack) {
 			sent:            make([]bundle.EndpointID, 0),
 			remainingCopies: sprayl,
 		}
+
+		sw.dataMutex.Lock()
 		sw.bundleData[bp.ID()] = metadata
+		sw.dataMutex.Unlock()
+
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
 		}).Debug("SprayAndWait initialised new bundle from this host")
@@ -62,7 +105,10 @@ func (sw SprayAndWait) NotifyIncoming(bp BundlePack) {
 			metadata.sent = append(metadata.sent, pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint())
 		}
 
+		sw.dataMutex.Lock()
 		sw.bundleData[bp.ID()] = metadata
+		sw.dataMutex.Unlock()
+
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
 		}).Debug("SprayAndWait received bundle from foreign host")
@@ -109,7 +155,9 @@ func (sw SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSend
 		}
 	}
 
+	sw.dataMutex.Lock()
 	sw.bundleData[bp.ID()] = metadata
+	sw.dataMutex.Unlock()
 
 	log.WithFields(log.Fields{
 		"bundle":              bp.ID(),
@@ -145,7 +193,9 @@ func (sw SprayAndWait) ReportFailure(bp BundlePack, sender cla.ConvergenceSender
 		}
 	}
 
+	sw.dataMutex.Lock()
 	sw.bundleData[bp.ID()] = metadata
+	sw.dataMutex.Unlock()
 }
 
 func (_ SprayAndWait) ReportPeerAppeared(_ cla.Convergence) {}
@@ -158,6 +208,8 @@ type BinarySpray struct {
 	c *Core
 	// bundleData stores the metadata for each bundle
 	bundleData map[string]sprayMetaData
+	// Mutex for concurrent modification of data by multiple goroutines
+	dataMutex *sync.Mutex
 }
 
 // NewBinarySpray creates new instance of BinarySpray
@@ -165,16 +217,37 @@ func NewBinarySpray(c *Core) BinarySpray {
 	log.WithFields(log.Fields{
 		"L": sprayl,
 	}).Debug("Initialised BinarySpray")
+
 	// register our custom metadata-block
 	extensionBlockManager := bundle.GetExtensionBlockManager()
 	if !extensionBlockManager.IsKnown(ExtBlockTypeBinarySprayBlock) {
 		// since we already checked if the block type exists, this really shouldn't ever fail...
 		_ = extensionBlockManager.Register(NewBinarySprayBlock(0))
 	}
-	return BinarySpray{
+
+	binarySpray := BinarySpray{
 		c:          c,
 		bundleData: make(map[string]sprayMetaData),
+		dataMutex:  &sync.Mutex{},
 	}
+
+	err := c.cron.Register("Binaryspray_gc", binarySpray.GarbageCollect, time.Second*60)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"reason": err,
+		}).Warn("Could not register BinarySpray gc-cron")
+	}
+
+	return binarySpray
+}
+
+// GarbageCollect performs periodical cleanup of Bundle metadata
+func (bs BinarySpray) GarbageCollect() {
+	cleanedMetaData := cleanupMetaData(bs.c, bs.bundleData)
+
+	bs.dataMutex.Lock()
+	bs.bundleData = cleanedMetaData
+	bs.dataMutex.Unlock()
 }
 
 // NotifyIncoming tells the routing algorithm about new bundles.
@@ -194,7 +267,10 @@ func (bs BinarySpray) NotifyIncoming(bp BundlePack) {
 			metadata.sent = append(metadata.sent, pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint())
 		}
 
+		bs.dataMutex.Lock()
 		bs.bundleData[bp.ID()] = metadata
+		bs.dataMutex.Unlock()
+
 		log.WithFields(log.Fields{
 			"bundle":           bp.ID(),
 			"remaining_copies": metadata.remainingCopies,
@@ -204,7 +280,11 @@ func (bs BinarySpray) NotifyIncoming(bp BundlePack) {
 			sent:            make([]bundle.EndpointID, 0),
 			remainingCopies: sprayl,
 		}
+
+		bs.dataMutex.Lock()
 		bs.bundleData[bp.ID()] = metadata
+		bs.dataMutex.Unlock()
+
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
 		}).Debug("SprayAndWait initialised new bundle from this host")
@@ -263,7 +343,9 @@ func (bs BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSende
 		}
 	}
 
+	bs.dataMutex.Lock()
 	bs.bundleData[bp.ID()] = metadata
+	bs.dataMutex.Unlock()
 
 	log.WithFields(log.Fields{
 		"bundle":              bp.ID(),
@@ -309,7 +391,9 @@ func (bs BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
 		}
 	}
 
+	bs.dataMutex.Lock()
 	bs.bundleData[bp.ID()] = metadata
+	bs.dataMutex.Unlock()
 }
 
 func (_ BinarySpray) ReportPeerAppeared(_ cla.Convergence) {}
