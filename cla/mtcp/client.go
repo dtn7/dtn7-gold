@@ -10,14 +10,17 @@ import (
 
 	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 // MTCPClient is an implementation of a Minimal TCP Convergence-Layer client
-// which connects to a MTCP server to send bundles.
+// which connects to a MTCP server to send bundles. This struct implements
+// a ConvergenceSender.
 type MTCPClient struct {
-	conn  net.Conn
-	peer  bundle.EndpointID
-	mutex sync.Mutex
+	conn       net.Conn
+	peer       bundle.EndpointID
+	mutex      sync.Mutex
+	reportChan chan cla.ConvergenceStatus
 
 	permanent bool
 	address   string
@@ -28,9 +31,10 @@ type MTCPClient struct {
 // should never be removed from the core.
 func NewMTCPClient(address string, peer bundle.EndpointID, permanent bool) *MTCPClient {
 	return &MTCPClient{
-		peer:      peer,
-		permanent: permanent,
-		address:   address,
+		peer:       peer,
+		reportChan: make(chan cla.ConvergenceStatus),
+		permanent:  permanent,
+		address:    address,
 	}
 }
 
@@ -41,8 +45,6 @@ func NewAnonymousMTCPClient(address string, permanent bool) *MTCPClient {
 	return NewMTCPClient(address, bundle.DtnNone(), permanent)
 }
 
-// Start starts this MTCPClient and might return an error and a boolean
-// indicating if another Start should be tried later.
 func (client *MTCPClient) Start() (error, bool) {
 	conn, err := net.DialTimeout("tcp", client.address, time.Second)
 	if err == nil {
@@ -52,7 +54,6 @@ func (client *MTCPClient) Start() (error, bool) {
 	return err, true
 }
 
-// Send transmits a bundle to this MTCPClient's endpoint.
 func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 	defer func() {
 		if r := recover(); r != nil && err == nil {
@@ -95,26 +96,26 @@ func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 	return
 }
 
-// Close closes the MTCPClient's connection.
-func (client *MTCPClient) Close() {
-	client.mutex.Lock()
-	client.conn.Close()
-	client.mutex.Unlock()
+func (client *MTCPClient) Channel() chan cla.ConvergenceStatus {
+	return client.reportChan
 }
 
-// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
-// if it's known. Otherwise the zero endpoint will be returned.
+func (client *MTCPClient) Close() {
+	client.mutex.Lock()
+	defer client.mutex.Unlock()
+
+	client.conn.Close()
+	close(client.reportChan)
+}
+
 func (client *MTCPClient) GetPeerEndpointID() bundle.EndpointID {
 	return client.peer
 }
 
-// Address should return a unique address string to both identify this
-// ConvergenceSender and ensure it will not opened twice.
 func (client *MTCPClient) Address() string {
 	return client.address
 }
 
-// IsPermanent returns true, if this CLA should not be removed after failures.
 func (client *MTCPClient) IsPermanent() bool {
 	return client.permanent
 }

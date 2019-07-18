@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 func getRandomPort(t *testing.T) int {
@@ -49,9 +50,6 @@ func TestMTCPServerClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(clients + 1) // 1 for the server
-
 	// Server
 	serv := NewMTCPServer(
 		fmt.Sprintf(":%d", port), bundle.MustNewEndpointID("dtn:mtcpcla"), false)
@@ -62,49 +60,58 @@ func TestMTCPServerClient(t *testing.T) {
 	var counter sync.Map
 	counter.Store("counter", clients*packages)
 
+	errCh := make(chan error, clients*packages*2)
+
 	go func() {
 		var chnl = serv.Channel()
 
 		for {
 			select {
-			case b := <-chnl:
-				c, _ := counter.Load("counter")
-				cVal := c.(int) - 1
-				counter.Store("counter", cVal)
+			case cs := <-chnl:
+				if cs.MessageType != cla.ReceivedBundle {
+					errCh <- fmt.Errorf("Wrong MessageType %v", cs.MessageType)
+				} else {
+					c, _ := counter.Load("counter")
+					cVal := c.(int) - 1
+					counter.Store("counter", cVal)
 
-				if !reflect.DeepEqual(*b.Bundle, bndl) {
-					t.Errorf("Received bundle differs: %v, %v", b, bndl)
-				}
+					if recBndl := cs.Message.(*bundle.Bundle); !reflect.DeepEqual(recBndl, &bndl) {
+						errCh <- fmt.Errorf("Received bundle differs: %v, %v", recBndl, &bndl)
+					} else {
+						errCh <- nil
+					}
 
-				if cVal == 0 {
-					serv.Close()
-					wg.Done()
-					return
+					if cVal == 0 {
+						serv.Close()
+						return
+					}
 				}
 			}
 		}
 	}()
 
-	// Client
+	// Clients
 	for c := 0; c < clients; c++ {
 		go func() {
 			client := NewAnonymousMTCPClient(fmt.Sprintf("localhost:%d", port), false)
 			if err, _ := client.Start(); err != nil {
-				t.Fatal(err)
+				errCh <- fmt.Errorf("Starting Client failed: %v", err)
+				return
 			}
 
 			for i := 0; i < packages; i++ {
-				if err := client.Send(&bndl); err != nil {
-					t.Fatal(err)
-				}
+				errCh <- client.Send(&bndl)
 			}
 
 			client.Close()
-			wg.Done()
 		}()
 	}
 
-	wg.Wait()
+	for i := 0; i < clients*packages*2; i++ {
+		if err := <-errCh; err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	c, _ := counter.Load("counter")
 	if c.(int) != 0 {

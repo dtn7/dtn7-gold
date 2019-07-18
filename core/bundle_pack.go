@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/dtn7/dtn7-go/cla"
 )
 
 // BundlePack is a set of a bundle, it's creation or reception time stamp and
@@ -26,15 +25,6 @@ func NewBundlePack(b *bundle.Bundle) BundlePack {
 		Timestamp:   time.Now(),
 		Constraints: make(map[Constraint]bool),
 	}
-}
-
-// NewRecBundlePack returns a new BundlePack based on a RecBundle, which
-// contains a receiving CLA.
-func NewRecBundlePack(b cla.RecBundle) BundlePack {
-	bp := NewBundlePack(b.Bundle)
-	bp.Receiver = b.Receiver
-
-	return bp
 }
 
 // ID returns the wrapped Bundle's ID.

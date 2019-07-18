@@ -15,10 +15,10 @@ import (
 
 // MTCPServer is an implementation of a Minimal TCP Convergence-Layer server
 // which accepts bundles from multiple connections and forwards them to the
-// given channel.
+// given channel. This struct implements a ConvergenceReceiver.
 type MTCPServer struct {
 	listenAddress string
-	reportChan    chan cla.RecBundle
+	reportChan    chan cla.ConvergenceStatus
 	endpointID    bundle.EndpointID
 	permanent     bool
 
@@ -32,7 +32,7 @@ type MTCPServer struct {
 func NewMTCPServer(listenAddress string, endpointID bundle.EndpointID, permanent bool) *MTCPServer {
 	return &MTCPServer{
 		listenAddress: listenAddress,
-		reportChan:    make(chan cla.RecBundle),
+		reportChan:    make(chan cla.ConvergenceStatus),
 		endpointID:    endpointID,
 		permanent:     permanent,
 		stopSyn:       make(chan struct{}),
@@ -40,8 +40,6 @@ func NewMTCPServer(listenAddress string, endpointID bundle.EndpointID, permanent
 	}
 }
 
-// Start starts this MTCPServer and might return an error and a boolean
-// indicating if another Start should be tried later.
 func (serv *MTCPServer) Start() (error, bool) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", serv.listenAddress)
 	if err != nil {
@@ -122,34 +120,29 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 				"conn": conn,
 			}).Debug("MTCP handleServer connection received a bundle")
 
-			serv.reportChan <- cla.NewRecBundle(bndl, serv.endpointID)
+			serv.reportChan <- cla.NewConvergenceStatus(
+				serv, serv.endpointID, cla.ReceivedBundle, bndl)
 		}
 	}
 }
 
-// Channel returns a channel of received bundles.
-func (serv *MTCPServer) Channel() chan cla.RecBundle {
+func (serv *MTCPServer) Channel() chan cla.ConvergenceStatus {
 	return serv.reportChan
 }
 
-// Close shuts this MTCPServer down.
 func (serv *MTCPServer) Close() {
 	close(serv.stopSyn)
 	<-serv.stopAck
 }
 
-// GetEndpointID returns the endpoint ID assigned to this CLA.
 func (serv MTCPServer) GetEndpointID() bundle.EndpointID {
 	return serv.endpointID
 }
 
-// Address should return a unique address string to both identify this
-// ConvergenceReceiver and ensure it will not opened twice.
 func (serv MTCPServer) Address() string {
 	return fmt.Sprintf("mtcp://%s", serv.listenAddress)
 }
 
-// IsPermanent returns true, if this CLA should not be removed after failures.
 func (serv MTCPServer) IsPermanent() bool {
 	return serv.permanent
 }

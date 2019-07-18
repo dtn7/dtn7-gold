@@ -4,15 +4,15 @@ import (
 	"sync"
 )
 
-// merge merges two RecBundle channels into a new one.
-func merge(a, b chan RecBundle) (ch chan RecBundle) {
+// merge merges two ConvergenceStatus channels into a new one.
+func merge(a, b chan ConvergenceStatus) (ch chan ConvergenceStatus) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	ch = make(chan RecBundle)
+	ch = make(chan ConvergenceStatus)
 
-	for _, c := range []chan RecBundle{a, b} {
-		go func(c chan RecBundle) {
+	for _, c := range []chan ConvergenceStatus{a, b} {
+		go func(c chan ConvergenceStatus) {
 			for bndl := range c {
 				ch <- bndl
 			}
@@ -34,11 +34,11 @@ func merge(a, b chan RecBundle) (ch chan RecBundle) {
 // JoinReceivers. This prevents the select statement within
 // checkConvergenceReceivers's for loop to always return a closed channel and
 // heat up the loop.
-var zeroChan chan RecBundle
+var zeroChan chan ConvergenceStatus
 
-func getZeroChan() chan RecBundle {
+func getZeroChan() chan ConvergenceStatus {
 	if zeroChan == nil {
-		zeroChan = make(chan RecBundle)
+		zeroChan = make(chan ConvergenceStatus)
 	}
 
 	return zeroChan
@@ -46,7 +46,7 @@ func getZeroChan() chan RecBundle {
 
 // JoinReceivers joins the given receiving bundle channels into a new channel,
 // containing all bundles from all channels.
-func JoinReceivers(chans ...chan RecBundle) chan RecBundle {
+func JoinReceivers(chans ...chan ConvergenceStatus) chan ConvergenceStatus {
 	switch len(chans) {
 	case 0:
 		return getZeroChan()

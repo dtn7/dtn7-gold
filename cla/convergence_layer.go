@@ -13,22 +13,6 @@ package cla
 
 import "github.com/dtn7/dtn7-go/bundle"
 
-// RecBundle is a tuple struct to attach the receiving CLA's node ID  to an
-// incoming bundle. Each ConvergenceReceiver returns its received bundles as
-// a channel of RecBundles.
-type RecBundle struct {
-	Bundle   *bundle.Bundle
-	Receiver bundle.EndpointID
-}
-
-// NewRecBundle returns a new RecBundle for the given bundle and CLA.
-func NewRecBundle(b *bundle.Bundle, rec bundle.EndpointID) RecBundle {
-	return RecBundle{
-		Bundle:   b,
-		Receiver: rec,
-	}
-}
-
 // Convergence is an interface to describe all kinds of Convergence Layer
 // Adapters. There should not be a direct implemention of this interface. One
 // must implement ConvergenceReceiver and/or ConvergenceSender, which are both
@@ -41,6 +25,10 @@ type Convergence interface {
 
 	// Close signals this Convergence{Receiver,Send} to shut down.
 	Close()
+
+	// Channel represents a return channel for transmitted bundles, status
+	// messages, etc.
+	Channel() chan ConvergenceStatus
 
 	// Address should return a unique address string to both identify this
 	// Convergence{Receiver,Sender} and ensure it will not opened twice.
@@ -55,9 +43,6 @@ type Convergence interface {
 // the Channel method.
 type ConvergenceReceiver interface {
 	Convergence
-
-	// Channel returns a channel of received bundles.
-	Channel() chan RecBundle
 
 	// GetEndpointID returns the endpoint ID assigned to this CLA.
 	GetEndpointID() bundle.EndpointID

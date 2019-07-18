@@ -166,9 +166,22 @@ func (c *Core) checkConvergenceReceivers() {
 			close(c.stopAck)
 			return
 
-		// Handle a received bundle, also checks if the channel is open
-		case bndl := <-chnl:
-			c.receive(NewRecBundlePack(bndl))
+		// Handle a received ConvergenceStatus
+		case cs := <-chnl:
+			switch cs.MessageType {
+			case cla.ReceivedBundle:
+				bp := NewBundlePack(cs.Message.(*bundle.Bundle))
+				bp.Receiver = cs.RelatedEndpoint
+
+				c.receive(bp)
+
+			default:
+				log.WithFields(log.Fields{
+					"sender": cs.Sender,
+					"type":   cs.MessageType,
+					"status": cs,
+				}).Warn("Received ConvergenceStatus with unknown type")
+			}
 
 		// Invoked by RegisterConvergenceReceiver, recreates chnl
 		case <-c.reloadConvRecs:
