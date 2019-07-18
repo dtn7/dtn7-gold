@@ -28,7 +28,7 @@ func TestMerge(t *testing.T) {
 		t.Error(err)
 	}
 
-	recBndl := NewConvergenceStatus(nil, bundle.DtnNone(), ReceivedBundle, &bndl)
+	recBndl := NewConvergenceReceivedBundle(nil, bundle.DtnNone(), &bndl)
 
 	ch0 := make(chan ConvergenceStatus)
 	ch1 := make(chan ConvergenceStatus)
@@ -51,7 +51,8 @@ func TestMerge(t *testing.T) {
 						cVal := c.(int) - 1
 						counter.Store("counter", cVal)
 
-						if recBndl := cs.Message.(*bundle.Bundle); !reflect.DeepEqual(recBndl, &bndl) {
+						recBndl := cs.Message.(ConvergenceReceivedBundle).Bundle
+						if !reflect.DeepEqual(recBndl, &bndl) {
 							errCh <- fmt.Errorf("Received bundle differs: %v, %v", recBndl, &bndl)
 						} else {
 							errCh <- nil
@@ -107,7 +108,7 @@ func TestJoinReceivers(t *testing.T) {
 		t.Error(err)
 	}
 
-	recBndl := NewConvergenceStatus(nil, bundle.DtnNone(), ReceivedBundle, &bndl)
+	recBndl := NewConvergenceReceivedBundle(nil, bundle.DtnNone(), &bndl)
 
 	chns := make([]chan ConvergenceStatus, clients)
 	for i := 0; i < clients; i++ {
@@ -132,7 +133,8 @@ func TestJoinReceivers(t *testing.T) {
 						cVal := c.(int) - 1
 						counter.Store("counter", cVal)
 
-						if recBndl := cs.Message.(*bundle.Bundle); !reflect.DeepEqual(recBndl, &bndl) {
+						recBndl := cs.Message.(ConvergenceReceivedBundle).Bundle
+						if !reflect.DeepEqual(recBndl, &bndl) {
 							errCh <- fmt.Errorf("Received bundle differs: %v, %v", recBndl, &bndl)
 						} else {
 							errCh <- nil

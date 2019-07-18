@@ -26,24 +26,31 @@ func (cms ConvergenceMessageType) String() string {
 // ConvergenceStatus allows transmission of information via a return channel
 // from a Convergence instance.
 type ConvergenceStatus struct {
-	Sender          Convergence
-	RelatedEndpoint bundle.EndpointID
-	MessageType     ConvergenceMessageType
-	Message         interface{}
+	Sender      Convergence
+	MessageType ConvergenceMessageType
+	Message     interface{}
 }
 
 func (cs ConvergenceStatus) String() string {
-	return fmt.Sprintf("%v-Convergence Status regarding %v from %v",
-		cs.MessageType, cs.RelatedEndpoint, cs.Sender)
+	return fmt.Sprintf("%v-Convergence Status from %v", cs.MessageType, cs.Sender)
 }
 
-// NewConvergenceStatus creates a new ConvergenceStatus.
-func NewConvergenceStatus(sender Convergence, relEid bundle.EndpointID,
-	msgType ConvergenceMessageType, msg interface{}) ConvergenceStatus {
+// ConvergenceReceivedBundle is an optional Message content for a
+// ConvergenceStatus for the ReceivedBundle MessageType.
+type ConvergenceReceivedBundle struct {
+	Endpoint bundle.EndpointID
+	Bundle   *bundle.Bundle
+}
+
+// NewConvergenceReceivedBundle creates a new ConvergenceStatus for a
+// ReceivedBundle type, transmitting both EndpointID and Bundle pointer.
+func NewConvergenceReceivedBundle(sender Convergence, eid bundle.EndpointID, bndl *bundle.Bundle) ConvergenceStatus {
 	return ConvergenceStatus{
-		Sender:          sender,
-		RelatedEndpoint: relEid,
-		MessageType:     msgType,
-		Message:         msg,
+		Sender:      sender,
+		MessageType: ReceivedBundle,
+		Message: ConvergenceReceivedBundle{
+			Endpoint: eid,
+			Bundle:   bndl,
+		},
 	}
 }

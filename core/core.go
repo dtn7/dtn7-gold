@@ -170,8 +170,10 @@ func (c *Core) checkConvergenceReceivers() {
 		case cs := <-chnl:
 			switch cs.MessageType {
 			case cla.ReceivedBundle:
-				bp := NewBundlePack(cs.Message.(*bundle.Bundle))
-				bp.Receiver = cs.RelatedEndpoint
+				crb := cs.Message.(cla.ConvergenceReceivedBundle)
+
+				bp := NewBundlePack(crb.Bundle)
+				bp.Receiver = crb.Endpoint
 
 				c.receive(bp)
 

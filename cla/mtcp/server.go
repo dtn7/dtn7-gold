@@ -120,8 +120,7 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 				"conn": conn,
 			}).Debug("MTCP handleServer connection received a bundle")
 
-			serv.reportChan <- cla.NewConvergenceStatus(
-				serv, serv.endpointID, cla.ReceivedBundle, bndl)
+			serv.reportChan <- cla.NewConvergenceReceivedBundle(serv, serv.endpointID, bndl)
 		}
 	}
 }
