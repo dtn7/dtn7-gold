@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
@@ -24,6 +26,9 @@ type MTCPClient struct {
 
 	permanent bool
 	address   string
+
+	stopSyn chan struct{}
+	stopAck chan struct{}
 }
 
 // NewMTCPClient creates a new MTCPClient, connected to the given address for
@@ -35,6 +40,8 @@ func NewMTCPClient(address string, peer bundle.EndpointID, permanent bool) *MTCP
 		reportChan: make(chan cla.ConvergenceStatus),
 		permanent:  permanent,
 		address:    address,
+		stopSyn:    make(chan struct{}),
+		stopAck:    make(chan struct{}),
 	}
 }
 
@@ -49,9 +56,45 @@ func (client *MTCPClient) Start() (error, bool) {
 	conn, err := net.DialTimeout("tcp", client.address, time.Second)
 	if err == nil {
 		client.conn = conn
+
+		go client.keepaliveProbe()
 	}
 
 	return err, true
+}
+
+func (client *MTCPClient) keepaliveProbe() {
+	var ticker = time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-client.stopSyn:
+			client.mutex.Lock()
+			defer client.mutex.Unlock()
+
+			client.conn.Close()
+			close(client.reportChan)
+
+			close(client.stopAck)
+
+			return
+
+		case <-ticker.C:
+			client.mutex.Lock()
+			err := cboring.WriteByteStringLen(0, client.conn)
+			client.mutex.Unlock()
+
+			if err != nil {
+				log.WithFields(log.Fields{
+					"client": client.String(),
+					"error":  err,
+				}).Warn("MTCPClient: Keepalive errored")
+
+				client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.GetPeerEndpointID())
+			}
+		}
+	}
 }
 
 func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
@@ -101,11 +144,8 @@ func (client *MTCPClient) Channel() chan cla.ConvergenceStatus {
 }
 
 func (client *MTCPClient) Close() {
-	client.mutex.Lock()
-	defer client.mutex.Unlock()
-
-	client.conn.Close()
-	close(client.reportChan)
+	close(client.stopSyn)
+	<-client.stopAck
 }
 
 func (client *MTCPClient) GetPeerEndpointID() bundle.EndpointID {

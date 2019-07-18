@@ -89,7 +89,7 @@ func TestMerge(t *testing.T) {
 	}
 }
 
-func TestJoinReceivers(t *testing.T) {
+func TestJoinStatusChans(t *testing.T) {
 	const (
 		clients  = 50
 		packages = 250
@@ -115,7 +115,7 @@ func TestJoinReceivers(t *testing.T) {
 		chns[i] = make(chan ConvergenceStatus)
 	}
 
-	chMerge := JoinReceivers(chns...)
+	chMerge := JoinStatusChans(chns...)
 	errCh := make(chan error, clients*packages)
 
 	var counter sync.Map

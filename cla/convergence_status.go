@@ -10,14 +10,23 @@ import (
 type ConvergenceMessageType uint
 
 const (
-	// ReceivedBundle shows the reception of a bundle.
-	ReceivedBundle ConvergenceMessageType = iota
+	_ ConvergenceMessageType = iota
+
+	// ReceivedBundle shows the reception of a bundle. The Message's type must be
+	// a ConvergenceReceivedBundle struct.
+	ReceivedBundle
+
+	// PeerDisappeared shows the disappearance of a peer. The Message's type must
+	// be a bundle.EndpointID.
+	PeerDisappeared
 )
 
 func (cms ConvergenceMessageType) String() string {
 	switch cms {
 	case ReceivedBundle:
 		return "Received Bundle"
+	case PeerDisappeared:
+		return "Peer Disappeared"
 	default:
 		return "Unknown Type"
 	}
@@ -52,5 +61,15 @@ func NewConvergenceReceivedBundle(sender Convergence, eid bundle.EndpointID, bnd
 			Endpoint: eid,
 			Bundle:   bndl,
 		},
+	}
+}
+
+// NewConvergencePeerDisappeared creates a new ConvergenceStatus for a
+// PeerDisappeared type, transmission the disappeared EndpointID.
+func NewConvergencePeerDisappeared(sender Convergence, peerEid bundle.EndpointID) ConvergenceStatus {
+	return ConvergenceStatus{
+		Sender:      sender,
+		MessageType: PeerDisappeared,
+		Message:     peerEid,
 	}
 }

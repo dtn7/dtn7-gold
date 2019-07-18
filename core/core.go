@@ -29,9 +29,9 @@ type Core struct {
 	store    Store
 	routing  RoutingAlgorithm
 
-	reloadConvRecs chan struct{}
-	stopSyn        chan struct{}
-	stopAck        chan struct{}
+	reloadConvs chan struct{}
+	stopSyn     chan struct{}
+	stopAck     chan struct{}
 }
 
 // NewCore creates and returns a new Core. A SimpleStore will be created or used
@@ -51,7 +51,7 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 	c.store = store
 
 	c.idKeeper = NewIdKeeper()
-	c.reloadConvRecs = make(chan struct{}, 9000)
+	c.reloadConvs = make(chan struct{}, 9000)
 
 	switch routing {
 	case "epidemic":
@@ -143,7 +143,7 @@ func (c *Core) checkPendingBundles() {
 
 // checkConvergenceReceivers checks all ConvergenceReceivers for new bundles.
 func (c *Core) checkConvergenceReceivers() {
-	var chnl = cla.JoinReceivers()
+	var chnl = cla.JoinStatusChans()
 
 	for {
 		select {
@@ -177,6 +177,14 @@ func (c *Core) checkConvergenceReceivers() {
 
 				c.receive(bp)
 
+			case cla.PeerDisappeared:
+				log.WithFields(log.Fields{
+					"cla": cs.Sender,
+				}).Info("Peer Disappeared-Message arrived, restarting Convergence")
+
+				cs.Sender.Close()
+				c.RestartConvergence(cs.Sender)
+
 			default:
 				log.WithFields(log.Fields{
 					"sender": cs.Sender,
@@ -186,11 +194,14 @@ func (c *Core) checkConvergenceReceivers() {
 			}
 
 		// Invoked by RegisterConvergenceReceiver, recreates chnl
-		case <-c.reloadConvRecs:
+		case <-c.reloadConvs:
 			c.convergenceMutex.Lock()
-			chnl = cla.JoinReceivers()
+			chnl = cla.JoinStatusChans()
 			for _, claRec := range c.convergenceReceivers {
-				chnl = cla.JoinReceivers(chnl, claRec.Channel())
+				chnl = cla.JoinStatusChans(chnl, claRec.Channel())
+			}
+			for _, claSnd := range c.convergenceSenders {
+				chnl = cla.JoinStatusChans(chnl, claSnd.Channel())
 			}
 			c.convergenceMutex.Unlock()
 

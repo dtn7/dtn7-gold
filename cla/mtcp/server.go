@@ -100,6 +100,10 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 				"error": err,
 			}).Warn("MTCP handleServer connection failed to read byte string len")
 
+			// There is no use in sending an PeerDisappeared Message at this point,
+			// because a MTCPServer might hold multiple clients. Furthermore, there
+			// is no linkage between unknown connections and Endpoint IDs.
+
 			return
 		} else if n == 0 {
 			continue

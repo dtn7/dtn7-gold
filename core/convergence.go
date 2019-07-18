@@ -151,9 +151,7 @@ func (cqe *convergenceQueueElement) activate(c *Core) (retry bool) {
 		}
 		c.convergenceMutex.Unlock()
 
-		if doReceiver {
-			c.reloadConvRecs <- struct{}{}
-		}
+		c.reloadConvs <- struct{}{}
 
 		retry = false
 		return

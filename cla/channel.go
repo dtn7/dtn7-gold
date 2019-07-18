@@ -31,7 +31,7 @@ func merge(a, b chan ConvergenceStatus) (ch chan ConvergenceStatus) {
 
 // zeroChan is an empty, always opened channel - after being requested the first
 // time from getZeroChan() - to be returned for an empty parameter list of
-// JoinReceivers. This prevents the select statement within
+// JoinStatusChans. This prevents the select statement within
 // checkConvergenceReceivers's for loop to always return a closed channel and
 // heat up the loop.
 var zeroChan chan ConvergenceStatus
@@ -44,9 +44,9 @@ func getZeroChan() chan ConvergenceStatus {
 	return zeroChan
 }
 
-// JoinReceivers joins the given receiving bundle channels into a new channel,
-// containing all bundles from all channels.
-func JoinReceivers(chans ...chan ConvergenceStatus) chan ConvergenceStatus {
+// JoinStatusChans joins the given ConvergenceStatus channels into a new
+// channel, containing all messages from all channels.
+func JoinStatusChans(chans ...chan ConvergenceStatus) chan ConvergenceStatus {
 	switch len(chans) {
 	case 0:
 		return getZeroChan()
@@ -57,8 +57,8 @@ func JoinReceivers(chans ...chan ConvergenceStatus) chan ConvergenceStatus {
 	default:
 		pivot := len(chans) / 2
 
-		left := JoinReceivers(chans[pivot:]...)
-		right := JoinReceivers(chans[:pivot]...)
+		left := JoinStatusChans(chans[pivot:]...)
+		right := JoinStatusChans(chans[:pivot]...)
 
 		return merge(left, right)
 	}
