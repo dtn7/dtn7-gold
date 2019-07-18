@@ -63,13 +63,6 @@ func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 	client.mutex.Lock()
 	defer client.mutex.Unlock()
 
-	// Check if the connection is still alive with an empty packet
-	if probeErr := cboring.WriteByteStringLen(0, client.conn); probeErr != nil {
-		err = probeErr
-		return
-	}
-
-	// Finally, transmit the bundle over a buffered writer
 	connWriter := bufio.NewWriter(client.conn)
 
 	buff := new(bytes.Buffer)
@@ -90,6 +83,12 @@ func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 
 	if flushErr := connWriter.Flush(); flushErr != nil {
 		err = flushErr
+		return
+	}
+
+	// Check if the connection is still alive with an empty, unbuffered packet
+	if probeErr := cboring.WriteByteStringLen(0, client.conn); probeErr != nil {
+		err = probeErr
 		return
 	}
 
