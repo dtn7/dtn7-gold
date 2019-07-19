@@ -37,16 +37,18 @@ func newConvergenceElement(conv Convergence, convChnl chan ConvergenceStatus, tt
 	}
 }
 
-// isReceiver returns if this convergenceElem is wraped around a ConvergenceReceiver.
-func (ce *convergenceElem) isReceiver() bool {
-	_, ok := (ce.conv).(ConvergenceReceiver)
-	return ok
+// asReceiver returns a ConvergenceReceiver, if one is available, as indicated
+// by the boolean return value.
+func (ce *convergenceElem) asReceiver() (c ConvergenceReceiver, ok bool) {
+	c, ok = (ce.conv).(ConvergenceReceiver)
+	return
 }
 
-// isSender returns if this convergenceElem is wraped around a ConvergenceSender.
-func (ce *convergenceElem) isSender() bool {
-	_, ok := (ce.conv).(ConvergenceSender)
-	return ok
+// asSender returns a ConvergenceSender, if one is available, as indicated
+// by the boolean return value.
+func (ce *convergenceElem) asSender() (c ConvergenceSender, ok bool) {
+	c, ok = (ce.conv).(ConvergenceSender)
+	return
 }
 
 // isActive return if this convergenceElem is wraped around an active Convergence.

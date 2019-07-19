@@ -10,6 +10,10 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
+// Manager monitors and manages the various CLAs, restarts them if necessary,
+// and forwards the ConvergenceStatus messages. The recipient can perform
+// further actions based on these, but does not have to take care of the
+// CLA administration themselves.
 type Manager struct {
 	// queueTtl is the amount of retries for a CLA.
 	queueTtl int
@@ -32,6 +36,7 @@ type Manager struct {
 	stopAck chan struct{}
 }
 
+// NewManager creates a new Manager to supervise different CLAs.
 func NewManager() *Manager {
 	manager := &Manager{
 		queueTtl:  10,
@@ -51,6 +56,7 @@ func NewManager() *Manager {
 	return manager
 }
 
+// handler is the internal goroutine for management.
 func (manager *Manager) handler() {
 	activateTicker := time.NewTicker(manager.retryTime)
 	defer activateTicker.Stop()
@@ -84,7 +90,15 @@ func (manager *Manager) handler() {
 					"endpoint": cs.Message.(bundle.EndpointID),
 				}).Info("CLA Manager received Peer Disappeared, restarting CLA")
 
-				manager.Restart(cs.Sender)
+				if err := manager.Restart(cs.Sender); err != nil {
+					log.WithFields(log.Fields{
+						"cla":      cs.Sender,
+						"endpoint": cs.Message.(bundle.EndpointID),
+						"error":    err,
+					}).Warn("CLA Manager failed to restart CLA")
+				}
+
+				manager.outChnl <- cs
 
 			default:
 				manager.outChnl <- cs
@@ -110,15 +124,18 @@ func (manager *Manager) handler() {
 	}
 }
 
+// Channel references the outgoing channel for ConvergenceStatus messages.
 func (manager *Manager) Channel() chan ConvergenceStatus {
 	return manager.outChnl
 }
 
+// Close the Manager and all supervised CLAs.
 func (manager *Manager) Close() {
 	close(manager.stopSyn)
 	<-manager.stopAck
 }
 
+// Register a new CLA.
 func (manager *Manager) Register(conv Convergence) error {
 	if _, exists := manager.convs.Load(conv.Address()); exists {
 		return fmt.Errorf("CLA for address %v does already exists", conv.Address())
@@ -134,6 +151,7 @@ func (manager *Manager) Register(conv Convergence) error {
 	}
 }
 
+// Unregister an already known CLA.
 func (manager *Manager) Unregister(conv Convergence, closeCall bool) error {
 	convElem, exists := manager.convs.Load(conv.Address())
 	if !exists {
@@ -146,6 +164,7 @@ func (manager *Manager) Unregister(conv Convergence, closeCall bool) error {
 	return nil
 }
 
+// Restart an already known CLA.
 func (manager *Manager) Restart(conv Convergence) error {
 	if err := manager.Unregister(conv, true); err != nil {
 		return err
@@ -154,4 +173,36 @@ func (manager *Manager) Restart(conv Convergence) error {
 		return err
 	}
 	return nil
+}
+
+// Sender returns an array of all active ConvergenceSenders.
+func (manager *Manager) Sender() (css []ConvergenceSender) {
+	manager.convs.Range(func(_, convElem interface{}) bool {
+		ce := convElem.(*convergenceElem)
+		if !ce.isActive() {
+			return true
+		}
+
+		if cs, ok := ce.asSender(); ok {
+			css = append(css, cs)
+		}
+		return true
+	})
+	return
+}
+
+// Receiver returns an array of all active ConvergenceReceivers.
+func (manager *Manager) Receiver() (crs []ConvergenceReceiver) {
+	manager.convs.Range(func(_, convElem interface{}) bool {
+		ce := convElem.(*convergenceElem)
+		if !ce.isActive() {
+			return true
+		}
+
+		if cr, ok := ce.asReceiver(); ok {
+			crs = append(crs, cr)
+		}
+		return true
+	})
+	return
 }

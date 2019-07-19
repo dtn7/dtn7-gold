@@ -2,6 +2,7 @@ package cla
 
 import (
 	"fmt"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -37,10 +38,16 @@ func TestManager(t *testing.T) {
 		for cs := range ch {
 			switch cs.MessageType {
 			case ReceivedBundle:
-				readErrCh <- nil
+				crb := cs.Message.(ConvergenceReceivedBundle)
+				if !reflect.DeepEqual(crb.Bundle, &bndl) {
+					readErrCh <- fmt.Errorf("Received bundle did not match")
+				} else {
+					readErrCh <- nil
+				}
 
 			default:
-				readErrCh <- fmt.Errorf("Unsupported MessageType %v", cs.MessageType)
+				// We don't care about other ConvergenceStatus types.
+				// Those were already inspected by the Manager and have no value for us.
 			}
 		}
 	}(manager.Channel())
@@ -65,6 +72,14 @@ func TestManager(t *testing.T) {
 		if err := manager.Register(receiver[i]); err != nil {
 			t.Fatal(err)
 		}
+	}
+
+	if css := manager.Sender(); len(css) != senderNo {
+		t.Fatalf("Wrong amount of senders, expected: %d, got: %d", senderNo, len(css))
+	}
+
+	if crs := manager.Receiver(); len(crs) != receiverNo {
+		t.Fatalf("Wrong amount of receiver, expected: %d, got: %d", receiverNo, len(crs))
 	}
 
 	/* Receive some bundles */
