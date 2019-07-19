@@ -6,14 +6,10 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
 func TestManager(t *testing.T) {
-	log.SetLevel(log.DebugLevel)
-
 	const (
 		senderNo   int = 25
 		receiverNo int = 200
@@ -36,28 +32,12 @@ func TestManager(t *testing.T) {
 	defer manager.Close()
 
 	// Read the Manager's outbounding channel
-	var readErrCh = make(chan error, receiverNo+senderNo/2)
+	var readErrCh = make(chan error, receiverNo)
 	go func(ch chan ConvergenceStatus) {
-		recCounter := 0
-		disapCounter := 0
-
 		for cs := range ch {
 			switch cs.MessageType {
 			case ReceivedBundle:
-				if recCounter < receiverNo {
-					readErrCh <- nil
-					recCounter++
-				} else {
-					readErrCh <- fmt.Errorf("ReceivedBundle no %d", recCounter)
-				}
-
-			case PeerDisappeared:
-				if disapCounter < senderNo/2 {
-					readErrCh <- nil
-					disapCounter++
-				} else {
-					readErrCh <- fmt.Errorf("PeerDisappeared no %d", disapCounter)
-				}
+				readErrCh <- nil
 
 			default:
 				readErrCh <- fmt.Errorf("Unsupported MessageType %v", cs.MessageType)
@@ -100,7 +80,10 @@ func TestManager(t *testing.T) {
 
 	recWg.Wait()
 
-	/* Send some bundles, some will fail */
+	// Give the Manager some time to process the requests
+	time.Sleep(10 * time.Duration(receiverNo) * time.Millisecond)
+
+	/* Indicating failing CLAs, those should be restarted by the Manager */
 	for i := 0; i < senderNo; i++ {
 		go func(m *mockConvSender, i int) {
 			if i >= senderNo/2 {
@@ -109,11 +92,11 @@ func TestManager(t *testing.T) {
 		}(sender[i].(*mockConvSender), i)
 	}
 
-	// Give the Manager some time to process the bundles
-	time.Sleep(10 * time.Duration(receiverNo) * time.Millisecond)
+	// Give the Manager some time to process the requests
+	time.Sleep(10 * time.Duration(senderNo/2) * time.Millisecond)
 
 	/* Check results */
-	for i := 0; i < receiverNo+senderNo/2; i++ {
+	for i := 0; i < receiverNo; i++ {
 		if err := <-readErrCh; err != nil {
 			t.Fatal(err)
 		}

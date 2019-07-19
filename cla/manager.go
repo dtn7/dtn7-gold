@@ -6,6 +6,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/dtn7-go/bundle"
 )
 
 type Manager struct {
@@ -75,8 +77,18 @@ func (manager *Manager) handler() {
 				"status": cs.String(),
 			}).Debug("CLA Manager received ConvergenceStatus")
 
-			manager.outChnl <- cs
-			// TODO: inspect cs, act on it
+			switch cs.MessageType {
+			case PeerDisappeared:
+				log.WithFields(log.Fields{
+					"cla":      cs.Sender,
+					"endpoint": cs.Message.(bundle.EndpointID),
+				}).Info("CLA Manager received Peer Disappeared, restarting CLA")
+
+				manager.Restart(cs.Sender)
+
+			default:
+				manager.outChnl <- cs
+			}
 
 		case <-activateTicker.C:
 			manager.convs.Range(func(key, convElem interface{}) bool {
@@ -131,5 +143,15 @@ func (manager *Manager) Unregister(conv Convergence, closeCall bool) error {
 	convElem.(*convergenceElem).deactivate(manager.queueTtl, closeCall)
 	manager.convs.Delete(conv.Address())
 
+	return nil
+}
+
+func (manager *Manager) Restart(conv Convergence) error {
+	if err := manager.Unregister(conv, true); err != nil {
+		return err
+	}
+	if err := manager.Register(conv); err != nil {
+		return err
+	}
 	return nil
 }
