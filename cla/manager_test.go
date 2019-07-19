@@ -36,12 +36,28 @@ func TestManager(t *testing.T) {
 	defer manager.Close()
 
 	// Read the Manager's outbounding channel
-	var readErrCh = make(chan error, receiverNo)
+	var readErrCh = make(chan error, receiverNo+senderNo/2)
 	go func(ch chan ConvergenceStatus) {
+		recCounter := 0
+		disapCounter := 0
+
 		for cs := range ch {
 			switch cs.MessageType {
 			case ReceivedBundle:
-				readErrCh <- nil
+				if recCounter < receiverNo {
+					readErrCh <- nil
+					recCounter++
+				} else {
+					readErrCh <- fmt.Errorf("ReceivedBundle no %d", recCounter)
+				}
+
+			case PeerDisappeared:
+				if disapCounter < senderNo/2 {
+					readErrCh <- nil
+					disapCounter++
+				} else {
+					readErrCh <- fmt.Errorf("PeerDisappeared no %d", disapCounter)
+				}
 
 			default:
 				readErrCh <- fmt.Errorf("Unsupported MessageType %v", cs.MessageType)
@@ -84,11 +100,20 @@ func TestManager(t *testing.T) {
 
 	recWg.Wait()
 
+	/* Send some bundles, some will fail */
+	for i := 0; i < senderNo; i++ {
+		go func(m *mockConvSender, i int) {
+			if i >= senderNo/2 {
+				m.reportChan <- NewConvergencePeerDisappeared(m, m.GetPeerEndpointID())
+			}
+		}(sender[i].(*mockConvSender), i)
+	}
+
 	// Give the Manager some time to process the bundles
 	time.Sleep(10 * time.Duration(receiverNo) * time.Millisecond)
 
 	/* Check results */
-	for i := 0; i < receiverNo; i++ {
+	for i := 0; i < receiverNo+senderNo/2; i++ {
 		if err := <-readErrCh; err != nil {
 			t.Fatal(err)
 		}
