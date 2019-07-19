@@ -58,9 +58,7 @@ func TestManager(t *testing.T) {
 			true, fmt.Sprintf("mock://sender_%d/", i),
 			bundle.MustNewEndpointID(fmt.Sprintf("dtn://ms_%d/", i)))
 
-		if err := manager.Register(sender[i]); err != nil {
-			t.Fatal(err)
-		}
+		manager.Register(sender[i])
 	}
 
 	var receiver [receiverNo]ConvergenceReceiver
@@ -69,9 +67,7 @@ func TestManager(t *testing.T) {
 			true, fmt.Sprintf("mock://receiver_%d/", i),
 			bundle.MustNewEndpointID(fmt.Sprintf("dtn://mr_%d/", i)))
 
-		if err := manager.Register(receiver[i]); err != nil {
-			t.Fatal(err)
-		}
+		manager.Register(receiver[i])
 	}
 
 	if css := manager.Sender(); len(css) != senderNo {

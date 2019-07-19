@@ -36,12 +36,9 @@ type MTCPClient struct {
 // should never be removed from the core.
 func NewMTCPClient(address string, peer bundle.EndpointID, permanent bool) *MTCPClient {
 	return &MTCPClient{
-		peer:       peer,
-		reportChan: make(chan cla.ConvergenceStatus),
-		permanent:  permanent,
-		address:    address,
-		stopSyn:    make(chan struct{}),
-		stopAck:    make(chan struct{}),
+		peer:      peer,
+		permanent: permanent,
+		address:   address,
 	}
 }
 
@@ -55,6 +52,10 @@ func NewAnonymousMTCPClient(address string, permanent bool) *MTCPClient {
 func (client *MTCPClient) Start() (error, bool) {
 	conn, err := net.DialTimeout("tcp", client.address, time.Second)
 	if err == nil {
+		client.reportChan = make(chan cla.ConvergenceStatus)
+		client.stopSyn = make(chan struct{})
+		client.stopAck = make(chan struct{})
+
 		client.conn = conn
 
 		go client.handler()
@@ -104,6 +105,11 @@ func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 	defer func() {
 		if r := recover(); r != nil && err == nil {
 			err = fmt.Errorf("MTCPClient.Send: %v", r)
+		}
+
+		// In case of an error, report our failure upstream
+		if err != nil {
+			client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.GetPeerEndpointID())
 		}
 	}()
 

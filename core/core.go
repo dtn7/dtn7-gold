@@ -1,7 +1,6 @@
 package core
 
 import (
-	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -18,20 +17,14 @@ type Core struct {
 	InspectAllBundles bool
 	NodeId            bundle.EndpointID
 
-	// Used by the convergence methods, defined in core/convergence.go
-	convergenceSenders   []cla.ConvergenceSender
-	convergenceReceivers []cla.ConvergenceReceiver
-	convergenceQueue     []*convergenceQueueElement
-	convergenceMutex     sync.Mutex
+	cron       *Cron
+	claManager *cla.Manager
+	idKeeper   IdKeeper
+	store      Store
+	routing    RoutingAlgorithm
 
-	cron     *Cron
-	idKeeper IdKeeper
-	store    Store
-	routing  RoutingAlgorithm
-
-	reloadConvs chan struct{}
-	stopSyn     chan struct{}
-	stopAck     chan struct{}
+	stopSyn chan struct{}
+	stopAck chan struct{}
 }
 
 // NewCore creates and returns a new Core. A SimpleStore will be created or used
@@ -50,8 +43,9 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 	}
 	c.store = store
 
+	c.claManager = cla.NewManager()
+
 	c.idKeeper = NewIdKeeper()
-	c.reloadConvs = make(chan struct{}, 9000)
 
 	switch routing {
 	case "epidemic":
@@ -71,9 +65,8 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 
 	c.cron = NewCron()
 	c.cron.Register("pending_bundles", c.checkPendingBundles, time.Second*10)
-	c.cron.Register("pending_clas", c.checkPendingCLAs, time.Second*10)
 
-	go c.checkConvergenceReceivers()
+	go c.handler()
 
 	return c, nil
 }
@@ -82,45 +75,6 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 // EpidemicRouting.
 func (c *Core) SetRoutingAlgorithm(routing RoutingAlgorithm) {
 	c.routing = routing
-}
-
-// checkPendingCLAs queries pending CLAs and tries to activate them.
-func (c *Core) checkPendingCLAs() {
-	var tmpQueue = make([]*convergenceQueueElement, len(c.convergenceQueue))
-	var delQueue = make([]*convergenceQueueElement, 0, 0)
-
-	c.convergenceMutex.Lock()
-	copy(tmpQueue, c.convergenceQueue)
-	c.convergenceMutex.Unlock()
-
-	for _, cqe := range tmpQueue {
-		log.WithFields(log.Fields{
-			"cla": cqe.conv,
-		}).Debug("Getting CLA from queue")
-
-		if retry := cqe.activate(c); !retry {
-			delQueue = append(delQueue, cqe)
-
-			log.WithFields(log.Fields{
-				"cla": cqe.conv,
-			}).Debug("Removing CLA from queue")
-		} else {
-			log.WithFields(log.Fields{
-				"cla": cqe.conv,
-			}).Debug("CLA stays in the queue")
-		}
-	}
-
-	c.convergenceMutex.Lock()
-	for _, cqe := range delQueue {
-		for i := len(c.convergenceQueue) - 1; i >= 0; i-- {
-			if cqe == c.convergenceQueue[i] {
-				c.convergenceQueue = append(
-					c.convergenceQueue[:i], c.convergenceQueue[i+1:]...)
-			}
-		}
-	}
-	c.convergenceMutex.Unlock()
 }
 
 // checkPendingBundles queries pending bundle (packs) from the store and
@@ -141,21 +95,15 @@ func (c *Core) checkPendingBundles() {
 	}
 }
 
-// checkConvergenceReceivers checks all ConvergenceReceivers for new bundles.
-func (c *Core) checkConvergenceReceivers() {
-	var chnl = cla.JoinStatusChans()
-
+// handler does the Core's background tasks
+func (c *Core) handler() {
 	for {
 		select {
 		// Invoked by Close(), shuts down
 		case <-c.stopSyn:
 			c.cron.Stop()
 
-			c.convergenceMutex.Lock()
-			for _, claRec := range c.convergenceReceivers {
-				claRec.Close()
-			}
-			c.convergenceMutex.Unlock()
+			c.claManager.Close()
 
 			if storeErr := c.store.Close(); storeErr != nil {
 				log.WithFields(log.Fields{
@@ -167,7 +115,7 @@ func (c *Core) checkConvergenceReceivers() {
 			return
 
 		// Handle a received ConvergenceStatus
-		case cs := <-chnl:
+		case cs := <-c.claManager.Channel():
 			switch cs.MessageType {
 			case cla.ReceivedBundle:
 				crb := cs.Message.(cla.ConvergenceReceivedBundle)
@@ -182,8 +130,7 @@ func (c *Core) checkConvergenceReceivers() {
 					"cla": cs.Sender,
 				}).Info("Peer Disappeared-Message arrived, restarting Convergence")
 
-				cs.Sender.Close()
-				c.RestartConvergence(cs.Sender)
+				// TODO: act on it, same for PeerAppeared
 
 			default:
 				log.WithFields(log.Fields{
@@ -192,20 +139,6 @@ func (c *Core) checkConvergenceReceivers() {
 					"status": cs,
 				}).Warn("Received ConvergenceStatus with unknown type")
 			}
-
-		// Invoked by RegisterConvergenceReceiver, recreates chnl
-		case <-c.reloadConvs:
-			c.convergenceMutex.Lock()
-			chnl = cla.JoinStatusChans()
-			for _, claRec := range c.convergenceReceivers {
-				chnl = cla.JoinStatusChans(chnl, claRec.Channel())
-			}
-			for _, claSnd := range c.convergenceSenders {
-				chnl = cla.JoinStatusChans(chnl, claSnd.Channel())
-			}
-			c.convergenceMutex.Unlock()
-
-			c.checkPendingBundles()
 		}
 	}
 }
@@ -225,18 +158,13 @@ func (c *Core) RegisterApplicationAgent(agent ApplicationAgent) {
 // senderForDestination returns an array of ConvergenceSenders whose endpoint ID
 // equals the requested one. This is used for direct delivery, comparing the
 // PrimaryBlock's destination to the assigned endpoint ID of each CLA.
-func (c *Core) senderForDestination(endpoint bundle.EndpointID) []cla.ConvergenceSender {
-	var css []cla.ConvergenceSender
-
-	c.convergenceMutex.Lock()
-	for _, cs := range c.convergenceSenders {
+func (c *Core) senderForDestination(endpoint bundle.EndpointID) (css []cla.ConvergenceSender) {
+	for _, cs := range c.claManager.Sender() {
 		if cs.GetPeerEndpointID() == endpoint {
 			css = append(css, cs)
 		}
 	}
-	c.convergenceMutex.Unlock()
-
-	return css
+	return
 }
 
 // hasEndpoint checks if this Core has some endpoint, but does not secure this
@@ -248,8 +176,8 @@ func (c *Core) hasEndpoint(endpoint bundle.EndpointID) bool {
 		}
 	}
 
-	for _, rec := range c.convergenceReceivers {
-		if rec.GetEndpointID() == endpoint {
+	for _, cr := range c.claManager.Receiver() {
+		if cr.GetEndpointID() == endpoint {
 			return true
 		}
 	}
@@ -260,9 +188,7 @@ func (c *Core) hasEndpoint(endpoint bundle.EndpointID) bool {
 // HasEndpoint returns true if the given endpoint ID is assigned either to an
 // application or a CLA governed by this Application Agent.
 func (c *Core) HasEndpoint(endpoint bundle.EndpointID) (state bool) {
-	c.convergenceMutex.Lock()
 	state = c.hasEndpoint(endpoint)
-	c.convergenceMutex.Unlock()
 
 	return
 }
@@ -328,4 +254,9 @@ func (c *Core) SendStatusReport(bp BundlePack,
 	}
 
 	c.SendBundle(&outBndl)
+}
+
+// RegisterCla is the exposed Register method from the CLA Manager.
+func (c *Core) RegisterConvergence(conv cla.Convergence) {
+	c.claManager.Register(conv)
 }

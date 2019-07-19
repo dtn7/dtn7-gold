@@ -76,7 +76,7 @@ func (sw SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSend
 	metadata, ok := sw.bundleData[bp.ID()]
 	if !ok {
 		log.WithFields(log.Fields{
-			"bundle":  bp.ID(),
+			"bundle": bp.ID(),
 		}).Warn("No metadata")
 		return
 	}
@@ -88,7 +88,7 @@ func (sw SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSend
 		return nil, false
 	}
 
-	for _, cs := range sw.c.convergenceSenders {
+	for _, cs := range sw.c.claManager.Sender() {
 		// if we ran out of copies, then don't send it to any further peers
 		if metadata.remainingCopies < 2 {
 			break
@@ -131,7 +131,7 @@ func (sw SprayAndWait) ReportFailure(bp BundlePack, sender cla.ConvergenceSender
 	metadata, ok := sw.bundleData[bp.ID()]
 	if !ok {
 		log.WithFields(log.Fields{
-			"bundle":  bp.ID(),
+			"bundle": bp.ID(),
 		}).Warn("No metadata")
 		return
 	}
@@ -192,7 +192,7 @@ func (bs BinarySpray) NotifyIncoming(bp BundlePack) {
 
 		bs.bundleData[bp.ID()] = metadata
 		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
+			"bundle":           bp.ID(),
 			"remaining_copies": metadata.remainingCopies,
 		}).Debug("SprayAndWait received bundle from foreign host")
 	} else {
@@ -214,7 +214,7 @@ func (bs BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSende
 	metadata, ok := bs.bundleData[bp.ID()]
 	if !ok {
 		log.WithFields(log.Fields{
-			"bundle":  bp.ID(),
+			"bundle": bp.ID(),
 		}).Warn("No metadata")
 		return
 	}
@@ -227,7 +227,7 @@ func (bs BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSende
 		return nil, false
 	}
 
-	for _, cs := range bs.c.convergenceSenders {
+	for _, cs := range bs.c.claManager.Sender() {
 		var skip = false
 		for _, eid := range metadata.sent {
 			if cs.GetPeerEndpointID() == eid {

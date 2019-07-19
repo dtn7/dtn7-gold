@@ -234,9 +234,6 @@ func (c *Core) forward(bp BundlePack) {
 				}).Warn("Sending bundle failed")
 
 				c.routing.ReportFailure(bp, node)
-
-				node.Close()
-				c.RestartConvergence(node)
 			} else {
 				log.WithFields(log.Fields{
 					"bundle": bp.ID(),

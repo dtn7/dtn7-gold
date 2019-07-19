@@ -67,7 +67,7 @@ func (er EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.ConvergenceS
 		"sent":   sentEids,
 	}).Debug("EpidemicRouting is processing outbounding bundle")
 
-	for _, cs := range er.c.convergenceSenders {
+	for _, cs := range er.c.claManager.Sender() {
 		var skip bool = false
 		for _, eid := range sentEids {
 			if cs.GetPeerEndpointID() == eid {

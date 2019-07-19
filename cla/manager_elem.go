@@ -65,7 +65,9 @@ func (ce *convergenceElem) handler() {
 				"cla": ce.conv,
 			}).Debug("Closing CLA's handler")
 
+			ce.conv.Close()
 			close(ce.stopAck)
+
 			return
 
 		case cs := <-ce.conv.Channel():
@@ -132,7 +134,7 @@ func (ce *convergenceElem) activate() (successful, retry bool) {
 
 // deactivate marks this convergenceElem as deactivated. Both a new ttl as well
 // as whether Stop should be executed can be specified.
-func (ce *convergenceElem) deactivate(ttl int, closeCall bool) {
+func (ce *convergenceElem) deactivate(ttl int) {
 	if !ce.isActive() {
 		return
 	}
@@ -141,13 +143,8 @@ func (ce *convergenceElem) deactivate(ttl int, closeCall bool) {
 	defer ce.mutex.Unlock()
 
 	log.WithFields(log.Fields{
-		"cla":   ce.conv,
-		"close": closeCall,
+		"cla": ce.conv,
 	}).Info("Deactivating CLA")
-
-	if closeCall {
-		ce.conv.Close()
-	}
 
 	close(ce.stopSyn)
 	<-ce.stopAck

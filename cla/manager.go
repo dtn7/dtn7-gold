@@ -1,7 +1,6 @@
 package cla
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -67,7 +66,7 @@ func (manager *Manager) handler() {
 			log.Debug("CLA Manager received closing-signal")
 
 			manager.convs.Range(func(_, convElem interface{}) bool {
-				_ = manager.Unregister(convElem.(*convergenceElem).conv, true)
+				manager.Unregister(convElem.(*convergenceElem).conv)
 				return true
 			})
 
@@ -90,13 +89,7 @@ func (manager *Manager) handler() {
 					"endpoint": cs.Message.(bundle.EndpointID),
 				}).Info("CLA Manager received Peer Disappeared, restarting CLA")
 
-				if err := manager.Restart(cs.Sender); err != nil {
-					log.WithFields(log.Fields{
-						"cla":      cs.Sender,
-						"endpoint": cs.Message.(bundle.EndpointID),
-						"error":    err,
-					}).Warn("CLA Manager failed to restart CLA")
-				}
+				manager.Restart(cs.Sender)
 
 				manager.outChnl <- cs
 
@@ -136,43 +129,48 @@ func (manager *Manager) Close() {
 }
 
 // Register a new CLA.
-func (manager *Manager) Register(conv Convergence) error {
+func (manager *Manager) Register(conv Convergence) {
 	if _, exists := manager.convs.Load(conv.Address()); exists {
-		return fmt.Errorf("CLA for address %v does already exists", conv.Address())
+		log.WithFields(log.Fields{
+			"cla":     conv,
+			"address": conv.Address(),
+		}).Debug("CLA registration failed, because this address does already exists")
+
+		return
 	}
 
 	ce := newConvergenceElement(conv, manager.inChnl, manager.queueTtl)
 
 	if successful, retry := ce.activate(); !successful && !retry {
-		return fmt.Errorf("Startup of CLA %v failed, a retry should not be made", conv.Address())
+		log.WithFields(log.Fields{
+			"cla":     conv,
+			"address": conv.Address(),
+		}).Warn("Startup of CLA  failed, a retry should not be made")
 	} else {
 		manager.convs.Store(conv.Address(), ce)
-		return nil
 	}
 }
 
 // Unregister an already known CLA.
-func (manager *Manager) Unregister(conv Convergence, closeCall bool) error {
+func (manager *Manager) Unregister(conv Convergence) {
 	convElem, exists := manager.convs.Load(conv.Address())
 	if !exists {
-		return fmt.Errorf("No CLA for address %v is available", conv.Address())
+		log.WithFields(log.Fields{
+			"cla":     conv,
+			"address": conv.Address(),
+		}).Info("CLA unregistration failed, this address does not exists")
+
+		return
 	}
 
-	convElem.(*convergenceElem).deactivate(manager.queueTtl, closeCall)
+	convElem.(*convergenceElem).deactivate(manager.queueTtl)
 	manager.convs.Delete(conv.Address())
-
-	return nil
 }
 
 // Restart an already known CLA.
-func (manager *Manager) Restart(conv Convergence) error {
-	if err := manager.Unregister(conv, true); err != nil {
-		return err
-	}
-	if err := manager.Register(conv); err != nil {
-		return err
-	}
-	return nil
+func (manager *Manager) Restart(conv Convergence) {
+	manager.Unregister(conv)
+	manager.Register(conv)
 }
 
 // Sender returns an array of all active ConvergenceSenders.
