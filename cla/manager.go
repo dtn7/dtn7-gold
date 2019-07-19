@@ -33,6 +33,11 @@ type Manager struct {
 	// stop{Syn,Ack} are used to supervise closing this Manager, see Close()
 	stopSyn chan struct{}
 	stopAck chan struct{}
+
+	// stopFlag and its mutex protect the Manager against acting on new CLAs
+	// after the Close method was called once.
+	stopFlag      bool
+	stopFlagMutex sync.Mutex
 }
 
 // NewManager creates a new Manager to supervise different CLAs.
@@ -48,6 +53,8 @@ func NewManager() *Manager {
 
 		stopSyn: make(chan struct{}),
 		stopAck: make(chan struct{}),
+
+		stopFlag: false,
 	}
 
 	go manager.handler()
@@ -90,7 +97,6 @@ func (manager *Manager) handler() {
 				}).Info("CLA Manager received Peer Disappeared, restarting CLA")
 
 				manager.Restart(cs.Sender)
-
 				manager.outChnl <- cs
 
 			default:
@@ -122,24 +128,59 @@ func (manager *Manager) Channel() chan ConvergenceStatus {
 	return manager.outChnl
 }
 
+// isStopped signals if the Manager should be stopped.
+func (manager *Manager) isStopped() bool {
+	manager.stopFlagMutex.Lock()
+	defer manager.stopFlagMutex.Unlock()
+
+	return manager.stopFlag
+}
+
 // Close the Manager and all supervised CLAs.
 func (manager *Manager) Close() {
+	manager.stopFlagMutex.Lock()
+	manager.stopFlag = true
+	manager.stopFlagMutex.Unlock()
+
 	close(manager.stopSyn)
 	<-manager.stopAck
 }
 
 // Register a new CLA.
 func (manager *Manager) Register(conv Convergence) {
-	if _, exists := manager.convs.Load(conv.Address()); exists {
-		log.WithFields(log.Fields{
-			"cla":     conv,
-			"address": conv.Address(),
-		}).Debug("CLA registration failed, because this address does already exists")
-
+	if manager.isStopped() {
 		return
 	}
 
-	ce := newConvergenceElement(conv, manager.inChnl, manager.queueTtl)
+	// Check if this CLA is already known. Re-activate a deactivated CLA or abort.
+	var ce *convergenceElem
+	if convElem, exists := manager.convs.Load(conv.Address()); exists {
+		ce = convElem.(*convergenceElem)
+		if ce.isActive() {
+			log.WithFields(log.Fields{
+				"cla":     conv,
+				"address": conv.Address(),
+			}).Debug("CLA registration failed, because this address does already exists")
+
+			return
+		}
+	} else {
+		ce = newConvergenceElement(conv, manager.inChnl, manager.queueTtl)
+	}
+
+	// Check if this CLA is a sender to a registered receiver.
+	if cs, ok := ce.asSender(); ok {
+		for _, cr := range manager.Receiver() {
+			if cr.GetEndpointID() == cs.GetPeerEndpointID() {
+				log.WithFields(log.Fields{
+					"cla":     conv,
+					"address": conv.Address(),
+				}).Debug("CLA registration aborted, because of a known Endpoint ID")
+
+				return
+			}
+		}
+	}
 
 	if successful, retry := ce.activate(); !successful && !retry {
 		log.WithFields(log.Fields{

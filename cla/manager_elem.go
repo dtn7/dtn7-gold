@@ -53,6 +53,9 @@ func (ce *convergenceElem) asSender() (c ConvergenceSender, ok bool) {
 
 // isActive return if this convergenceElem is wraped around an active Convergence.
 func (ce *convergenceElem) isActive() bool {
+	ce.mutex.Lock()
+	defer ce.mutex.Unlock()
+
 	return ce.ttl < 0
 }
 
