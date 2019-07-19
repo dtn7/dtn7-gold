@@ -115,3 +115,7 @@ func (er EpidemicRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSen
 
 	er.sentMap[bp.ID()] = sentEids
 }
+
+func (_ EpidemicRouting) ReportPeerAppeared(_ cla.Convergence) {}
+
+func (_ EpidemicRouting) ReportPeerDisappeared(_ cla.Convergence) {}

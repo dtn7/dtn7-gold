@@ -125,16 +125,15 @@ func (c *Core) handler() {
 
 				c.receive(bp)
 
-			case cla.PeerDisappeared:
-				log.WithFields(log.Fields{
-					"cla": cs.Sender,
-				}).Info("Peer Disappeared-Message arrived, restarting Convergence")
+			case cla.PeerAppeared:
+				c.routing.ReportPeerAppeared(cs.Sender)
 
-				// TODO: act on it, same for PeerAppeared
+			case cla.PeerDisappeared:
+				c.routing.ReportPeerDisappeared(cs.Sender)
 
 			default:
 				log.WithFields(log.Fields{
-					"sender": cs.Sender,
+					"cla":    cs.Sender,
 					"type":   cs.MessageType,
 					"status": cs,
 				}).Warn("Received ConvergenceStatus with unknown type")

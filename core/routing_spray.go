@@ -148,6 +148,10 @@ func (sw SprayAndWait) ReportFailure(bp BundlePack, sender cla.ConvergenceSender
 	sw.bundleData[bp.ID()] = metadata
 }
 
+func (_ SprayAndWait) ReportPeerAppeared(_ cla.Convergence) {}
+
+func (_ SprayAndWait) ReportPeerDisappeared(_ cla.Convergence) {}
+
 // BinarySpray implements the binary Spray and Wait routing protocol
 // In this case, each node hands over floor(copies/2) during the spray phase
 type BinarySpray struct {
@@ -307,6 +311,10 @@ func (bs BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
 
 	bs.bundleData[bp.ID()] = metadata
 }
+
+func (_ BinarySpray) ReportPeerAppeared(_ cla.Convergence) {}
+
+func (_ BinarySpray) ReportPeerDisappeared(_ cla.Convergence) {}
 
 const ExtBlockTypeBinarySprayBlock uint64 = 192
 

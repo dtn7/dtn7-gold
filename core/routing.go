@@ -20,4 +20,11 @@ type RoutingAlgorithm interface {
 	// ReportFailure notifies the RoutingAlgorithm about a failed transmission to
 	// a previously selected CLA. Compare: SenderForBundle.
 	ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
+
+	// ReportPeerAppeared notifies the RoutingAlgorithm about a new neighbor.
+	ReportPeerAppeared(peer cla.Convergence)
+
+	// ReportPeerDisappeared notifies the RoutingAlgorithm about the
+	// disappearance of a neighbor.
+	ReportPeerDisappeared(peer cla.Convergence)
 }
