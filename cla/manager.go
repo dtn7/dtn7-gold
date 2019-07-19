@@ -19,7 +19,9 @@ type Manager struct {
 	// convs: Map[string]*convergenceElem
 	convs *sync.Map
 
-	// inChnl receives ConvergenceStatus while outChnl passes it on.
+	// inChnl receives ConvergenceStatus while outChnl passes it on. Both channels
+	// are not buffered. While this is not a problem for inChnl, outChnl must
+	// always be read, otherwise the Manager will block.
 	inChnl  chan ConvergenceStatus
 	outChnl chan ConvergenceStatus
 
@@ -54,15 +56,25 @@ func (manager *Manager) handler() {
 	for {
 		select {
 		case <-manager.stopSyn:
+			log.Debug("CLA Manager received closing-signal")
+
 			manager.convs.Range(func(_, convElem interface{}) bool {
-				convElem.(*convergenceElem).deactivate(manager.queueTtl, true)
+				_ = manager.Unregister(convElem.(*convergenceElem).conv, true)
 				return true
 			})
+
+			close(manager.inChnl)
+			close(manager.outChnl)
 
 			close(manager.stopAck)
 			return
 
 		case cs := <-manager.inChnl:
+			log.WithFields(log.Fields{
+				"type":   cs.MessageType,
+				"status": cs.String(),
+			}).Debug("CLA Manager received ConvergenceStatus")
+
 			manager.outChnl <- cs
 			// TODO: inspect cs, act on it
 
@@ -84,6 +96,10 @@ func (manager *Manager) handler() {
 			})
 		}
 	}
+}
+
+func (manager *Manager) Channel() chan ConvergenceStatus {
+	return manager.outChnl
 }
 
 func (manager *Manager) Close() {

@@ -135,6 +135,9 @@ func (ce *convergenceElem) deactivate(ttl int, closeCall bool) {
 		return
 	}
 
+	ce.mutex.Lock()
+	defer ce.mutex.Unlock()
+
 	log.WithFields(log.Fields{
 		"cla":   ce.conv,
 		"close": closeCall,
