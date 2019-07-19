@@ -62,8 +62,14 @@ func (serv *MTCPServer) Start() (error, bool) {
 				return
 
 			default:
-				ln.SetDeadline(time.Now().Add(50 * time.Millisecond))
-				if conn, err := ln.Accept(); err == nil {
+				if err := ln.SetDeadline(time.Now().Add(50 * time.Millisecond)); err != nil {
+					log.WithFields(log.Fields{
+						"cla":   serv,
+						"error": err,
+					}).Warn("MTCPServer failed to set deadline on TCP socket")
+
+					serv.Close()
+				} else if conn, err := ln.Accept(); err == nil {
 					go serv.handleSender(conn)
 				}
 			}

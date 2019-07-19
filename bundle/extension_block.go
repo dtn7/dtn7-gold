@@ -98,10 +98,10 @@ func GetExtensionBlockManager() *ExtensionBlockManager {
 	if extensionBlockManager == nil {
 		extensionBlockManager = NewExtensionBlockManager()
 
-		extensionBlockManager.Register(NewPayloadBlock(nil))
-		extensionBlockManager.Register(NewPreviousNodeBlock(DtnNone()))
-		extensionBlockManager.Register(NewBundleAgeBlock(0))
-		extensionBlockManager.Register(NewHopCountBlock(0))
+		_ = extensionBlockManager.Register(NewPayloadBlock(nil))
+		_ = extensionBlockManager.Register(NewPreviousNodeBlock(DtnNone()))
+		_ = extensionBlockManager.Register(NewBundleAgeBlock(0))
+		_ = extensionBlockManager.Register(NewHopCountBlock(0))
 	}
 
 	return extensionBlockManager

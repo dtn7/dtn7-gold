@@ -63,29 +63,24 @@ func TestMTCPServerClient(t *testing.T) {
 	errCh := make(chan error, clients*packages*2)
 
 	go func() {
-		var chnl = serv.Channel()
+		for cs := range serv.Channel() {
+			if cs.MessageType != cla.ReceivedBundle {
+				errCh <- fmt.Errorf("Wrong MessageType %v", cs.MessageType)
+			} else {
+				c, _ := counter.Load("counter")
+				cVal := c.(int) - 1
+				counter.Store("counter", cVal)
 
-		for {
-			select {
-			case cs := <-chnl:
-				if cs.MessageType != cla.ReceivedBundle {
-					errCh <- fmt.Errorf("Wrong MessageType %v", cs.MessageType)
+				recBndl := cs.Message.(cla.ConvergenceReceivedBundle).Bundle
+				if !reflect.DeepEqual(recBndl, &bndl) {
+					errCh <- fmt.Errorf("Received bundle differs: %v, %v", recBndl, &bndl)
 				} else {
-					c, _ := counter.Load("counter")
-					cVal := c.(int) - 1
-					counter.Store("counter", cVal)
+					errCh <- nil
+				}
 
-					recBndl := cs.Message.(cla.ConvergenceReceivedBundle).Bundle
-					if !reflect.DeepEqual(recBndl, &bndl) {
-						errCh <- fmt.Errorf("Received bundle differs: %v, %v", recBndl, &bndl)
-					} else {
-						errCh <- nil
-					}
-
-					if cVal == 0 {
-						serv.Close()
-						return
-					}
+				if cVal == 0 {
+					serv.Close()
+					return
 				}
 			}
 		}
@@ -102,7 +97,7 @@ func TestMTCPServerClient(t *testing.T) {
 
 			// Dry each client's channel
 			go func(client cla.ConvergenceSender) {
-				for _ = range client.Channel() {
+				for range client.Channel() {
 				}
 			}(client)
 
