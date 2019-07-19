@@ -2,6 +2,7 @@ package cla
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/dtn7/dtn7-go/bundle"
 )
@@ -93,6 +94,12 @@ func (m *mockConvSender) Start() (err error, retry bool) {
 	}
 
 	retry = m.startableRetry
+
+	go func(m *mockConvSender) {
+		time.Sleep(10 * time.Millisecond)
+		m.reportChan <- NewConvergencePeerAppeared(m, m.GetPeerEndpointID())
+	}(m)
+
 	return
 }
 

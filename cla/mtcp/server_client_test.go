@@ -100,6 +100,12 @@ func TestMTCPServerClient(t *testing.T) {
 				return
 			}
 
+			// Dry each client's channel
+			go func(client cla.ConvergenceSender) {
+				for _ = range client.Channel() {
+				}
+			}(client)
+
 			for i := 0; i < packages; i++ {
 				errCh <- client.Send(&bndl)
 			}

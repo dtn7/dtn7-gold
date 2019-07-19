@@ -19,6 +19,10 @@ const (
 	// PeerDisappeared shows the disappearance of a peer. The Message's type must
 	// be a bundle.EndpointID.
 	PeerDisappeared
+
+	// PeerAppeared shows the appearance of a peer. The Message's type must be
+	// a bundle.EndpointID
+	PeerAppeared
 )
 
 func (cms ConvergenceMessageType) String() string {
@@ -27,6 +31,8 @@ func (cms ConvergenceMessageType) String() string {
 		return "Received Bundle"
 	case PeerDisappeared:
 		return "Peer Disappeared"
+	case PeerAppeared:
+		return "Peer Appeared"
 	default:
 		return "Unknown Type"
 	}
@@ -70,6 +76,16 @@ func NewConvergencePeerDisappeared(sender Convergence, peerEid bundle.EndpointID
 	return ConvergenceStatus{
 		Sender:      sender,
 		MessageType: PeerDisappeared,
+		Message:     peerEid,
+	}
+}
+
+// NewConvergencePeerAppeared creates a new ConvergenceStatus for a
+// PeerAppeared type, transmission the appeared EndpointID.
+func NewConvergencePeerAppeared(sender Convergence, peerEid bundle.EndpointID) ConvergenceStatus {
+	return ConvergenceStatus{
+		Sender:      sender,
+		MessageType: PeerAppeared,
 		Message:     peerEid,
 	}
 }

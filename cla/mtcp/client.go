@@ -57,15 +57,18 @@ func (client *MTCPClient) Start() (error, bool) {
 	if err == nil {
 		client.conn = conn
 
-		go client.keepaliveProbe()
+		go client.handler()
 	}
 
 	return err, true
 }
 
-func (client *MTCPClient) keepaliveProbe() {
+func (client *MTCPClient) handler() {
 	var ticker = time.NewTicker(time.Second)
 	defer ticker.Stop()
+
+	// Introduce ourselfs once
+	client.reportChan <- cla.NewConvergencePeerAppeared(client, client.GetPeerEndpointID())
 
 	for {
 		select {
