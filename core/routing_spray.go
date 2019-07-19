@@ -58,7 +58,7 @@ func NewSprayAndWait(c *Core) SprayAndWait {
 		dataMutex:  &sync.Mutex{},
 	}
 
-	err := c.cron.Register("SprayAndWait_gc", sprayAndWait.GarbageCollect, time.Second*60)
+	err := c.cron.Register("spray_and_wait_gc", sprayAndWait.GarbageCollect, time.Second*60)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err,
@@ -231,7 +231,7 @@ func NewBinarySpray(c *Core) BinarySpray {
 		dataMutex:  &sync.Mutex{},
 	}
 
-	err := c.cron.Register("Binaryspray_gc", binarySpray.GarbageCollect, time.Second*60)
+	err := c.cron.Register("binary_spray_gc", binarySpray.GarbageCollect, time.Second*60)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err,

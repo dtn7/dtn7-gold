@@ -2,6 +2,8 @@ package core
 
 import (
 	log "github.com/sirupsen/logrus"
+	"sync"
+	"time"
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
@@ -12,16 +14,43 @@ import (
 type EpidemicRouting struct {
 	c       *Core
 	sentMap map[string][]bundle.EndpointID
+	// Mutex for concurrent modification of data by multiple goroutines
+	dataMutex *sync.Mutex
 }
 
 // NewEpidemicRouting creates a new EpidemicRouting RoutingAlgorithm interacting
 // with the given Core.
 func NewEpidemicRouting(c *Core) EpidemicRouting {
 	log.Debug("Initialised epidemic routing")
-	return EpidemicRouting{
-		c:       c,
-		sentMap: make(map[string][]bundle.EndpointID),
+
+	er := EpidemicRouting{
+		c:         c,
+		sentMap:   make(map[string][]bundle.EndpointID),
+		dataMutex: &sync.Mutex{},
 	}
+
+	err := c.cron.Register("epidemic_gc", er.GarbageCollect, time.Second*60)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"reason": err,
+		}).Warn("Could not register EpidemicRouting gc-cron")
+	}
+
+	return er
+}
+
+// GarbageCollect performs periodical cleanup of Bundle metadata
+func (er EpidemicRouting) GarbageCollect() {
+	cleanedData := make(map[string][]bundle.EndpointID)
+	for bundleId, data := range er.sentMap {
+		if _, err := er.c.store.QueryId(bundleId); err == nil {
+			cleanedData[bundleId] = data
+		}
+	}
+
+	er.dataMutex.Lock()
+	er.sentMap = cleanedData
+	er.dataMutex.Unlock()
 }
 
 // NotifyIncoming tells the EpidemicRouting about new bundles. In our case, the
@@ -52,7 +81,9 @@ func (er EpidemicRouting) NotifyIncoming(bp BundlePack) {
 		"eid":    prevNode,
 	}).Debug("EpidemicRouting received an incomming bundle and checked its PreviousNodeBlock")
 
+	er.dataMutex.Lock()
 	er.sentMap[bp.ID()] = append(sentEids, prevNode)
+	er.dataMutex.Unlock()
 }
 
 // SenderForBundle returns the Core's ConvergenceSenders.
@@ -82,7 +113,9 @@ func (er EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.ConvergenceS
 		}
 	}
 
+	er.dataMutex.Lock()
 	er.sentMap[bp.ID()] = sentEids
+	er.dataMutex.Unlock()
 
 	log.WithFields(log.Fields{
 		"bundle":              bp.ID(),
@@ -113,7 +146,9 @@ func (er EpidemicRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSen
 		}
 	}
 
+	er.dataMutex.Lock()
 	er.sentMap[bp.ID()] = sentEids
+	er.dataMutex.Unlock()
 }
 
 func (_ EpidemicRouting) ReportPeerAppeared(_ cla.Convergence) {}
