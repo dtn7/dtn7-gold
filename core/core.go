@@ -127,6 +127,7 @@ func (c *Core) handler() {
 
 			case cla.PeerAppeared:
 				c.routing.ReportPeerAppeared(cs.Sender)
+				c.checkPendingBundles()
 
 			case cla.PeerDisappeared:
 				c.routing.ReportPeerDisappeared(cs.Sender)
