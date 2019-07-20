@@ -106,7 +106,7 @@ func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSende
 		return
 	}
 
-	for _, cs := range dtlsr.c.convergenceSenders {
+	for _, cs := range dtlsr.c.claManager.Sender() {
 		if cs.GetPeerEndpointID() == forwarder {
 			sender = append(sender, cs)
 			log.WithFields(log.Fields{
@@ -164,21 +164,16 @@ func (dtlsrb *DTLSRBlock) MarshalCbor(w io.Writer) error {
 		return err
 	}
 
-	// write the peer data keys
+	// write the peer data array header
 	if err := cboring.WriteArrayLength(uint64(len(dtlsrb.peers)), w); err != nil {
 		return err
 	}
-	for peerID := range dtlsrb.peers {
+
+	// write the actual data
+	for peerID, timestamp := range dtlsrb.peers {
 		if err := cboring.Marshal(&peerID, w); err != nil {
 			return err
 		}
-	}
-
-	// write the peer data
-	if err := cboring.WriteArrayLength(uint64(len(dtlsrb.peers)), w); err != nil {
-		return err
-	}
-	for _, timestamp := range dtlsrb.peers {
 		if err := cboring.WriteUInt(timestamp, w); err != nil {
 			return err
 		}
@@ -192,7 +187,7 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 	if l, err := cboring.ReadArrayLength(r); err != nil {
 		return err
 	} else if l != 3 {
-		return fmt.Errorf("expected 3 fields, got %d", l)
+		return fmt.Errorf("expected 4 fields, got %d", l)
 	}
 
 	// read endpoint id
@@ -210,50 +205,29 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 		dtlsrb.timestamp = timestamp
 	}
 
-	var lenKeys uint64
 	var lenData uint64
 
-	// read length of key array
-	lenKeys, err := cboring.ReadArrayLength(r)
+	// read length of data array
+	lenData, err := cboring.ReadArrayLength(r)
 	if err != nil {
 		return err
 	}
 
-	// read key array
+	// read the actual data
+	peers := make(map[bundle.EndpointID]uint64)
 	var i uint64
-	keys := make([]bundle.EndpointID, lenKeys)
-	for i = 0; i < lenKeys; i++ {
-		key := bundle.EndpointID{}
-		if err := cboring.Unmarshal(&key, r); err != nil {
+	for i = 0; i < lenData; i++ {
+		peerID := bundle.EndpointID{}
+		if err := cboring.Unmarshal(&peerID, r); err != nil {
 			return err
 		}
-		keys[i] = key
-	}
 
-	// read length of data array
-	lenData, err = cboring.ReadArrayLength(r)
-	if err != nil {
-		return err
-	}
-
-	// both arrays must be of the same size
-	if lenKeys != lenData {
-		return fmt.Errorf("Key-Value array size mismatch: Keys: %d, Values: %d", lenKeys, lenData)
-	}
-
-	data := make([]uint64, lenData)
-	for i = 0; i < lenData; i++ {
-		value, err := cboring.ReadUInt(r)
+		timestamp, err := cboring.ReadUInt(r)
 		if err != nil {
 			return err
 		}
-		data[i] = value
-	}
 
-	// recreate map from two arrays
-	peers := make(map[bundle.EndpointID]uint64)
-	for i = 0; i < lenKeys; i++ {
-		peers[keys[i]] = data[i]
+		peers[peerID] = timestamp
 	}
 
 	dtlsrb.peers = peers
