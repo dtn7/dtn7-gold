@@ -36,7 +36,7 @@ type DTLSR struct {
 	// necessary since the dijkstra implementation only accepts integer node identifiers
 	nodeIndex map[bundle.EndpointID]int
 	indexNode []bundle.EndpointID
-	maxIndex  int
+	length    int
 }
 
 // peerData contains a peer's connection data
@@ -69,7 +69,7 @@ func NewDTLSR(c *Core) DTLSR {
 		receivedData:   make(map[bundle.EndpointID]peerData),
 		nodeIndex:      map[bundle.EndpointID]int{c.NodeId: 0},
 		indexNode:      []bundle.EndpointID{c.NodeId},
-		maxIndex:       1,
+		length:         1,
 	}
 }
 
@@ -84,11 +84,24 @@ func (dtlsr DTLSR) NotifyIncoming(bp BundlePack) {
 			// if we didn't have any data for that peer, we simply add it
 			dtlsr.receivedData[data.id] = data
 			dtlsr.receivedChange = true
+
+			// track node
+			dtlsr.newNode(data.id)
+
+			// track peers of this node
+			for node := range data.peers {
+				dtlsr.newNode(node)
+			}
 		} else {
 			// check if the received data is newer and replace it if it is
 			if data.isNewerThan(storedData) {
 				dtlsr.receivedData[data.id] = data
 				dtlsr.receivedChange = true
+
+				// track peers of this node
+				for node := range data.peers {
+					dtlsr.newNode(node)
+				}
 			}
 		}
 	}
@@ -135,13 +148,27 @@ func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSende
 	return
 }
 
+// newNode adds a node to the index-mapping (if it was not previously tracked)
+func (dtlsr DTLSR) newNode(id bundle.EndpointID) {
+	_, present := dtlsr.nodeIndex[id]
+
+	if present {
+		// node is already tracked
+		return
+	}
+
+	dtlsr.nodeIndex[id] = dtlsr.length
+	dtlsr.indexNode = append(dtlsr.indexNode, id)
+	dtlsr.length = dtlsr.length + 1
+}
+
 // computeRoutingTable finds shortest paths using dijkstra's algorithm
 func (dtlsr DTLSR) computeRoutingTable() {
 	currentTime := timestampNow()
 	graph := dijkstra.NewGraph()
 
 	// add vertices
-	for i := 0; i < dtlsr.maxIndex; i++ {
+	for i := 0; i < dtlsr.length; i++ {
 		graph.AddVertex(i)
 	}
 
@@ -182,14 +209,11 @@ func (dtlsr DTLSR) computeRoutingTable() {
 	}
 
 	routingTable := make(map[bundle.EndpointID]bundle.EndpointID)
-	for i := 1; i < dtlsr.maxIndex; i++ {
+	for i := 1; i < dtlsr.length; i++ {
 		shortest, err := graph.Shortest(0, i)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"reason": err,
-			}).Warn("Error computing routing table")
+		if err == nil {
+			routingTable[dtlsr.indexNode[0]] = dtlsr.indexNode[shortest.Path[0]]
 		}
-		routingTable[dtlsr.indexNode[0]] = dtlsr.indexNode[shortest.Path[0]]
 	}
 
 	dtlsr.routingTable = routingTable
