@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/RyanCarrier/dijkstra"
 	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
@@ -31,6 +32,11 @@ type DTLSR struct {
 	receivedChange bool
 	// receivedData is peerData received from other nodes
 	receivedData map[bundle.EndpointID]peerData
+	// nodeIndex and index Node are a bidirectional mapping EndpointID <-> uint64
+	// necessary since the dijkstra implementation only accepts integer node identifiers
+	nodeIndex map[bundle.EndpointID]int
+	indexNode []bundle.EndpointID
+	maxIndex  int
 }
 
 // peerData contains a peer's connection data
@@ -61,6 +67,9 @@ func NewDTLSR(c *Core) DTLSR {
 		},
 		receivedChange: false,
 		receivedData:   make(map[bundle.EndpointID]peerData),
+		nodeIndex:      map[bundle.EndpointID]int{c.NodeId: 0},
+		indexNode:      []bundle.EndpointID{c.NodeId},
+		maxIndex:       1,
 	}
 }
 
@@ -124,6 +133,66 @@ func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSende
 		"recipient": recipient,
 	}).Debug("DTLSR could not find forwarder amongst connected nodes")
 	return
+}
+
+// computeRoutingTable finds shortest paths using dijkstra's algorithm
+func (dtlsr DTLSR) computeRoutingTable() {
+	currentTime := timestampNow()
+	graph := dijkstra.NewGraph()
+
+	// add vertices
+	for i := 0; i < dtlsr.maxIndex; i++ {
+		graph.AddVertex(i)
+	}
+
+	// add edges originating from this node
+	for peer, timestamp := range dtlsr.peers.peers {
+		var edgeCost int64
+		if timestamp == 0 {
+			edgeCost = 0
+		} else {
+			edgeCost = int64(currentTime - timestamp)
+		}
+
+		if err := graph.AddArc(0, dtlsr.nodeIndex[peer], edgeCost); err != nil {
+			log.WithFields(log.Fields{
+				"reason": err,
+			}).Warn("Error computing routing table")
+			return
+		}
+	}
+
+	// add edges originating from other nodes
+	for _, data := range dtlsr.receivedData {
+		for peer, timestamp := range data.peers {
+			var edgeCost int64
+			if timestamp == 0 {
+				edgeCost = 0
+			} else {
+				edgeCost = int64(currentTime - timestamp)
+			}
+
+			if err := graph.AddArc(dtlsr.nodeIndex[data.id], dtlsr.nodeIndex[peer], edgeCost); err != nil {
+				log.WithFields(log.Fields{
+					"reason": err,
+				}).Warn("Error computing routing table")
+				return
+			}
+		}
+	}
+
+	routingTable := make(map[bundle.EndpointID]bundle.EndpointID)
+	for i := 1; i < dtlsr.maxIndex; i++ {
+		shortest, err := graph.Shortest(0, i)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"reason": err,
+			}).Warn("Error computing routing table")
+		}
+		routingTable[dtlsr.indexNode[0]] = dtlsr.indexNode[shortest.Path[0]]
+	}
+
+	dtlsr.routingTable = routingTable
 }
 
 const ExtBlockTypeDTLSRBlock uint64 = 193
