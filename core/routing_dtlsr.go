@@ -12,6 +12,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	recomputeInterval = time.Minute
+	purgeTime         = uint64(time.Minute * 10)
+)
+
 // timestampNow outputs the current UNIX-time as an unsigned int64
 // (I have no idea, why this is signed by default... does the kernel even allow you to set a negative time?)
 func timestampNow() uint64 {
@@ -72,7 +77,7 @@ func NewDTLSR(c *Core) DTLSR {
 		length:         1,
 	}
 
-	err := c.cron.Register("dtlsr_cron", dtlsr.Cron, time.Second*60)
+	err := c.cron.Register("dtlsr_cron", dtlsr.Cron, recomputeInterval)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err,
@@ -265,6 +270,9 @@ func (dtlsr DTLSR) computeRoutingTable() {
 }
 
 func (dtlsr DTLSR) Cron() {
+	// perform cleanup of stale links
+	dtlsr.purgePeers()
+
 	// if our peers have changed (someone appeared/disappeared) we need to broadcast the new info to the net
 	if dtlsr.peerChange {
 		//TODO: Send info bundle (maybe as an administrative record?)
@@ -281,6 +289,18 @@ func (dtlsr DTLSR) Cron() {
 		dtlsr.computeRoutingTable()
 		dtlsr.receivedChange = false
 		return
+	}
+}
+
+// purgePeers removes peers who have not been seen for a long time
+func (dtlsr DTLSR) purgePeers() {
+	currentTime := timestampNow()
+
+	for peerID, timestamp := range dtlsr.peers.peers {
+		if timestamp != 0 && currentTime > timestamp+purgeTime {
+			delete(dtlsr.peers.peers, peerID)
+			dtlsr.peerChange = true
+		}
 	}
 }
 
@@ -345,7 +365,7 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 	if l, err := cboring.ReadArrayLength(r); err != nil {
 		return err
 	} else if l != 3 {
-		return fmt.Errorf("expected 4 fields, got %d", l)
+		return fmt.Errorf("expected 3 fields, got %d", l)
 	}
 
 	// read endpoint id
