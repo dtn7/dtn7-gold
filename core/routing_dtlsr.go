@@ -148,6 +148,29 @@ func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSende
 	return
 }
 
+func (dtlsr DTLSR) ReportPeerAppeared(peer cla.Convergence) {
+	// generate EndpointID from address-string
+	peerID, err := bundle.NewEndpointID(peer.Address())
+	if err != nil {
+		log.WithFields(log.Fields{
+			"address": peer.Address(),
+		}).Warn("Peers address can't pe parsed")
+		return
+	}
+
+	// track node
+	dtlsr.newNode(peerID)
+
+	// add node to peer list
+	dtlsr.peers.peers[peerID] = 0
+	dtlsr.peers.timestamp = timestampNow()
+	dtlsr.peerChange = true
+}
+
+func (dtlsr DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
+
+}
+
 // newNode adds a node to the index-mapping (if it was not previously tracked)
 func (dtlsr DTLSR) newNode(id bundle.EndpointID) {
 	_, present := dtlsr.nodeIndex[id]
