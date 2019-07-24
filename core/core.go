@@ -64,6 +64,8 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 		c.routing = NewSprayAndWait(c)
 	case "binary_spray":
 		c.routing = NewBinarySpray(c)
+	case "dtlsr":
+		c.routing = NewDTLSR(c)
 	default:
 		log.WithFields(log.Fields{
 			"routing_string": routing,

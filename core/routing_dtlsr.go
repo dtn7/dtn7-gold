@@ -56,7 +56,7 @@ func (pd peerData) isNewerThan(other peerData) bool {
 
 func NewDTLSR(c *Core) DTLSR {
 	log.Debug("Initialised DTLSR")
-	return DTLSR{
+	dtlsr := DTLSR{
 		c:            c,
 		routingTable: make(map[bundle.EndpointID]bundle.EndpointID),
 		peerChange:   false,
@@ -71,6 +71,15 @@ func NewDTLSR(c *Core) DTLSR {
 		indexNode:      []bundle.EndpointID{c.NodeId},
 		length:         1,
 	}
+
+	err := c.cron.Register("dtlsr_cron", dtlsr.Cron, time.Second*60)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"reason": err,
+		}).Warn("Could not register DTLSR cron")
+	}
+
+	return dtlsr
 }
 
 func (dtlsr DTLSR) NotifyIncoming(bp BundlePack) {
@@ -253,6 +262,26 @@ func (dtlsr DTLSR) computeRoutingTable() {
 	}
 
 	dtlsr.routingTable = routingTable
+}
+
+func (dtlsr DTLSR) Cron() {
+	// if our peers have changed (someone appeared/disappeared) we need to broadcast the new info to the net
+	if dtlsr.peerChange {
+		//TODO: Send info bundle (maybe as an administrative record?)
+		dtlsr.peerChange = false
+
+		// we should also regenerate our routing table
+		dtlsr.computeRoutingTable()
+		dtlsr.receivedChange = false
+		return
+	}
+
+	// if we received new data, we should regenerate our routing table
+	if dtlsr.receivedChange {
+		dtlsr.computeRoutingTable()
+		dtlsr.receivedChange = false
+		return
+	}
 }
 
 const ExtBlockTypeDTLSRBlock uint64 = 193
