@@ -54,3 +54,43 @@ func TestBundleIDCbor(t *testing.T) {
 		}
 	}
 }
+
+func TestBundleIDScrub(t *testing.T) {
+	tests := []struct {
+		from BundleID
+		to   BundleID
+	}{
+		{
+			from: BundleID{
+				SourceNode: MustNewEndpointID("dtn://foo"),
+				Timestamp:  NewCreationTimestamp(23, 42),
+				IsFragment: false,
+			},
+			to: BundleID{
+				SourceNode: MustNewEndpointID("dtn://foo"),
+				Timestamp:  NewCreationTimestamp(23, 42),
+				IsFragment: false,
+			},
+		},
+		{
+			from: BundleID{
+				SourceNode:      MustNewEndpointID("dtn://foo"),
+				Timestamp:       NewCreationTimestamp(23, 42),
+				IsFragment:      true,
+				FragmentOffset:  23,
+				TotalDataLength: 42,
+			},
+			to: BundleID{
+				SourceNode: MustNewEndpointID("dtn://foo"),
+				Timestamp:  NewCreationTimestamp(23, 42),
+				IsFragment: false,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		if scrubed := test.from.Scrub(); !reflect.DeepEqual(test.to, scrubed) {
+			t.Fatalf("Scrubed BundleID mismatches: %v is not expected %v", test.to, scrubed)
+		}
+	}
+}

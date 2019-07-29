@@ -47,6 +47,18 @@ func (bid BundleID) Len() uint64 {
 	}
 }
 
+// Scrub creates a cleaned BundleID without fragmentation.
+func (bid BundleID) Scrub() BundleID {
+	return BundleID{
+		SourceNode: bid.SourceNode,
+		Timestamp:  bid.Timestamp,
+
+		IsFragment:      false,
+		FragmentOffset:  0,
+		TotalDataLength: 0,
+	}
+}
+
 func (bid *BundleID) MarshalCbor(w io.Writer) error {
 	if err := cboring.Marshal(&bid.SourceNode, w); err != nil {
 		return fmt.Errorf("Marshalling source node failed: %v", err)
