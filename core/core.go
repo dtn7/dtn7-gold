@@ -34,6 +34,8 @@ type Core struct {
 func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool, routing string) (*Core, error) {
 	var c = new(Core)
 
+	c.cron = NewCron()
+
 	c.InspectAllBundles = inspectAllBundles
 	c.NodeId = nodeId
 
@@ -63,7 +65,6 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 	c.stopSyn = make(chan struct{})
 	c.stopAck = make(chan struct{})
 
-	c.cron = NewCron()
 	c.cron.Register("pending_bundles", c.checkPendingBundles, time.Second*10)
 
 	go c.handler()
