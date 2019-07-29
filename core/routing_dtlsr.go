@@ -15,6 +15,7 @@ import (
 const (
 	recomputeInterval = time.Minute
 	purgeTime         = uint64(time.Minute * 10)
+	BroadcastAddress  = "dtn:broadcast"
 )
 
 // timestampNow outputs the current UNIX-time as an unsigned int64
@@ -42,6 +43,8 @@ type DTLSR struct {
 	nodeIndex map[bundle.EndpointID]int
 	indexNode []bundle.EndpointID
 	length    int
+	// broadcastAddress is where metadata-bundles are sent to
+	broadcastAddress bundle.EndpointID
 }
 
 // peerData contains a peer's connection data
@@ -60,7 +63,15 @@ func (pd peerData) isNewerThan(other peerData) bool {
 }
 
 func NewDTLSR(c *Core) DTLSR {
-	log.Debug("Initialised DTLSR")
+	log.Debug("Initialising DTLSR")
+
+	bAddress, err := bundle.NewEndpointID(BroadcastAddress)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"BroadcastAddress": BroadcastAddress,
+		}).Fatal("Unable to parse broadcast address")
+	}
+
 	dtlsr := DTLSR{
 		c:            c,
 		routingTable: make(map[bundle.EndpointID]bundle.EndpointID),
@@ -70,14 +81,15 @@ func NewDTLSR(c *Core) DTLSR {
 			timestamp: timestampNow(),
 			peers:     make(map[bundle.EndpointID]uint64),
 		},
-		receivedChange: false,
-		receivedData:   make(map[bundle.EndpointID]peerData),
-		nodeIndex:      map[bundle.EndpointID]int{c.NodeId: 0},
-		indexNode:      []bundle.EndpointID{c.NodeId},
-		length:         1,
+		receivedChange:   false,
+		receivedData:     make(map[bundle.EndpointID]peerData),
+		nodeIndex:        map[bundle.EndpointID]int{c.NodeId: 0},
+		indexNode:        []bundle.EndpointID{c.NodeId},
+		length:           1,
+		broadcastAddress: bAddress,
 	}
 
-	err := c.cron.Register("dtlsr_cron", dtlsr.Cron, recomputeInterval)
+	err = c.cron.Register("dtlsr_cron", dtlsr.Cron, recomputeInterval)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err,
@@ -129,7 +141,11 @@ func (dtlsr DTLSR) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
 func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool) {
 	delete = false
 
-	// TODO: handle broadcasts?
+	if bp.Bundle.PrimaryBlock.Destination == dtlsr.broadcastAddress {
+		// broadcast bundles are always forwarded to everyone
+		sender = dtlsr.c.claManager.Sender()
+		return
+	}
 
 	recipient := bp.Bundle.PrimaryBlock.Destination
 	forwarder, present := dtlsr.routingTable[recipient]
@@ -275,7 +291,25 @@ func (dtlsr DTLSR) Cron() {
 
 	// if our peers have changed (someone appeared/disappeared) we need to broadcast the new info to the net
 	if dtlsr.peerChange {
-		//TODO: Send info bundle (maybe as an administrative record?)
+		// send broadcast bundle with our new peer data
+		bundleBuilder := bundle.Builder()
+		bundleBuilder.Destination(dtlsr.broadcastAddress)
+		bundleBuilder.Source(dtlsr.c.NodeId)
+		bundleBuilder.CreationTimestampNow()
+		// no Payload
+		bundleBuilder.PayloadBlock(0)
+		metadatBundle, err := bundleBuilder.Build()
+		if err != nil {
+			log.WithFields(log.Fields{
+				"reason": err,
+			}).Warn("Unable to build metadata bundle")
+			return
+		}
+		metadataBlock := NewDTLSRBlock(dtlsr.peers)
+		metadatBundle.AddExtensionBlock(bundle.NewCanonicalBlock(0, 0, metadataBlock))
+
+		dtlsr.c.SendBundle(&metadatBundle)
+
 		dtlsr.peerChange = false
 
 		// we should also regenerate our routing table
