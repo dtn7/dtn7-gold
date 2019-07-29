@@ -21,7 +21,7 @@ type SprayAndWait struct {
 	// bundleData stores the metadata for each bundle
 	bundleData map[string]sprayMetaData
 	// Mutex for concurrent modification of data by multiple goroutines
-	dataMutex *sync.Mutex
+	dataMutex sync.Mutex
 }
 
 // sprayMetaData stores bundle-specific metadata
@@ -55,7 +55,6 @@ func NewSprayAndWait(c *Core) SprayAndWait {
 	sprayAndWait := SprayAndWait{
 		c:          c,
 		bundleData: make(map[string]sprayMetaData),
-		dataMutex:  &sync.Mutex{},
 	}
 
 	err := c.cron.Register("spray_and_wait_gc", sprayAndWait.GarbageCollect, time.Second*60)
