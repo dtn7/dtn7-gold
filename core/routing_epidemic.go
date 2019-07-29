@@ -15,7 +15,7 @@ type EpidemicRouting struct {
 	c       *Core
 	sentMap map[string][]bundle.EndpointID
 	// Mutex for concurrent modification of data by multiple goroutines
-	dataMutex *sync.Mutex
+	dataMutex sync.Mutex
 }
 
 // NewEpidemicRouting creates a new EpidemicRouting RoutingAlgorithm interacting
@@ -26,7 +26,6 @@ func NewEpidemicRouting(c *Core) EpidemicRouting {
 	er := EpidemicRouting{
 		c:         c,
 		sentMap:   make(map[string][]bundle.EndpointID),
-		dataMutex: &sync.Mutex{},
 	}
 
 	err := c.cron.Register("epidemic_gc", er.GarbageCollect, time.Second*60)
