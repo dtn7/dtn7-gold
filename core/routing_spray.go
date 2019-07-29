@@ -21,7 +21,7 @@ type SprayAndWait struct {
 	// bundleData stores the metadata for each bundle
 	bundleData map[string]sprayMetaData
 	// Mutex for concurrent modification of data by multiple goroutines
-	dataMutex sync.Mutex
+	dataMutex sync.RWMutex
 }
 
 // sprayMetaData stores bundle-specific metadata
@@ -34,20 +34,16 @@ type sprayMetaData struct {
 
 // cleanupMetaData goes through stored metadata, determines if the corresponding bundle is still alive
 // and deletes metadata for expired bundles
-func cleanupMetaData(c *Core, metadata map[string]sprayMetaData) map[string]sprayMetaData {
-	cleanedMetaData := make(map[string]sprayMetaData)
-
-	for bundleId, data := range metadata {
-		if _, err := c.store.QueryId(bundleId); err == nil {
-			cleanedMetaData[bundleId] = data
+func cleanupMetaData(c *Core, metadata *map[string]sprayMetaData) {
+	for bundleId := range *metadata {
+		if _, err := c.store.QueryId(bundleId); err != nil {
+			delete(*metadata, bundleId)
 		}
 	}
-
-	return cleanedMetaData
 }
 
 // NewSprayAndWait creates new instance of SprayAndWait
-func NewSprayAndWait(c *Core) SprayAndWait {
+func NewSprayAndWait(c *Core) *SprayAndWait {
 	log.WithFields(log.Fields{
 		"L": sprayl,
 	}).Debug("Initialised SprayAndWait")
@@ -64,22 +60,20 @@ func NewSprayAndWait(c *Core) SprayAndWait {
 		}).Warn("Could not register SprayAndWait gc-cron")
 	}
 
-	return sprayAndWait
+	return &sprayAndWait
 }
 
 // GarbageCollect performs periodical cleanup of Bundle metadata
-func (sw SprayAndWait) GarbageCollect() {
-	cleanedMetaData := cleanupMetaData(sw.c, sw.bundleData)
-
+func (sw *SprayAndWait) GarbageCollect() {
 	sw.dataMutex.Lock()
-	sw.bundleData = cleanedMetaData
+	cleanupMetaData(sw.c, &sw.bundleData)
 	sw.dataMutex.Unlock()
 }
 
 // NotifyIncoming tells the routing algorithm about new bundles.
 // In this case, we simply check if we originated this bundle and set L if we did
 // If we are not the originator, we don't further distribute the bundle
-func (sw SprayAndWait) NotifyIncoming(bp BundlePack) {
+func (sw *SprayAndWait) NotifyIncoming(bp BundlePack) {
 	if sw.c.hasEndpoint(bp.Bundle.PrimaryBlock.SourceNode) {
 		metadata := sprayMetaData{
 			sent:            make([]bundle.EndpointID, 0),
@@ -117,8 +111,10 @@ func (sw SprayAndWait) NotifyIncoming(bp BundlePack) {
 // SenderForBundle returns the Core's ConvergenceSenders.
 // The bundle's originator will distribute L copies amongst its peers
 // Forwarders will only every deliver the bundle to its final destination
-func (sw SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
+func (sw *SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
+	sw.dataMutex.RLock()
 	metadata, ok := sw.bundleData[bp.ID()]
+	sw.dataMutex.RUnlock()
 	if !ok {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -169,13 +165,15 @@ func (sw SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSend
 }
 
 // ReportFailure re-increments remaining copies if delivery was unsuccessful.
-func (sw SprayAndWait) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
+func (sw *SprayAndWait) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
 	log.WithFields(log.Fields{
 		"bundle":  bp.ID(),
 		"bad_cla": sender,
 	}).Debug("Transmission failure")
 
+	sw.dataMutex.RLock()
 	metadata, ok := sw.bundleData[bp.ID()]
+	sw.dataMutex.RUnlock()
 	if !ok {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -197,9 +195,9 @@ func (sw SprayAndWait) ReportFailure(bp BundlePack, sender cla.ConvergenceSender
 	sw.dataMutex.Unlock()
 }
 
-func (_ SprayAndWait) ReportPeerAppeared(_ cla.Convergence) {}
+func (_ *SprayAndWait) ReportPeerAppeared(_ cla.Convergence) {}
 
-func (_ SprayAndWait) ReportPeerDisappeared(_ cla.Convergence) {}
+func (_ *SprayAndWait) ReportPeerDisappeared(_ cla.Convergence) {}
 
 // BinarySpray implements the binary Spray and Wait routing protocol
 // In this case, each node hands over floor(copies/2) during the spray phase
@@ -208,11 +206,11 @@ type BinarySpray struct {
 	// bundleData stores the metadata for each bundle
 	bundleData map[string]sprayMetaData
 	// Mutex for concurrent modification of data by multiple goroutines
-	dataMutex *sync.Mutex
+	dataMutex sync.RWMutex
 }
 
 // NewBinarySpray creates new instance of BinarySpray
-func NewBinarySpray(c *Core) BinarySpray {
+func NewBinarySpray(c *Core) *BinarySpray {
 	log.WithFields(log.Fields{
 		"L": sprayl,
 	}).Debug("Initialised BinarySpray")
@@ -227,7 +225,6 @@ func NewBinarySpray(c *Core) BinarySpray {
 	binarySpray := BinarySpray{
 		c:          c,
 		bundleData: make(map[string]sprayMetaData),
-		dataMutex:  &sync.Mutex{},
 	}
 
 	err := c.cron.Register("binary_spray_gc", binarySpray.GarbageCollect, time.Second*60)
@@ -237,15 +234,13 @@ func NewBinarySpray(c *Core) BinarySpray {
 		}).Warn("Could not register BinarySpray gc-cron")
 	}
 
-	return binarySpray
+	return &binarySpray
 }
 
 // GarbageCollect performs periodical cleanup of Bundle metadata
-func (bs BinarySpray) GarbageCollect() {
-	cleanedMetaData := cleanupMetaData(bs.c, bs.bundleData)
-
+func (bs *BinarySpray) GarbageCollect() {
 	bs.dataMutex.Lock()
-	bs.bundleData = cleanedMetaData
+	cleanupMetaData(bs.c, &bs.bundleData)
 	bs.dataMutex.Unlock()
 }
 
@@ -253,7 +248,7 @@ func (bs BinarySpray) GarbageCollect() {
 // In this case, we check, whether we are the originator of this bundle
 // If yes, then we initialise the remaining Copies to L
 // If not we attempt to ready the routing-metadata-block end get the remaining copies
-func (bs BinarySpray) NotifyIncoming(bp BundlePack) {
+func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
 	if metadataBlock, err := bp.Bundle.ExtensionBlock(ExtBlockTypeBinarySprayBlock); err == nil {
 		binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 		metadata := sprayMetaData{
@@ -293,8 +288,10 @@ func (bs BinarySpray) NotifyIncoming(bp BundlePack) {
 // SenderForBundle returns the Core's ConvergenceSenders.
 // If a node has more than 1 copy left it will send floor(copies/2) to the peer
 // and keep roof(copies/2) for itself
-func (bs BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
+func (bs *BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
+	bs.dataMutex.RLock()
 	metadata, ok := bs.bundleData[bp.ID()]
+	bs.dataMutex.RUnlock()
 	if !ok {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -357,7 +354,7 @@ func (bs BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSende
 }
 
 // ReportFailure resets remaining copies if delivery was unsuccessful.
-func (bs BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
+func (bs *BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
 	log.WithFields(log.Fields{
 		"bundle":  bp.ID(),
 		"bad_cla": sender,
@@ -373,7 +370,9 @@ func (bs BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
 
 	binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 
+	bs.dataMutex.RLock()
 	metadata, ok := bs.bundleData[bp.ID()]
+	bs.dataMutex.RUnlock()
 	if !ok {
 		log.WithFields(log.Fields{
 			"bundle":  bp.ID(),
@@ -395,9 +394,9 @@ func (bs BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
 	bs.dataMutex.Unlock()
 }
 
-func (_ BinarySpray) ReportPeerAppeared(_ cla.Convergence) {}
+func (_ *BinarySpray) ReportPeerAppeared(_ cla.Convergence) {}
 
-func (_ BinarySpray) ReportPeerDisappeared(_ cla.Convergence) {}
+func (_ *BinarySpray) ReportPeerDisappeared(_ cla.Convergence) {}
 
 const ExtBlockTypeBinarySprayBlock uint64 = 192
 
