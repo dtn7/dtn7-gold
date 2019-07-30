@@ -1,9 +1,6 @@
 package core
 
 import (
-	"sync"
-	"time"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/bundle"
@@ -13,10 +10,7 @@ import (
 // EpidemicRouting is an implementation of a RoutingAlgorithm and behaves in a
 // flooding-based epidemic way.
 type EpidemicRouting struct {
-	c       *Core
-	sentMap map[bundle.BundleID][]bundle.EndpointID
-	// Mutex for concurrent modification of data by multiple goroutines
-	dataMutex sync.RWMutex
+	c *Core
 }
 
 // NewEpidemicRouting creates a new EpidemicRouting RoutingAlgorithm interacting
@@ -24,31 +18,7 @@ type EpidemicRouting struct {
 func NewEpidemicRouting(c *Core) *EpidemicRouting {
 	log.Debug("Initialised epidemic routing")
 
-	er := EpidemicRouting{
-		c:       c,
-		sentMap: make(map[bundle.BundleID][]bundle.EndpointID),
-	}
-
-	err := c.cron.Register("epidemic_gc", er.GarbageCollect, time.Second*60)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Warn("Could not register EpidemicRouting gc-cron")
-	}
-
-	return &er
-}
-
-// GarbageCollect performs periodical cleanup of Bundle metadata
-func (er *EpidemicRouting) GarbageCollect() {
-	er.dataMutex.Lock()
-	defer er.dataMutex.Unlock()
-
-	for bundleId := range er.sentMap {
-		if !er.c.store.KnowsBundle(bundleId) {
-			delete(er.sentMap, bundleId)
-		}
-	}
+	return &EpidemicRouting{c: c}
 }
 
 // NotifyIncoming tells the EpidemicRouting about new bundles. In our case, the
@@ -62,9 +32,15 @@ func (er *EpidemicRouting) NotifyIncoming(bp BundlePack) {
 		return
 	}
 
-	er.dataMutex.RLock()
-	sentEids, ok := er.sentMap[bp.Id]
-	er.dataMutex.RUnlock()
+	bi, biErr := er.c.store.QueryId(bp.Id)
+	if biErr != nil {
+		log.WithFields(log.Fields{
+			"error": biErr,
+		}).Warn("Failed to proceed a non-stored Bundle")
+		return
+	}
+
+	sentEids, ok := bi.Properties["routing/epidemic/sent"].([]bundle.EndpointID)
 	if !ok {
 		sentEids = make([]bundle.EndpointID, 0)
 	}
@@ -81,18 +57,27 @@ func (er *EpidemicRouting) NotifyIncoming(bp BundlePack) {
 		"eid":    prevNode,
 	}).Debug("EpidemicRouting received an incomming bundle and checked its PreviousNodeBlock")
 
-	er.dataMutex.Lock()
-	er.sentMap[bp.Id] = append(sentEids, prevNode)
-	er.dataMutex.Unlock()
+	bi.Properties["routing/epidemic/sent"] = append(sentEids, prevNode)
+	if err := er.c.store.Update(bi); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Warn("Updating BundleItem failed")
+	}
 }
 
 // SenderForBundle returns the Core's ConvergenceSenders.
 func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
-	er.dataMutex.RLock()
-	sentEids, ok := er.sentMap[bp.Id]
-	er.dataMutex.RUnlock()
+	bi, biErr := er.c.store.QueryId(bp.Id)
+	if biErr != nil {
+		log.WithFields(log.Fields{
+			"error": biErr,
+		}).Warn("Failed to proceed a non-stored Bundle")
+		return nil, false
+	}
+
+	sentEids, ok := bi.Properties["routing/epidemic/sent"].([]bundle.EndpointID)
 	if !ok {
-		sentEids = make([]bundle.EndpointID, 0, 0)
+		sentEids = make([]bundle.EndpointID, 0)
 	}
 
 	log.WithFields(log.Fields{
@@ -115,9 +100,12 @@ func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.Convergence
 		}
 	}
 
-	er.dataMutex.Lock()
-	er.sentMap[bp.Id] = sentEids
-	er.dataMutex.Unlock()
+	bi.Properties["routing/epidemic/sent"] = sentEids
+	if err := er.c.store.Update(bi); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Warn("Updating BundleItem failed")
+	}
 
 	log.WithFields(log.Fields{
 		"bundle":              bp.ID(),
@@ -130,11 +118,17 @@ func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.Convergence
 }
 
 func (er *EpidemicRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
-	er.dataMutex.RLock()
-	sentEids, ok := er.sentMap[bp.Id]
-	er.dataMutex.RUnlock()
-	if !ok {
+	bi, biErr := er.c.store.QueryId(bp.Id)
+	if biErr != nil {
+		log.WithFields(log.Fields{
+			"error": biErr,
+		}).Warn("Failed to proceed a non-stored Bundle")
 		return
+	}
+
+	sentEids, ok := bi.Properties["routing/epidemic/sent"].([]bundle.EndpointID)
+	if !ok {
+		sentEids = make([]bundle.EndpointID, 0)
 	}
 
 	log.WithFields(log.Fields{
@@ -150,9 +144,12 @@ func (er *EpidemicRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSe
 		}
 	}
 
-	er.dataMutex.Lock()
-	er.sentMap[bp.Id] = sentEids
-	er.dataMutex.Unlock()
+	bi.Properties["routing/epidemic/sent"] = sentEids
+	if err := er.c.store.Update(bi); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Warn("Updating BundleItem failed")
+	}
 }
 
 func (_ *EpidemicRouting) ReportPeerAppeared(_ cla.Convergence) {}

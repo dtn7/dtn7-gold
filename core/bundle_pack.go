@@ -1,7 +1,6 @@
 package core
 
 import (
-	"encoding/gob"
 	"fmt"
 	"strings"
 	"time"
@@ -22,13 +21,6 @@ type BundlePack struct {
 
 	bndl  *bundle.Bundle
 	store *storage.Store
-}
-
-// bundlePackRegisterGobs registers the different gob interface types used here.
-func bundlePackRegisterGobs() {
-	gob.Register(bundle.EndpointID{})
-	gob.Register(time.Time{})
-	gob.Register(make(map[Constraint]bool))
 }
 
 // NewBundlePack returns a BundlePack for the given bundle.
@@ -59,7 +51,7 @@ func NewBundlePack(bid bundle.BundleID, store *storage.Store) BundlePack {
 }
 
 func NewBundlePackFromBundle(b bundle.Bundle, store *storage.Store) BundlePack {
-	return BundlePack{
+	bp := BundlePack{
 		Id:          b.ID(),
 		Receiver:    bundle.DtnNone(),
 		Timestamp:   time.Now(),
@@ -68,6 +60,9 @@ func NewBundlePackFromBundle(b bundle.Bundle, store *storage.Store) BundlePack {
 		bndl:  &b,
 		store: store,
 	}
+
+	bp.Sync()
+	return bp
 }
 
 // Sync this BundlePack to the store.

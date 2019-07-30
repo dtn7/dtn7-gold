@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/gob"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -36,7 +37,10 @@ type Core struct {
 func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool, routing string) (*Core, error) {
 	var c = new(Core)
 
-	bundlePackRegisterGobs()
+	gob.Register([]bundle.EndpointID{})
+	gob.Register(bundle.EndpointID{})
+	gob.Register(map[Constraint]bool{})
+	gob.Register(time.Time{})
 
 	c.cron = NewCron()
 
