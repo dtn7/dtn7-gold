@@ -1,9 +1,10 @@
 package core
 
 import (
-	log "github.com/sirupsen/logrus"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
@@ -13,7 +14,7 @@ import (
 // flooding-based epidemic way.
 type EpidemicRouting struct {
 	c       *Core
-	sentMap map[string][]bundle.EndpointID
+	sentMap map[bundle.BundleID][]bundle.EndpointID
 	// Mutex for concurrent modification of data by multiple goroutines
 	dataMutex sync.RWMutex
 }
@@ -25,13 +26,13 @@ func NewEpidemicRouting(c *Core) *EpidemicRouting {
 
 	er := EpidemicRouting{
 		c:       c,
-		sentMap: make(map[string][]bundle.EndpointID),
+		sentMap: make(map[bundle.BundleID][]bundle.EndpointID),
 	}
 
 	err := c.cron.Register("epidemic_gc", er.GarbageCollect, time.Second*60)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"reason": err,
+			"error": err,
 		}).Warn("Could not register EpidemicRouting gc-cron")
 	}
 
@@ -44,7 +45,7 @@ func (er *EpidemicRouting) GarbageCollect() {
 	defer er.dataMutex.Unlock()
 
 	for bundleId := range er.sentMap {
-		if _, err := er.c.store.QueryId(bundleId); err != nil {
+		if !er.c.store.KnowsBundle(bundleId) {
 			delete(er.sentMap, bundleId)
 		}
 	}
@@ -55,17 +56,17 @@ func (er *EpidemicRouting) GarbageCollect() {
 func (er *EpidemicRouting) NotifyIncoming(bp BundlePack) {
 	// Check if we got a PreviousNodeBlock and extract its EndpointID
 	var prevNode bundle.EndpointID
-	if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
+	if pnBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
 		prevNode = pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
 	} else {
 		return
 	}
 
 	er.dataMutex.RLock()
-	sentEids, ok := er.sentMap[bp.ID()]
+	sentEids, ok := er.sentMap[bp.Id]
 	er.dataMutex.RUnlock()
 	if !ok {
-		sentEids = make([]bundle.EndpointID, 0, 0)
+		sentEids = make([]bundle.EndpointID, 0)
 	}
 
 	// Check if PreviousNodeBlock is already known
@@ -81,14 +82,14 @@ func (er *EpidemicRouting) NotifyIncoming(bp BundlePack) {
 	}).Debug("EpidemicRouting received an incomming bundle and checked its PreviousNodeBlock")
 
 	er.dataMutex.Lock()
-	er.sentMap[bp.ID()] = append(sentEids, prevNode)
+	er.sentMap[bp.Id] = append(sentEids, prevNode)
 	er.dataMutex.Unlock()
 }
 
 // SenderForBundle returns the Core's ConvergenceSenders.
 func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
 	er.dataMutex.RLock()
-	sentEids, ok := er.sentMap[bp.ID()]
+	sentEids, ok := er.sentMap[bp.Id]
 	er.dataMutex.RUnlock()
 	if !ok {
 		sentEids = make([]bundle.EndpointID, 0, 0)
@@ -115,7 +116,7 @@ func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.Convergence
 	}
 
 	er.dataMutex.Lock()
-	er.sentMap[bp.ID()] = sentEids
+	er.sentMap[bp.Id] = sentEids
 	er.dataMutex.Unlock()
 
 	log.WithFields(log.Fields{
@@ -130,7 +131,7 @@ func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.Convergence
 
 func (er *EpidemicRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
 	er.dataMutex.RLock()
-	sentEids, ok := er.sentMap[bp.ID()]
+	sentEids, ok := er.sentMap[bp.Id]
 	er.dataMutex.RUnlock()
 	if !ok {
 		return
@@ -150,7 +151,7 @@ func (er *EpidemicRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSe
 	}
 
 	er.dataMutex.Lock()
-	er.sentMap[bp.ID()] = sentEids
+	er.sentMap[bp.Id] = sentEids
 	er.dataMutex.Unlock()
 }
 

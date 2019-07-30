@@ -144,3 +144,9 @@ func (s *Store) QueryPending() (bi []BundleItem, err error) {
 	err = s.bh.Find(&bi, badgerhold.Where("Pending").Eq(true))
 	return
 }
+
+// KnowsBundle checks if such a Bundle is known.
+func (s *Store) KnowsBundle(bid bundle.BundleID) bool {
+	_, err := s.QueryId(bid)
+	return err != badgerhold.ErrNotFound
+}

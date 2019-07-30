@@ -8,6 +8,7 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/bundle/arecord"
 	"github.com/dtn7/dtn7-go/cla"
+	"github.com/dtn7/dtn7-go/storage"
 )
 
 // Core is the inner core of our DTN which handles transmission, reception and
@@ -20,8 +21,9 @@ type Core struct {
 	cron       *Cron
 	claManager *cla.Manager
 	idKeeper   IdKeeper
-	store      Store
 	routing    RoutingAlgorithm
+
+	store *storage.Store
 
 	stopSyn chan struct{}
 	stopAck chan struct{}
@@ -39,11 +41,11 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 	c.InspectAllBundles = inspectAllBundles
 	c.NodeId = nodeId
 
-	store, err := NewSimpleStore(storePath)
-	if err != nil {
+	if store, err := storage.NewStore(storePath); err != nil {
 		return nil, err
+	} else {
+		c.store = store
 	}
-	c.store = store
 
 	c.claManager = cla.NewManager()
 
@@ -81,17 +83,17 @@ func (c *Core) SetRoutingAlgorithm(routing RoutingAlgorithm) {
 // checkPendingBundles queries pending bundle (packs) from the store and
 // tries to dispatch them.
 func (c *Core) checkPendingBundles() {
-	bps, bpsErr := c.store.QueryPending()
-	if bpsErr != nil {
-		log.WithFields(log.Fields{"err": bpsErr}).Warn(
-			"Failed to fetch pending bundle packs")
+	if bis, err := c.store.QueryPending(); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Warn("Failed to fetch pending bundle packs")
 	} else {
-		for _, bp := range bps {
+		for _, bi := range bis {
 			log.WithFields(log.Fields{
-				"bundle": bp.ID(),
+				"bundle": bi.Id,
 			}).Info("Retrying bundle from store")
 
-			c.dispatching(bp)
+			c.dispatching(NewBundlePack(bi.BId, c.store))
 		}
 	}
 }
@@ -121,8 +123,9 @@ func (c *Core) handler() {
 			case cla.ReceivedBundle:
 				crb := cs.Message.(cla.ConvergenceReceivedBundle)
 
-				bp := NewBundlePack(crb.Bundle)
+				bp := NewBundlePackFromBundle(*crb.Bundle, c.store)
 				bp.Receiver = crb.Endpoint
+				bp.Sync()
 
 				c.receive(bp)
 
@@ -199,12 +202,13 @@ func (c *Core) HasEndpoint(endpoint bundle.EndpointID) (state bool) {
 func (c *Core) SendStatusReport(bp BundlePack,
 	status arecord.StatusInformationPos, reason arecord.StatusReportReason) {
 	// Don't repond to other administrative records
-	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
+	bndl, _ := bp.Bundle()
+	if bndl.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
 		return
 	}
 
 	// Don't respond to ourself
-	if c.HasEndpoint(bp.Bundle.PrimaryBlock.ReportTo) {
+	if c.HasEndpoint(bndl.PrimaryBlock.ReportTo) {
 		return
 	}
 
@@ -214,8 +218,7 @@ func (c *Core) SendStatusReport(bp BundlePack,
 		"reason": reason,
 	}).Info("Sending a status report for a bundle")
 
-	var inBndl = *bp.Bundle
-	var sr = arecord.NewStatusReport(inBndl, status, reason, bundle.DtnTimeNow())
+	var sr = arecord.NewStatusReport(*bndl, status, reason, bundle.DtnTimeNow())
 	var ar, arErr = arecord.AdministrativeRecordToCbor(&sr)
 	if arErr != nil {
 		log.WithFields(log.Fields{
@@ -239,7 +242,7 @@ func (c *Core) SendStatusReport(bp BundlePack,
 	var outBndl, err = bundle.Builder().
 		BundleCtrlFlags(bundle.AdministrativeRecordPayload).
 		Source(aaEndpoint).
-		Destination(inBndl.PrimaryBlock.ReportTo).
+		Destination(bndl.PrimaryBlock.ReportTo).
 		CreationTimestampNow().
 		Lifetime("60m").
 		Canonical(ar).

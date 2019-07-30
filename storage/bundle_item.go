@@ -13,7 +13,8 @@ import (
 // BundleItem is a wrapper for meta data around a Bundle. The Store operates
 // on BundleItems instead of Bundles.
 type BundleItem struct {
-	Id string `badgerhold:"key"`
+	Id  string `badgerhold:"key"`
+	BId bundle.BundleID
 
 	Pending bool      `badgerholdIndex:"Pending"`
 	Expires time.Time `badgerholdIndex:"Expires"`
@@ -70,7 +71,8 @@ func newBundleItem(b bundle.Bundle, storagePath string) (bi BundleItem) {
 	bid := b.ID()
 
 	bi = BundleItem{
-		Id: bid.Scrub().String(),
+		Id:  bid.Scrub().String(),
+		BId: bid.Scrub(),
 
 		Pending: false,
 		Expires: calcExpirationDate(b),

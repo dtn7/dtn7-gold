@@ -12,7 +12,7 @@ import (
 
 // SendBundle transmits an outbounding bundle.
 func (c *Core) SendBundle(bndl *bundle.Bundle) {
-	bp := NewBundlePack(bndl)
+	bp := NewBundlePackFromBundle(*bndl, c.store)
 
 	c.routing.NotifyIncoming(bp)
 	c.transmit(bp)
@@ -25,12 +25,12 @@ func (c *Core) transmit(bp BundlePack) {
 		"bundle": bp.ID(),
 	}).Info("Transmission of bundle requested")
 
-	c.idKeeper.update(bp.Bundle)
+	c.idKeeper.update(bp.MustBundle())
 
 	bp.AddConstraint(DispatchPending)
-	c.store.Push(bp)
+	bp.Sync()
 
-	src := bp.Bundle.PrimaryBlock.SourceNode
+	src := bp.MustBundle().PrimaryBlock.SourceNode
 	if src != bundle.DtnNone() && !c.HasEndpoint(src) {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -50,29 +50,32 @@ func (c *Core) receive(bp BundlePack) {
 		"bundle": bp.ID(),
 	}).Debug("Received new bundle")
 
-	if c.store.KnowsBundle(bp) {
-		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
-		}).Debug("Received bundle's ID is already known.")
+	/*
+		// TODO
+		if c.store.KnowsBundle(bp.Id) {
+			log.WithFields(log.Fields{
+				"bundle": bp.ID(),
+			}).Debug("Received bundle's ID is already known.")
 
-		// bundleDeletion is _not_ called because this would delete the already
-		// stored BundlePack.
-		return
-	}
+			// bundleDeletion is _not_ called because this would delete the already
+			// stored BundlePack.
+			return
+		}
+	*/
 
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),
 	}).Info("Processing new received bundle")
 
 	bp.AddConstraint(DispatchPending)
-	c.store.Push(bp)
+	bp.Sync()
 
-	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestReception) {
+	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestReception) {
 		c.SendStatusReport(bp, arecord.ReceivedBundle, arecord.NoInformation)
 	}
 
-	for i := len(bp.Bundle.CanonicalBlocks) - 1; i >= 0; i-- {
-		var cb = &bp.Bundle.CanonicalBlocks[i]
+	for i := len(bp.MustBundle().CanonicalBlocks) - 1; i >= 0; i-- {
+		var cb = &bp.MustBundle().CanonicalBlocks[i]
 
 		if bundle.GetExtensionBlockManager().IsKnown(cb.BlockTypeCode()) {
 			continue
@@ -112,8 +115,8 @@ func (c *Core) receive(bp BundlePack) {
 				"type":   cb.BlockTypeCode(),
 			}).Info("Bundle's unknown canonical block requested to be removed")
 
-			bp.Bundle.CanonicalBlocks = append(
-				bp.Bundle.CanonicalBlocks[:i], bp.Bundle.CanonicalBlocks[i+1:]...)
+			bp.MustBundle().CanonicalBlocks = append(
+				bp.MustBundle().CanonicalBlocks[:i], bp.MustBundle().CanonicalBlocks[i+1:]...)
 		}
 	}
 
@@ -128,7 +131,7 @@ func (c *Core) dispatching(bp BundlePack) {
 		"bundle": bp.ID(),
 	}).Info("Dispatching bundle")
 
-	if c.HasEndpoint(bp.Bundle.PrimaryBlock.Destination) {
+	if c.HasEndpoint(bp.MustBundle().PrimaryBlock.Destination) {
 		c.localDelivery(bp)
 	} else {
 		c.forward(bp)
@@ -143,9 +146,9 @@ func (c *Core) forward(bp BundlePack) {
 
 	bp.AddConstraint(ForwardPending)
 	bp.RemoveConstraint(DispatchPending)
-	c.store.Push(bp)
+	bp.Sync()
 
-	if hcBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypeHopCountBlock); err == nil {
+	if hcBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeHopCountBlock); err == nil {
 		hc := hcBlock.Value.(*bundle.HopCountBlock)
 		hc.Increment()
 		hcBlock.Value = hc
@@ -166,10 +169,10 @@ func (c *Core) forward(bp BundlePack) {
 		}
 	}
 
-	if bp.Bundle.PrimaryBlock.IsLifetimeExceeded() {
+	if bp.MustBundle().PrimaryBlock.IsLifetimeExceeded() {
 		log.WithFields(log.Fields{
 			"bundle":        bp.ID(),
-			"primary_block": bp.Bundle.PrimaryBlock,
+			"primary_block": bp.MustBundle().PrimaryBlock,
 		}).Warn("Bundle's primary block's lifetime is exceeded")
 
 		c.bundleDeletion(bp, arecord.LifetimeExpired)
@@ -177,7 +180,7 @@ func (c *Core) forward(bp BundlePack) {
 	}
 
 	if age, err := bp.UpdateBundleAge(); err == nil {
-		if age >= bp.Bundle.PrimaryBlock.Lifetime {
+		if age >= bp.MustBundle().PrimaryBlock.Lifetime {
 			log.WithFields(log.Fields{
 				"bundle": bp.ID(),
 			}).Warn("Bundle's lifetime is expired")
@@ -187,7 +190,7 @@ func (c *Core) forward(bp BundlePack) {
 		}
 	}
 
-	if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
+	if pnBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
 		// Replace the PreviousNodeBlock
 		prevEid := pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
 		pnBlock.Value = bundle.NewPreviousNodeBlock(c.NodeId)
@@ -199,7 +202,7 @@ func (c *Core) forward(bp BundlePack) {
 		}).Debug("Previous Node Block was updated")
 	} else {
 		// Append a new PreviousNodeBlock
-		bp.Bundle.AddExtensionBlock(bundle.NewCanonicalBlock(
+		bp.MustBundle().AddExtensionBlock(bundle.NewCanonicalBlock(
 			0, 0, bundle.NewPreviousNodeBlock(c.NodeId)))
 	}
 
@@ -207,7 +210,7 @@ func (c *Core) forward(bp BundlePack) {
 	var deleteAfterwards = true
 
 	// Try a direct delivery or consult the RoutingAlgorithm otherwise.
-	nodes = c.senderForDestination(bp.Bundle.PrimaryBlock.Destination)
+	nodes = c.senderForDestination(bp.MustBundle().PrimaryBlock.Destination)
 	if nodes == nil {
 		nodes, deleteAfterwards = c.routing.SenderForBundle(bp)
 	}
@@ -226,7 +229,7 @@ func (c *Core) forward(bp BundlePack) {
 				"cla":    node,
 			}).Info("Sending bundle to a CLA (ConvergenceSender)")
 
-			if err := node.Send(bp.Bundle); err != nil {
+			if err := node.Send(bp.MustBundle()); err != nil {
 				log.WithFields(log.Fields{
 					"bundle": bp.ID(),
 					"cla":    node,
@@ -249,7 +252,7 @@ func (c *Core) forward(bp BundlePack) {
 
 	wg.Wait()
 
-	if hcBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypeHopCountBlock); err == nil {
+	if hcBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeHopCountBlock); err == nil {
 		hc := hcBlock.Value.(*bundle.HopCountBlock)
 		hc.Decrement()
 		hcBlock.Value = hc
@@ -261,14 +264,14 @@ func (c *Core) forward(bp BundlePack) {
 	}
 
 	if bundleSent {
-		if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestForward) {
+		if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestForward) {
 			c.SendStatusReport(bp, arecord.ForwardedBundle, arecord.NoInformation)
 		}
 
 		if deleteAfterwards {
 			bp.PurgeConstraints()
-			c.store.Push(bp)
-		} else if c.InspectAllBundles && bp.Bundle.IsAdministrativeRecord() {
+			bp.Sync()
+		} else if c.InspectAllBundles && bp.MustBundle().IsAdministrativeRecord() {
 			c.bundleContraindicated(bp)
 			c.checkAdministrativeRecord(bp)
 		}
@@ -283,14 +286,14 @@ func (c *Core) forward(bp BundlePack) {
 // checkAdministrativeRecord checks administrative records. If this method
 // returns false, an error occured.
 func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
-	if !bp.Bundle.IsAdministrativeRecord() {
+	if !bp.MustBundle().IsAdministrativeRecord() {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
 		}).Debug("Bundle does not contain an administrative record")
 		return false
 	}
 
-	canonicalAr, err := bp.Bundle.PayloadBlock()
+	canonicalAr, err := bp.MustBundle().PayloadBlock()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -344,28 +347,26 @@ func (c *Core) inspectStatusReport(bp BundlePack, ar arecord.AdministrativeRecor
 		return
 	}
 
-	var bpStores = QueryFromStatusReport(c.store, status)
-	if len(bpStores) != 1 {
+	var bpStore, err = c.store.QueryId(status.RefBundle)
+	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle":     bp.ID(),
 			"status_rep": status,
-			"store_numb": len(bpStores),
 		}).Warn("Status Report's bundle is unknown")
 		return
 	}
 
-	var bpStore = bpStores[0]
 	log.WithFields(log.Fields{
 		"bundle":        bp.ID(),
 		"status_rep":    status,
-		"status_bundle": bpStore.ID(),
+		"status_bundle": bpStore.Id,
 	}).Debug("Status Report's referenced bundle was loaded")
 
 	for _, sip := range sips {
 		log.WithFields(log.Fields{
 			"bundle":        bp.ID(),
 			"status_rep":    status,
-			"status_bundle": bpStore.ID(),
+			"status_bundle": bpStore.Id,
 			"information":   sip,
 		}).Info("Parsing status report")
 
@@ -377,17 +378,16 @@ func (c *Core) inspectStatusReport(bp BundlePack, ar arecord.AdministrativeRecor
 			log.WithFields(log.Fields{
 				"bundle":        bp.ID(),
 				"status_rep":    status,
-				"status_bundle": bpStore.ID(),
+				"status_bundle": bpStore.Id,
 			}).Info("Status report indicates delivered bundle, deleting bundle")
 
-			bpStore.PurgeConstraints()
-			c.store.Push(bpStore)
+			c.store.Delete(bpStore.BId)
 
 		default:
 			log.WithFields(log.Fields{
 				"bundle":        bp.ID(),
 				"status_rep":    status,
-				"status_bundle": bpStore.ID(),
+				"status_bundle": bpStore.Id,
 				"information":   int(sip),
 			}).Warn("Status report has an unknown status information code")
 		}
@@ -401,7 +401,7 @@ func (c *Core) localDelivery(bp BundlePack) {
 		"bundle": bp.ID(),
 	}).Info("Received bundle for local delivery")
 
-	if bp.Bundle.IsAdministrativeRecord() {
+	if bp.MustBundle().IsAdministrativeRecord() {
 		if !c.checkAdministrativeRecord(bp) {
 			c.bundleDeletion(bp, arecord.NoInformation)
 			return
@@ -409,20 +409,20 @@ func (c *Core) localDelivery(bp BundlePack) {
 	}
 
 	bp.AddConstraint(LocalEndpoint)
-	c.store.Push(bp)
+	bp.Sync()
 
 	for _, agent := range c.Agents {
-		if agent.EndpointID() == bp.Bundle.PrimaryBlock.Destination {
+		if agent.EndpointID() == bp.MustBundle().PrimaryBlock.Destination {
 			agent.Deliver(bp)
 		}
 	}
 
-	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDelivery) {
+	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDelivery) {
 		c.SendStatusReport(bp, arecord.DeliveredBundle, arecord.NoInformation)
 	}
 
 	bp.PurgeConstraints()
-	c.store.Push(bp)
+	bp.Sync()
 }
 
 func (c *Core) bundleContraindicated(bp BundlePack) {
@@ -431,16 +431,16 @@ func (c *Core) bundleContraindicated(bp BundlePack) {
 	}).Info("Bundle was marked for contraindication")
 
 	bp.AddConstraint(Contraindicated)
-	c.store.Push(bp)
+	bp.Sync()
 }
 
 func (c *Core) bundleDeletion(bp BundlePack, reason arecord.StatusReportReason) {
-	if bp.Bundle.PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDeletion) {
+	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDeletion) {
 		c.SendStatusReport(bp, arecord.DeletedBundle, reason)
 	}
 
 	bp.PurgeConstraints()
-	c.store.Push(bp)
+	bp.Sync()
 
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),

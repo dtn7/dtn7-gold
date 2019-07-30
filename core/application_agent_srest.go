@@ -68,7 +68,7 @@ type SimpleRESTAppAgent struct {
 	c          *Core
 
 	serv        *http.Server
-	bundleIds   []string
+	bundleIds   []bundle.BundleID
 	bundleMutex sync.Mutex
 }
 
@@ -78,7 +78,7 @@ func NewSimpleRESTAppAgent(endpointID bundle.EndpointID, c *Core, addr string) (
 	aa = &SimpleRESTAppAgent{
 		endpointID: endpointID,
 		c:          c,
-		bundleIds:  make([]string, 0, 0),
+		bundleIds:  make([]bundle.BundleID, 0),
 	}
 
 	mux := http.NewServeMux()
@@ -99,16 +99,22 @@ func (aa *SimpleRESTAppAgent) handleFetch(respWriter http.ResponseWriter, _ *htt
 
 	resps := make([]SimpleRESTResponse, 0, 0)
 	for _, bndlId := range aa.bundleIds {
-		if bp, err := aa.c.store.QueryId(bndlId); err != nil {
+		if bi, err := aa.c.store.QueryId(bndlId); err != nil {
 			log.WithFields(log.Fields{
 				"bundle": bndlId,
 				"error":  err,
 			}).Warn("SimpleRESTAppAgent failed to fetch bundle from store")
 		} else {
-			resps = append(resps, NewSimpleRESTReponseFromBundle(bp.Bundle))
+			bndl, _ := bi.Parts[0].Load()
+			resps = append(resps, NewSimpleRESTReponseFromBundle(&bndl))
 
-			bp.RemoveConstraint(LocalEndpoint)
-			aa.c.store.Push(bp)
+			if v, ok := bi.Properties["bundlepack/constraints"]; ok {
+				consts := v.(map[Constraint]bool)
+				delete(consts, LocalEndpoint)
+				bi.Properties["bundlepack/constraints"] = consts
+
+				aa.c.store.Update(bi)
+			}
 		}
 	}
 	aa.bundleIds = aa.bundleIds[:0]
@@ -193,7 +199,7 @@ func (aa *SimpleRESTAppAgent) Deliver(bp BundlePack) error {
 	}).Info("SimpleRESTAppAgent received a bundle")
 
 	aa.bundleMutex.Lock()
-	aa.bundleIds = append(aa.bundleIds, bp.ID())
+	aa.bundleIds = append(aa.bundleIds, bp.Id)
 	aa.bundleMutex.Unlock()
 
 	return nil

@@ -1,12 +1,13 @@
 package core
 
 import (
-	"github.com/dtn7/cboring"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 )
@@ -19,7 +20,7 @@ const sprayl = 4
 type SprayAndWait struct {
 	c *Core
 	// bundleData stores the metadata for each bundle
-	bundleData map[string]sprayMetaData
+	bundleData map[bundle.BundleID]sprayMetaData
 	// Mutex for concurrent modification of data by multiple goroutines
 	dataMutex sync.RWMutex
 }
@@ -34,9 +35,9 @@ type sprayMetaData struct {
 
 // cleanupMetaData goes through stored metadata, determines if the corresponding bundle is still alive
 // and deletes metadata for expired bundles
-func cleanupMetaData(c *Core, metadata *map[string]sprayMetaData) {
+func cleanupMetaData(c *Core, metadata *map[bundle.BundleID]sprayMetaData) {
 	for bundleId := range *metadata {
-		if _, err := c.store.QueryId(bundleId); err != nil {
+		if !c.store.KnowsBundle(bundleId) {
 			delete(*metadata, bundleId)
 		}
 	}
@@ -50,13 +51,13 @@ func NewSprayAndWait(c *Core) *SprayAndWait {
 
 	sprayAndWait := SprayAndWait{
 		c:          c,
-		bundleData: make(map[string]sprayMetaData),
+		bundleData: make(map[bundle.BundleID]sprayMetaData),
 	}
 
 	err := c.cron.Register("spray_and_wait_gc", sprayAndWait.GarbageCollect, time.Second*60)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"reason": err,
+			"error": err,
 		}).Warn("Could not register SprayAndWait gc-cron")
 	}
 
@@ -74,14 +75,14 @@ func (sw *SprayAndWait) GarbageCollect() {
 // In this case, we simply check if we originated this bundle and set L if we did
 // If we are not the originator, we don't further distribute the bundle
 func (sw *SprayAndWait) NotifyIncoming(bp BundlePack) {
-	if sw.c.hasEndpoint(bp.Bundle.PrimaryBlock.SourceNode) {
+	if sw.c.hasEndpoint(bp.MustBundle().PrimaryBlock.SourceNode) {
 		metadata := sprayMetaData{
 			sent:            make([]bundle.EndpointID, 0),
 			remainingCopies: sprayl,
 		}
 
 		sw.dataMutex.Lock()
-		sw.bundleData[bp.ID()] = metadata
+		sw.bundleData[bp.Id] = metadata
 		sw.dataMutex.Unlock()
 
 		log.WithFields(log.Fields{
@@ -94,12 +95,12 @@ func (sw *SprayAndWait) NotifyIncoming(bp BundlePack) {
 		}
 
 		// if the bundle has a PreviousNodeBlock, add it to the list of nodes which we know to have the bundle
-		if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
+		if pnBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
 			metadata.sent = append(metadata.sent, pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint())
 		}
 
 		sw.dataMutex.Lock()
-		sw.bundleData[bp.ID()] = metadata
+		sw.bundleData[bp.Id] = metadata
 		sw.dataMutex.Unlock()
 
 		log.WithFields(log.Fields{
@@ -113,7 +114,7 @@ func (sw *SprayAndWait) NotifyIncoming(bp BundlePack) {
 // Forwarders will only every deliver the bundle to its final destination
 func (sw *SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
 	sw.dataMutex.RLock()
-	metadata, ok := sw.bundleData[bp.ID()]
+	metadata, ok := sw.bundleData[bp.Id]
 	sw.dataMutex.RUnlock()
 	if !ok {
 		log.WithFields(log.Fields{
@@ -151,7 +152,7 @@ func (sw *SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSen
 	}
 
 	sw.dataMutex.Lock()
-	sw.bundleData[bp.ID()] = metadata
+	sw.bundleData[bp.Id] = metadata
 	sw.dataMutex.Unlock()
 
 	log.WithFields(log.Fields{
@@ -172,7 +173,7 @@ func (sw *SprayAndWait) ReportFailure(bp BundlePack, sender cla.ConvergenceSende
 	}).Debug("Transmission failure")
 
 	sw.dataMutex.RLock()
-	metadata, ok := sw.bundleData[bp.ID()]
+	metadata, ok := sw.bundleData[bp.Id]
 	sw.dataMutex.RUnlock()
 	if !ok {
 		log.WithFields(log.Fields{
@@ -191,7 +192,7 @@ func (sw *SprayAndWait) ReportFailure(bp BundlePack, sender cla.ConvergenceSende
 	}
 
 	sw.dataMutex.Lock()
-	sw.bundleData[bp.ID()] = metadata
+	sw.bundleData[bp.Id] = metadata
 	sw.dataMutex.Unlock()
 }
 
@@ -204,7 +205,7 @@ func (_ *SprayAndWait) ReportPeerDisappeared(_ cla.Convergence) {}
 type BinarySpray struct {
 	c *Core
 	// bundleData stores the metadata for each bundle
-	bundleData map[string]sprayMetaData
+	bundleData map[bundle.BundleID]sprayMetaData
 	// Mutex for concurrent modification of data by multiple goroutines
 	dataMutex sync.RWMutex
 }
@@ -224,13 +225,13 @@ func NewBinarySpray(c *Core) *BinarySpray {
 
 	binarySpray := BinarySpray{
 		c:          c,
-		bundleData: make(map[string]sprayMetaData),
+		bundleData: make(map[bundle.BundleID]sprayMetaData),
 	}
 
 	err := c.cron.Register("binary_spray_gc", binarySpray.GarbageCollect, time.Second*60)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"reason": err,
+			"error": err,
 		}).Warn("Could not register BinarySpray gc-cron")
 	}
 
@@ -249,7 +250,7 @@ func (bs *BinarySpray) GarbageCollect() {
 // If yes, then we initialise the remaining Copies to L
 // If not we attempt to ready the routing-metadata-block end get the remaining copies
 func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
-	if metadataBlock, err := bp.Bundle.ExtensionBlock(ExtBlockTypeBinarySprayBlock); err == nil {
+	if metadataBlock, err := bp.MustBundle().ExtensionBlock(ExtBlockTypeBinarySprayBlock); err == nil {
 		binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 		metadata := sprayMetaData{
 			sent:            make([]bundle.EndpointID, 0),
@@ -257,12 +258,12 @@ func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
 		}
 
 		// if the bundle has a PreviousNodeBlock, add it to the list of nodes which we know to have the bundle
-		if pnBlock, err := bp.Bundle.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
+		if pnBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
 			metadata.sent = append(metadata.sent, pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint())
 		}
 
 		bs.dataMutex.Lock()
-		bs.bundleData[bp.ID()] = metadata
+		bs.bundleData[bp.Id] = metadata
 		bs.dataMutex.Unlock()
 
 		log.WithFields(log.Fields{
@@ -276,7 +277,7 @@ func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
 		}
 
 		bs.dataMutex.Lock()
-		bs.bundleData[bp.ID()] = metadata
+		bs.bundleData[bp.Id] = metadata
 		bs.dataMutex.Unlock()
 
 		log.WithFields(log.Fields{
@@ -290,7 +291,7 @@ func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
 // and keep roof(copies/2) for itself
 func (bs *BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
 	bs.dataMutex.RLock()
-	metadata, ok := bs.bundleData[bp.ID()]
+	metadata, ok := bs.bundleData[bp.Id]
 	bs.dataMutex.RUnlock()
 	if !ok {
 		log.WithFields(log.Fields{
@@ -325,13 +326,13 @@ func (bs *BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSend
 			metadata.remainingCopies = metadata.remainingCopies - sendCopies
 
 			// if the bundle already has a metadata-block
-			if metadataBlock, err := bp.Bundle.ExtensionBlock(ExtBlockTypeBinarySprayBlock); err == nil {
+			if metadataBlock, err := bp.MustBundle().ExtensionBlock(ExtBlockTypeBinarySprayBlock); err == nil {
 				binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 				binarySprayBlock.SetCopies(sendCopies)
 			} else {
 				// if it doesn't, then create one
 				metadataBlock := NewBinarySprayBlock(sendCopies)
-				bp.Bundle.AddExtensionBlock(bundle.NewCanonicalBlock(0, 0, metadataBlock))
+				bp.MustBundle().AddExtensionBlock(bundle.NewCanonicalBlock(0, 0, metadataBlock))
 			}
 
 			// we currently only send a bundle to a single peer at once
@@ -340,7 +341,7 @@ func (bs *BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSend
 	}
 
 	bs.dataMutex.Lock()
-	bs.bundleData[bp.ID()] = metadata
+	bs.bundleData[bp.Id] = metadata
 	bs.dataMutex.Unlock()
 
 	log.WithFields(log.Fields{
@@ -360,7 +361,7 @@ func (bs *BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender
 		"bad_cla": sender,
 	}).Debug("Transmission failure")
 
-	metadataBlock, err := bp.Bundle.ExtensionBlock(ExtBlockTypeBinarySprayBlock)
+	metadataBlock, err := bp.MustBundle().ExtensionBlock(ExtBlockTypeBinarySprayBlock)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -371,7 +372,7 @@ func (bs *BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender
 	binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 
 	bs.dataMutex.RLock()
-	metadata, ok := bs.bundleData[bp.ID()]
+	metadata, ok := bs.bundleData[bp.Id]
 	bs.dataMutex.RUnlock()
 	if !ok {
 		log.WithFields(log.Fields{
@@ -390,7 +391,7 @@ func (bs *BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender
 	}
 
 	bs.dataMutex.Lock()
-	bs.bundleData[bp.ID()] = metadata
+	bs.bundleData[bp.Id] = metadata
 	bs.dataMutex.Unlock()
 }
 
