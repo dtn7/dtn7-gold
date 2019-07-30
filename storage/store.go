@@ -32,6 +32,7 @@ func NewStore(dir string) (s *Store, err error) {
 	opts := badgerhold.DefaultOptions
 	opts.Dir = badgerDir
 	opts.ValueDir = badgerDir
+	opts.Logger = log.StandardLogger()
 
 	if dirErr := os.MkdirAll(badgerDir, 0700); dirErr != nil {
 		err = dirErr
@@ -129,20 +130,43 @@ func (s *Store) Update(bi BundleItem) error {
 
 // Delete a BundleItem, represented by the "scrubed" BundleID.
 func (s *Store) Delete(bid bundle.BundleID) error {
-	log.WithFields(log.Fields{
-		"bundle": bid,
-	}).Info("Store deletes BundleItem")
+	if bi, err := s.QueryId(bid); err == nil {
+		log.WithFields(log.Fields{
+			"bundle": bid,
+		}).Info("Store deletes BundleItem")
 
-	return s.bh.Delete(bid.Scrub().String(), BundleItem{})
+		for _, bp := range bi.Parts {
+			if err := bp.deleteBundle(); err != nil {
+				log.WithFields(log.Fields{
+					"bundle": bid,
+					"file":   bp.Filename,
+					"error":  err,
+				}).Warn("Failed to delete BundlePart")
+			}
+		}
+
+		return s.bh.Delete(bi.Id, BundleItem{})
+	}
+
+	return nil
 }
 
 // DeleteExpired removes all expired Bundles.
 func (s *Store) DeleteExpired() {
-	err := s.bh.DeleteMatching(BundleItem{}, badgerhold.Where("Expires").Lt(time.Now()))
+	var bis []BundleItem
+	if err := s.bh.Find(&bis, badgerhold.Where("Expires").Lt(time.Now())); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Warn("Failed to get expired Bundles")
+		return
+	}
 
-	log.WithFields(log.Fields{
-		"error": err,
-	}).Info("Deleting expired BundleItems from Store")
+	for _, bi := range bis {
+		log.WithFields(log.Fields{
+			"bundle": bi.Id,
+		}).Info("Bundle is expired")
+		s.Delete(bi.BId)
+	}
 }
 
 // QueryId fetches the BundleItem for the requested BundleID.
@@ -152,8 +176,8 @@ func (s *Store) QueryId(bid bundle.BundleID) (bi BundleItem, err error) {
 }
 
 // QueryPending fetches all pending Bundles.
-func (s *Store) QueryPending() (bi []BundleItem, err error) {
-	err = s.bh.Find(&bi, badgerhold.Where("Pending").Eq(true))
+func (s *Store) QueryPending() (bis []BundleItem, err error) {
+	err = s.bh.Find(&bis, badgerhold.Where("Pending").Eq(true))
 	return
 }
 

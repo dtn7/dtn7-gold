@@ -43,6 +43,11 @@ func (bp BundlePart) storeBundle(b bundle.Bundle) error {
 	}
 }
 
+// deleteBundle removes the serialized Bundle from the disk.
+func (bp BundlePart) deleteBundle() error {
+	return os.Remove(bp.Filename)
+}
+
 // Load the Bundle struct from the disk.
 func (bp BundlePart) Load() (b bundle.Bundle, err error) {
 	if f, fErr := os.Open(bp.Filename); fErr != nil {
