@@ -8,6 +8,7 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/schollz/peerdiscovery v1.4.0
 	github.com/sirupsen/logrus v1.4.2
+	github.com/timshannon/badgerhold v0.0.0-20190415130923-192650dd187a
 	github.com/ugorji/go v1.1.4
 	golang.org/x/net v0.0.0-20190520210107-018c4d40a106 // indirect
 	golang.org/x/sys v0.0.0-20190520201301-c432e742b0af // indirect
