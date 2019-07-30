@@ -3,6 +3,7 @@ package storage
 import (
 	"os"
 	"path"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -15,6 +16,7 @@ const (
 	dirBundle string = "bndl"
 )
 
+// Store implements a storage for Bundles together with meta data.
 type Store struct {
 	bh *badgerhold.Store
 
@@ -22,6 +24,7 @@ type Store struct {
 	bundleDir string
 }
 
+// NewStore creates a new Store or opens an existing Store from the given path.
 func NewStore(dir string) (s *Store, err error) {
 	badgerDir := path.Join(dir, dirBadger)
 	bundleDir := path.Join(dir, dirBundle)
@@ -52,17 +55,23 @@ func NewStore(dir string) (s *Store, err error) {
 	return
 }
 
+// Close the Store. It must not be used afterwards.
 func (s *Store) Close() error {
 	return s.bh.Close()
 }
 
+// Push a new/received Bundle to the Store.
 func (s *Store) Push(b bundle.Bundle) error {
-	bi := NewBundleItem(b, s.bundleDir)
+	bi := newBundleItem(b, s.bundleDir)
 
 	if biStore, err := s.QueryId(b.ID()); err != nil {
 		log.WithFields(log.Fields{
 			"bundle": b.ID().String(),
 		}).Info("Bundle ID is unknown, inserting BundleItem")
+
+		if err := bi.Parts[0].storeBundle(b); err != nil {
+			return err
+		}
 
 		return s.bh.Insert(bi.Id, bi)
 	} else if bi.Fragmented {
@@ -93,6 +102,10 @@ func (s *Store) Push(b bundle.Bundle) error {
 				"bundle": b.ID().String(),
 			}).Info("Received new bundle fragment, updating BundleItem")
 
+			if err := compPart.storeBundle(b); err != nil {
+				return err
+			}
+
 			biStore.Parts = append(biStore.Parts, compPart)
 			return s.bh.Update(biStore.Id, biStore)
 		}
@@ -105,7 +118,29 @@ func (s *Store) Push(b bundle.Bundle) error {
 	}
 }
 
+// Update an existing BundleItem.
+func (s *Store) Update(bi BundleItem) error {
+	return s.bh.Update(bi.Id, bi)
+}
+
+// Delete a BundleItem, represented by the "scrubed" BundleID.
+func (s *Store) Delete(bid bundle.BundleID) error {
+	return s.bh.Delete(bid.Scrub().String(), BundleItem{})
+}
+
+// DeleteExpired removes all expired Bundles.
+func (s *Store) DeleteExpired() error {
+	return s.bh.DeleteMatching(BundleItem{}, badgerhold.Where("Expires").Lt(time.Now()))
+}
+
+// QueryId fetches the BundleItem for the requested BundleID.
 func (s *Store) QueryId(bid bundle.BundleID) (bi BundleItem, err error) {
 	err = s.bh.Get(bid.Scrub().String(), &bi)
+	return
+}
+
+// QueryPending fetches all pending Bundles.
+func (s *Store) QueryPending() (bi []BundleItem, err error) {
+	err = s.bh.Find(&bi, badgerhold.Where("Pending").Eq(true))
 	return
 }

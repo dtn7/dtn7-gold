@@ -3,7 +3,9 @@ package storage
 import (
 	"io/ioutil"
 	"os"
+	"reflect"
 	"testing"
+	"time"
 
 	"github.com/dtn7/dtn7-go/bundle"
 )
@@ -14,7 +16,6 @@ func setupStoreDir(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	} else {
-		// We don't want this file; just its path
 		os.Remove(filePath.Name())
 	}
 
@@ -33,9 +34,8 @@ func TestStore(t *testing.T) {
 	b, bErr := bundle.Builder().
 		Source("dtn://src/").
 		Destination("dtn://dest/").
-		CreationTimestampEpoch().
+		CreationTimestampNow().
 		Lifetime("10m").
-		BundleAgeBlock(0).
 		PayloadBlock([]byte("hello world")).
 		Build()
 	if bErr != nil {
@@ -46,10 +46,56 @@ func TestStore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := store.QueryId(b.ID()); err != nil {
+	if bi, err := store.QueryId(b.ID()); err != nil {
+		t.Fatal(err)
+	} else {
+		if l := len(bi.Parts); l != 1 {
+			t.Fatalf("BundleItem was %d parts, instead of 1", l)
+		}
+
+		if b2, err := bi.Parts[0].Load(); err != nil {
+			t.Fatal(err)
+		} else if !reflect.DeepEqual(b, b2) {
+			t.Fatalf("Bundle changed after loading")
+		}
+	}
+
+	if bip, err := store.QueryPending(); err != nil {
+		t.Fatal(err)
+	} else if l := len(bip); l != 0 {
+		t.Fatalf("Found %d pending BundleItem, instead of 0", l)
+	}
+
+	if bi, err := store.QueryId(b.ID()); err != nil {
+		t.Fatal(err)
+	} else {
+		bi.Pending = true
+		if err := store.Update(bi); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if bip, err := store.QueryPending(); err != nil {
+		t.Fatal(err)
+	} else if l := len(bip); l != 1 {
+		t.Fatalf("Found %d pending BundleItem, instead of 1", l)
+	}
+
+	if bi, err := store.QueryId(b.ID()); err != nil {
+		t.Fatal(err)
+	} else {
+		bi.Expires = time.Now().Add(-1 * time.Second)
+		if err := store.Update(bi); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := store.DeleteExpired(); err != nil {
 		t.Fatal(err)
 	}
-	// TODO: fetch bundle, compare
+	if bi, err := store.QueryId(b.ID()); err == nil {
+		t.Fatalf("Deleted expired BundleItem was found: %v", bi)
+	}
 
 	if err := store.Close(); err != nil {
 		t.Fatal(err)
