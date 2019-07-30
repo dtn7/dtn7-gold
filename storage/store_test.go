@@ -90,9 +90,8 @@ func TestStore(t *testing.T) {
 		}
 	}
 
-	if err := store.DeleteExpired(); err != nil {
-		t.Fatal(err)
-	}
+	store.DeleteExpired()
+
 	if bi, err := store.QueryId(b.ID()); err == nil {
 		t.Fatalf("Deleted expired BundleItem was found: %v", bi)
 	}

@@ -50,18 +50,15 @@ func (c *Core) receive(bp BundlePack) {
 		"bundle": bp.ID(),
 	}).Debug("Received new bundle")
 
-	/*
-		// TODO
-		if c.store.KnowsBundle(bp.Id) {
-			log.WithFields(log.Fields{
-				"bundle": bp.ID(),
-			}).Debug("Received bundle's ID is already known.")
+	if len(bp.Constraints) > 0 {
+		log.WithFields(log.Fields{
+			"bundle": bp.ID(),
+		}).Debug("Received bundle's ID is already known.")
 
-			// bundleDeletion is _not_ called because this would delete the already
-			// stored BundlePack.
-			return
-		}
-	*/
+		// bundleDeletion is _not_ called because this would delete the already
+		// stored BundlePack.
+		return
+	}
 
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),

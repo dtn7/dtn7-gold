@@ -1,9 +1,12 @@
 package core
 
 import (
+	"encoding/gob"
 	"fmt"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/storage"
@@ -19,6 +22,13 @@ type BundlePack struct {
 
 	bndl  *bundle.Bundle
 	store *storage.Store
+}
+
+// bundlePackRegisterGobs registers the different gob interface types used here.
+func bundlePackRegisterGobs() {
+	gob.Register(bundle.EndpointID{})
+	gob.Register(time.Time{})
+	gob.Register(make(map[Constraint]bool))
 }
 
 // NewBundlePack returns a BundlePack for the given bundle.
@@ -49,14 +59,25 @@ func NewBundlePack(bid bundle.BundleID, store *storage.Store) BundlePack {
 }
 
 func NewBundlePackFromBundle(b bundle.Bundle, store *storage.Store) BundlePack {
-	store.Push(b)
-	return NewBundlePack(b.ID(), store)
+	return BundlePack{
+		Id:          b.ID(),
+		Receiver:    bundle.DtnNone(),
+		Timestamp:   time.Now(),
+		Constraints: make(map[Constraint]bool),
+
+		bndl:  &b,
+		store: store,
+	}
 }
 
 // Sync this BundlePack to the store.
 func (bp BundlePack) Sync() error {
-	if bi, err := bp.store.QueryId(bp.Id.Scrub()); err != nil {
+	if !bp.store.KnowsBundle(bp.Id.Scrub()) {
+		return bp.store.Push(*bp.bndl)
+	} else if bi, err := bp.store.QueryId(bp.Id.Scrub()); err != nil {
 		return err
+	} else if len(bp.Constraints) == 0 {
+		return bp.store.Delete(bp.Id)
 	} else {
 		bi.Pending = !bp.HasConstraint(ReassemblyPending) &&
 			(bp.HasConstraint(ForwardPending) || bp.HasConstraint(Contraindicated))
@@ -65,7 +86,19 @@ func (bp BundlePack) Sync() error {
 		bi.Properties["bundlepack/timestamp"] = bp.Timestamp
 		bi.Properties["bundlepack/constraints"] = bp.Constraints
 
-		return bp.store.Update(bi)
+		log.WithFields(log.Fields{
+			"bundle":      bp.Id,
+			"pending":     bi.Pending,
+			"constraints": bp.Constraints,
+		}).Debug("Sync'ing BundlePack")
+
+		updateErr := bp.store.Update(bi)
+		if updateErr != nil {
+			log.WithFields(log.Fields{
+				"error": updateErr,
+			}).Info("Sync'ing failed")
+		}
+		return updateErr
 	}
 }
 

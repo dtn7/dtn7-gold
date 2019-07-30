@@ -120,17 +120,29 @@ func (s *Store) Push(b bundle.Bundle) error {
 
 // Update an existing BundleItem.
 func (s *Store) Update(bi BundleItem) error {
+	log.WithFields(log.Fields{
+		"bundle": bi.Id,
+	}).Debug("Store updates BundleItem")
+
 	return s.bh.Update(bi.Id, bi)
 }
 
 // Delete a BundleItem, represented by the "scrubed" BundleID.
 func (s *Store) Delete(bid bundle.BundleID) error {
+	log.WithFields(log.Fields{
+		"bundle": bid,
+	}).Info("Store deletes BundleItem")
+
 	return s.bh.Delete(bid.Scrub().String(), BundleItem{})
 }
 
 // DeleteExpired removes all expired Bundles.
-func (s *Store) DeleteExpired() error {
-	return s.bh.DeleteMatching(BundleItem{}, badgerhold.Where("Expires").Lt(time.Now()))
+func (s *Store) DeleteExpired() {
+	err := s.bh.DeleteMatching(BundleItem{}, badgerhold.Where("Expires").Lt(time.Now()))
+
+	log.WithFields(log.Fields{
+		"error": err,
+	}).Info("Deleting expired BundleItems from Store")
 }
 
 // QueryId fetches the BundleItem for the requested BundleID.
