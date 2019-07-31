@@ -100,7 +100,7 @@ func NewDTLSR(c *Core) DTLSR {
 }
 
 func (dtlsr DTLSR) NotifyIncoming(bp BundlePack) {
-	if metaDataBlock, err := bp.Bundle.ExtensionBlock(ExtBlockTypeDTLSRBlock); err == nil {
+	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(ExtBlockTypeDTLSRBlock); err == nil {
 		dtlsrBlock := metaDataBlock.Value.(*DTLSRBlock)
 		data := dtlsrBlock.getPeerData()
 
@@ -141,13 +141,13 @@ func (dtlsr DTLSR) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
 func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool) {
 	delete = false
 
-	if bp.Bundle.PrimaryBlock.Destination == dtlsr.broadcastAddress {
+	if bp.MustBundle().PrimaryBlock.Destination == dtlsr.broadcastAddress {
 		// broadcast bundles are always forwarded to everyone
 		sender = dtlsr.c.claManager.Sender()
 		return
 	}
 
-	recipient := bp.Bundle.PrimaryBlock.Destination
+	recipient := bp.MustBundle().PrimaryBlock.Destination
 	forwarder, present := dtlsr.routingTable[recipient]
 	if !present {
 		// we don't know where to forward this bundle
