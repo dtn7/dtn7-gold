@@ -101,12 +101,22 @@ func NewDTLSR(c *Core) DTLSR {
 
 func (dtlsr DTLSR) NotifyIncoming(bp BundlePack) {
 	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(ExtBlockTypeDTLSRBlock); err == nil {
+		log.WithFields(log.Fields{
+			"peer": bp.MustBundle().PrimaryBlock.SourceNode,
+		}).Debug("Received metadata")
+
 		dtlsrBlock := metaDataBlock.Value.(*DTLSRBlock)
 		data := dtlsrBlock.getPeerData()
+
+		log.WithFields(log.Fields{
+			"peer": bp.MustBundle().PrimaryBlock.SourceNode,
+			"data": data,
+		}).Debug("Decoded peer data")
 
 		storedData, present := dtlsr.receivedData[data.id]
 
 		if !present {
+			log.Debug("Data for new peer")
 			// if we didn't have any data for that peer, we simply add it
 			dtlsr.receivedData[data.id] = data
 			dtlsr.receivedChange = true
@@ -121,6 +131,7 @@ func (dtlsr DTLSR) NotifyIncoming(bp BundlePack) {
 		} else {
 			// check if the received data is newer and replace it if it is
 			if data.isNewerThan(storedData) {
+				log.Debug("Updating peer data")
 				dtlsr.receivedData[data.id] = data
 				dtlsr.receivedChange = true
 
@@ -134,7 +145,7 @@ func (dtlsr DTLSR) NotifyIncoming(bp BundlePack) {
 }
 
 func (dtlsr DTLSR) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
-	// if the transmission failed, that is sad, but we don't really care...
+	// if the transmission failed, that is sad, but there is really nothing to do...
 	return
 }
 
@@ -143,6 +154,10 @@ func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSende
 
 	if bp.MustBundle().PrimaryBlock.Destination == dtlsr.broadcastAddress {
 		// broadcast bundles are always forwarded to everyone
+		log.WithFields(log.Fields{
+			"bundle":    bp.MustBundle().ID(),
+			"recipient": bp.MustBundle().PrimaryBlock.Destination,
+		}).Debug("Relaying broadcast bundle")
 		sender = dtlsr.c.claManager.Sender()
 		return
 	}
@@ -230,6 +245,8 @@ func (dtlsr DTLSR) newNode(id bundle.EndpointID) {
 
 // computeRoutingTable finds shortest paths using dijkstra's algorithm
 func (dtlsr DTLSR) computeRoutingTable() {
+	log.Debug("Recomputing routing table")
+
 	currentTime := timestampNow()
 	graph := dijkstra.NewGraph()
 
@@ -253,6 +270,12 @@ func (dtlsr DTLSR) computeRoutingTable() {
 			}).Warn("Error computing routing table")
 			return
 		}
+
+		log.WithFields(log.Fields{
+			"peerA": dtlsr.c.NodeId,
+			"peerB": peer,
+			"cost":  edgeCost,
+		}).Debug("Added vertex")
 	}
 
 	// add edges originating from other nodes
@@ -271,6 +294,12 @@ func (dtlsr DTLSR) computeRoutingTable() {
 				}).Warn("Error computing routing table")
 				return
 			}
+
+			log.WithFields(log.Fields{
+				"peerA": data.id,
+				"peerB": peer,
+				"cost":  edgeCost,
+			}).Debug("Added vertex")
 		}
 	}
 
@@ -281,6 +310,10 @@ func (dtlsr DTLSR) computeRoutingTable() {
 			routingTable[dtlsr.indexNode[0]] = dtlsr.indexNode[shortest.Path[0]]
 		}
 	}
+
+	log.WithFields(log.Fields{
+		"routingTable": routingTable,
+	}).Debug("Finished routing table computation")
 
 	dtlsr.routingTable = routingTable
 }
@@ -332,11 +365,17 @@ func (dtlsr DTLSR) purgePeers() {
 
 	for peerID, timestamp := range dtlsr.peers.peers {
 		if timestamp != 0 && currentTime > timestamp+purgeTime {
+			log.WithFields(log.Fields{
+				"peer":            peerID,
+				"disconnect_time": timestamp,
+			}).Debug("Removing stale peer")
 			delete(dtlsr.peers.peers, peerID)
 			dtlsr.peerChange = true
 		}
 	}
 }
+
+// TODO: Turn this into an administrative record
 
 const ExtBlockTypeDTLSRBlock uint64 = 193
 
