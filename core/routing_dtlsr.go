@@ -12,16 +12,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	recomputeInterval = time.Minute
-	purgeTime         = uint64(time.Minute * 10)
-	BroadcastAddress  = "dtn:broadcast"
-)
+const BroadcastAddress = "dtn:broadcast"
 
 // timestampNow outputs the current UNIX-time as an unsigned int64
 // (I have no idea, why this is signed by default... does the kernel even allow you to set a negative time?)
 func timestampNow() uint64 {
 	return uint64(time.Now().Unix())
+}
+
+type DTLSRConfig struct {
+	// RecomputeTime is the interval (in seconds) until the routing table is recomputed
+	RecomputeTime time.Duration
+	// BroadcastTime is the interval (in seconds) between broadcasts of peer data
+	// Note: Broadcast only happens when there was a change in peer data
+	BroadcastTime time.Duration
+	// PurgeTime is the interval (in seconds) after which a disconnected peer is removed from the peer list
+	PurgeTime time.Duration
 }
 
 // DTLSR is an implementation of "Delay Tolerant Link State Routing"
@@ -45,13 +51,15 @@ type DTLSR struct {
 	length    int
 	// broadcastAddress is where metadata-bundles are sent to
 	broadcastAddress bundle.EndpointID
+	// purgeTime is the time until a peer gets removed from the peer list
+	purgeTime uint64
 }
 
 // peerData contains a peer's connection data
 type peerData struct {
 	// id is the node's endpoint id
 	id bundle.EndpointID
-	// timestamp is the time the last change occured
+	// timestamp is the time the last change occurred
 	// when receiving other node's data, we only update if the timestamp in newer
 	timestamp uint64
 	// peers is a mapping of previously seen peers and the respective timestamp of the last encounter
@@ -62,7 +70,7 @@ func (pd peerData) isNewerThan(other peerData) bool {
 	return pd.timestamp > other.timestamp
 }
 
-func NewDTLSR(c *Core) DTLSR {
+func NewDTLSR(c *Core, config DTLSRConfig) DTLSR {
 	log.Debug("Initialising DTLSR")
 
 	bAddress, err := bundle.NewEndpointID(BroadcastAddress)
@@ -87,13 +95,26 @@ func NewDTLSR(c *Core) DTLSR {
 		indexNode:        []bundle.EndpointID{c.NodeId},
 		length:           1,
 		broadcastAddress: bAddress,
+		purgeTime:        uint64(config.PurgeTime),
 	}
 
-	err = c.cron.Register("dtlsr_cron", dtlsr.Cron, recomputeInterval)
+	err = c.cron.Register("dtlsr_purge", dtlsr.purgePeers, time.Second*config.PurgeTime)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err,
-		}).Warn("Could not register DTLSR cron")
+		}).Warn("Could not register DTLSR purge job")
+	}
+	err = c.cron.Register("dtlsr_recompute", dtlsr.recomputeCron, time.Second*config.RecomputeTime)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"reason": err,
+		}).Warn("Could not register DTLSR recompute job")
+	}
+	err = c.cron.Register("dtlsr_broadcast", dtlsr.broadcastCron, time.Second*config.BroadcastTime)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"reason": err,
+		}).Warn("Could not register DTLSR broadcast job")
 	}
 
 	return dtlsr
@@ -321,44 +342,48 @@ func (dtlsr DTLSR) computeRoutingTable() {
 	dtlsr.routingTable = routingTable
 }
 
-func (dtlsr DTLSR) Cron() {
-	// perform cleanup of stale links
-	dtlsr.purgePeers()
-
-	// if our peers have changed (someone appeared/disappeared) we need to broadcast the new info to the net
-	if dtlsr.peerChange {
-		// send broadcast bundle with our new peer data
-		bundleBuilder := bundle.Builder()
-		bundleBuilder.Destination(dtlsr.broadcastAddress)
-		bundleBuilder.Source(dtlsr.c.NodeId)
-		bundleBuilder.CreationTimestampNow()
-		// no Payload
-		bundleBuilder.PayloadBlock(0)
-		metadatBundle, err := bundleBuilder.Build()
-		if err != nil {
-			log.WithFields(log.Fields{
-				"reason": err,
-			}).Warn("Unable to build metadata bundle")
-			return
-		}
-		metadataBlock := NewDTLSRBlock(dtlsr.peers)
-		metadatBundle.AddExtensionBlock(bundle.NewCanonicalBlock(0, 0, metadataBlock))
-
-		dtlsr.c.SendBundle(&metadatBundle)
-
-		dtlsr.peerChange = false
-
-		// we should also regenerate our routing table
+// recomputeCron gets called periodically by the core's cron module.
+// Only actually triggers a recompute if the underlying data has changed.
+func (dtlsr DTLSR) recomputeCron() {
+	if dtlsr.peerChange || dtlsr.receivedChange {
 		dtlsr.computeRoutingTable()
 		dtlsr.receivedChange = false
+	}
+}
+
+// broadcast broadcasts this node's peer data to the network
+func (dtlsr DTLSR) broadcast() {
+	// send broadcast bundle with our new peer data
+	bundleBuilder := bundle.Builder()
+	bundleBuilder.Destination(dtlsr.broadcastAddress)
+	bundleBuilder.Source(dtlsr.c.NodeId)
+	bundleBuilder.CreationTimestampNow()
+	// no Payload
+	bundleBuilder.PayloadBlock(0)
+	metadatBundle, err := bundleBuilder.Build()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"reason": err,
+		}).Warn("Unable to build metadata bundle")
 		return
 	}
+	metadataBlock := NewDTLSRBlock(dtlsr.peers)
+	metadatBundle.AddExtensionBlock(bundle.NewCanonicalBlock(0, 0, metadataBlock))
 
-	// if we received new data, we should regenerate our routing table
-	if dtlsr.receivedChange {
-		dtlsr.computeRoutingTable()
-		dtlsr.receivedChange = false
-		return
+	dtlsr.c.SendBundle(&metadatBundle)
+}
+
+// broadcastCron gets called periodically by the core's cron module.
+// Only actually triggers a broadcast if peer data has changed
+func (dtlsr DTLSR) broadcastCron() {
+	if dtlsr.peerChange {
+		dtlsr.broadcast()
+		dtlsr.peerChange = false
+
+		// a change in our own peer data should also trigger a routing recompute
+		// but if this method gets called before recomputeCron(),
+		// we don't want this information to be lost
+		dtlsr.receivedChange = true
 	}
 }
 
@@ -367,7 +392,7 @@ func (dtlsr DTLSR) purgePeers() {
 	currentTime := timestampNow()
 
 	for peerID, timestamp := range dtlsr.peers.peers {
-		if timestamp != 0 && currentTime > timestamp+purgeTime {
+		if timestamp != 0 && currentTime > timestamp+dtlsr.purgeTime {
 			log.WithFields(log.Fields{
 				"peer":            peerID,
 				"disconnect_time": timestamp,
