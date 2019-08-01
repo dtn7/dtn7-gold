@@ -11,6 +11,12 @@ type RoutingAlgorithm interface {
 	// design and implementation decision.
 	NotifyIncoming(bp BundlePack)
 
+	// DispatchingAllowed will be called from within the *dispatching* step of
+	// the processing pipeline. A RoutingAlgorithm is allowed to drop the
+	// proceeding of a bundle before being inspected further or being delivered
+	// locally or to another node.
+	DispatchingAllowed(bp BundlePack) bool
+
 	// SenderForBundle returns an array of ConvergenceSender for a requested
 	// bundle. Furthermore the finished flags indicates if this BundlePack should
 	// be deleted afterwards.

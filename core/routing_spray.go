@@ -109,6 +109,11 @@ func (sw *SprayAndWait) NotifyIncoming(bp BundlePack) {
 	}
 }
 
+// DispatchingAllowed allows the processing of all packages.
+func (_ *SprayAndWait) DispatchingAllowed(_ BundlePack) bool {
+	return true
+}
+
 // SenderForBundle returns the Core's ConvergenceSenders.
 // The bundle's originator will distribute L copies amongst its peers
 // Forwarders will only every deliver the bundle to its final destination
@@ -284,6 +289,11 @@ func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
 			"bundle": bp.ID(),
 		}).Debug("SprayAndWait initialised new bundle from this host")
 	}
+}
+
+// DispatchingAllowed allows the processing of all packages.
+func (_ *BinarySpray) DispatchingAllowed(_ BundlePack) bool {
+	return true
 }
 
 // SenderForBundle returns the Core's ConvergenceSenders.

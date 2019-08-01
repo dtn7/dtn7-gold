@@ -65,6 +65,11 @@ func (er *EpidemicRouting) NotifyIncoming(bp BundlePack) {
 	}
 }
 
+// DispatchingAllowed allows the processing of all packages.
+func (_ *EpidemicRouting) DispatchingAllowed(_ BundlePack) bool {
+	return true
+}
+
 // SenderForBundle returns the Core's ConvergenceSenders.
 func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
 	bi, biErr := er.c.store.QueryId(bp.Id)

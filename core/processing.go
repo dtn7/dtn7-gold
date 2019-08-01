@@ -128,6 +128,15 @@ func (c *Core) dispatching(bp BundlePack) {
 		"bundle": bp.ID(),
 	}).Info("Dispatching bundle")
 
+	if !c.routing.DispatchingAllowed(bp) {
+		log.WithFields(log.Fields{
+			"bundle":  bp.ID(),
+			"routing": c.routing,
+		}).Info("Routing Algorithm has not allowed dispatching of the bundle")
+
+		return
+	}
+
 	if c.HasEndpoint(bp.MustBundle().PrimaryBlock.Destination) {
 		c.localDelivery(bp)
 	} else {
