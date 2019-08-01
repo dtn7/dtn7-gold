@@ -194,14 +194,13 @@ func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSende
 }
 
 func (dtlsr DTLSR) ReportPeerAppeared(peer cla.Convergence) {
-	// generate EndpointID from address-string
-	peerID, err := bundle.NewEndpointID(peer.Address())
-	if err != nil {
-		log.WithFields(log.Fields{
-			"address": peer.Address(),
-		}).Warn("Peers address can't pe parsed")
+	peerReceiver, ok := peer.(cla.ConvergenceReceiver)
+	if !ok {
+		log.Warn("Peer was not a ConvergenceReceiver")
 		return
 	}
+
+	peerID := peerReceiver.GetEndpointID()
 
 	// track node
 	dtlsr.newNode(peerID)
@@ -213,14 +212,13 @@ func (dtlsr DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 }
 
 func (dtlsr DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
-	// generate EndpointID from address-string
-	peerID, err := bundle.NewEndpointID(peer.Address())
-	if err != nil {
-		log.WithFields(log.Fields{
-			"address": peer.Address(),
-		}).Warn("Peers address can't pe parsed")
+	peerReceiver, ok := peer.(cla.ConvergenceReceiver)
+	if !ok {
+		log.Warn("Peer was not a ConvergenceReceiver")
 		return
 	}
+
+	peerID := peerReceiver.GetEndpointID()
 
 	// set expiration timestamp for peer
 	timestamp := timestampNow()
