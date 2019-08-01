@@ -227,6 +227,11 @@ func (dtlsr DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 	dtlsr.peerChange = true
 }
 
+// DispatchingAllowed allows the processing of all packages.
+func (_ DTLSR) DispatchingAllowed(_ BundlePack) bool {
+	return true
+}
+
 // newNode adds a node to the index-mapping (if it was not previously tracked)
 func (dtlsr DTLSR) newNode(id bundle.EndpointID) {
 	_, present := dtlsr.nodeIndex[id]
