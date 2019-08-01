@@ -24,19 +24,30 @@ func NewEpidemicRouting(c *Core) *EpidemicRouting {
 // NotifyIncoming tells the EpidemicRouting about new bundles. In our case, the
 // PreviousNodeBlock will be inspected.
 func (er *EpidemicRouting) NotifyIncoming(bp BundlePack) {
-	// Check if we got a PreviousNodeBlock and extract its EndpointID
-	var prevNode bundle.EndpointID
-	if pnBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
-		prevNode = pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
-	} else {
-		return
-	}
-
 	bi, biErr := er.c.store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
 			"error": biErr,
 		}).Warn("Failed to proceed a non-stored Bundle")
+		return
+	}
+
+	bndl := bp.MustBundle()
+
+	if _, ok := bi.Properties["routing/epidemic/destination"]; !ok {
+		bi.Properties["routing/epidemic/destination"] = bndl.PrimaryBlock.Destination
+		if err := er.c.store.Update(bi); err != nil {
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Warn("Updating BundleItem failed")
+		}
+	}
+
+	// Check if we got a PreviousNodeBlock and extract its EndpointID
+	var prevNode bundle.EndpointID
+	if pnBlock, err := bndl.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
+		prevNode = pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
+	} else {
 		return
 	}
 
@@ -65,17 +76,12 @@ func (er *EpidemicRouting) NotifyIncoming(bp BundlePack) {
 	}
 }
 
-// DispatchingAllowed allows the processing of all packages.
-func (_ *EpidemicRouting) DispatchingAllowed(_ BundlePack) bool {
-	return true
-}
-
-// SenderForBundle returns the Core's ConvergenceSenders.
-func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
+func (er *EpidemicRouting) clasForBundle(bp BundlePack, updateDb bool) (css []cla.ConvergenceSender, del bool) {
 	bi, biErr := er.c.store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
-			"error": biErr,
+			"bundle": bp.ID(),
+			"error":  biErr,
 		}).Warn("Failed to proceed a non-stored Bundle")
 		return nil, false
 	}
@@ -105,11 +111,13 @@ func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.Convergence
 		}
 	}
 
-	bi.Properties["routing/epidemic/sent"] = sentEids
-	if err := er.c.store.Update(bi); err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Warn("Updating BundleItem failed")
+	if updateDb {
+		bi.Properties["routing/epidemic/sent"] = sentEids
+		if err := er.c.store.Update(bi); err != nil {
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Warn("Updating BundleItem failed")
+		}
 	}
 
 	log.WithFields(log.Fields{
@@ -120,6 +128,42 @@ func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.Convergence
 
 	del = false
 	return
+}
+
+// DispatchingAllowed only allows dispatching, iff the bundle is addressed to
+// this Node or if any known CLA without having received this bundle exists.
+func (er *EpidemicRouting) DispatchingAllowed(bp BundlePack) bool {
+	bi, biErr := er.c.store.QueryId(bp.Id)
+	if biErr != nil {
+		log.WithFields(log.Fields{
+			"bundle": bp.ID(),
+			"error":  biErr,
+		}).Warn("Failed to proceed a non-stored Bundle")
+
+		return true
+	} else if dst, ok := bi.Properties["routing/epidemic/destination"]; ok {
+		if er.c.HasEndpoint(dst.(bundle.EndpointID)) {
+			return true
+		}
+	}
+
+	css, _ := er.clasForBundle(bp, false)
+
+	if len(css) == 0 {
+		bi.Pending = true
+		if err := er.c.store.Update(bi); err != nil {
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Warn("Updating BundleItem failed")
+		}
+	}
+
+	return len(css) > 0
+}
+
+// SenderForBundle returns the Core's ConvergenceSenders.
+func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
+	return er.clasForBundle(bp, true)
 }
 
 func (er *EpidemicRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
@@ -160,3 +204,7 @@ func (er *EpidemicRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSe
 func (_ *EpidemicRouting) ReportPeerAppeared(_ cla.Convergence) {}
 
 func (_ *EpidemicRouting) ReportPeerDisappeared(_ cla.Convergence) {}
+
+func (_ *EpidemicRouting) String() string {
+	return "epidemic"
+}
