@@ -71,7 +71,9 @@ func (pd peerData) isNewerThan(other peerData) bool {
 }
 
 func NewDTLSR(c *Core, config DTLSRConfig) DTLSR {
-	log.Debug("Initialising DTLSR")
+	log.WithFields(log.Fields{
+		"config": config,
+	}).Debug("Initialising DTLSR")
 
 	bAddress, err := bundle.NewEndpointID(BroadcastAddress)
 	if err != nil {
@@ -165,7 +167,7 @@ func (dtlsr DTLSR) NotifyIncoming(bp BundlePack) {
 	}
 }
 
-func (dtlsr DTLSR) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
+func (_ DTLSR) ReportFailure(_ BundlePack, _ cla.ConvergenceSender) {
 	// if the transmission failed, that is sad, but there is really nothing to do...
 	return
 }
@@ -215,6 +217,10 @@ func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSende
 }
 
 func (dtlsr DTLSR) ReportPeerAppeared(peer cla.Convergence) {
+	log.WithFields(log.Fields{
+		"peer": peer,
+	}).Debug("Peer appeared")
+
 	peerReceiver, ok := peer.(cla.ConvergenceReceiver)
 	if !ok {
 		log.Warn("Peer was not a ConvergenceReceiver")
@@ -233,6 +239,10 @@ func (dtlsr DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 }
 
 func (dtlsr DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
+	log.WithFields(log.Fields{
+		"peer": peer,
+	}).Debug("Peer disappeared")
+
 	peerReceiver, ok := peer.(cla.ConvergenceReceiver)
 	if !ok {
 		log.Warn("Peer was not a ConvergenceReceiver")
@@ -255,9 +265,15 @@ func (_ DTLSR) DispatchingAllowed(_ BundlePack) bool {
 
 // newNode adds a node to the index-mapping (if it was not previously tracked)
 func (dtlsr DTLSR) newNode(id bundle.EndpointID) {
+	log.WithFields(log.Fields{
+		"NodeID": id,
+	}).Debug("Tracking Node")
 	_, present := dtlsr.nodeIndex[id]
 
 	if present {
+		log.WithFields(log.Fields{
+			"NodeID": id,
+		}).Debug("Node already tracked")
 		// node is already tracked
 		return
 	}
@@ -265,6 +281,9 @@ func (dtlsr DTLSR) newNode(id bundle.EndpointID) {
 	dtlsr.nodeIndex[id] = dtlsr.length
 	dtlsr.indexNode = append(dtlsr.indexNode, id)
 	dtlsr.length = dtlsr.length + 1
+	log.WithFields(log.Fields{
+		"NodeID": id,
+	}).Debug("Added node to tracking store")
 }
 
 // computeRoutingTable finds shortest paths using dijkstra's algorithm
@@ -345,6 +364,10 @@ func (dtlsr DTLSR) computeRoutingTable() {
 // recomputeCron gets called periodically by the core's cron module.
 // Only actually triggers a recompute if the underlying data has changed.
 func (dtlsr DTLSR) recomputeCron() {
+	log.WithFields(log.Fields{
+		"peerChange":     dtlsr.peerChange,
+		"receivedChange": dtlsr.receivedChange,
+	}).Debug("Executing recomputeCron")
 	if dtlsr.peerChange || dtlsr.receivedChange {
 		dtlsr.computeRoutingTable()
 		dtlsr.receivedChange = false
@@ -376,6 +399,9 @@ func (dtlsr DTLSR) broadcast() {
 // broadcastCron gets called periodically by the core's cron module.
 // Only actually triggers a broadcast if peer data has changed
 func (dtlsr DTLSR) broadcastCron() {
+	log.WithFields(log.Fields{
+		"peerChange": dtlsr.peerChange,
+	}).Debug("Executing broadcastCron")
 	if dtlsr.peerChange {
 		dtlsr.broadcast()
 		dtlsr.peerChange = false
@@ -389,6 +415,7 @@ func (dtlsr DTLSR) broadcastCron() {
 
 // purgePeers removes peers who have not been seen for a long time
 func (dtlsr DTLSR) purgePeers() {
+	log.Debug("Executing purgePeers")
 	currentTime := timestampNow()
 
 	for peerID, timestamp := range dtlsr.peers.peers {
