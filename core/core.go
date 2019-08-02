@@ -34,7 +34,7 @@ type Core struct {
 // at the given path. The inspectAllBundles flag indicates if all
 // administrative records - next to the bundles addressed to this node - should
 // be inspected. This allows bundle deletion for forwarding bundles.
-func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool, routing string) (*Core, error) {
+func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool, routingConf RoutingConf) (*Core, error) {
 	var c = new(Core)
 
 	gob.Register([]bundle.EndpointID{})
@@ -57,7 +57,7 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 
 	c.idKeeper = NewIdKeeper()
 
-	switch routing {
+	switch routingConf.Algorithm {
 	case "epidemic":
 		c.routing = NewEpidemicRouting(c)
 	case "spray":
@@ -65,10 +65,10 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 	case "binary_spray":
 		c.routing = NewBinarySpray(c)
 	case "dtlsr":
-		c.routing = NewDTLSR(c)
+		c.routing = NewDTLSR(c, routingConf.DTLSRConf)
 	default:
 		log.WithFields(log.Fields{
-			"routing_string": routing,
+			"routing_string": routingConf.Algorithm,
 		}).Fatal("Unknown routing algorithm")
 	}
 

@@ -34,3 +34,12 @@ type RoutingAlgorithm interface {
 	// disappearance of a neighbor.
 	ReportPeerDisappeared(peer cla.Convergence)
 }
+
+// RoutingConfig contains necessary configuration data to initialise a routing algorithm
+type RoutingConf struct {
+	// Algorithm is one of the implemented routing-algorithms
+	// May be: "epidemic", "spray", "binary_spray", "dtlsr"
+	Algorithm string
+	// DTLSRConf contains data to initialise dtlsr
+	DTLSRConf DTLSRConfig
+}
