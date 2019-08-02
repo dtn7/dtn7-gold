@@ -40,6 +40,8 @@ type RoutingConf struct {
 	// Algorithm is one of the implemented routing-algorithms
 	// May be: "epidemic", "spray", "binary_spray", "dtlsr"
 	Algorithm string
+	// SprayConf contains data to initialise spray & binary_spray
+	SprayConf SprayConfig
 	// DTLSRConf contains data to initialise dtlsr
 	DTLSRConf DTLSRConfig
 }

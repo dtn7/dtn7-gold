@@ -61,9 +61,9 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 	case "epidemic":
 		c.routing = NewEpidemicRouting(c)
 	case "spray":
-		c.routing = NewSprayAndWait(c)
+		c.routing = NewSprayAndWait(c, routingConf.SprayConf)
 	case "binary_spray":
-		c.routing = NewBinarySpray(c)
+		c.routing = NewBinarySpray(c, routingConf.SprayConf)
 	case "dtlsr":
 		c.routing = NewDTLSR(c, routingConf.DTLSRConf)
 	default:
