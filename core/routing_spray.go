@@ -12,13 +12,17 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 )
 
-// sprayl is the number of copies that are sprayed
-const sprayl = 4
+type SprayConfig struct {
+	// L is the number of copies of a bundle which are sprayed
+	L uint64
+}
 
 // SprayAndWait implements the vanilla Spray and Wait routing protocol
 // In this case, the bundle originator distributes all L copies themselves
 type SprayAndWait struct {
 	c *Core
+	// l is the number of copies of a bundle which are sprayed
+	l uint64
 	// bundleData stores the metadata for each bundle
 	bundleData map[bundle.BundleID]sprayMetaData
 	// Mutex for concurrent modification of data by multiple goroutines
@@ -44,13 +48,14 @@ func cleanupMetaData(c *Core, metadata *map[bundle.BundleID]sprayMetaData) {
 }
 
 // NewSprayAndWait creates new instance of SprayAndWait
-func NewSprayAndWait(c *Core) *SprayAndWait {
+func NewSprayAndWait(c *Core, config SprayConfig) *SprayAndWait {
 	log.WithFields(log.Fields{
-		"L": sprayl,
+		"L": config.L,
 	}).Debug("Initialised SprayAndWait")
 
 	sprayAndWait := SprayAndWait{
 		c:          c,
+		l:          config.L,
 		bundleData: make(map[bundle.BundleID]sprayMetaData),
 	}
 
@@ -78,7 +83,7 @@ func (sw *SprayAndWait) NotifyIncoming(bp BundlePack) {
 	if sw.c.hasEndpoint(bp.MustBundle().PrimaryBlock.SourceNode) {
 		metadata := sprayMetaData{
 			sent:            make([]bundle.EndpointID, 0),
-			remainingCopies: sprayl,
+			remainingCopies: sw.l,
 		}
 
 		sw.dataMutex.Lock()
@@ -209,6 +214,8 @@ func (_ *SprayAndWait) ReportPeerDisappeared(_ cla.Convergence) {}
 // In this case, each node hands over floor(copies/2) during the spray phase
 type BinarySpray struct {
 	c *Core
+	// l is the number of copies of a bundle which are sprayed
+	l uint64
 	// bundleData stores the metadata for each bundle
 	bundleData map[bundle.BundleID]sprayMetaData
 	// Mutex for concurrent modification of data by multiple goroutines
@@ -216,9 +223,9 @@ type BinarySpray struct {
 }
 
 // NewBinarySpray creates new instance of BinarySpray
-func NewBinarySpray(c *Core) *BinarySpray {
+func NewBinarySpray(c *Core, config SprayConfig) *BinarySpray {
 	log.WithFields(log.Fields{
-		"L": sprayl,
+		"L": config.L,
 	}).Debug("Initialised BinarySpray")
 
 	// register our custom metadata-block
@@ -230,6 +237,7 @@ func NewBinarySpray(c *Core) *BinarySpray {
 
 	binarySpray := BinarySpray{
 		c:          c,
+		l:          config.L,
 		bundleData: make(map[bundle.BundleID]sprayMetaData),
 	}
 
@@ -278,7 +286,7 @@ func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
 	} else {
 		metadata := sprayMetaData{
 			sent:            make([]bundle.EndpointID, 0),
-			remainingCopies: sprayl,
+			remainingCopies: bs.l,
 		}
 
 		bs.dataMutex.Lock()
