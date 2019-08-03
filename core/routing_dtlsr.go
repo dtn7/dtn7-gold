@@ -7,6 +7,7 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 	"io"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -53,6 +54,8 @@ type DTLSR struct {
 	broadcastAddress bundle.EndpointID
 	// purgeTime is the time until a peer gets removed from the peer list
 	purgeTime uint64
+	// dataMutex is a RW-mutex which protects change operations to the algorithm's metadata
+	dataMutex sync.RWMutex
 }
 
 // peerData contains a peer's connection data
@@ -70,7 +73,7 @@ func (pd peerData) isNewerThan(other peerData) bool {
 	return pd.timestamp > other.timestamp
 }
 
-func NewDTLSR(c *Core, config DTLSRConfig) DTLSR {
+func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 	log.WithFields(log.Fields{
 		"config": config,
 	}).Debug("Initialising DTLSR")
@@ -119,10 +122,10 @@ func NewDTLSR(c *Core, config DTLSRConfig) DTLSR {
 		}).Warn("Could not register DTLSR broadcast job")
 	}
 
-	return dtlsr
+	return &dtlsr
 }
 
-func (dtlsr DTLSR) NotifyIncoming(bp BundlePack) {
+func (dtlsr *DTLSR) NotifyIncoming(bp BundlePack) {
 	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(ExtBlockTypeDTLSRBlock); err == nil {
 		log.WithFields(log.Fields{
 			"peer": bp.MustBundle().PrimaryBlock.SourceNode,
@@ -136,6 +139,8 @@ func (dtlsr DTLSR) NotifyIncoming(bp BundlePack) {
 			"data": data,
 		}).Debug("Decoded peer data")
 
+		dtlsr.dataMutex.Lock()
+		defer dtlsr.dataMutex.Unlock()
 		storedData, present := dtlsr.receivedData[data.id]
 
 		if !present {
@@ -167,12 +172,12 @@ func (dtlsr DTLSR) NotifyIncoming(bp BundlePack) {
 	}
 }
 
-func (_ DTLSR) ReportFailure(_ BundlePack, _ cla.ConvergenceSender) {
+func (_ *DTLSR) ReportFailure(_ BundlePack, _ cla.ConvergenceSender) {
 	// if the transmission failed, that is sad, but there is really nothing to do...
 	return
 }
 
-func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool) {
+func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool) {
 	delete = false
 
 	if bp.MustBundle().PrimaryBlock.Destination == dtlsr.broadcastAddress {
@@ -186,7 +191,10 @@ func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSende
 	}
 
 	recipient := bp.MustBundle().PrimaryBlock.Destination
+
+	dtlsr.dataMutex.RLock()
 	forwarder, present := dtlsr.routingTable[recipient]
+	dtlsr.dataMutex.RUnlock()
 	if !present {
 		// we don't know where to forward this bundle
 		log.WithFields(log.Fields{
@@ -216,7 +224,7 @@ func (dtlsr DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSende
 	return
 }
 
-func (dtlsr DTLSR) ReportPeerAppeared(peer cla.Convergence) {
+func (dtlsr *DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 	log.WithFields(log.Fields{
 		"peer": peer,
 	}).Debug("Peer appeared")
@@ -229,6 +237,8 @@ func (dtlsr DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 
 	peerID := peerReceiver.GetEndpointID()
 
+	dtlsr.dataMutex.Lock()
+	defer dtlsr.dataMutex.Unlock()
 	// track node
 	dtlsr.newNode(peerID)
 
@@ -238,7 +248,7 @@ func (dtlsr DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 	dtlsr.peerChange = true
 }
 
-func (dtlsr DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
+func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 	log.WithFields(log.Fields{
 		"peer": peer,
 	}).Debug("Peer disappeared")
@@ -251,6 +261,8 @@ func (dtlsr DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 
 	peerID := peerReceiver.GetEndpointID()
 
+	dtlsr.dataMutex.Lock()
+	defer dtlsr.dataMutex.Unlock()
 	// set expiration timestamp for peer
 	timestamp := timestampNow()
 	dtlsr.peers.peers[peerID] = timestamp
@@ -259,12 +271,12 @@ func (dtlsr DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 }
 
 // DispatchingAllowed allows the processing of all packages.
-func (_ DTLSR) DispatchingAllowed(_ BundlePack) bool {
+func (_ *DTLSR) DispatchingAllowed(_ BundlePack) bool {
 	return true
 }
 
 // newNode adds a node to the index-mapping (if it was not previously tracked)
-func (dtlsr DTLSR) newNode(id bundle.EndpointID) {
+func (dtlsr *DTLSR) newNode(id bundle.EndpointID) {
 	log.WithFields(log.Fields{
 		"NodeID": id,
 	}).Debug("Tracking Node")
@@ -287,7 +299,7 @@ func (dtlsr DTLSR) newNode(id bundle.EndpointID) {
 }
 
 // computeRoutingTable finds shortest paths using dijkstra's algorithm
-func (dtlsr DTLSR) computeRoutingTable() {
+func (dtlsr *DTLSR) computeRoutingTable() {
 	log.Debug("Recomputing routing table")
 
 	currentTime := timestampNow()
@@ -363,11 +375,15 @@ func (dtlsr DTLSR) computeRoutingTable() {
 
 // recomputeCron gets called periodically by the core's cron module.
 // Only actually triggers a recompute if the underlying data has changed.
-func (dtlsr DTLSR) recomputeCron() {
+func (dtlsr *DTLSR) recomputeCron() {
 	log.WithFields(log.Fields{
 		"peerChange":     dtlsr.peerChange,
 		"receivedChange": dtlsr.receivedChange,
 	}).Debug("Executing recomputeCron")
+
+	dtlsr.dataMutex.Lock()
+	defer dtlsr.dataMutex.Unlock()
+
 	if dtlsr.peerChange || dtlsr.receivedChange {
 		dtlsr.computeRoutingTable()
 		dtlsr.receivedChange = false
@@ -375,7 +391,7 @@ func (dtlsr DTLSR) recomputeCron() {
 }
 
 // broadcast broadcasts this node's peer data to the network
-func (dtlsr DTLSR) broadcast() {
+func (dtlsr *DTLSR) broadcast() {
 	// send broadcast bundle with our new peer data
 	bundleBuilder := bundle.Builder()
 	bundleBuilder.Destination(dtlsr.broadcastAddress)
@@ -398,10 +414,14 @@ func (dtlsr DTLSR) broadcast() {
 
 // broadcastCron gets called periodically by the core's cron module.
 // Only actually triggers a broadcast if peer data has changed
-func (dtlsr DTLSR) broadcastCron() {
+func (dtlsr *DTLSR) broadcastCron() {
 	log.WithFields(log.Fields{
 		"peerChange": dtlsr.peerChange,
 	}).Debug("Executing broadcastCron")
+
+	dtlsr.dataMutex.Lock()
+	defer dtlsr.dataMutex.Unlock()
+
 	if dtlsr.peerChange {
 		dtlsr.broadcast()
 		dtlsr.peerChange = false
@@ -414,9 +434,12 @@ func (dtlsr DTLSR) broadcastCron() {
 }
 
 // purgePeers removes peers who have not been seen for a long time
-func (dtlsr DTLSR) purgePeers() {
+func (dtlsr *DTLSR) purgePeers() {
 	log.Debug("Executing purgePeers")
 	currentTime := timestampNow()
+
+	dtlsr.dataMutex.Lock()
+	defer dtlsr.dataMutex.Unlock()
 
 	for peerID, timestamp := range dtlsr.peers.peers {
 		if timestamp != 0 && currentTime > timestamp+dtlsr.purgeTime {
