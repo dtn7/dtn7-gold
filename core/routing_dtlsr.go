@@ -229,13 +229,13 @@ func (dtlsr *DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 		"peer": peer,
 	}).Debug("Peer appeared")
 
-	peerReceiver, ok := peer.(cla.ConvergenceReceiver)
+	peerReceiver, ok := peer.(cla.ConvergenceSender)
 	if !ok {
-		log.Warn("Peer was not a ConvergenceReceiver")
+		log.Warn("Peer was not a ConvergenceSender")
 		return
 	}
 
-	peerID := peerReceiver.GetEndpointID()
+	peerID := peerReceiver.GetPeerEndpointID()
 
 	dtlsr.dataMutex.Lock()
 	defer dtlsr.dataMutex.Unlock()
@@ -253,13 +253,13 @@ func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 		"peer": peer,
 	}).Debug("Peer disappeared")
 
-	peerReceiver, ok := peer.(cla.ConvergenceReceiver)
+	peerReceiver, ok := peer.(cla.ConvergenceSender)
 	if !ok {
-		log.Warn("Peer was not a ConvergenceReceiver")
+		log.Warn("Peer was not a ConvergenceSender")
 		return
 	}
 
-	peerID := peerReceiver.GetEndpointID()
+	peerID := peerReceiver.GetPeerEndpointID()
 
 	dtlsr.dataMutex.Lock()
 	defer dtlsr.dataMutex.Unlock()
