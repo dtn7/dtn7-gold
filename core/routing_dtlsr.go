@@ -106,19 +106,19 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 	err = c.cron.Register("dtlsr_purge", dtlsr.purgePeers, time.Second*config.PurgeTime)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"reason": err,
+			"reason": err.Error(),
 		}).Warn("Could not register DTLSR purge job")
 	}
 	err = c.cron.Register("dtlsr_recompute", dtlsr.recomputeCron, time.Second*config.RecomputeTime)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"reason": err,
+			"reason": err.Error(),
 		}).Warn("Could not register DTLSR recompute job")
 	}
 	err = c.cron.Register("dtlsr_broadcast", dtlsr.broadcastCron, time.Second*config.BroadcastTime)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"reason": err,
+			"reason": err.Error(),
 		}).Warn("Could not register DTLSR broadcast job")
 	}
 
@@ -308,6 +308,11 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 	// add vertices
 	for i := 0; i < dtlsr.length; i++ {
 		graph.AddVertex(i)
+		// log node-index mapping for debug purposes
+		log.WithFields(log.Fields{
+			"index": i,
+			"node":  dtlsr.indexNode[i],
+		}).Debug("Node-index-mapping")
 	}
 
 	// add edges originating from this node
@@ -321,7 +326,7 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 
 		if err := graph.AddArc(0, dtlsr.nodeIndex[peer], edgeCost); err != nil {
 			log.WithFields(log.Fields{
-				"reason": err,
+				"reason": err.Error(),
 			}).Warn("Error computing routing table")
 			return
 		}
@@ -345,7 +350,7 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 
 			if err := graph.AddArc(dtlsr.nodeIndex[data.id], dtlsr.nodeIndex[peer], edgeCost); err != nil {
 				log.WithFields(log.Fields{
-					"reason": err,
+					"reason": err.Error(),
 				}).Warn("Error computing routing table")
 				return
 			}
@@ -363,6 +368,15 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 		shortest, err := graph.Shortest(0, i)
 		if err == nil {
 			routingTable[dtlsr.indexNode[0]] = dtlsr.indexNode[shortest.Path[0]]
+			log.WithFields(log.Fields{
+				"node_index": i,
+				"path":       shortest.Path,
+			}).Debug("Found path to node")
+		} else {
+			log.WithFields(log.Fields{
+				"node_index": i,
+				"error":      err.Error(),
+			}).Debug("Did not find path to node")
 		}
 	}
 
@@ -402,7 +416,7 @@ func (dtlsr *DTLSR) broadcast() {
 	metadatBundle, err := bundleBuilder.Build()
 	if err != nil {
 		log.WithFields(log.Fields{
-			"reason": err,
+			"reason": err.Error(),
 		}).Warn("Unable to build metadata bundle")
 		return
 	}
