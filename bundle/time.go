@@ -8,8 +8,9 @@ import (
 	"github.com/dtn7/cboring"
 )
 
-// DtnTime is an integer indicating the time like the Unix time, just starting
-// from the year 2000 instead of 1970. It is specified in section 4.1.6.
+// DtnTime is an integer indicating an interval of Unix epoch time that has
+// elapsed since the start of the year 2000 on the UTC scale. It is specified
+// in section 4.1.6.
 type DtnTime uint64
 
 const (
@@ -36,7 +37,7 @@ func (t DtnTime) String() string {
 
 // DtnTimeFromTime returns the DtnTime for the time.Time.
 func DtnTimeFromTime(t time.Time) DtnTime {
-	return (DtnTime)(t.Unix() - seconds1970To2k)
+	return (DtnTime)(t.UTC().Unix() - seconds1970To2k)
 }
 
 // DtnTimeNow returns the current (UTC) time as DtnTime.
