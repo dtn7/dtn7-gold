@@ -72,6 +72,14 @@ func (bldr *BundleBuilder) Build() (bndl Bundle, err error) {
 		return
 	}
 
+	// Calcualte mandatory CRC for the PrimaryBlock.
+	// Do NOT alter the PrimaryBlock after setting its CRC.
+	if bldr.crcType == CRCNo {
+		bldr.primary.SetCRCType(CRC32)
+	} else {
+		bldr.primary.SetCRCType(bldr.crcType)
+	}
+
 	// TODO: sort canonicals
 
 	bndl, err = NewBundle(bldr.primary, bldr.canonicals)

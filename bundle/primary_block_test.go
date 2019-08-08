@@ -25,12 +25,12 @@ func setupPrimaryBlock() PrimaryBlock {
 func TestNewPrimaryBlock(t *testing.T) {
 	pb := setupPrimaryBlock()
 
-	if pb.HasCRC() {
-		t.Error("Primary Block has no CRC, but says so")
+	if !pb.HasCRC() {
+		t.Fatal("Primary Block misses CRC")
 	}
 
 	if pb.HasFragmentation() {
-		t.Error("Primary Block has no fragmentation, but says so")
+		t.Fatal("Primary Block has no fragmentation, but says so")
 	}
 }
 
@@ -39,7 +39,7 @@ func TestPrimaryBlockCRC(t *testing.T) {
 	pb.CRCType = CRC16
 
 	if !pb.HasCRC() {
-		t.Error("Primary Block should need a CRC")
+		t.Fatal("Primary Block should need a CRC")
 	}
 }
 
@@ -48,7 +48,7 @@ func TestPrimaryBlockFragmentation(t *testing.T) {
 	pb.BundleControlFlags = IsFragment
 
 	if !pb.HasFragmentation() {
-		t.Error("Primary Block should be fragmented")
+		t.Fatal("Primary Block should be fragmented")
 	}
 }
 
@@ -60,12 +60,8 @@ func TestPrimaryBlockCbor(t *testing.T) {
 		pb1 PrimaryBlock
 		len int
 	}{
-		// No CRC, No Fragmentation
-		{PrimaryBlock{7, 0, CRCNo, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 8},
 		// CRC, No Fragmentation
 		{PrimaryBlock{7, 0, CRC16, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 9},
-		// No CRC, Fragmentation
-		{PrimaryBlock{7, IsFragment, CRCNo, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 10},
 		// CRC, Fragmentation
 		{PrimaryBlock{7, IsFragment, CRC16, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 11},
 	}
@@ -94,10 +90,10 @@ func TestPrimaryBlockCheckValid(t *testing.T) {
 	}{
 		// Wrong version
 		{PrimaryBlock{
-			23, MustNotFragmented, CRCNo, DtnNone(), DtnNone(), DtnNone(),
+			23, MustNotFragmented, CRC32, DtnNone(), DtnNone(), DtnNone(),
 			NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil}, false},
 		{PrimaryBlock{
-			7, MustNotFragmented, CRCNo, DtnNone(), DtnNone(), DtnNone(),
+			7, MustNotFragmented, CRC32, DtnNone(), DtnNone(), DtnNone(),
 			NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil}, true},
 
 		// Reserved bits in bundle control flags
@@ -133,7 +129,7 @@ func TestPrimaryBlockCheckValid(t *testing.T) {
 
 	for _, test := range tests {
 		if err := test.pb.CheckValid(); (err == nil) != test.valid {
-			t.Errorf("PrimaryBlock validation failed: %v resulted in %v",
+			t.Fatalf("PrimaryBlock validation failed: %v resulted in %v",
 				test.pb, err)
 		}
 	}

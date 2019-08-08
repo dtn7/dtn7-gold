@@ -33,7 +33,11 @@ func TestBundleApplyCRC(t *testing.T) {
 	for _, crcTest := range []CRCType{CRCNo, CRC16, CRC32, CRCNo} {
 		bndle.SetCRCType(crcTest)
 
-		if ty := bndle.PrimaryBlock.GetCRCType(); ty != crcTest {
+		crcExpect := crcTest
+		if crcExpect == CRCNo {
+			crcExpect = CRC32
+		}
+		if ty := bndle.PrimaryBlock.GetCRCType(); ty != crcExpect {
 			t.Errorf("Bundle's primary block has wrong CRCType, %v instead of %v",
 				ty, crcTest)
 		}

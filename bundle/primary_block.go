@@ -35,10 +35,10 @@ type PrimaryBlock struct {
 func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
 	destination EndpointID, sourceNode EndpointID,
 	creationTimestamp CreationTimestamp, lifetime uint64) PrimaryBlock {
-	return PrimaryBlock{
+	pb := PrimaryBlock{
 		Version:            dtnVersion,
 		BundleControlFlags: bundleControlFlags,
-		CRCType:            CRCNo,
+		CRCType:            CRC32,
 		Destination:        destination,
 		SourceNode:         sourceNode,
 		ReportTo:           sourceNode,
@@ -48,6 +48,9 @@ func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
 		TotalDataLength:    0,
 		CRC:                nil,
 	}
+
+	_ = pb.calcualteCRC()
+	return pb
 }
 
 // HasFragmentation returns true if the bundle processing control flags
@@ -58,7 +61,7 @@ func (pb PrimaryBlock) HasFragmentation() bool {
 }
 
 // HasCRC returns if the CRCType indicates a CRC is present for this block.
-// In this case the CRC value should become relevant.
+// This should be always true for the Primary Block.
 func (pb PrimaryBlock) HasCRC() bool {
 	return pb.GetCRCType() != CRCNo
 }
@@ -70,23 +73,30 @@ func (pb PrimaryBlock) GetCRCType() CRCType {
 
 // SetCRCType sets the CRC type.
 func (pb *PrimaryBlock) SetCRCType(crcType CRCType) {
+	if crcType == CRCNo {
+		crcType = CRC32
+	}
+
 	pb.CRCType = crcType
+	_ = pb.calcualteCRC()
+}
+
+// calcualteCRC serializes the PrimaryBlock once to calcualte its CRC value,
+// which is mandatory since dtn-bpbis-14. Since this block is immutable, this
+// should not cause any errors. This method must be called both when creating
+// the block and when changing its CRC.
+func (pb *PrimaryBlock) calcualteCRC() error {
+	return pb.MarshalCbor(new(bytes.Buffer))
 }
 
 func (pb *PrimaryBlock) MarshalCbor(w io.Writer) error {
-	var blockLen uint64 = 8
-	if pb.HasCRC() && pb.HasFragmentation() {
+	var blockLen uint64 = 9
+	if pb.HasFragmentation() {
 		blockLen = 11
-	} else if pb.HasFragmentation() {
-		blockLen = 10
-	} else if pb.HasCRC() {
-		blockLen = 9
 	}
 
 	crcBuff := new(bytes.Buffer)
-	if pb.HasCRC() {
-		w = io.MultiWriter(w, crcBuff)
-	}
+	w = io.MultiWriter(w, crcBuff)
 
 	if err := cboring.WriteArrayLength(blockLen, w); err != nil {
 		return err
@@ -123,37 +133,29 @@ func (pb *PrimaryBlock) MarshalCbor(w io.Writer) error {
 		}
 	}
 
-	if pb.HasCRC() {
-		if crcVal, crcErr := calculateCRCBuff(crcBuff, pb.CRCType); crcErr != nil {
-			return crcErr
-		} else if err := cboring.WriteByteString(crcVal, w); err != nil {
-			return err
-		} else {
-			pb.CRC = crcVal
-		}
+	if crcVal, crcErr := calculateCRCBuff(crcBuff, pb.CRCType); crcErr != nil {
+		return crcErr
+	} else if err := cboring.WriteByteString(crcVal, w); err != nil {
+		return err
+	} else if pb.CRC == nil {
+		pb.CRC = crcVal
 	}
 
 	return nil
 }
 
 func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
+	// Pipe incoming bytes into a separate CRC buffer
+	crcBuff := new(bytes.Buffer)
+	r = io.TeeReader(r, crcBuff)
+
 	var blockLen uint64
 	if bl, err := cboring.ReadArrayLength(r); err != nil {
 		return err
-	} else if bl < 8 || bl > 11 {
-		return fmt.Errorf("Expected array with length 8-11, got %d", bl)
+	} else if bl != 9 && bl != 11 {
+		return fmt.Errorf("Expected array with length 9 or 11, got %d", bl)
 	} else {
 		blockLen = bl
-	}
-
-	// Pipe incoming bytes into a separate CRC buffer
-	crcBuff := new(bytes.Buffer)
-	if blockLen == 9 || blockLen == 11 {
-		// Replay array's start
-		if err := cboring.WriteArrayLength(blockLen, crcBuff); err != nil {
-			return err
-		}
-		r = io.TeeReader(r, crcBuff)
 	}
 
 	if version, err := cboring.ReadUInt(r); err != nil {
@@ -193,7 +195,7 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 		pb.Lifetime = lt
 	}
 
-	if blockLen == 10 || blockLen == 11 {
+	if blockLen == 11 {
 		fields := []*uint64{&pb.FragmentOffset, &pb.TotalDataLength}
 		for _, f := range fields {
 			if x, err := cboring.ReadUInt(r); err != nil {
@@ -204,16 +206,14 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 		}
 	}
 
-	if blockLen == 9 || blockLen == 11 {
-		if crcCalc, crcErr := calculateCRCBuff(crcBuff, pb.CRCType); crcErr != nil {
-			return crcErr
-		} else if crcVal, err := cboring.ReadByteString(r); err != nil {
-			return err
-		} else if !bytes.Equal(crcCalc, crcVal) {
-			return fmt.Errorf("Invalid CRC value: %x instead of expected %x", crcVal, crcCalc)
-		} else {
-			pb.CRC = crcVal
-		}
+	if crcCalc, crcErr := calculateCRCBuff(crcBuff, pb.CRCType); crcErr != nil {
+		return crcErr
+	} else if crcVal, err := cboring.ReadByteString(r); err != nil {
+		return err
+	} else if !bytes.Equal(crcCalc, crcVal) {
+		return fmt.Errorf("Invalid CRC value: %x instead of expected %x", crcVal, crcCalc)
+	} else {
+		pb.CRC = crcVal
 	}
 
 	return nil
@@ -223,6 +223,11 @@ func (pb PrimaryBlock) CheckValid() (errs error) {
 	if pb.Version != dtnVersion {
 		errs = multierror.Append(errs,
 			fmt.Errorf("PrimaryBlock: Wrong Version, %d instead of %d", pb.Version, dtnVersion))
+	}
+
+	// A CRC value is mandatory sinde dtn-bpbis-14
+	if !pb.HasCRC() {
+		errs = multierror.Append(errs, fmt.Errorf("PrimaryBlock: No CRC is present"))
 	}
 
 	if bcfErr := pb.BundleControlFlags.CheckValid(); bcfErr != nil {
@@ -302,10 +307,7 @@ func (pb PrimaryBlock) String() string {
 		fmt.Fprintf(&b, "total data length: %d", pb.TotalDataLength)
 	}
 
-	if pb.HasCRC() {
-		fmt.Fprintf(&b, " , ")
-		fmt.Fprintf(&b, "crc: %x", pb.CRC)
-	}
+	fmt.Fprintf(&b, ", crc: %x", pb.CRC)
 
 	return b.String()
 }
