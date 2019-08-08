@@ -406,13 +406,15 @@ func (dtlsr *DTLSR) recomputeCron() {
 
 // broadcast broadcasts this node's peer data to the network
 func (dtlsr *DTLSR) broadcast() {
+	log.Debug("Broadcasting metadata")
 	// send broadcast bundle with our new peer data
 	bundleBuilder := bundle.Builder()
 	bundleBuilder.Destination(dtlsr.broadcastAddress)
 	bundleBuilder.Source(dtlsr.c.NodeId)
 	bundleBuilder.CreationTimestampNow()
+	bundleBuilder.Lifetime("10m")
 	// no Payload
-	bundleBuilder.PayloadBlock(0)
+	bundleBuilder.PayloadBlock(byte(0))
 	metadatBundle, err := bundleBuilder.Build()
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -424,6 +426,9 @@ func (dtlsr *DTLSR) broadcast() {
 	metadatBundle.AddExtensionBlock(bundle.NewCanonicalBlock(0, 0, metadataBlock))
 
 	dtlsr.c.SendBundle(&metadatBundle)
+	log.WithFields(log.Fields{
+		"bundle": metadatBundle,
+	}).Debug("Successfully sent metadata bundle")
 }
 
 // broadcastCron gets called periodically by the core's cron module.
