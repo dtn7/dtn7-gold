@@ -414,17 +414,20 @@ func (dtlsr *DTLSR) broadcast() {
 	bundleBuilder.CreationTimestampNow()
 	bundleBuilder.Lifetime("10m")
 	// no Payload
-	bundleBuilder.PayloadBlock(byte(0))
+	bundleBuilder.PayloadBlock(byte(1))
+	metadataBlock := NewDTLSRBlock(dtlsr.peers)
+	bundleBuilder.Canonical(metadataBlock)
 	metadatBundle, err := bundleBuilder.Build()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err.Error(),
 		}).Warn("Unable to build metadata bundle")
 		return
+	} else {
+		log.Debug("Metadata Bundle built")
 	}
-	metadataBlock := NewDTLSRBlock(dtlsr.peers)
-	metadatBundle.AddExtensionBlock(bundle.NewCanonicalBlock(0, 0, metadataBlock))
 
+	log.Debug("Sending metadata bundle")
 	dtlsr.c.SendBundle(&metadatBundle)
 	log.WithFields(log.Fields{
 		"bundle": metadatBundle,
