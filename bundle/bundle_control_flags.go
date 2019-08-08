@@ -24,9 +24,6 @@ const (
 	// StatusRequestReception: Request reporting of bundle reception.
 	StatusRequestReception BundleControlFlags = 0x0100
 
-	// ContainsManifest: The bundle contains a "manifest" extension block.
-	ContainsManifest BundleControlFlags = 0x0080
-
 	// RequestStatusTime: Status time is requested in all status reports.
 	RequestStatusTime BundleControlFlags = 0x0040
 
@@ -90,7 +87,6 @@ func (bcf BundleControlFlags) String() string {
 		{StatusRequestDelivery, "REQUESTED_DELIVERY_STATUS_REPORT"},
 		{StatusRequestForward, "REQUESTED_FORWARD_STATUS_REPORT"},
 		{StatusRequestReception, "REQUESTED_RECEPTIONSTATUS_REPORT"},
-		{ContainsManifest, "CONTAINS_MANIFEST"},
 		{RequestStatusTime, "REQUESTED_TIME_IN_STATUS_REPORT"},
 		{RequestUserApplicationAck, "REQUESTED_APPLICATION_ACK"},
 		{MustNotFragmented, "MUST_NO_BE_FRAGMENTED"},

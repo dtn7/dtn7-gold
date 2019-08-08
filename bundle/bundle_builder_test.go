@@ -133,8 +133,9 @@ func TestBundleBuilderUpcn(t *testing.T) {
 		0x01, 0x00, 0x02, 0x4c, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f,
 		0x72, 0x6c, 0x64, 0x21, 0x44, 0xce, 0xa4, 0xb8, 0xbf, 0xff}
 
+	// TODO: update upcn-bundle7, Manifest block (0x0080) was kinda removed in bpbis-14
 	bndl, bndlErr := Builder().
-		BundleCtrlFlags(MustNotFragmented | ContainsManifest).
+		BundleCtrlFlags(MustNotFragmented | 0x0080).
 		CRC(CRC32).
 		Destination("dtn:GS2").
 		Source("dtn:none").

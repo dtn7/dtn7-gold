@@ -129,8 +129,8 @@ func TestBundleUpcn(t *testing.T) {
 		t.Errorf("Primary Block's version is not 7: %d", ver)
 	}
 
-	bcfExpected := MustNotFragmented |
-		ContainsManifest
+	// TODO: update upcn-bundle7, Manifest block (0x0080) was kinda removed in bpbis-14
+	bcfExpected := MustNotFragmented | 0x0080
 	if bcf := pb.BundleControlFlags; bcf != bcfExpected {
 		t.Errorf("Primary Block's control flags mismatches: %x instead of %x",
 			bcf, bcfExpected)
