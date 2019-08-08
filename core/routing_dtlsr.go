@@ -395,12 +395,11 @@ func (dtlsr *DTLSR) recomputeCron() {
 		"receivedChange": dtlsr.receivedChange,
 	}).Debug("Executing recomputeCron")
 
-	dtlsr.dataMutex.Lock()
-	defer dtlsr.dataMutex.Unlock()
-
 	if dtlsr.peerChange || dtlsr.receivedChange {
+		dtlsr.dataMutex.Lock()
 		dtlsr.computeRoutingTable()
 		dtlsr.receivedChange = false
+		dtlsr.dataMutex.Unlock()
 	}
 }
 
@@ -415,7 +414,11 @@ func (dtlsr *DTLSR) broadcast() {
 	bundleBuilder.Lifetime("10m")
 	// no Payload
 	bundleBuilder.PayloadBlock(byte(1))
+
+	dtlsr.dataMutex.RLock()
 	metadataBlock := NewDTLSRBlock(dtlsr.peers)
+	dtlsr.dataMutex.RUnlock()
+
 	bundleBuilder.Canonical(metadataBlock)
 	metadatBundle, err := bundleBuilder.Build()
 	if err != nil {
@@ -441,17 +444,16 @@ func (dtlsr *DTLSR) broadcastCron() {
 		"peerChange": dtlsr.peerChange,
 	}).Debug("Executing broadcastCron")
 
-	dtlsr.dataMutex.Lock()
-	defer dtlsr.dataMutex.Unlock()
-
 	if dtlsr.peerChange {
 		dtlsr.broadcast()
-		dtlsr.peerChange = false
 
+		dtlsr.dataMutex.Lock()
+		dtlsr.peerChange = false
 		// a change in our own peer data should also trigger a routing recompute
 		// but if this method gets called before recomputeCron(),
 		// we don't want this information to be lost
 		dtlsr.receivedChange = true
+		dtlsr.dataMutex.Unlock()
 	}
 }
 
