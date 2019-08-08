@@ -359,7 +359,7 @@ func (bldr *BundleBuilder) HopCountBlock(args ...interface{}) *BundleBuilder {
 
 	// Read the comment in BundleAgeBlock to grasp the following madness
 	return bldr.Canonical(append(
-		[]interface{}{NewHopCountBlock(uint64(limit))}, args[1:]...)...)
+		[]interface{}{NewHopCountBlock(uint8(limit))}, args[1:]...)...)
 }
 
 // PayloadBlock adds a payload block to this bundle. The parameters are:

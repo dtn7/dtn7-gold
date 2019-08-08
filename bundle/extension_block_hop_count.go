@@ -11,8 +11,8 @@ const ExtBlockTypeHopCountBlock uint64 = 9
 
 // HopCountBlock implements the Bundle Protocol's Hop Count Block.
 type HopCountBlock struct {
-	Limit uint64
-	Count uint64
+	Limit uint8
+	Count uint8
 }
 
 func (hcb *HopCountBlock) BlockTypeCode() uint64 {
@@ -20,7 +20,7 @@ func (hcb *HopCountBlock) BlockTypeCode() uint64 {
 }
 
 // NewHopCountBlock creates a new HopCountBlock with a given hop limit.
-func NewHopCountBlock(limit uint64) *HopCountBlock {
+func NewHopCountBlock(limit uint8) *HopCountBlock {
 	return &HopCountBlock{
 		Limit: limit,
 		Count: 0,
@@ -49,9 +49,9 @@ func (hcb *HopCountBlock) MarshalCbor(w io.Writer) error {
 		return err
 	}
 
-	fields := []uint64{hcb.Limit, hcb.Count}
+	fields := []uint8{hcb.Limit, hcb.Count}
 	for _, f := range fields {
-		if err := cboring.WriteUInt(f, w); err != nil {
+		if err := cboring.WriteUInt(uint64(f), w); err != nil {
 			return err
 		}
 	}
@@ -66,12 +66,14 @@ func (hcb *HopCountBlock) UnmarshalCbor(r io.Reader) error {
 		return fmt.Errorf("Expected array with length 2, got %d", l)
 	}
 
-	fields := []*uint64{&hcb.Limit, &hcb.Count}
+	fields := []*uint8{&hcb.Limit, &hcb.Count}
 	for _, f := range fields {
 		if x, err := cboring.ReadUInt(r); err != nil {
 			return err
+		} else if x > 255 {
+			return fmt.Errorf("Hop Count fields must be within a range to 255, not %d", x)
 		} else {
-			*f = x
+			*f = uint8(x)
 		}
 	}
 
