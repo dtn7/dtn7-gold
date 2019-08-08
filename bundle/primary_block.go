@@ -86,6 +86,7 @@ func (pb *PrimaryBlock) SetCRCType(crcType CRCType) {
 // should not cause any errors. This method must be called both when creating
 // the block and when changing its CRC.
 func (pb *PrimaryBlock) calcualteCRC() error {
+	pb.CRC = nil
 	return pb.MarshalCbor(new(bytes.Buffer))
 }
 
