@@ -1,7 +1,7 @@
 package core
 
 // Constraint is a retention constraint as defined in the subsections of the
-// fifth chapter of draft-ietf-dtn-bpbis-13.
+// fifth chapter of draft-ietf-dtn-bpbis-14.
 type Constraint int
 
 const (
@@ -17,7 +17,7 @@ const (
 
 	// Contraindicated is assigned to a bundle if it could not be delivered and
 	// was moved to the contraindicated stage. This Constraint was not defined
-	// in draft-ietf-dtn-bpbis-13, but seemed reasonable for this implementation.
+	// in dtn-bpbis, but seemed reasonable for this implementation.
 	Contraindicated Constraint = iota
 
 	// LocalEndpoint is assigned to a bundle after delivery to a local endpoint.

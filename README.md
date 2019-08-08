@@ -8,7 +8,7 @@ Protocol Version 7.
 This software implements the current draft of the seventh version of the Bundle
 Protocol and the MTCP Convergence Layer to exchange bundles between nodes.
 
-- Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-13.txt][dtn-bpbis-13])
+- Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-14.txt][dtn-bpbis-14])
 - Minimal TCP Convergence-Layer Protocol
   ([draft-ietf-dtn-mtcpcl-01.txt][dtn-mtcpcl-01])
 
@@ -18,10 +18,11 @@ Protocol and the MTCP Convergence Layer to exchange bundles between nodes.
 Install the [Go programming language][golang], version 1.11 or later.
 
 ```bash
-git clone https://github.com/dtn7/dtn7-go.git && cd dtn7-go
+git clone https://github.com/dtn7/dtn7-go.git
+cd dtn7-go
 
-go generate ./...
-go build ./cmd/dtncat && go build ./cmd/dtnd
+go build ./cmd/dtncat
+go build ./cmd/dtnd
 ```
 
 
@@ -74,8 +75,7 @@ interested in working with this code, check out the
 [documentation][godoc].
 
 
-[codecgen]: https://github.com/ugorji/go/tree/master/codec/codecgen
-[dtn-bpbis-13]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-13
+[dtn-bpbis-14]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-14
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
 [godoc]: https://godoc.org/github.com/dtn7/dtn7-go
