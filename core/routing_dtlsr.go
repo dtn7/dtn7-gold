@@ -215,11 +215,12 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 
 	if bp.MustBundle().PrimaryBlock.Destination == dtlsr.broadcastAddress {
 		// broadcast bundles are always forwarded to everyone
+		sender = dtlsr.c.claManager.Sender()
 		log.WithFields(log.Fields{
 			"bundle":    bp.MustBundle().ID(),
 			"recipient": bp.MustBundle().PrimaryBlock.Destination,
+			"CLAs":      sender,
 		}).Debug("Relaying broadcast bundle")
-		sender = dtlsr.c.claManager.Sender()
 		return
 	}
 
@@ -258,10 +259,6 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 }
 
 func (dtlsr *DTLSR) ReportPeerAppeared(peer cla.Convergence) {
-	log.WithFields(log.Fields{
-		"peer": peer,
-	}).Debug("Peer appeared")
-
 	peerReceiver, ok := peer.(cla.ConvergenceSender)
 	if !ok {
 		log.Warn("Peer was not a ConvergenceSender")
@@ -269,6 +266,10 @@ func (dtlsr *DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 	}
 
 	peerID := peerReceiver.GetPeerEndpointID()
+
+	log.WithFields(log.Fields{
+		"peer": peerID,
+	}).Debug("Peer appeared")
 
 	dtlsr.dataMutex.Lock()
 	defer dtlsr.dataMutex.Unlock()
@@ -282,10 +283,6 @@ func (dtlsr *DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 }
 
 func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
-	log.WithFields(log.Fields{
-		"peer": peer,
-	}).Debug("Peer disappeared")
-
 	peerReceiver, ok := peer.(cla.ConvergenceSender)
 	if !ok {
 		log.Warn("Peer was not a ConvergenceSender")
@@ -293,6 +290,10 @@ func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 	}
 
 	peerID := peerReceiver.GetPeerEndpointID()
+
+	log.WithFields(log.Fields{
+		"peer": peer,
+	}).Debug("Peer appeared")
 
 	dtlsr.dataMutex.Lock()
 	defer dtlsr.dataMutex.Unlock()
