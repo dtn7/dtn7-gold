@@ -259,6 +259,10 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 }
 
 func (dtlsr *DTLSR) ReportPeerAppeared(peer cla.Convergence) {
+	log.WithFields(log.Fields{
+		"address": peer,
+	}).Debug("Peer appeared")
+
 	peerReceiver, ok := peer.(cla.ConvergenceSender)
 	if !ok {
 		log.Warn("Peer was not a ConvergenceSender")
@@ -269,7 +273,7 @@ func (dtlsr *DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 
 	log.WithFields(log.Fields{
 		"peer": peerID,
-	}).Debug("Peer appeared")
+	}).Debug("PeerID discovered")
 
 	dtlsr.dataMutex.Lock()
 	defer dtlsr.dataMutex.Unlock()
@@ -280,9 +284,17 @@ func (dtlsr *DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 	dtlsr.peers.peers[peerID] = 0
 	dtlsr.peers.timestamp = timestampNow()
 	dtlsr.peerChange = true
+
+	log.WithFields(log.Fields{
+		"peer": peerID,
+	}).Debug("Peer is now being tracked")
 }
 
 func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
+	log.WithFields(log.Fields{
+		"address": peer,
+	}).Debug("Peer disappeared")
+
 	peerReceiver, ok := peer.(cla.ConvergenceSender)
 	if !ok {
 		log.Warn("Peer was not a ConvergenceSender")
@@ -292,8 +304,8 @@ func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 	peerID := peerReceiver.GetPeerEndpointID()
 
 	log.WithFields(log.Fields{
-		"peer": peer,
-	}).Debug("Peer appeared")
+		"peer": peerID,
+	}).Debug("PeerID discovered")
 
 	dtlsr.dataMutex.Lock()
 	defer dtlsr.dataMutex.Unlock()
@@ -302,6 +314,10 @@ func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 	dtlsr.peers.peers[peerID] = timestamp
 	dtlsr.peers.timestamp = timestamp
 	dtlsr.peerChange = true
+
+	log.WithFields(log.Fields{
+		"peer": peer,
+	}).Debug("Peer timeout is now running")
 }
 
 // DispatchingAllowed allows the processing of all packages.
@@ -401,6 +417,15 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 	for i := 1; i < dtlsr.length; i++ {
 		shortest, err := graph.Shortest(0, i)
 		if err == nil {
+			if len(shortest.Path) <= 1 {
+				log.WithFields(log.Fields{
+					"node_index": i,
+					"node":       dtlsr.indexNode[i],
+					"path":       shortest.Path,
+				}).Warn("Single step path found - this should not happen")
+				continue
+			}
+
 			routingTable[dtlsr.indexNode[i]] = dtlsr.indexNode[shortest.Path[1]]
 			log.WithFields(log.Fields{
 				"node_index": i,
