@@ -401,10 +401,12 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 	for i := 1; i < dtlsr.length; i++ {
 		shortest, err := graph.Shortest(0, i)
 		if err == nil {
-			routingTable[dtlsr.indexNode[0]] = dtlsr.indexNode[shortest.Path[0]]
+			routingTable[dtlsr.indexNode[i]] = dtlsr.indexNode[shortest.Path[1]]
 			log.WithFields(log.Fields{
 				"node_index": i,
+				"node":       dtlsr.indexNode[i],
 				"path":       shortest.Path,
+				"next_hop":   routingTable[dtlsr.indexNode[i]],
 			}).Debug("Found path to node")
 		} else {
 			log.WithFields(log.Fields{
