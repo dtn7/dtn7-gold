@@ -22,13 +22,16 @@ func timestampNow() uint64 {
 }
 
 type DTLSRConfig struct {
-	// RecomputeTime is the interval (in seconds) until the routing table is recomputed
-	RecomputeTime time.Duration
-	// BroadcastTime is the interval (in seconds) between broadcasts of peer data
-	// Note: Broadcast only happens when there was a change in peer data
-	BroadcastTime time.Duration
-	// PurgeTime is the interval (in seconds) after which a disconnected peer is removed from the peer list
-	PurgeTime time.Duration
+	// RecomputeTime is the interval (in seconds) until the routing table is recomputed.
+	// Note: Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+	RecomputeTime string
+	// BroadcastTime is the interval (in seconds) between broadcasts of peer data.
+	// Note: Broadcast only happens when there was a change in peer data.
+	// Note: Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+	BroadcastTime string
+	// PurgeTime is the interval after which a disconnected peer is removed from the peer list.
+	// Note: Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+	PurgeTime string
 }
 
 // DTLSR is an implementation of "Delay Tolerant Link State Routing"
@@ -85,6 +88,13 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 		}).Fatal("Unable to parse broadcast address")
 	}
 
+	purgeTime, err := time.ParseDuration(config.PurgeTime)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"string": config.PurgeTime,
+		}).Fatal("Unable to parse duration")
+	}
+
 	dtlsr := DTLSR{
 		c:            c,
 		routingTable: make(map[bundle.EndpointID]bundle.EndpointID),
@@ -100,22 +110,38 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 		indexNode:        []bundle.EndpointID{c.NodeId},
 		length:           1,
 		broadcastAddress: bAddress,
-		purgeTime:        uint64(config.PurgeTime),
+		purgeTime:        uint64(purgeTime),
 	}
 
-	err = c.cron.Register("dtlsr_purge", dtlsr.purgePeers, time.Second*config.PurgeTime)
+	err = c.cron.Register("dtlsr_purge", dtlsr.purgePeers, purgeTime)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err.Error(),
 		}).Warn("Could not register DTLSR purge job")
 	}
-	err = c.cron.Register("dtlsr_recompute", dtlsr.recomputeCron, time.Second*config.RecomputeTime)
+
+	recomputeTime, err := time.ParseDuration(config.RecomputeTime)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"string": config.RecomputeTime,
+		}).Fatal("Unable to parse duration")
+	}
+
+	err = c.cron.Register("dtlsr_recompute", dtlsr.recomputeCron, recomputeTime)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err.Error(),
 		}).Warn("Could not register DTLSR recompute job")
 	}
-	err = c.cron.Register("dtlsr_broadcast", dtlsr.broadcastCron, time.Second*config.BroadcastTime)
+
+	broadcastTime, err := time.ParseDuration(config.BroadcastTime)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"string": config.BroadcastTime,
+		}).Fatal("Unable to parse duration")
+	}
+
+	err = c.cron.Register("dtlsr_broadcast", dtlsr.broadcastCron, broadcastTime)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err.Error(),
