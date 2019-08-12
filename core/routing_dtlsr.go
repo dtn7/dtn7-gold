@@ -148,6 +148,13 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 		}).Warn("Could not register DTLSR broadcast job")
 	}
 
+	// register our custom metadata-block
+	extensionBlockManager := bundle.GetExtensionBlockManager()
+	if !extensionBlockManager.IsKnown(ExtBlockTypeDTLSRBlock) {
+		// since we already checked if the block type exists, this really shouldn't ever fail...
+		_ = extensionBlockManager.Register(NewDTLSRBlock(dtlsr.peers))
+	}
+
 	return &dtlsr
 }
 
