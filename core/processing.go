@@ -137,7 +137,16 @@ func (c *Core) dispatching(bp BundlePack) {
 		return
 	}
 
-	if c.HasEndpoint(bp.MustBundle().PrimaryBlock.Destination) {
+	bndl, err := bp.Bundle()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"bundleID": bp.Id,
+			"error":    err.Error(),
+		}).Warn("Error dispatching bundle")
+		return
+	}
+
+	if c.HasEndpoint(bndl.PrimaryBlock.Destination) {
 		c.localDelivery(bp)
 	} else {
 		c.forward(bp)
