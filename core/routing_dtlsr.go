@@ -203,6 +203,33 @@ func (dtlsr *DTLSR) NotifyIncoming(bp BundlePack) {
 			}
 		}
 	}
+
+	// store cla from which we received this bundle so that we don't always bounce bundles between nodes
+	bundleItem, err := dtlsr.c.store.QueryId(bp.Id)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Debug("Bundle not in store")
+		return
+	}
+
+	bndl := bp.MustBundle()
+
+	if pnBlock, err := bndl.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
+		prevNode := pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
+
+		sentEids, ok := bundleItem.Properties["routing/dtlsr/sent"].([]bundle.EndpointID)
+		if !ok {
+			sentEids = make([]bundle.EndpointID, 0)
+		}
+
+		bundleItem.Properties["routing/dtlsr/sent"] = append(sentEids, prevNode)
+		if err := dtlsr.c.store.Update(bundleItem); err != nil {
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Warn("Updating BundleItem failed")
+		}
+	}
 }
 
 func (_ *DTLSR) ReportFailure(_ BundlePack, _ cla.ConvergenceSender) {
@@ -213,18 +240,59 @@ func (_ *DTLSR) ReportFailure(_ BundlePack, _ cla.ConvergenceSender) {
 func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool) {
 	delete = false
 
-	if bp.MustBundle().PrimaryBlock.Destination == dtlsr.broadcastAddress {
-		// broadcast bundles are always forwarded to everyone
-		sender = dtlsr.c.claManager.Sender()
+	bndl, err := bp.Bundle()
+	if err != nil {
 		log.WithFields(log.Fields{
-			"bundle":    bp.MustBundle().ID(),
-			"recipient": bp.MustBundle().PrimaryBlock.Destination,
-			"CLAs":      sender,
-		}).Debug("Relaying broadcast bundle")
+			"error": err.Error(),
+		}).Debug("Bundle no longer exists")
 		return
 	}
 
-	recipient := bp.MustBundle().PrimaryBlock.Destination
+	bundleItem, err := dtlsr.c.store.QueryId(bp.Id)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Debug("Bundle not in store")
+		return
+	}
+
+	sentEids, ok := bundleItem.Properties["routing/dtlsr/sent"].([]bundle.EndpointID)
+	if !ok {
+		sentEids = make([]bundle.EndpointID, 0)
+	}
+
+	if bndl.PrimaryBlock.Destination == dtlsr.broadcastAddress {
+		// broadcast bundles are always forwarded to everyone
+		log.WithFields(log.Fields{
+			"bundle":    bndl.ID(),
+			"recipient": bndl.PrimaryBlock.Destination,
+			"CLAs":      sender,
+		}).Debug("Relaying broadcast bundle")
+
+		for _, cs := range dtlsr.c.claManager.Sender() {
+			var skip = false
+			for _, eid := range sentEids {
+				if cs.GetPeerEndpointID() == eid {
+					skip = true
+					break
+				}
+			}
+
+			if !skip {
+				sender = append(sender, cs)
+				sentEids = append(sentEids, cs.GetPeerEndpointID())
+			}
+		}
+
+		bundleItem.Properties["routing/dtlsr/sent"] = sentEids
+		if err := dtlsr.c.store.Update(bundleItem); err != nil {
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Warn("Updating BundleItem failed")
+		}
+	}
+
+	recipient := bndl.PrimaryBlock.Destination
 
 	dtlsr.dataMutex.RLock()
 	forwarder, present := dtlsr.routingTable[recipient]
@@ -240,13 +308,30 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 
 	for _, cs := range dtlsr.c.claManager.Sender() {
 		if cs.GetPeerEndpointID() == forwarder {
+			for _, eid := range sentEids {
+				if cs.GetPeerEndpointID() == eid {
+					log.WithFields(log.Fields{
+						"bundle": bndl.ID(),
+					}).Debug("Bundle was already forwarded to the appropriate peer")
+					return
+				}
+			}
 			sender = append(sender, cs)
 			log.WithFields(log.Fields{
-				"bundle":              bp.ID(),
-				"recipient":           recipient,
-				"convergence-senders": sender,
+				"bundle":             bndl.ID(),
+				"recipient":          recipient,
+				"convergence-sender": sender,
 			}).Debug("DTLSR selected Convergence Sender for an outgoing bundle")
 			// we only ever forward to a single node
+
+			sentEids = append(sentEids, cs.GetPeerEndpointID())
+			bundleItem.Properties["routing/dtlsr/sent"] = sentEids
+			if err := dtlsr.c.store.Update(bundleItem); err != nil {
+				log.WithFields(log.Fields{
+					"error": err,
+				}).Warn("Updating BundleItem failed")
+			}
+
 			return
 		}
 	}
