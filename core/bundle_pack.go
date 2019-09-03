@@ -51,15 +51,9 @@ func NewBundlePack(bid bundle.BundleID, store *storage.Store) BundlePack {
 }
 
 func NewBundlePackFromBundle(b bundle.Bundle, store *storage.Store) BundlePack {
-	bp := BundlePack{
-		Id:          b.ID(),
-		Receiver:    bundle.DtnNone(),
-		Timestamp:   time.Now(),
-		Constraints: make(map[Constraint]bool),
+	bp := NewBundlePack(b.ID(), store)
 
-		bndl:  &b,
-		store: store,
-	}
+	bp.bndl = &b
 
 	bp.Sync()
 	return bp
