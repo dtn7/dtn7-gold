@@ -279,8 +279,17 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 			}
 
 			if !skip {
+				log.WithFields(log.Fields{
+					"peer": cs.GetPeerEndpointID(),
+					"bundle": bndl.ID(),
+				}).Debug("Forwarding broadcast bundle to peer")
 				sender = append(sender, cs)
 				sentEids = append(sentEids, cs.GetPeerEndpointID())
+			} else {
+				log.WithFields(log.Fields{
+					"peer": cs.GetPeerEndpointID(),
+					"bundle": bndl.ID(),
+				}).Debug("Peer had already received bundle")
 			}
 		}
 
@@ -290,6 +299,12 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 				"error": err,
 			}).Warn("Updating BundleItem failed")
 		}
+
+		log.WithFields(log.Fields{
+			"bundle": bndl.ID(),
+			"peers": sender,
+		}).Debug("Forwarding metadata-bundle to theses peers.")
+		return
 	}
 
 	recipient := bndl.PrimaryBlock.Destination
