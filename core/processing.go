@@ -289,6 +289,8 @@ func (c *Core) forward(bp BundlePack) {
 		} else if c.InspectAllBundles && bp.MustBundle().IsAdministrativeRecord() {
 			c.bundleContraindicated(bp)
 			c.checkAdministrativeRecord(bp)
+		} else {
+			c.bundleContraindicated(bp)
 		}
 	} else {
 		log.WithFields(log.Fields{
