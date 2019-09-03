@@ -573,6 +573,7 @@ func (dtlsr *DTLSR) broadcast() {
 	bundleBuilder.Source(dtlsr.c.NodeId)
 	bundleBuilder.CreationTimestampNow()
 	bundleBuilder.Lifetime("10m")
+	bundleBuilder.BundleCtrlFlags(bundle.MustNotFragmented)
 	// no Payload
 	bundleBuilder.PayloadBlock(byte(1))
 
