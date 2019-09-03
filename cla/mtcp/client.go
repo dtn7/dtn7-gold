@@ -77,7 +77,7 @@ func (client *MTCPClient) handler() {
 	var ticker = time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
-	// Introduce ourselfs once
+	// Introduce ourselves once
 	client.reportChan <- cla.NewConvergencePeerAppeared(client, client.GetPeerEndpointID())
 
 	for {
