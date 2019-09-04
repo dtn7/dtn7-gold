@@ -13,12 +13,12 @@ import (
 )
 
 type SprayConfig struct {
-	// L is the number of copies of a bundle which are sprayed
-	L uint64
+	// Multiplicity is the number of copies of a bundle which are sprayed
+	Multiplicity uint64
 }
 
 // SprayAndWait implements the vanilla Spray and Wait routing protocol
-// In this case, the bundle originator distributes all L copies themselves
+// In this case, the bundle originator distributes all Multiplicity copies themselves
 type SprayAndWait struct {
 	c *Core
 	// l is the number of copies of a bundle which are sprayed
@@ -50,12 +50,12 @@ func cleanupMetaData(c *Core, metadata *map[bundle.BundleID]sprayMetaData) {
 // NewSprayAndWait creates new instance of SprayAndWait
 func NewSprayAndWait(c *Core, config SprayConfig) *SprayAndWait {
 	log.WithFields(log.Fields{
-		"L": config.L,
+		"Multiplicity": config.Multiplicity,
 	}).Debug("Initialised SprayAndWait")
 
 	sprayAndWait := SprayAndWait{
 		c:          c,
-		l:          config.L,
+		l:          config.Multiplicity,
 		bundleData: make(map[bundle.BundleID]sprayMetaData),
 	}
 
@@ -77,7 +77,7 @@ func (sw *SprayAndWait) GarbageCollect() {
 }
 
 // NotifyIncoming tells the routing algorithm about new bundles.
-// In this case, we simply check if we originated this bundle and set L if we did
+// In this case, we simply check if we originated this bundle and set Multiplicity if we did
 // If we are not the originator, we don't further distribute the bundle
 func (sw *SprayAndWait) NotifyIncoming(bp BundlePack) {
 	if sw.c.hasEndpoint(bp.MustBundle().PrimaryBlock.SourceNode) {
@@ -120,7 +120,7 @@ func (_ *SprayAndWait) DispatchingAllowed(_ BundlePack) bool {
 }
 
 // SenderForBundle returns the Core's ConvergenceSenders.
-// The bundle's originator will distribute L copies amongst its peers
+// The bundle's originator will distribute Multiplicity copies amongst its peers
 // Forwarders will only every deliver the bundle to its final destination
 func (sw *SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
 	sw.dataMutex.RLock()
@@ -225,7 +225,7 @@ type BinarySpray struct {
 // NewBinarySpray creates new instance of BinarySpray
 func NewBinarySpray(c *Core, config SprayConfig) *BinarySpray {
 	log.WithFields(log.Fields{
-		"L": config.L,
+		"Multiplicity": config.Multiplicity,
 	}).Debug("Initialised BinarySpray")
 
 	// register our custom metadata-block
@@ -237,7 +237,7 @@ func NewBinarySpray(c *Core, config SprayConfig) *BinarySpray {
 
 	binarySpray := BinarySpray{
 		c:          c,
-		l:          config.L,
+		l:          config.Multiplicity,
 		bundleData: make(map[bundle.BundleID]sprayMetaData),
 	}
 
@@ -260,7 +260,7 @@ func (bs *BinarySpray) GarbageCollect() {
 
 // NotifyIncoming tells the routing algorithm about new bundles.
 // In this case, we check, whether we are the originator of this bundle
-// If yes, then we initialise the remaining Copies to L
+// If yes, then we initialise the remaining Copies to Multiplicity
 // If not we attempt to ready the routing-metadata-block end get the remaining copies
 func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
 	if metadataBlock, err := bp.MustBundle().ExtensionBlock(ExtBlockTypeBinarySprayBlock); err == nil {
