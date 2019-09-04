@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
+	"sync"
 )
 import log "github.com/sirupsen/logrus"
 
@@ -16,6 +17,8 @@ type Prophet struct {
 	predictability map[bundle.EndpointID]float64
 	// Map containing the predictability-maps of other nodes
 	peerPredictabilities map[bundle.EndpointID]map[bundle.EndpointID]float64
+	// dataMutex is a RW-mutex which protects change operations to the algorithm's metadata
+	dataMutex sync.RWMutex
 }
 
 func NewProphet(c *Core) *Prophet {
@@ -35,7 +38,7 @@ func NewProphet(c *Core) *Prophet {
 }
 
 // encounter updates the predictability for an encountered node
-func encounter(prophet *Prophet, peer bundle.EndpointID) {
+func (prophet *Prophet) encounter(peer bundle.EndpointID) {
 	pOld := prophet.predictability[peer]
 	pNew := pOld + ((1 - pOld) * PINIT)
 	prophet.predictability[peer] = pNew
@@ -46,7 +49,7 @@ func encounter(prophet *Prophet, peer bundle.EndpointID) {
 }
 
 // agePred "ages" - decreases over time - the predictability for a node
-func agePred(prophet *Prophet, peer bundle.EndpointID) {
+func (prophet *Prophet) agePred(peer bundle.EndpointID) {
 	pOld := prophet.predictability[peer]
 	pNew := pOld * GAMMA
 	prophet.predictability[peer] = pNew
@@ -57,7 +60,7 @@ func agePred(prophet *Prophet, peer bundle.EndpointID) {
 }
 
 // transitivity
-func transitivity(prophet *Prophet, peer bundle.EndpointID) {
+func (prophet *Prophet) transitivity(peer bundle.EndpointID) {
 	peerPredictabilities, present := prophet.peerPredictabilities[peer]
 	if !present {
 		log.WithFields(log.Fields{
@@ -105,7 +108,26 @@ func (prophet *Prophet) ReportFailure(bp BundlePack, sender cla.ConvergenceSende
 
 // TODO: dummy implementation
 func (prophet *Prophet) ReportPeerAppeared(peer cla.Convergence) {
+	log.WithFields(log.Fields{
+		"address": peer,
+	}).Debug("Peer appeared")
 
+	peerReceiver, ok := peer.(cla.ConvergenceSender)
+	if !ok {
+		log.Warn("Peer was not a ConvergenceSender")
+		return
+	}
+
+	peerID := peerReceiver.GetPeerEndpointID()
+
+	log.WithFields(log.Fields{
+		"peer": peerID,
+	}).Debug("PeerID discovered")
+
+	prophet.dataMutex.Lock()
+	defer prophet.dataMutex.Unlock()
+
+	prophet.encounter(peerID)
 }
 
 // TODO: dummy implementation
