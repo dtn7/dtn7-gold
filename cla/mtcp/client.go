@@ -49,23 +49,32 @@ func NewAnonymousMTCPClient(address string, permanent bool) *MTCPClient {
 	return NewMTCPClient(address, bundle.DtnNone(), permanent)
 }
 
-func (client *MTCPClient) Start() (error, bool) {
-	conn, err := net.DialTimeout("tcp", client.address, time.Second)
-	if err == nil {
-		client.reportChan = make(chan cla.ConvergenceStatus)
-		client.stopSyn = make(chan struct{})
-		client.stopAck = make(chan struct{})
+func (client *MTCPClient) Start() (err error, retry bool) {
+	retry = true
 
-		client.conn = conn
-
-		go client.handler()
+	conn, connErr := net.DialTimeout("tcp", client.address, time.Second)
+	if connErr != nil {
+		err = connErr
+		return
 	}
 
-	return err, true
+	if kaErr := setKeepAlive(conn); kaErr != nil {
+		err = kaErr
+		return
+	}
+
+	client.reportChan = make(chan cla.ConvergenceStatus)
+	client.stopSyn = make(chan struct{})
+	client.stopAck = make(chan struct{})
+
+	client.conn = conn
+
+	go client.handler()
+	return
 }
 
 func (client *MTCPClient) handler() {
-	var ticker = time.NewTicker(time.Second)
+	var ticker = time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	// Introduce ourselfs once
