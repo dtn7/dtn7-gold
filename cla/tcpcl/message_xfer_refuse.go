@@ -27,6 +27,17 @@ const (
 	RefusalRetransmit TransferRefusalCode = 0x04
 )
 
+// IsValid checks if this TransferRefusalCode represents a valid value.
+func (trc TransferRefusalCode) IsValid() bool {
+	switch trc {
+	case RefusalUnknown, RefusalExtensionFailure, RefusalCompleted,
+		RefusalNoResources, RefusalRetransmit:
+		return true
+	default:
+		return false
+	}
+}
+
 func (trc TransferRefusalCode) String() string {
 	switch trc {
 	case RefusalUnknown:
@@ -100,6 +111,10 @@ func (trm *TransferRefusalMessage) UnmarshalBinary(data []byte) error {
 		if err := binary.Read(buf, binary.BigEndian, field); err != nil {
 			return err
 		}
+	}
+
+	if !trm.ReasonCode.IsValid() {
+		return fmt.Errorf("XFER_REFUSE's Reason Code %x is invalid", trm.ReasonCode)
 	}
 
 	return nil
