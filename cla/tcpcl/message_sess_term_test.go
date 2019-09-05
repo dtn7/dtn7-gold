@@ -16,6 +16,9 @@ func TestSessionTerminationMessage(t *testing.T) {
 	t3data := []byte{0xFF, 0x00, 0x00}
 	t3message := SessionTerminationMessage{}
 
+	t4data := []byte{0x05, 0x00, 0xFF}
+	t4message := SessionTerminationMessage{}
+
 	tests := []struct {
 		valid bool
 		data  []byte
@@ -24,6 +27,7 @@ func TestSessionTerminationMessage(t *testing.T) {
 		{true, t1data, t1message},
 		{true, t2data, t2message},
 		{false, t3data, t3message},
+		{false, t4data, t4message},
 	}
 
 	for _, test := range tests {

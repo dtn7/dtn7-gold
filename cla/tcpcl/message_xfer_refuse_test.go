@@ -27,6 +27,16 @@ func TestTransferRefusalMessage(t *testing.T) {
 	}
 	t2message := TransferRefusalMessage{}
 
+	t3data := []byte{
+		// Message Header:
+		0x03,
+		// Reason Code:
+		0xFF,
+		// Transfer ID:
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+	}
+	t3message := NewTransferRefusalMessage(RefusalUnknown, 1)
+
 	tests := []struct {
 		valid bool
 		data  []byte
@@ -34,6 +44,7 @@ func TestTransferRefusalMessage(t *testing.T) {
 	}{
 		{true, t1data, t1message},
 		{false, t2data, t2message},
+		{false, t3data, t3message},
 	}
 
 	for _, test := range tests {

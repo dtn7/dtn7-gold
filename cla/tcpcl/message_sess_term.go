@@ -52,6 +52,17 @@ const (
 	TerminationResourceExhaustion SessionTerminationCode = 0x05
 )
 
+// IsValid checks if this SessionTerminationCode represents a valid value.
+func (stc SessionTerminationCode) IsValid() bool {
+	switch stc {
+	case TerminationUnknown, TerminationIdleTimeout, TerminationVersionMismatch,
+		TerminationBusy, TerminationContactFailure, TerminationResourceExhaustion:
+		return true
+	default:
+		return false
+	}
+}
+
 func (stc SessionTerminationCode) String() string {
 	switch stc {
 	case TerminationUnknown:
@@ -127,6 +138,10 @@ func (stm *SessionTerminationMessage) UnmarshalBinary(data []byte) error {
 		if err := binary.Read(buf, binary.BigEndian, field); err != nil {
 			return err
 		}
+	}
+
+	if !stm.ReasonCode.IsValid() {
+		return fmt.Errorf("SESS_TERM's Reason Code %x is invalid", stm.ReasonCode)
 	}
 
 	return nil

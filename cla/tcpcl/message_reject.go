@@ -20,10 +20,17 @@ const (
 	// RejectionUnexptected indicates that this TCPCL node received a message
 	// while the session is in a state in which the message is not expected.
 	RejectionUnexptected MessageRejectionReason = 0x03
-
-	// messageRejectionReason_INVALID is a bit field of all invalid MessageRejectionMessages.
-	messageRejectionReason_INVALID = 0xFC
 )
+
+// IsValid checks if this MessageRejectionReason represents a valid value.
+func (mrr MessageRejectionReason) IsValid() bool {
+	switch mrr {
+	case RejectionTypeUnknown, RejectionUnsupported, RejectionUnexptected:
+		return true
+	default:
+		return false
+	}
+}
 
 func (mrr MessageRejectionReason) String() string {
 	switch mrr {
@@ -99,7 +106,7 @@ func (mrm *MessageRejectionMessage) UnmarshalBinary(data []byte) error {
 		}
 	}
 
-	if mrm.ReasonCode&messageRejectionReason_INVALID != 0 {
+	if !mrm.ReasonCode.IsValid() {
 		return fmt.Errorf("MSG_REJECT's Reason Code %x is invalid", mrm.ReasonCode)
 	}
 

@@ -12,9 +12,6 @@ type ContactFlags uint8
 const (
 	// ContactCanTls indicates that the sending peer is capable of TLS security.
 	ContactCanTls ContactFlags = 0x01
-
-	// contactFlags_INVALID is a bit field of all invalid ContactFlags.
-	contactFlags_INVALID ContactFlags = 0xFE
 )
 
 func (cf ContactFlags) String() string {
@@ -66,11 +63,7 @@ func (ch *ContactHeader) UnmarshalBinary(data []byte) error {
 		return fmt.Errorf("ContactHeader's version is wrong: %d instead of 4", uint8(data[4]))
 	}
 
-	if cf := ContactFlags(data[5]); cf&contactFlags_INVALID != 0 {
-		return fmt.Errorf("ContactHeader's flags %x contain invalid flags", cf)
-	} else {
-		ch.Flags = cf
-	}
+	ch.Flags = ContactFlags(data[5])
 
 	return nil
 }

@@ -16,9 +16,6 @@ const (
 
 	// SegmentStart indicates that this segment is the first of the transfer.
 	SegmentStart SegmentFlags = 0x02
-
-	// segmentFlags_INVALID is a bit field of all invalid ContactFlags.
-	segmentFlags_INVALID SegmentFlags = 0xFC
 )
 
 func (sf SegmentFlags) String() string {
