@@ -3,31 +3,28 @@ package tcpcl
 import (
 	"bytes"
 	"fmt"
+	"strings"
 )
 
 // ContactFlags are single-bit flags used in the ContactHeader.
 type ContactFlags uint8
 
 const (
-	// ContactFlags_NONE is a default for no flags
-	ContactFlags_NONE ContactFlags = 0x00
-
-	// ContactFlags_CAN_TLS indicates that the sending peer is capable of TLS security.
-	ContactFlags_CAN_TLS ContactFlags = 0x01
+	// ContactCanTls indicates that the sending peer is capable of TLS security.
+	ContactCanTls ContactFlags = 0x01
 
 	// contactFlags_INVALID is a bit field of all invalid ContactFlags.
 	contactFlags_INVALID ContactFlags = 0xFE
 )
 
 func (cf ContactFlags) String() string {
-	switch cf {
-	case ContactFlags_NONE:
-		return "NONE"
-	case ContactFlags_CAN_TLS:
-		return "CAN_TLS"
-	default:
-		return "INVALID"
+	var flags []string
+
+	if cf&ContactCanTls != 0 {
+		flags = append(flags, "CAN_TLS")
 	}
+
+	return strings.Join(flags, ",")
 }
 
 // ContactHeader will be exchanged at first after a TCP connection was
