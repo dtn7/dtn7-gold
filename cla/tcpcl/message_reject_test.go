@@ -1,0 +1,38 @@
+package tcpcl
+
+import (
+	"bytes"
+	"reflect"
+	"testing"
+)
+
+func TestMessageRejectionMessage(t *testing.T) {
+	tests := []struct {
+		valid bool
+		data  []byte
+		mrm   MessageRejectionMessage
+	}{
+		{true, []byte{0x06, 0x01, 0x01}, NewMessageRejectionMessage(RejectionTypeUnknown, 0x01)},
+		{true, []byte{0x06, 0x03, 0x01}, NewMessageRejectionMessage(RejectionUnexptected, 0x01)},
+		{false, []byte{0x07, 0x00, 0x00}, MessageRejectionMessage{}},
+		{false, []byte{0x06, 0xF0, 0x00}, MessageRejectionMessage{}},
+	}
+
+	for _, test := range tests {
+		var mrm MessageRejectionMessage
+
+		if err := mrm.UnmarshalBinary(test.data); (err == nil) != test.valid {
+			t.Fatalf("Error state was not expected; valid := %t, got := %v", test.valid, err)
+		} else if !test.valid {
+			continue
+		} else if !reflect.DeepEqual(test.mrm, mrm) {
+			t.Fatalf("MessageRejectionMessage does not match, expected %v and got %v", test.mrm, mrm)
+		}
+
+		if data, err := test.mrm.MarshalBinary(); err != nil {
+			t.Fatal(err)
+		} else if !bytes.Equal(data, test.data) {
+			t.Fatalf("Data does not match, expected %x and got %x", test.data, data)
+		}
+	}
+}
