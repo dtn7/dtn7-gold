@@ -101,8 +101,9 @@ func TestDataTransmissionMessage(t *testing.T) {
 
 	for _, test := range tests {
 		var dtm DataTransmissionMessage
+		var buf = bytes.NewBuffer(test.data)
 
-		if err := dtm.UnmarshalBinary(test.data); (err == nil) != test.valid {
+		if err := dtm.Unmarshal(buf); (err == nil) != test.valid {
 			t.Fatalf("Error state was not expected; valid := %t, got := %v", test.valid, err)
 		} else if !test.valid {
 			continue
@@ -110,9 +111,9 @@ func TestDataTransmissionMessage(t *testing.T) {
 			t.Fatalf("DataTransmissionMessage does not match, expected %v and got %v", test.dtm, dtm)
 		}
 
-		if data, err := test.dtm.MarshalBinary(); err != nil {
+		if err := test.dtm.Marshal(buf); err != nil {
 			t.Fatal(err)
-		} else if test.bijective && !bytes.Equal(data, test.data) {
+		} else if data := buf.Bytes(); test.bijective && !bytes.Equal(data, test.data) {
 			t.Fatalf("Data does not match, expected %x and got %x", test.data, data)
 		}
 	}

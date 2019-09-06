@@ -42,8 +42,9 @@ func TestDataAcknowledgementMessage(t *testing.T) {
 
 	for _, test := range tests {
 		var dam DataAcknowledgementMessage
+		var buf = bytes.NewBuffer(test.data)
 
-		if err := dam.UnmarshalBinary(test.data); (err == nil) != test.valid {
+		if err := dam.Unmarshal(buf); (err == nil) != test.valid {
 			t.Fatalf("Error state was not expected; valid := %t, got := %v", test.valid, err)
 		} else if !test.valid {
 			continue
@@ -51,9 +52,9 @@ func TestDataAcknowledgementMessage(t *testing.T) {
 			t.Fatalf("DataAcknowledgementMessage does not match, expected %v and got %v", test.dam, dam)
 		}
 
-		if data, err := test.dam.MarshalBinary(); err != nil {
+		if err := test.dam.Marshal(buf); err != nil {
 			t.Fatal(err)
-		} else if !bytes.Equal(data, test.data) {
+		} else if data := buf.Bytes(); !bytes.Equal(data, test.data) {
 			t.Fatalf("Data does not match, expected %x and got %x", test.data, data)
 		}
 	}

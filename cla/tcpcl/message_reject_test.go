@@ -20,8 +20,9 @@ func TestMessageRejectionMessage(t *testing.T) {
 
 	for _, test := range tests {
 		var mrm MessageRejectionMessage
+		var buf = bytes.NewBuffer(test.data)
 
-		if err := mrm.UnmarshalBinary(test.data); (err == nil) != test.valid {
+		if err := mrm.Unmarshal(buf); (err == nil) != test.valid {
 			t.Fatalf("Error state was not expected; valid := %t, got := %v", test.valid, err)
 		} else if !test.valid {
 			continue
@@ -29,9 +30,9 @@ func TestMessageRejectionMessage(t *testing.T) {
 			t.Fatalf("MessageRejectionMessage does not match, expected %v and got %v", test.mrm, mrm)
 		}
 
-		if data, err := test.mrm.MarshalBinary(); err != nil {
+		if err := test.mrm.Marshal(buf); err != nil {
 			t.Fatal(err)
-		} else if !bytes.Equal(data, test.data) {
+		} else if data := buf.Bytes(); !bytes.Equal(data, test.data) {
 			t.Fatalf("Data does not match, expected %x and got %x", test.data, data)
 		}
 	}

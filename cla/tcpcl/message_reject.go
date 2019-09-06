@@ -1,9 +1,9 @@
 package tcpcl
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 )
 
 // MessageRejectionReason is the one-octet refusal code from a MessageRejectionMessage.
@@ -68,40 +68,35 @@ func (mrm MessageRejectionMessage) String() string {
 		mrm.ReasonCode, mrm.MessageHeader)
 }
 
-// MarshalBinary encodes this MessageRejectionMessage into its binary form.
-func (mrm MessageRejectionMessage) MarshalBinary() (data []byte, err error) {
-	var buf = new(bytes.Buffer)
+func (mrm MessageRejectionMessage) Marshal(w io.Writer) error {
 	var fields = []interface{}{
 		MSG_REJECT,
 		mrm.ReasonCode,
 		mrm.MessageHeader}
 
 	for _, field := range fields {
-		if binErr := binary.Write(buf, binary.BigEndian, field); binErr != nil {
-			err = binErr
-			return
+		if err := binary.Write(w, binary.BigEndian, field); err != nil {
+			return err
 		}
 	}
 
-	data = buf.Bytes()
-	return
+	return nil
 }
 
-// UnmarshalBinary decodes a MessageRejectionMessage from its binary form.
-func (mrm *MessageRejectionMessage) UnmarshalBinary(data []byte) error {
-	var buf = bytes.NewReader(data)
-
+func (mrm *MessageRejectionMessage) Unmarshal(r io.Reader) error {
 	var messageHeader uint8
-	if err := binary.Read(buf, binary.BigEndian, &messageHeader); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &messageHeader); err != nil {
 		return err
 	} else if messageHeader != MSG_REJECT {
-		return fmt.Errorf("MSG_REJECT's Message Header is wrong: %d instead of %d", messageHeader, MSG_REJECT)
+		return fmt.Errorf(
+			"MSG_REJECT's Message Header is wrong: %d instead of %d",
+			messageHeader, MSG_REJECT)
 	}
 
 	var fields = []interface{}{&mrm.ReasonCode, &mrm.MessageHeader}
 
 	for _, field := range fields {
-		if err := binary.Read(buf, binary.BigEndian, field); err != nil {
+		if err := binary.Read(r, binary.BigEndian, field); err != nil {
 			return err
 		}
 	}

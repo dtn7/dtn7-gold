@@ -1,9 +1,9 @@
 package tcpcl
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 )
 
 // SESS_INIT is the Message Header code for a Session Initialization Message.
@@ -35,9 +35,7 @@ func (si SessionInitMessage) String() string {
 		si.KeepaliveInterval, si.SegmentMru, si.TransferMru, si.Eid)
 }
 
-// MarshalBinary encodes this SessionInitMessage into its binary form.
-func (si SessionInitMessage) MarshalBinary() (data []byte, err error) {
-	var buf = new(bytes.Buffer)
+func (si SessionInitMessage) Marshal(w io.Writer) error {
 	var fields = []interface{}{
 		SESS_INIT,
 		si.KeepaliveInterval,
@@ -46,34 +44,29 @@ func (si SessionInitMessage) MarshalBinary() (data []byte, err error) {
 		uint16(len(si.Eid))}
 
 	for _, field := range fields {
-		if binErr := binary.Write(buf, binary.BigEndian, field); binErr != nil {
-			err = binErr
-			return
+		if err := binary.Write(w, binary.BigEndian, field); err != nil {
+			return err
 		}
 	}
 
-	if n, _ := buf.WriteString(si.Eid); n != len(si.Eid) {
-		err = fmt.Errorf("SESS_INIT EID's length is %d, but only wrote %d bytes", len(si.Eid), n)
-		return
+	if n, err := io.WriteString(w, si.Eid); err != nil {
+		return err
+	} else if n != len(si.Eid) {
+		return fmt.Errorf("SESS_INIT EID's length is %d, but only wrote %d bytes", len(si.Eid), n)
 	}
 
 	// TODO: Session Extension Items
 	// Currently, only an empty Session Extension Items Length is accepted.
-	if binErr := binary.Write(buf, binary.BigEndian, uint32(0)); binErr != nil {
-		err = binErr
-		return
+	if err := binary.Write(w, binary.BigEndian, uint32(0)); err != nil {
+		return err
 	}
 
-	data = buf.Bytes()
-	return
+	return nil
 }
 
-// UnmarshalBinary decodes a SessionInitMessage from its binary form.
-func (si *SessionInitMessage) UnmarshalBinary(data []byte) error {
-	var buf = bytes.NewReader(data)
-
+func (si *SessionInitMessage) Unmarshal(r io.Reader) error {
 	var messageHeader uint8
-	if err := binary.Read(buf, binary.BigEndian, &messageHeader); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &messageHeader); err != nil {
 		return err
 	} else if messageHeader != SESS_INIT {
 		return fmt.Errorf("SESS_INIT's Message Header is wrong: %d instead of %d", messageHeader, SESS_INIT)
@@ -88,13 +81,13 @@ func (si *SessionInitMessage) UnmarshalBinary(data []byte) error {
 	}
 
 	for _, field := range fields {
-		if err := binary.Read(buf, binary.BigEndian, field); err != nil {
+		if err := binary.Read(r, binary.BigEndian, field); err != nil {
 			return err
 		}
 	}
 
 	var eidBuff = make([]byte, eidLength)
-	if n, err := buf.Read(eidBuff); err != nil {
+	if n, err := r.Read(eidBuff); err != nil {
 		return err
 	} else if uint16(n) != eidLength {
 		return fmt.Errorf("SESS_INIT's EID length differs: expected %d and got %d", eidLength, n)
@@ -104,22 +97,18 @@ func (si *SessionInitMessage) UnmarshalBinary(data []byte) error {
 
 	// TODO: Session Extension Items, see above
 	var sessionExtsLen uint32
-	if err := binary.Read(buf, binary.BigEndian, &sessionExtsLen); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &sessionExtsLen); err != nil {
 		return err
 	} else if sessionExtsLen > 0 {
 		sessionExtsBuff := make([]byte, sessionExtsLen)
 
-		if n, err := buf.Read(sessionExtsBuff); err != nil {
+		if n, err := r.Read(sessionExtsBuff); err != nil {
 			return err
 		} else if uint32(n) != sessionExtsLen {
 			return fmt.Errorf(
 				"SESS_INIT's Session Extension Length  differs: expected %d and got %d",
 				sessionExtsLen, n)
 		}
-	}
-
-	if n := buf.Len(); n > 0 {
-		return fmt.Errorf("SESS_INIT's buffer should be empty; has %d octets", n)
 	}
 
 	return nil
