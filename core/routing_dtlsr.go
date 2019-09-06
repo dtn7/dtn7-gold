@@ -241,20 +241,20 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 		return
 	}
 
-	bundleItem, err := dtlsr.c.store.QueryId(bp.Id)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err.Error(),
-		}).Debug("Bundle not in store")
-		return
-	}
-
-	sentEids, ok := bundleItem.Properties["routing/dtlsr/sent"].([]bundle.EndpointID)
-	if !ok {
-		sentEids = make([]bundle.EndpointID, 0)
-	}
-
 	if bndl.PrimaryBlock.Destination == dtlsr.broadcastAddress {
+		bundleItem, err := dtlsr.c.store.QueryId(bp.Id)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error": err.Error(),
+			}).Debug("Bundle not in store")
+			return
+		}
+
+		sentEids, ok := bundleItem.Properties["routing/dtlsr/sent"].([]bundle.EndpointID)
+		if !ok {
+			sentEids = make([]bundle.EndpointID, 0)
+		}
+
 		// broadcast bundles are always forwarded to everyone
 		log.WithFields(log.Fields{
 			"bundle":    bndl.ID(),
@@ -316,14 +316,6 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 
 	for _, cs := range dtlsr.c.claManager.Sender() {
 		if cs.GetPeerEndpointID() == forwarder {
-			for _, eid := range sentEids {
-				if cs.GetPeerEndpointID() == eid {
-					log.WithFields(log.Fields{
-						"bundle": bndl.ID(),
-					}).Debug("Bundle was already forwarded to the appropriate peer")
-					return
-				}
-			}
 			sender = append(sender, cs)
 			log.WithFields(log.Fields{
 				"bundle":             bndl.ID(),
@@ -331,15 +323,10 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 				"convergence-sender": sender,
 			}).Debug("DTLSR selected Convergence Sender for an outgoing bundle")
 			// we only ever forward to a single node
-
-			sentEids = append(sentEids, cs.GetPeerEndpointID())
-			bundleItem.Properties["routing/dtlsr/sent"] = sentEids
-			if err := dtlsr.c.store.Update(bundleItem); err != nil {
-				log.WithFields(log.Fields{
-					"error": err,
-				}).Warn("Updating BundleItem failed")
-			}
-
+			// since DTLSR has no multiplicity for bundles
+			// (we only ever forward it to the next node according to our routing table),
+			// we can delete the bundle from our store after successfully forwarding it
+			delete = true
 			return
 		}
 	}
@@ -415,6 +402,8 @@ func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 
 // DispatchingAllowed allows the processing of all packages.
 func (_ *DTLSR) DispatchingAllowed(_ BundlePack) bool {
+	// TODO: for future optimisation, we might track the timestamp of the last recomputation of the routing table
+	// and only dispatch if it changed since the last time we tried.
 	return true
 }
 
