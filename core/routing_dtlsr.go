@@ -533,12 +533,17 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 // recomputeCron gets called periodically by the core's cron module.
 // Only actually triggers a recompute if the underlying data has changed.
 func (dtlsr *DTLSR) recomputeCron() {
+	dtlsr.dataMutex.RLock()
+	peerChange := dtlsr.peerChange
+	receivedChange := dtlsr.receivedChange
+	dtlsr.dataMutex.RUnlock()
+
 	log.WithFields(log.Fields{
-		"peerChange":     dtlsr.peerChange,
-		"receivedChange": dtlsr.receivedChange,
+		"peerChange":     peerChange,
+		"receivedChange": receivedChange,
 	}).Debug("Executing recomputeCron")
 
-	if dtlsr.peerChange || dtlsr.receivedChange {
+	if peerChange || receivedChange {
 		dtlsr.dataMutex.Lock()
 		dtlsr.computeRoutingTable()
 		dtlsr.receivedChange = false
@@ -549,6 +554,8 @@ func (dtlsr *DTLSR) recomputeCron() {
 // broadcast broadcasts this node's peer data to the network
 func (dtlsr *DTLSR) broadcast() {
 	log.Debug("Broadcasting metadata")
+
+	dtlsr.dataMutex.RLock()
 	// send broadcast bundle with our new peer data
 	bundleBuilder := bundle.Builder()
 	bundleBuilder.Destination(dtlsr.broadcastAddress)
@@ -559,7 +566,6 @@ func (dtlsr *DTLSR) broadcast() {
 	// no Payload
 	bundleBuilder.PayloadBlock(byte(1))
 
-	dtlsr.dataMutex.RLock()
 	metadataBlock := NewDTLSRBlock(dtlsr.peers)
 	dtlsr.dataMutex.RUnlock()
 
@@ -584,11 +590,15 @@ func (dtlsr *DTLSR) broadcast() {
 // broadcastCron gets called periodically by the core's cron module.
 // Only actually triggers a broadcast if peer data has changed
 func (dtlsr *DTLSR) broadcastCron() {
+	dtlsr.dataMutex.RLock()
+	peerChange := dtlsr.peerChange
+	dtlsr.dataMutex.RUnlock()
+
 	log.WithFields(log.Fields{
-		"peerChange": dtlsr.peerChange,
+		"peerChange": peerChange,
 	}).Debug("Executing broadcastCron")
 
-	if dtlsr.peerChange {
+	if peerChange {
 		dtlsr.broadcast()
 
 		dtlsr.dataMutex.Lock()
