@@ -32,8 +32,9 @@ func TestSessionTerminationMessage(t *testing.T) {
 
 	for _, test := range tests {
 		var stm SessionTerminationMessage
+		var buf = bytes.NewBuffer(test.data)
 
-		if err := stm.UnmarshalBinary(test.data); (err == nil) != test.valid {
+		if err := stm.Unmarshal(buf); (err == nil) != test.valid {
 			t.Fatalf("Error state was not expected; valid := %t, got := %v", test.valid, err)
 		} else if !test.valid {
 			continue
@@ -41,9 +42,9 @@ func TestSessionTerminationMessage(t *testing.T) {
 			t.Fatalf("SessionTerminationMessage does not match, expected %v and got %v", test.stm, stm)
 		}
 
-		if data, err := test.stm.MarshalBinary(); err != nil {
+		if err := test.stm.Marshal(buf); err != nil {
 			t.Fatal(err)
-		} else if !bytes.Equal(data, test.data) {
+		} else if data := buf.Bytes(); !bytes.Equal(data, test.data) {
 			t.Fatalf("Data does not match, expected %x and got %x", test.data, data)
 		}
 	}

@@ -16,9 +16,11 @@ func TestContactHeaderMarshal(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if data, err := test.contactHeader.MarshalBinary(); err != nil {
+		var buf = new(bytes.Buffer)
+
+		if err := test.contactHeader.Marshal(buf); err != nil {
 			t.Fatal(err)
-		} else if !bytes.Equal(data, test.expectedData) {
+		} else if data := buf.Bytes(); !bytes.Equal(data, test.expectedData) {
 			t.Fatalf("Data does not match, expected %x and got %x", test.expectedData, data)
 		}
 	}
@@ -33,7 +35,6 @@ func TestContactHeaderUnmarshal(t *testing.T) {
 		{[]byte{0x64, 0x74, 0x6E, 0x21, 0x04, 0x00}, true, ContactHeader{Flags: 0}},
 		{[]byte{0x64, 0x74, 0x6E, 0x21, 0x04, 0x01}, true, ContactHeader{Flags: ContactCanTls}},
 		{[]byte{0x64, 0x74, 0x6E, 0x21, 0x04}, false, ContactHeader{}},
-		{[]byte{0x64, 0x74, 0x6E, 0x21, 0x04, 0x00, 0x00}, false, ContactHeader{}},
 		{[]byte{0x64, 0x74, 0x6E, 0x3F, 0x04, 0x00}, false, ContactHeader{}},
 		{[]byte{0x64, 0x74, 0x6E, 0x21, 0x23, 0x00}, false, ContactHeader{}},
 		{[]byte{0x64, 0x74, 0x6E, 0x21, 0x04, 0x23}, true, ContactHeader{Flags: 0x23}},
@@ -41,7 +42,9 @@ func TestContactHeaderUnmarshal(t *testing.T) {
 
 	for _, test := range tests {
 		var ch ContactHeader
-		if err := ch.UnmarshalBinary(test.data); (err == nil) != test.valid {
+		var buf = bytes.NewBuffer(test.data)
+
+		if err := ch.Unmarshal(buf); (err == nil) != test.valid {
 			t.Fatalf("Error state was not expected; valid := %t, got := %v", test.valid, err)
 		} else if !test.valid {
 			continue

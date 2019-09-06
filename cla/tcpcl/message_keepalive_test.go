@@ -13,21 +13,22 @@ func TestKeepaliveMessage(t *testing.T) {
 		{true, []byte{KEEPALIVE}},
 		{false, []byte{0x21}},
 		{false, []byte{}},
-		{false, []byte{0x23, 0x42}},
 	}
 
 	for _, test := range tests {
 		var km KeepaliveMessage
+		var buf = bytes.NewBuffer(test.data)
 
-		if err := km.UnmarshalBinary(test.data); (err == nil) != test.valid {
+		if err := km.Unmarshal(buf); (err == nil) != test.valid {
 			t.Fatalf("Error state was not expected; valid := %t, got := %v", test.valid, err)
 		} else if !test.valid {
 			continue
 		}
 
-		if data, err := NewKeepaliveMessage().MarshalBinary(); err != nil {
+		var km2 = NewKeepaliveMessage()
+		if err := km2.Marshal(buf); err != nil {
 			t.Fatal(err)
-		} else if !bytes.Equal(data, test.data) {
+		} else if data := buf.Bytes(); !bytes.Equal(data, test.data) {
 			t.Fatalf("Data does not match, expected %x and got %x", test.data, data)
 		}
 

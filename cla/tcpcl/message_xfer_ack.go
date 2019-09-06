@@ -1,9 +1,9 @@
 package tcpcl
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 )
 
 // XFER_ACK is the Message Header code for a Data Acknowledgement Message.
@@ -31,9 +31,7 @@ func (dam DataAcknowledgementMessage) String() string {
 		dam.Flags, dam.TransferId, dam.AckLen)
 }
 
-// MarshalBinary encodes this DataAcknowledgementMessage into its binary form.
-func (dam DataAcknowledgementMessage) MarshalBinary() (data []byte, err error) {
-	var buf = new(bytes.Buffer)
+func (dam DataAcknowledgementMessage) Marshal(w io.Writer) error {
 	var fields = []interface{}{
 		XFER_ACK,
 		dam.Flags,
@@ -41,22 +39,17 @@ func (dam DataAcknowledgementMessage) MarshalBinary() (data []byte, err error) {
 		dam.AckLen}
 
 	for _, field := range fields {
-		if binErr := binary.Write(buf, binary.BigEndian, field); binErr != nil {
-			err = binErr
-			return
+		if err := binary.Write(w, binary.BigEndian, field); err != nil {
+			return err
 		}
 	}
 
-	data = buf.Bytes()
-	return
+	return nil
 }
 
-// UnmarshalBinary decodes a DataAcknowledgementMessage from its binary form.
-func (dam *DataAcknowledgementMessage) UnmarshalBinary(data []byte) error {
-	var buf = bytes.NewReader(data)
-
+func (dam *DataAcknowledgementMessage) Unmarshal(r io.Reader) error {
 	var messageHeader uint8
-	if err := binary.Read(buf, binary.BigEndian, &messageHeader); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &messageHeader); err != nil {
 		return err
 	} else if messageHeader != XFER_ACK {
 		return fmt.Errorf("XFER_ACK's Message Header is wrong: %d instead of %d", messageHeader, XFER_ACK)
@@ -65,7 +58,7 @@ func (dam *DataAcknowledgementMessage) UnmarshalBinary(data []byte) error {
 	var fields = []interface{}{&dam.Flags, &dam.TransferId, &dam.AckLen}
 
 	for _, field := range fields {
-		if err := binary.Read(buf, binary.BigEndian, field); err != nil {
+		if err := binary.Read(r, binary.BigEndian, field); err != nil {
 			return err
 		}
 	}

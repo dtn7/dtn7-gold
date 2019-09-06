@@ -1,9 +1,9 @@
 package tcpcl
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -105,28 +105,21 @@ func (stm SessionTerminationMessage) String() string {
 		stm.Flags, stm.ReasonCode)
 }
 
-// MarshalBinary encodes this SessionTerminationMessage into its binary form.
-func (stm SessionTerminationMessage) MarshalBinary() (data []byte, err error) {
-	var buf = new(bytes.Buffer)
+func (stm SessionTerminationMessage) Marshal(w io.Writer) error {
 	var fields = []interface{}{SESS_TERM, stm.Flags, stm.ReasonCode}
 
 	for _, field := range fields {
-		if binErr := binary.Write(buf, binary.BigEndian, field); binErr != nil {
-			err = binErr
-			return
+		if err := binary.Write(w, binary.BigEndian, field); err != nil {
+			return err
 		}
 	}
 
-	data = buf.Bytes()
-	return
+	return nil
 }
 
-// UnmarshalBinary decodes a SessionTerminationMessage from its binary form.
-func (stm *SessionTerminationMessage) UnmarshalBinary(data []byte) error {
-	var buf = bytes.NewReader(data)
-
+func (stm *SessionTerminationMessage) Unmarshal(r io.Reader) error {
 	var messageHeader uint8
-	if err := binary.Read(buf, binary.BigEndian, &messageHeader); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &messageHeader); err != nil {
 		return err
 	} else if messageHeader != SESS_TERM {
 		return fmt.Errorf("SESS_TERM's Message Header is wrong: %d instead of %d", messageHeader, SESS_TERM)
@@ -135,7 +128,7 @@ func (stm *SessionTerminationMessage) UnmarshalBinary(data []byte) error {
 	var fields = []interface{}{&stm.Flags, &stm.ReasonCode}
 
 	for _, field := range fields {
-		if err := binary.Read(buf, binary.BigEndian, field); err != nil {
+		if err := binary.Read(r, binary.BigEndian, field); err != nil {
 			return err
 		}
 	}

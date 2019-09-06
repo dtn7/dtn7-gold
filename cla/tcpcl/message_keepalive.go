@@ -1,6 +1,10 @@
 package tcpcl
 
-import "fmt"
+import (
+	"encoding/binary"
+	"fmt"
+	"io"
+)
 
 // KEEPALIVE is the Message Header code for a Keepalive Message.
 const KEEPALIVE uint8 = 0x04
@@ -17,27 +21,21 @@ func (_ KeepaliveMessage) String() string {
 	return "KEEPALIVE"
 }
 
-// MarshalBinary encodes this KeepaliveMessage into its binary form.
-func (km KeepaliveMessage) MarshalBinary() (data []byte, err error) {
+func (km KeepaliveMessage) Marshal(w io.Writer) error {
 	if uint8(km) != KEEPALIVE {
-		err = fmt.Errorf("KEEPALIVE's value is %d instead of %d", uint8(km), KEEPALIVE)
-		return
+		return fmt.Errorf("KEEPALIVE's value is %d instead of %d", uint8(km), KEEPALIVE)
 	}
 
-	data = []byte{KEEPALIVE}
-	return
+	return binary.Write(w, binary.BigEndian, km)
 }
 
-// UnmarshalBinary decodes a KeepaliveMessage from its binary form.
-func (km *KeepaliveMessage) UnmarshalBinary(data []byte) error {
-	if len(data) != 1 {
-		return fmt.Errorf("KEEPALIVE's octet length is %d instead of 1", len(data))
+func (km *KeepaliveMessage) Unmarshal(r io.Reader) error {
+	if err := binary.Read(r, binary.BigEndian, km); err != nil {
+		return err
 	}
 
-	if x := uint8(data[0]); x != KEEPALIVE {
-		return fmt.Errorf("KEEPALIVE's value is %d instead of %d", x, KEEPALIVE)
-	} else {
-		*km = KeepaliveMessage(x)
+	if uint8(*km) != KEEPALIVE {
+		return fmt.Errorf("KEEPALIVE's value is %d instead of %d", uint8(*km), KEEPALIVE)
 	}
 
 	return nil

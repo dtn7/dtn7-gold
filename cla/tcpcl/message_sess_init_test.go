@@ -149,9 +149,10 @@ func TestSessionInitMessage(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		// Decode
 		var sim SessionInitMessage
-		if err := sim.UnmarshalBinary(test.data); (err == nil) != test.valid {
+		var buf = bytes.NewBuffer(test.data)
+
+		if err := sim.Unmarshal(buf); (err == nil) != test.valid {
 			t.Fatalf("Error state was not expected; valid := %t, got := %v", test.valid, err)
 		} else if !test.valid {
 			continue
@@ -159,10 +160,9 @@ func TestSessionInitMessage(t *testing.T) {
 			t.Fatalf("SessionInitMessage does not match, expected %v and got %v", test.sim, sim)
 		}
 
-		// Encode
-		if data, err := test.sim.MarshalBinary(); err != nil {
+		if err := test.sim.Marshal(buf); err != nil {
 			t.Fatal(err)
-		} else if test.bijective && !bytes.Equal(data, test.data) {
+		} else if data := buf.Bytes(); test.bijective && !bytes.Equal(data, test.data) {
 			t.Fatalf("Data does not match, expected %x and got %x", test.data, data)
 		}
 	}

@@ -1,9 +1,9 @@
 package tcpcl
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 )
 
 // TransferRefusalCode is the one-octet refusal reason code for a XFER_REFUSE message.
@@ -78,28 +78,21 @@ func (trm TransferRefusalMessage) String() string {
 		trm.ReasonCode, trm.TransferId)
 }
 
-// MarshalBinary encodes this TransferRefusalMessage into its binary form.
-func (trm TransferRefusalMessage) MarshalBinary() (data []byte, err error) {
-	var buf = new(bytes.Buffer)
+func (trm TransferRefusalMessage) Marshal(w io.Writer) error {
 	var fields = []interface{}{XFER_REFUSE, trm.ReasonCode, trm.TransferId}
 
 	for _, field := range fields {
-		if binErr := binary.Write(buf, binary.BigEndian, field); binErr != nil {
-			err = binErr
-			return
+		if err := binary.Write(w, binary.BigEndian, field); err != nil {
+			return err
 		}
 	}
 
-	data = buf.Bytes()
-	return
+	return nil
 }
 
-// UnmarshalBinary decodes a TransferRefusalMessage from its binary form.
-func (trm *TransferRefusalMessage) UnmarshalBinary(data []byte) error {
-	var buf = bytes.NewReader(data)
-
+func (trm *TransferRefusalMessage) Unmarshal(r io.Reader) error {
 	var messageHeader uint8
-	if err := binary.Read(buf, binary.BigEndian, &messageHeader); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &messageHeader); err != nil {
 		return err
 	} else if messageHeader != XFER_REFUSE {
 		return fmt.Errorf("XFER_REFUSE's Message Header is wrong: %d instead of %d", messageHeader, XFER_REFUSE)
@@ -108,7 +101,7 @@ func (trm *TransferRefusalMessage) UnmarshalBinary(data []byte) error {
 	var fields = []interface{}{&trm.ReasonCode, &trm.TransferId}
 
 	for _, field := range fields {
-		if err := binary.Read(buf, binary.BigEndian, field); err != nil {
+		if err := binary.Read(r, binary.BigEndian, field); err != nil {
 			return err
 		}
 	}

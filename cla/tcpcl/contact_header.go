@@ -3,6 +3,7 @@ package tcpcl
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -42,17 +43,25 @@ func (ch ContactHeader) String() string {
 	return fmt.Sprintf("ContactHeader(Version=4, Flags=%v)", ch.Flags)
 }
 
-// MarshalBinary encodes this ContactHeader into its binary form.
-func (ch ContactHeader) MarshalBinary() (data []byte, _ error) {
-	// magic='dtn!', version=4, flags=flags
-	data = []byte{0x64, 0x74, 0x6E, 0x21, 0x04, byte(ch.Flags)}
-	return
+func (ch ContactHeader) Marshal(w io.Writer) error {
+	var data = []byte{0x64, 0x74, 0x6E, 0x21, 0x04, byte(ch.Flags)}
+
+	if n, err := w.Write(data); err != nil {
+		return err
+	} else if n != len(data) {
+		return fmt.Errorf("Wrote %d octets instead of %d", n, len(data))
+	}
+
+	return nil
 }
 
-// UnmarshalBinary decodes a ContactHeader from its binary form.
-func (ch *ContactHeader) UnmarshalBinary(data []byte) error {
-	if len(data) != 6 {
-		return fmt.Errorf("ContactHeader's length is wrong: %d instead of 6", len(data))
+func (ch *ContactHeader) Unmarshal(r io.Reader) error {
+	var data = make([]byte, 6)
+
+	if n, err := r.Read(data); err != nil {
+		return err
+	} else if n != len(data) {
+		return fmt.Errorf("Read %d octets instead of %d", n, len(data))
 	}
 
 	if !bytes.Equal(data[:4], []byte("dtn!")) {

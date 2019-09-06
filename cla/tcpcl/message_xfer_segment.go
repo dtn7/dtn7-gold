@@ -1,9 +1,9 @@
 package tcpcl
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -58,9 +58,7 @@ func (dtm DataTransmissionMessage) String() string {
 		dtm.Flags, dtm.TransferId, dtm.Data)
 }
 
-// MarshalBinary encodes this DataTransmissionMessage into its binary form.
-func (dtm DataTransmissionMessage) MarshalBinary() (data []byte, err error) {
-	var buf = new(bytes.Buffer)
+func (dtm DataTransmissionMessage) Marshal(w io.Writer) error {
 	var fields = []interface{}{
 		XFER_SEGMENT,
 		dtm.Flags,
@@ -69,27 +67,23 @@ func (dtm DataTransmissionMessage) MarshalBinary() (data []byte, err error) {
 		uint64(len(dtm.Data))}
 
 	for _, field := range fields {
-		if binErr := binary.Write(buf, binary.BigEndian, field); binErr != nil {
-			err = binErr
-			return
+		if err := binary.Write(w, binary.BigEndian, field); err != nil {
+			return err
 		}
 	}
 
-	if n, _ := buf.Write(dtm.Data); n != len(dtm.Data) {
-		err = fmt.Errorf("XFER_SEGMENT Data length is %d, but only wrote %d bytes", len(dtm.Data), n)
-		return
+	if n, err := w.Write(dtm.Data); err != nil {
+		return err
+	} else if n != len(dtm.Data) {
+		return fmt.Errorf("XFER_SEGMENT Data length is %d, but only wrote %d bytes", len(dtm.Data), n)
 	}
 
-	data = buf.Bytes()
-	return
+	return nil
 }
 
-// UnmarshalBinary decodes a DataTransmissionMessage from its binary form.
-func (dtm *DataTransmissionMessage) UnmarshalBinary(data []byte) error {
-	var buf = bytes.NewReader(data)
-
+func (dtm *DataTransmissionMessage) Unmarshal(r io.Reader) error {
 	var messageHeader uint8
-	if err := binary.Read(buf, binary.BigEndian, &messageHeader); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &messageHeader); err != nil {
 		return err
 	} else if messageHeader != XFER_SEGMENT {
 		return fmt.Errorf("XFER_SEGMENT's Message Header is wrong: %d instead of %d", messageHeader, XFER_SEGMENT)
@@ -99,7 +93,7 @@ func (dtm *DataTransmissionMessage) UnmarshalBinary(data []byte) error {
 	var fields = []interface{}{&dtm.Flags, &dtm.TransferId, &transferExtLen}
 
 	for _, field := range fields {
-		if err := binary.Read(buf, binary.BigEndian, field); err != nil {
+		if err := binary.Read(r, binary.BigEndian, field); err != nil {
 			return err
 		}
 	}
@@ -108,7 +102,7 @@ func (dtm *DataTransmissionMessage) UnmarshalBinary(data []byte) error {
 	if transferExtLen > 0 {
 		transferExtBuff := make([]byte, transferExtLen)
 
-		if n, err := buf.Read(transferExtBuff); err != nil {
+		if n, err := r.Read(transferExtBuff); err != nil {
 			return err
 		} else if uint32(n) != transferExtLen {
 			return fmt.Errorf(
@@ -118,12 +112,12 @@ func (dtm *DataTransmissionMessage) UnmarshalBinary(data []byte) error {
 	}
 
 	var dataLen uint64
-	if err := binary.Read(buf, binary.BigEndian, &dataLen); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &dataLen); err != nil {
 		return err
 	} else if dataLen > 0 {
 		dataBuff := make([]byte, dataLen)
 
-		if n, err := buf.Read(dataBuff); err != nil {
+		if n, err := r.Read(dataBuff); err != nil {
 			return err
 		} else if uint64(n) != dataLen {
 			return fmt.Errorf(
