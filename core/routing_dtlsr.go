@@ -15,12 +15,6 @@ import (
 
 const BroadcastAddress = "dtn:broadcast"
 
-// timestampNow outputs the current UNIX-time as an unsigned int64
-// (I have no idea, why this is signed by default... does the kernel even allow you to set a negative time?)
-func timestampNow() uint64 {
-	return uint64(time.Now().Unix())
-}
-
 type DTLSRConfig struct {
 	// RecomputeTime is the interval (in seconds) until the routing table is recomputed.
 	// Note: Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
@@ -56,7 +50,7 @@ type DTLSR struct {
 	// broadcastAddress is where metadata-bundles are sent to
 	broadcastAddress bundle.EndpointID
 	// purgeTime is the time until a peer gets removed from the peer list
-	purgeTime uint64
+	purgeTime time.Duration
 	// dataMutex is a RW-mutex which protects change operations to the algorithm's metadata
 	dataMutex sync.RWMutex
 }
@@ -67,9 +61,9 @@ type peerData struct {
 	id bundle.EndpointID
 	// timestamp is the time the last change occurred
 	// when receiving other node's data, we only update if the timestamp in newer
-	timestamp uint64
+	timestamp bundle.DtnTime
 	// peers is a mapping of previously seen peers and the respective timestamp of the last encounter
-	peers map[bundle.EndpointID]uint64
+	peers map[bundle.EndpointID]bundle.DtnTime
 }
 
 func (pd peerData) isNewerThan(other peerData) bool {
@@ -101,8 +95,8 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 		peerChange:   false,
 		peers: peerData{
 			id:        c.NodeId,
-			timestamp: timestampNow(),
-			peers:     make(map[bundle.EndpointID]uint64),
+			timestamp: bundle.DtnTimeNow(),
+			peers:     make(map[bundle.EndpointID]bundle.DtnTime),
 		},
 		receivedChange:   false,
 		receivedData:     make(map[bundle.EndpointID]peerData),
@@ -110,7 +104,7 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 		indexNode:        []bundle.EndpointID{c.NodeId},
 		length:           1,
 		broadcastAddress: bAddress,
-		purgeTime:        uint64(purgeTime),
+		purgeTime:        purgeTime,
 	}
 
 	err = c.cron.Register("dtlsr_purge", dtlsr.purgePeers, purgeTime)
@@ -381,7 +375,7 @@ func (dtlsr *DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 
 	// add node to peer list
 	dtlsr.peers.peers[peerID] = 0
-	dtlsr.peers.timestamp = timestampNow()
+	dtlsr.peers.timestamp = bundle.DtnTimeNow()
 	dtlsr.peerChange = true
 
 	log.WithFields(log.Fields{
@@ -409,7 +403,7 @@ func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 	dtlsr.dataMutex.Lock()
 	defer dtlsr.dataMutex.Unlock()
 	// set expiration timestamp for peer
-	timestamp := timestampNow()
+	timestamp := bundle.DtnTimeNow()
 	dtlsr.peers.peers[peerID] = timestamp
 	dtlsr.peers.timestamp = timestamp
 	dtlsr.peerChange = true
@@ -451,7 +445,7 @@ func (dtlsr *DTLSR) newNode(id bundle.EndpointID) {
 func (dtlsr *DTLSR) computeRoutingTable() {
 	log.Debug("Recomputing routing table")
 
-	currentTime := timestampNow()
+	currentTime := bundle.DtnTimeNow()
 	graph := dijkstra.NewGraph()
 
 	// add vertices
@@ -621,13 +615,13 @@ func (dtlsr *DTLSR) broadcastCron() {
 // purgePeers removes peers who have not been seen for a long time
 func (dtlsr *DTLSR) purgePeers() {
 	log.Debug("Executing purgePeers")
-	currentTime := timestampNow()
+	currentTime := time.Now()
 
 	dtlsr.dataMutex.Lock()
 	defer dtlsr.dataMutex.Unlock()
 
 	for peerID, timestamp := range dtlsr.peers.peers {
-		if timestamp != 0 && currentTime > timestamp+dtlsr.purgeTime {
+		if timestamp != 0 && timestamp.Time().Add(dtlsr.purgeTime).Before(currentTime) {
 			log.WithFields(log.Fields{
 				"peer":            peerID,
 				"disconnect_time": timestamp,
@@ -674,7 +668,7 @@ func (dtlsrb *DTLSRBlock) MarshalCbor(w io.Writer) error {
 	}
 
 	// write the timestamp
-	if err := cboring.WriteUInt(dtlsrb.timestamp, w); err != nil {
+	if err := cboring.WriteUInt(uint64(dtlsrb.timestamp), w); err != nil {
 		return err
 	}
 
@@ -688,7 +682,7 @@ func (dtlsrb *DTLSRBlock) MarshalCbor(w io.Writer) error {
 		if err := cboring.Marshal(&peerID, w); err != nil {
 			return err
 		}
-		if err := cboring.WriteUInt(timestamp, w); err != nil {
+		if err := cboring.WriteUInt(uint64(timestamp), w); err != nil {
 			return err
 		}
 	}
@@ -716,7 +710,7 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 	if timestamp, err := cboring.ReadUInt(r); err != nil {
 		return err
 	} else {
-		dtlsrb.timestamp = timestamp
+		dtlsrb.timestamp = bundle.DtnTime(timestamp)
 	}
 
 	var lenData uint64
@@ -728,7 +722,7 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 	}
 
 	// read the actual data
-	peers := make(map[bundle.EndpointID]uint64)
+	peers := make(map[bundle.EndpointID]bundle.DtnTime)
 	var i uint64
 	for i = 0; i < lenData; i++ {
 		peerID := bundle.EndpointID{}
@@ -741,7 +735,7 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 			return err
 		}
 
-		peers[peerID] = timestamp
+		peers[peerID] = bundle.DtnTime(timestamp)
 	}
 
 	dtlsrb.peers = peers
