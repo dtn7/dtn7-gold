@@ -63,7 +63,7 @@ func (serv *TCPCLServer) Start() (error, bool) {
 					serv.Close()
 				} else if conn, err := ln.Accept(); err == nil {
 					// TODO
-					client := NewTCPCLClient(conn, serv.endpointID.String())
+					client := NewTCPCLClient(conn, serv.endpointID)
 					_, _ = client.Start()
 				}
 			}

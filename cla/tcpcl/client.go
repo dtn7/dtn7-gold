@@ -8,6 +8,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/dtn7-go/bundle"
 )
 
 type ClientState int
@@ -35,8 +37,9 @@ func (cs ClientState) String() string {
 }
 
 type TCPCLClient struct {
-	address    string
-	endpointID string
+	address        string
+	endpointID     bundle.EndpointID
+	peerEndpointID bundle.EndpointID
 
 	conn net.Conn
 	rw   *bufio.ReadWriter
@@ -55,9 +58,13 @@ type TCPCLClient struct {
 	initRecv     bool
 	sessInitSent SessionInitMessage
 	sessInitRecv SessionInitMessage
+
+	keepalive   uint16
+	segmentMru  uint64
+	transferMru uint64
 }
 
-func NewTCPCLClient(conn net.Conn, endpointID string) *TCPCLClient {
+func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
 	return &TCPCLClient{
 		conn:       conn,
 		active:     false,
@@ -65,7 +72,7 @@ func NewTCPCLClient(conn net.Conn, endpointID string) *TCPCLClient {
 	}
 }
 
-func Dial(address string, endpointID string) *TCPCLClient {
+func Dial(address string, endpointID bundle.EndpointID) *TCPCLClient {
 	return &TCPCLClient{
 		address:    address,
 		active:     true,
@@ -121,7 +128,7 @@ func (client *TCPCLClient) handler() {
 			if err := client.handleSessInit(); err != nil {
 				logger.WithError(err).Warn("Error occured during session initialization")
 
-				// TODO
+				client.terminate(TerminationUnknown)
 				return
 			}
 		}
@@ -173,13 +180,13 @@ func (client *TCPCLClient) handleSessInit() error {
 	// XXX
 	const (
 		keepalive   = 10
-		segmentMru  = 0xFFFFFFFF
-		transferMru = 0xFFFFFFFF
+		segmentMru  = 0xFFFFFFFFFFFFFFFF
+		transferMru = 0xFFFFFFFFFFFFFFFF
 	)
 
 	switch {
 	case client.active && !client.initSent, !client.active && !client.initSent && client.initRecv:
-		client.sessInitSent = NewSessionInitMessage(keepalive, segmentMru, transferMru, client.endpointID)
+		client.sessInitSent = NewSessionInitMessage(keepalive, segmentMru, transferMru, client.endpointID.String())
 		if err := client.sessInitSent.Marshal(client.rw); err != nil {
 			return err
 		} else if err := client.rw.Flush(); err != nil {
@@ -198,8 +205,31 @@ func (client *TCPCLClient) handleSessInit() error {
 		}
 
 	case client.initSent && client.initRecv:
-		// TODO: everything
-		logger.Debug("Exchanged SESS_INIT messages")
+		if eid, err := bundle.NewEndpointID(client.sessInitRecv.Eid); err != nil {
+			return err
+		} else {
+			client.peerEndpointID = eid
+		}
+
+		client.keepalive = client.sessInitSent.KeepaliveInterval
+		if client.sessInitRecv.KeepaliveInterval < client.keepalive {
+			client.keepalive = client.sessInitRecv.KeepaliveInterval
+		}
+		client.segmentMru = client.sessInitSent.SegmentMru
+		if client.sessInitRecv.SegmentMru < client.segmentMru {
+			client.segmentMru = client.sessInitRecv.SegmentMru
+		}
+		client.transferMru = client.sessInitSent.TransferMru
+		if client.sessInitRecv.TransferMru < client.transferMru {
+			client.transferMru = client.sessInitRecv.TransferMru
+		}
+
+		logger.WithFields(log.Fields{
+			"endpoint ID":  client.peerEndpointID,
+			"keepalive":    client.keepalive,
+			"segment MRU":  client.segmentMru,
+			"transfer MRU": client.transferMru,
+		}).Debug("Exchanged SESS_INIT messages")
 		client.state += 1
 	}
 
