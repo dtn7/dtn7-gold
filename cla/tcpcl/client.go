@@ -19,10 +19,27 @@ const (
 	Termination    ClientState = iota
 )
 
+func (cs ClientState) String() string {
+	switch cs {
+	case Contact:
+		return "contact"
+	case Initialization:
+		return "initialization"
+	case Established:
+		return "established"
+	case Termination:
+		return "termination"
+	default:
+		return "INVALID"
+	}
+}
+
 type TCPCLClient struct {
-	address string
-	conn    net.Conn
-	rw      *bufio.ReadWriter
+	address    string
+	endpointID string
+
+	conn net.Conn
+	rw   *bufio.ReadWriter
 
 	active bool
 	state  ClientState
@@ -33,20 +50,26 @@ type TCPCLClient struct {
 	chSent      ContactHeader
 	chRecv      ContactHeader
 
-	// Termination state fields:
+	// Initialization state fields:
+	initSent     bool
+	initRecv     bool
+	sessInitSent SessionInitMessage
+	sessInitRecv SessionInitMessage
 }
 
-func NewTCPCLClient(conn net.Conn) *TCPCLClient {
+func NewTCPCLClient(conn net.Conn, endpointID string) *TCPCLClient {
 	return &TCPCLClient{
-		conn:   conn,
-		active: false,
+		conn:       conn,
+		active:     false,
+		endpointID: endpointID,
 	}
 }
 
-func Dial(address string) *TCPCLClient {
+func Dial(address string, endpointID string) *TCPCLClient {
 	return &TCPCLClient{
-		address: address,
-		active:  true,
+		address:    address,
+		active:     true,
+		endpointID: endpointID,
 	}
 }
 
@@ -54,7 +77,7 @@ func (client *TCPCLClient) String() string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "TCPCL(")
-	fmt.Fprintf(&b, "peer=%v,", client.conn.RemoteAddr())
+	fmt.Fprintf(&b, "peer=%v, ", client.conn.RemoteAddr())
 	fmt.Fprintf(&b, "active peer=%t", client.active)
 	fmt.Fprintf(&b, ")")
 
@@ -79,16 +102,26 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 }
 
 func (client *TCPCLClient) handler() {
-	var logger = log.WithField("session", client)
+	var logger = log.WithFields(log.Fields{
+		"session": client,
+		"state":   client.state,
+	})
 
 	for {
 		switch client.state {
 		case Contact:
 			if err := client.handleContact(); err != nil {
-				logger.WithField("state", "contact").WithError(err).Warn(
-					"Error occured during contact state")
+				logger.WithError(err).Warn("Error occured during contact header exchange")
 
 				client.terminate(TerminationContactFailure)
+				return
+			}
+
+		case Initialization:
+			if err := client.handleSessInit(); err != nil {
+				logger.WithError(err).Warn("Error occured during session initialization")
+
+				// TODO
 				return
 			}
 		}
@@ -98,9 +131,8 @@ func (client *TCPCLClient) handler() {
 // handleContact manges the contact stage with the Contact Header exchange.
 func (client *TCPCLClient) handleContact() error {
 	var logger = log.WithFields(log.Fields{
-		"session":     client,
-		"active peer": client.active,
-		"state":       "contact",
+		"session": client,
+		"state":   "contact",
 	})
 
 	switch {
@@ -126,6 +158,48 @@ func (client *TCPCLClient) handleContact() error {
 	case client.contactSent && client.contactRecv:
 		// TODO: check contact header flags
 		logger.Debug("Exchanged Contact Headers")
+		client.state += 1
+	}
+
+	return nil
+}
+
+func (client *TCPCLClient) handleSessInit() error {
+	var logger = log.WithFields(log.Fields{
+		"session": client,
+		"state":   "initialization",
+	})
+
+	// XXX
+	const (
+		keepalive   = 10
+		segmentMru  = 0xFFFFFFFF
+		transferMru = 0xFFFFFFFF
+	)
+
+	switch {
+	case client.active && !client.initSent, !client.active && !client.initSent && client.initRecv:
+		client.sessInitSent = NewSessionInitMessage(keepalive, segmentMru, transferMru, client.endpointID)
+		if err := client.sessInitSent.Marshal(client.rw); err != nil {
+			return err
+		} else if err := client.rw.Flush(); err != nil {
+			return err
+		} else {
+			client.initSent = true
+			logger.WithField("msg", client.sessInitSent).Debug("Sent SESS_INIT message")
+		}
+
+	case !client.active && !client.initRecv, client.active && client.initSent && !client.initRecv:
+		if err := client.sessInitRecv.Unmarshal(client.rw); err != nil {
+			return err
+		} else {
+			client.initRecv = true
+			logger.WithField("msg", client.sessInitRecv).Debug("Received SESS_INIT message")
+		}
+
+	case client.initSent && client.initRecv:
+		// TODO: everything
+		logger.Debug("Exchanged SESS_INIT messages")
 		client.state += 1
 	}
 
