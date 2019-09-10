@@ -4,6 +4,7 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 	"sync"
+	"time"
 )
 import log "github.com/sirupsen/logrus"
 
@@ -45,6 +46,20 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 		config:               config,
 	}
 
+	ageInterval, err := time.ParseDuration(config.AgeInterval)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"string": config.AgeInterval,
+		}).Fatal("Unable to parse duration")
+	}
+
+	err = c.cron.Register("dtlsr_recompute", prophet.ageCron, ageInterval)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"reason": err.Error(),
+		}).Warn("Could not register DTLSR recompute job")
+	}
+
 	return &prophet
 }
 
@@ -55,7 +70,8 @@ func (prophet *Prophet) encounter(peer bundle.EndpointID) {
 	prophet.predictability[peer] = pNew
 	log.WithFields(log.Fields{
 		"peer": peer,
-		"pred": pNew,
+		"pOld": pOld,
+		"pNew": pNew,
 	}).Debug("Updated predictability via encounter")
 }
 
@@ -66,11 +82,23 @@ func (prophet *Prophet) agePred(peer bundle.EndpointID) {
 	prophet.predictability[peer] = pNew
 	log.WithFields(log.Fields{
 		"peer": peer,
-		"pred": pNew,
+		"pOld": pOld,
+		"pNew": pNew,
 	}).Debug("Updated predictability via ageing")
 }
 
-// transitivity
+// ageCron gets called periodically by the core's cron ange ages all peer predictabilities
+func (prophet *Prophet) ageCron() {
+	prophet.dataMutex.Lock()
+	defer prophet.dataMutex.Unlock()
+	for peer := range prophet.predictability {
+		prophet.agePred(peer)
+	}
+}
+
+// transitivity increases predicability for nodes based on a peer's corresponding predicability
+// If we are likely to reencounter node b and node b is likely to reencounter node c
+// then we are also a good forwarder for node c
 func (prophet *Prophet) transitivity(peer bundle.EndpointID) {
 	peerPredictabilities, present := prophet.peerPredictabilities[peer]
 	if !present {
@@ -117,7 +145,6 @@ func (prophet *Prophet) ReportFailure(bp BundlePack, sender cla.ConvergenceSende
 
 }
 
-// TODO: dummy implementation
 func (prophet *Prophet) ReportPeerAppeared(peer cla.Convergence) {
 	log.WithFields(log.Fields{
 		"address": peer,
