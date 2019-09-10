@@ -22,3 +22,5 @@ exclude (
 	github.com/albertorestifo/dijkstra v0.0.0-20160910063646-aba76f725f72
 	github.com/mattomatic/dijkstra v0.0.0-20130617153013-6f6d134eb237
 )
+
+go 1.13

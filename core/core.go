@@ -66,6 +66,8 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 		c.routing = NewBinarySpray(c, routingConf.SprayConf)
 	case "dtlsr":
 		c.routing = NewDTLSR(c, routingConf.DTLSRConf)
+	case "prophet":
+		c.routing = NewProphet(c, routingConf.ProphetConf)
 	default:
 		log.WithFields(log.Fields{
 			"routing_string": routingConf.Algorithm,
