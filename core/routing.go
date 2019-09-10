@@ -44,4 +44,6 @@ type RoutingConf struct {
 	SprayConf SprayConfig
 	// DTLSRConf contains data to initialise dtlsr
 	DTLSRConf DTLSRConfig
+	// ProphetConf contains data to initialise prophet
+	ProphetConf ProphetConfig
 }
