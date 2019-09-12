@@ -19,12 +19,20 @@ type ProphetConfig struct {
 	AgeInterval string
 }
 
-type Prophet struct {
-	c *Core
+// predictabilities contains a node's ID as well as the delivery predictabilities for other nodes
+type predictabilities struct {
+	// id is this node's EndpointID
+	id bundle.EndpointID
 	// Mapping NodeID->Encounter Probability
 	predictability map[bundle.EndpointID]float64
+}
+
+type Prophet struct {
+	c *Core
+	// predictabilities are this node's delivery probabilities for other nodes
+	predictabilities predictabilities
 	// Map containing the predictability-maps of other nodes
-	peerPredictabilities map[bundle.EndpointID]map[bundle.EndpointID]float64
+	peerPredictabilities map[bundle.EndpointID]predictabilities
 	// dataMutex is a RW-mutex which protects change operations to the algorithm's metadata
 	dataMutex sync.RWMutex
 	// config contains the values for prophet constants
@@ -40,9 +48,12 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 	}).Info("Initialised Prophet")
 
 	prophet := Prophet{
-		c:                    c,
-		predictability:       make(map[bundle.EndpointID]float64),
-		peerPredictabilities: make(map[bundle.EndpointID]map[bundle.EndpointID]float64),
+		c: c,
+		predictabilities: predictabilities{
+			id:             c.NodeId,
+			predictability: make(map[bundle.EndpointID]float64),
+		},
+		peerPredictabilities: make(map[bundle.EndpointID]predictabilities),
 		config:               config,
 	}
 
@@ -65,9 +76,9 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 
 // encounter updates the predictability for an encountered node
 func (prophet *Prophet) encounter(peer bundle.EndpointID) {
-	pOld := prophet.predictability[peer]
+	pOld := prophet.predictabilities.predictability[peer]
 	pNew := pOld + ((1 - pOld) * prophet.config.PInit)
-	prophet.predictability[peer] = pNew
+	prophet.predictabilities.predictability[peer] = pNew
 	log.WithFields(log.Fields{
 		"peer": peer,
 		"pOld": pOld,
@@ -77,9 +88,9 @@ func (prophet *Prophet) encounter(peer bundle.EndpointID) {
 
 // agePred "ages" - decreases over time - the predictability for a node
 func (prophet *Prophet) agePred(peer bundle.EndpointID) {
-	pOld := prophet.predictability[peer]
+	pOld := prophet.predictabilities.predictability[peer]
 	pNew := pOld * prophet.config.Gamma
-	prophet.predictability[peer] = pNew
+	prophet.predictabilities.predictability[peer] = pNew
 	log.WithFields(log.Fields{
 		"peer": peer,
 		"pOld": pOld,
@@ -91,7 +102,7 @@ func (prophet *Prophet) agePred(peer bundle.EndpointID) {
 func (prophet *Prophet) ageCron() {
 	prophet.dataMutex.Lock()
 	defer prophet.dataMutex.Unlock()
-	for peer := range prophet.predictability {
+	for peer := range prophet.predictabilities.predictability {
 		prophet.agePred(peer)
 	}
 }
@@ -112,11 +123,11 @@ func (prophet *Prophet) transitivity(peer bundle.EndpointID) {
 		"peer": peer,
 	}).Debug("Updating transitive predictabilities")
 
-	for otherPeer, otherPeerPred := range peerPredictabilities {
-		peerPred := prophet.predictability[peer]
-		pOld := prophet.predictability[otherPeer]
+	for otherPeer, otherPeerPred := range peerPredictabilities.predictability {
+		peerPred := prophet.predictabilities.predictability[peer]
+		pOld := prophet.predictabilities.predictability[otherPeer]
 		pNew := pOld + ((1 - pOld) * peerPred * otherPeerPred * prophet.config.Beta)
-		prophet.predictability[otherPeer] = pNew
+		prophet.predictabilities.predictability[otherPeer] = pNew
 		log.WithFields(log.Fields{
 			"peer":       peer,
 			"other_peer": otherPeer,
@@ -140,9 +151,8 @@ func (prophet *Prophet) SenderForBundle(bp BundlePack) (sender []cla.Convergence
 	return nil, false
 }
 
-// TODO: dummy implementation
 func (prophet *Prophet) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
-
+	// When a transmission fails, that's unfortunate bet there really is not a whole lot to do
 }
 
 func (prophet *Prophet) ReportPeerAppeared(peer cla.Convergence) {
