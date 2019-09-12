@@ -3,7 +3,7 @@ module github.com/dtn7/dtn7-go
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/RyanCarrier/dijkstra v0.0.0-20190613134106-3f5a38e7002e
-	github.com/dtn7/cboring v0.1.3
+	github.com/dtn7/cboring v0.1.4
 	github.com/felixge/tcpkeepalive v0.0.0-20160804073959-5bb0b2dea91e
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/hashicorp/go-multierror v1.0.0
