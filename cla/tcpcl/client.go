@@ -12,30 +12,6 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
-type ClientState int
-
-const (
-	Contact        ClientState = iota
-	Initialization ClientState = iota
-	Established    ClientState = iota
-	Termination    ClientState = iota
-)
-
-func (cs ClientState) String() string {
-	switch cs {
-	case Contact:
-		return "contact"
-	case Initialization:
-		return "initialization"
-	case Established:
-		return "established"
-	case Termination:
-		return "termination"
-	default:
-		return "INVALID"
-	}
-}
-
 type TCPCLClient struct {
 	address        string
 	endpointID     bundle.EndpointID
@@ -182,7 +158,7 @@ func (client *TCPCLClient) handleContact() error {
 	case client.contactSent && client.contactRecv:
 		// TODO: check contact header flags
 		logger.Debug("Exchanged Contact Headers")
-		client.state += 1
+		client.state.Next()
 	}
 
 	return nil
@@ -247,7 +223,7 @@ func (client *TCPCLClient) handleSessInit() error {
 			"segment MRU":  client.segmentMru,
 			"transfer MRU": client.transferMru,
 		}).Debug("Exchanged SESS_INIT messages")
-		client.state += 1
+		client.state.Next()
 	}
 
 	return nil
