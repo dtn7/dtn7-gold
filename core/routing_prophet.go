@@ -1,8 +1,11 @@
 package core
 
 import (
+	"fmt"
+	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
+	"io"
 	"sync"
 	"time"
 )
@@ -69,6 +72,13 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 		log.WithFields(log.Fields{
 			"reason": err.Error(),
 		}).Warn("Could not register DTLSR recompute job")
+	}
+
+	// register our custom metadata-block
+	extensionBlockManager := bundle.GetExtensionBlockManager()
+	if !extensionBlockManager.IsKnown(ExtBlockTypeProphetBlock) {
+		// since we already checked if the block type exists, this really shouldn't ever fail...
+		_ = extensionBlockManager.Register(newProphetBlock(prophet.predictabilities))
 	}
 
 	return &prophet
@@ -181,4 +191,103 @@ func (prophet *Prophet) ReportPeerAppeared(peer cla.Convergence) {
 // TODO: dummy implementation
 func (prophet *Prophet) ReportPeerDisappeared(peer cla.Convergence) {
 
+}
+
+// TODO: Turn this into an administrative record
+
+const ExtBlockTypeProphetBlock uint64 = 194
+
+// DTLSRBlock contains routing metadata
+type ProphetBlock predictabilities
+
+func newProphetBlock(data predictabilities) *ProphetBlock {
+	newBlock := ProphetBlock(data)
+	return &newBlock
+}
+
+func (pBlock *ProphetBlock) getPredictabilities() predictabilities {
+	return predictabilities(*pBlock)
+}
+
+func (pBlock *ProphetBlock) BlockTypeCode() uint64 {
+	return ExtBlockTypeProphetBlock
+}
+
+func (pBlock ProphetBlock) CheckValid() error {
+	return nil
+}
+
+func (pBlock *ProphetBlock) MarshalCbor(w io.Writer) error {
+	// start with the outer array
+	if err := cboring.WriteArrayLength(2, w); err != nil {
+		return err
+	}
+
+	// write endpoint id
+	if err := cboring.Marshal(&pBlock.id, w); err != nil {
+		return err
+	}
+
+	// write the peer data array header
+	if err := cboring.WriteArrayLength(uint64(len(pBlock.predictability)), w); err != nil {
+		return err
+	}
+
+	// write the actual data
+	for peerID, pred := range pBlock.predictability {
+		if err := cboring.Marshal(&peerID, w); err != nil {
+			return err
+		}
+		if err := cboring.WriteFloat64(pred, w); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (pBlock *ProphetBlock) UnmarshalCbor(r io.Reader) error {
+	// read the outer array
+	if l, err := cboring.ReadArrayLength(r); err != nil {
+		return err
+	} else if l != 2 {
+		return fmt.Errorf("expected 2 fields, got %d", l)
+	}
+
+	// read endpoint id
+	id := bundle.EndpointID{}
+	if err := cboring.Unmarshal(&id, r); err != nil {
+		return err
+	} else {
+		pBlock.id = id
+	}
+
+	var lenData uint64
+
+	// read length of data array
+	lenData, err := cboring.ReadArrayLength(r)
+	if err != nil {
+		return err
+	}
+
+	// read the actual data
+	predictability := make(map[bundle.EndpointID]float64)
+	var i uint64
+	for i = 0; i < lenData; i++ {
+		peerID := bundle.EndpointID{}
+		if err := cboring.Unmarshal(&peerID, r); err != nil {
+			return err
+		}
+
+		pred, err := cboring.ReadFloat64(r)
+		if err != nil {
+			return err
+		}
+
+		predictability[peerID] = pred
+	}
+
+	pBlock.predictability = predictability
+
+	return nil
 }
