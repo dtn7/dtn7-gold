@@ -1,7 +1,5 @@
 package tcpcl
 
-import "errors"
-
 // ClientState describes the state of a TCPCL Client. Each Client can always
 // upgrade its state to a later one, but cannot go back to a previous state.
 // A transition can be made into the following or the termination state.
@@ -38,15 +36,11 @@ func (cs ClientState) String() string {
 	}
 }
 
-// Next enters the following ClientState or errors if there is no next state.
-func (cs *ClientState) Next() (err error) {
-	if *cs == Termination {
-		err = errors.New("There is no state after termination")
-	} else {
+// Next enters the following ClientState.
+func (cs *ClientState) Next() {
+	if *cs != Termination {
 		*cs += 1
 	}
-
-	return
 }
 
 // Terminate sets the ClientState into the termination state.
