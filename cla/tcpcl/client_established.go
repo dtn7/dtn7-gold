@@ -18,13 +18,29 @@ func (client *TCPCLClient) keepaliveHandler() {
 	for {
 		select {
 		case <-keepaliveTicker.C:
+			// Send a keepalive
 			var keepaliveMsg = NewKeepaliveMessage()
 			if err := keepaliveMsg.Marshal(client.rw); err != nil {
 				logger.WithError(err).Warn("Sending KEEPALIVE errored")
 			} else if err := client.rw.Flush(); err != nil {
 				logger.WithError(err).Warn("Flushing KEEPALIVE errored")
 			} else {
-				log.WithField("msg", keepaliveMsg).Debug("Sent KEEPALIVE message")
+				logger.WithField("msg", keepaliveMsg).Debug("Sent KEEPALIVE message")
+			}
+			// TODO: terminate session
+
+			// Check last received keepalive
+			var diff = time.Now().Sub(client.keepaliveLast)
+			if diff > 2*time.Duration(client.keepalive)*time.Second {
+				logger.WithFields(log.Fields{
+					"last keepalive": client.keepaliveLast,
+					"interval":       time.Duration(client.keepalive) * time.Second,
+				}).Warn("No KEEPALIVE was received within expected time frame")
+
+				// TODO: terminate session
+			} else {
+				logger.WithField("last keepalive", client.keepaliveLast).Debug(
+					"Received last KEEPALIVE within expected time frame")
 			}
 
 		case <-client.keepaliveStopSyn:
@@ -56,6 +72,7 @@ func (client *TCPCLClient) handleEstablished() error {
 		if err := keepaliveMsg.Unmarshal(client.rw); err != nil {
 			return err
 		} else {
+			client.keepaliveLast = time.Now()
 			logger.WithField("msg", keepaliveMsg).Debug("Received KEEPALIVE message")
 		}
 
