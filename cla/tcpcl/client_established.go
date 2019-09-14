@@ -30,7 +30,7 @@ func (client *TCPCLClient) keepaliveHandler() {
 			// TODO: terminate session
 
 			// Check last received keepalive
-			var diff = time.Now().Sub(client.keepaliveLast)
+			var diff = time.Since(client.keepaliveLast)
 			if diff > 2*time.Duration(client.keepalive)*time.Second {
 				logger.WithFields(log.Fields{
 					"last keepalive": client.keepaliveLast,
