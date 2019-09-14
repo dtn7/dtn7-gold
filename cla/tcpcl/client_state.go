@@ -12,8 +12,8 @@ const (
 	// after a TCP connection was established.
 	Contact ClientState = iota
 
-	// Initialization is the SESS_INIT state.
-	Initialization ClientState = iota
+	// Init is the SESS_INIT state.
+	Init ClientState = iota
 
 	// Established describes an established connection, allowing Bundles to be exchanged.
 	Established ClientState = iota
@@ -27,7 +27,7 @@ func (cs ClientState) String() string {
 	switch cs {
 	case Contact:
 		return "contact"
-	case Initialization:
+	case Init:
 		return "initialization"
 	case Established:
 		return "established"

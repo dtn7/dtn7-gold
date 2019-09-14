@@ -29,7 +29,7 @@ type TCPCLClient struct {
 	chSent      ContactHeader
 	chRecv      ContactHeader
 
-	// Initialization state fields:
+	// Init state fields:
 	initSent     bool
 	initRecv     bool
 	sessInitSent SessionInitMessage
@@ -109,7 +109,7 @@ func (client *TCPCLClient) handler() {
 				return
 			}
 
-		case Initialization:
+		case Init:
 			if err := client.handleSessInit(); err != nil {
 				logger.WithError(err).Warn("Error occured during session initialization")
 
@@ -125,178 +125,5 @@ func (client *TCPCLClient) handler() {
 				return
 			}
 		}
-	}
-}
-
-// handleContact manges the contact stage with the Contact Header exchange.
-func (client *TCPCLClient) handleContact() error {
-	var logger = log.WithFields(log.Fields{
-		"session": client,
-		"state":   "contact",
-	})
-
-	switch {
-	case client.active && !client.contactSent, !client.active && !client.contactSent && client.contactRecv:
-		client.chSent = NewContactHeader(0)
-		if err := client.chSent.Marshal(client.rw); err != nil {
-			return err
-		} else if err := client.rw.Flush(); err != nil {
-			return err
-		} else {
-			client.contactSent = true
-			logger.WithField("msg", client.chSent).Debug("Sent Contact Header")
-		}
-
-	case !client.active && !client.contactRecv, client.active && client.contactSent && !client.contactRecv:
-		if err := client.chRecv.Unmarshal(client.rw); err != nil {
-			return err
-		} else {
-			client.contactRecv = true
-			logger.WithField("msg", client.chRecv).Debug("Received Contact Header")
-		}
-
-	case client.contactSent && client.contactRecv:
-		// TODO: check contact header flags
-		logger.Debug("Exchanged Contact Headers")
-		client.state.Next()
-	}
-
-	return nil
-}
-
-func (client *TCPCLClient) handleSessInit() error {
-	var logger = log.WithFields(log.Fields{
-		"session": client,
-		"state":   "initialization",
-	})
-
-	// XXX
-	const (
-		keepalive   = 10
-		segmentMru  = 0xFFFFFFFFFFFFFFFF
-		transferMru = 0xFFFFFFFFFFFFFFFF
-	)
-
-	switch {
-	case client.active && !client.initSent, !client.active && !client.initSent && client.initRecv:
-		client.sessInitSent = NewSessionInitMessage(keepalive, segmentMru, transferMru, client.endpointID.String())
-		if err := client.sessInitSent.Marshal(client.rw); err != nil {
-			return err
-		} else if err := client.rw.Flush(); err != nil {
-			return err
-		} else {
-			client.initSent = true
-			logger.WithField("msg", client.sessInitSent).Debug("Sent SESS_INIT message")
-		}
-
-	case !client.active && !client.initRecv, client.active && client.initSent && !client.initRecv:
-		if err := client.sessInitRecv.Unmarshal(client.rw); err != nil {
-			return err
-		} else {
-			client.initRecv = true
-			logger.WithField("msg", client.sessInitRecv).Debug("Received SESS_INIT message")
-		}
-
-	case client.initSent && client.initRecv:
-		if eid, err := bundle.NewEndpointID(client.sessInitRecv.Eid); err != nil {
-			return err
-		} else {
-			client.peerEndpointID = eid
-		}
-
-		client.keepalive = client.sessInitSent.KeepaliveInterval
-		if client.sessInitRecv.KeepaliveInterval < client.keepalive {
-			client.keepalive = client.sessInitRecv.KeepaliveInterval
-		}
-		client.segmentMru = client.sessInitSent.SegmentMru
-		if client.sessInitRecv.SegmentMru < client.segmentMru {
-			client.segmentMru = client.sessInitRecv.SegmentMru
-		}
-		client.transferMru = client.sessInitSent.TransferMru
-		if client.sessInitRecv.TransferMru < client.transferMru {
-			client.transferMru = client.sessInitRecv.TransferMru
-		}
-
-		logger.WithFields(log.Fields{
-			"endpoint ID":  client.peerEndpointID,
-			"keepalive":    client.keepalive,
-			"segment MRU":  client.segmentMru,
-			"transfer MRU": client.transferMru,
-		}).Debug("Exchanged SESS_INIT messages")
-		client.state.Next()
-	}
-
-	return nil
-}
-
-func (client *TCPCLClient) keepaliveHandler() {
-	var logger = log.WithField("session", client)
-
-	var keepaliveTicker = time.NewTicker(time.Duration(client.keepalive) * time.Second)
-	defer keepaliveTicker.Stop()
-
-	for {
-		select {
-		case <-keepaliveTicker.C:
-			var keepaliveMsg = NewKeepaliveMessage()
-			if err := keepaliveMsg.Marshal(client.rw); err != nil {
-				logger.WithError(err).Warn("Sending KEEPALIVE errored")
-			} else if err := client.rw.Flush(); err != nil {
-				logger.WithError(err).Warn("Flushing KEEPALIVE errored")
-			} else {
-				log.WithField("msg", keepaliveMsg).Debug("Sent KEEPALIVE message")
-			}
-
-		case <-client.keepaliveStopSyn:
-			close(client.keepaliveStopAck)
-			return
-		}
-	}
-}
-
-func (client *TCPCLClient) handleEstablished() error {
-	var logger = log.WithField("session", client)
-
-	if !client.keepaliveStarted {
-		go client.keepaliveHandler()
-		client.keepaliveStarted = true
-	}
-
-	nextMsg, nextMsgErr := client.rw.ReadByte()
-	if nextMsgErr != nil {
-		return nextMsgErr
-	} else if err := client.rw.UnreadByte(); err != nil {
-		return err
-	}
-
-	switch nextMsg {
-	case KEEPALIVE:
-		var keepaliveMsg KeepaliveMessage
-		if err := keepaliveMsg.Unmarshal(client.rw); err != nil {
-			return err
-		} else {
-			logger.WithField("msg", keepaliveMsg).Debug("Received KEEPALIVE message")
-		}
-
-	default:
-		logger.WithField("magic", nextMsg).Debug("Received unsupported magic")
-	}
-
-	return nil
-}
-
-// terminate sends a SESS_TERM message to its peer and closes the session afterwards.
-func (client *TCPCLClient) terminate(code SessionTerminationCode) {
-	var logger = log.WithField("session", client)
-
-	var sessTerm = NewSessionTerminationMessage(0, code)
-	if err := sessTerm.Marshal(client.rw); err != nil {
-		logger.WithError(err).Warn("Failed to send session termination message")
-	} else if err := client.rw.Flush(); err != nil {
-		logger.WithError(err).Warn("Failed to flush buffer")
-	} else if err := client.conn.Close(); err != nil {
-		logger.WithError(err).Warn("Failed to close TCP connection")
-	} else {
-		logger.Info("Terminated session")
 	}
 }
