@@ -125,6 +125,24 @@ func (client *TCPCLClient) handler() {
 				// TODO
 				return
 			}
+
+		case Termination:
+			logger.Debug("Entering Termination state")
+
+			if client.keepaliveStarted {
+				close(client.keepaliveStopSyn)
+				<-client.keepaliveStopAck
+				client.keepaliveStarted = false
+			}
+
+			client.terminate(TerminationUnknown)
+
+			logger.Info("rip in pieces")
+			return
 		}
 	}
+}
+
+func (client *TCPCLClient) Close() {
+	client.state.Terminate()
 }

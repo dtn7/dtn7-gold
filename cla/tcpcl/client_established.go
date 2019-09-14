@@ -76,6 +76,15 @@ func (client *TCPCLClient) handleEstablished() error {
 			logger.WithField("msg", keepaliveMsg).Debug("Received KEEPALIVE message")
 		}
 
+	case SESS_TERM:
+		var sesstermMsg SessionTerminationMessage
+		if err := sesstermMsg.Unmarshal(client.rw); err != nil {
+			return err
+		} else {
+			logger.WithField("msg", sesstermMsg).Info("Received SESS_TERM")
+			client.state.Terminate()
+		}
+
 	default:
 		logger.WithField("magic", nextMsg).Debug("Received unsupported magic")
 	}

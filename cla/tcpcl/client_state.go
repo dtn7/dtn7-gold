@@ -48,3 +48,8 @@ func (cs *ClientState) Next() (err error) {
 
 	return
 }
+
+// Terminate sets the ClientState into the termination state.
+func (cs *ClientState) Terminate() {
+	*cs = Termination
+}
