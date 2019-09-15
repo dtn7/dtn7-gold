@@ -1,9 +1,12 @@
 package tcpcl
 
 import (
+	"io"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/dtn7-go/bundle"
 )
 
 // This file contains code for the Client's established state.
@@ -85,9 +88,42 @@ func (client *TCPCLClient) handleEstablished() error {
 			client.state.Terminate()
 		}
 
+	case XFER_SEGMENT:
+		var dataTransMsg DataTransmissionMessage
+		if err := dataTransMsg.Unmarshal(client.rw); err != nil {
+			return err
+		} else {
+			logger.WithField("msg", dataTransMsg).Info("Received XFER_SEGMENT")
+		}
+
 	default:
 		logger.WithField("magic", nextMsg).Debug("Received unsupported magic")
 	}
 
 	return nil
+}
+
+func (client *TCPCLClient) Send(bndl *bundle.Bundle) error {
+	var logger = log.WithField("session", client)
+	var t = NewBundleTransfer(23, *bndl)
+
+	for {
+		dtm, err := t.NextSegment(client.segmentMru)
+
+		if err == io.EOF {
+			logger.Info("Finished Transfer")
+			return nil
+		} else if err != nil {
+			logger.WithError(err).Warn("Fetching Segment errored")
+			return err
+		}
+
+		if err := dtm.Marshal(client.rw); err != nil {
+			logger.WithField("msg", dtm).WithError(err).Warn(
+				"Sending XFER_SEGMENT errored")
+			return err
+		} else {
+			logger.WithField("msg", dtm).Debug("Sent XFER_SEGMENT")
+		}
+	}
 }
