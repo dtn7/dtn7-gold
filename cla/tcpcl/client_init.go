@@ -18,8 +18,8 @@ func (client *TCPCLClient) handleSessInit() error {
 	// XXX
 	const (
 		keepalive   = 10
-		segmentMru  = 0xFFFFFFFFFFFFFFFF
-		transferMru = 0xFFFFFFFFFFFFFFFF
+		segmentMru  = 1500
+		transferMru = 0xFFFFFFFF
 	)
 
 	switch {
