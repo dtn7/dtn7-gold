@@ -139,9 +139,13 @@ func (prophet *Prophet) transitivity(peer bundle.EndpointID) {
 		pNew := pOld + ((1 - pOld) * peerPred * otherPeerPred * prophet.config.Beta)
 		prophet.predictabilities.predictability[otherPeer] = pNew
 		log.WithFields(log.Fields{
-			"peer":       peer,
-			"other_peer": otherPeer,
-			"pred":       pNew,
+			"beta":            prophet.config.Beta,
+			"peer":            peer,
+			"peer_pred":       peerPred,
+			"other_peer":      otherPeer,
+			"other_peer_pred": otherPeerPred,
+			"pOld":            pOld,
+			"pNew":            pNew,
 		}).Debug("Updated predictability via transitivity")
 	}
 }
@@ -181,9 +185,48 @@ func (prophet *Prophet) sendMetadata(recipient bundle.EndpointID) {
 	}).Debug("Successfully sent metadata bundle")
 }
 
-// TODO; dummy implementation
 func (prophet *Prophet) NotifyIncoming(bp BundlePack) {
+	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(ExtBlockTypeProphetBlock); err == nil {
+		log.WithFields(log.Fields{
+			"source": bp.MustBundle().PrimaryBlock.SourceNode,
+		}).Debug("Received metadata")
 
+		if bp.MustBundle().PrimaryBlock.Destination != prophet.c.NodeId {
+			log.WithFields(log.Fields{
+				"recipient": bp.MustBundle().PrimaryBlock.Destination,
+				"own_id":    prophet.c.NodeId,
+			}).Debug("Received Metadata meant for different node")
+			return
+		}
+
+		prophetBlock := metaDataBlock.Value.(*ProphetBlock)
+		data := prophetBlock.getPredictabilities()
+
+		log.WithFields(log.Fields{
+			"source": bp.MustBundle().PrimaryBlock.SourceNode,
+			"data":   data,
+		}).Debug("Decoded peer data")
+
+		prophet.dataMutex.Lock()
+		defer prophet.dataMutex.Unlock()
+
+		_, present := prophet.peerPredictabilities[data.id]
+		if present {
+			log.WithFields(log.Fields{
+				"peer": data.id,
+			}).Debug("Updating peer metadata")
+		} else {
+			log.WithFields(log.Fields{
+				"peer": data.id,
+			}).Debug("Metadata for new peer")
+		}
+
+		// import new metadata
+		prophet.peerPredictabilities[data.id] = data
+
+		// update own predictabilities via the transitive property
+		prophet.transitivity(data.id)
+	}
 }
 
 // TODO: dummy implementation
