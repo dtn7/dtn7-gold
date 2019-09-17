@@ -226,6 +226,59 @@ func (prophet *Prophet) NotifyIncoming(bp BundlePack) {
 
 		// update own predictabilities via the transitive property
 		prophet.transitivity(data.id)
+
+		return
+	}
+
+	// handle non-metadata bundles
+	// TODO: this is basicall copy-pasted from routing_epidemic - extract this code into a reusable function
+
+	bundleItem, err := prophet.c.store.QueryId(bp.Id)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Warn("Failed to proceed a non-stored Bundle")
+		return
+	}
+
+	bndl, err := bp.Bundle()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Warn("Couldn't get bundle data")
+		return
+	}
+
+	// Check if we got a PreviousNodeBlock and extract its EndpointID
+	var prevNode bundle.EndpointID
+	if pnBlock, err := bndl.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
+		prevNode = pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
+	} else {
+		return
+	}
+
+	sentEids, ok := bundleItem.Properties["routing/prophet/sent"].([]bundle.EndpointID)
+	if !ok {
+		sentEids = make([]bundle.EndpointID, 0)
+	}
+
+	// Check if PreviousNodeBlock is already known
+	for _, eids := range sentEids {
+		if eids == prevNode {
+			return
+		}
+	}
+
+	log.WithFields(log.Fields{
+		"bundle": bp.ID(),
+		"eid":    prevNode,
+	}).Debug("EpidemicRouting received an incomming bundle and checked its PreviousNodeBlock")
+
+	bundleItem.Properties["routing/prophet/sent"] = append(sentEids, prevNode)
+	if err := prophet.c.store.Update(bundleItem); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Warn("Updating BundleItem failed")
 	}
 }
 
