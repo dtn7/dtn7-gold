@@ -8,8 +8,9 @@ import (
 	"io"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
-import log "github.com/sirupsen/logrus"
 
 type ProphetConfig struct {
 	// PInit ist the prophet initialisation constant
@@ -287,9 +288,111 @@ func (prophet *Prophet) DispatchingAllowed(bp BundlePack) bool {
 	return true
 }
 
-// TODO: dummy implementation
 func (prophet *Prophet) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool) {
-	return nil, false
+	bndl, err := bp.Bundle()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Warn("Couldn't get bundle data")
+		return
+	}
+
+	if _, err := bndl.ExtensionBlock(ExtBlockTypeProphetBlock); err == nil {
+		// we do not forward metadata bundles
+		// if the intended recipient is connected the bundle will be forwarded via direct delivery
+		// since we shouldn't have any metadata bundle meant for other nodes, we will also delete these bundles
+		// if we find them in our store
+		return nil, true
+	}
+
+	delete = false
+
+	bundleItem, err := prophet.c.store.QueryId(bp.Id)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Warn("Failed to proceed a non-stored Bundle")
+		return
+	}
+
+	sentEids, ok := bundleItem.Properties["routing/prophet/sent"].([]bundle.EndpointID)
+	if !ok {
+		sentEids = make([]bundle.EndpointID, 0)
+	}
+
+	destination := bndl.PrimaryBlock.Destination
+	sender = make([]cla.ConvergenceSender, 0)
+
+	for _, cs := range prophet.c.claManager.Sender() {
+		peerID := cs.GetPeerEndpointID()
+		peerPred := prophet.peerPredictabilities[peerID].predictability[destination]
+		ownPred := prophet.predictabilities.predictability[destination]
+
+		// is the peers delivery predictability for the destination greater than ours?
+		if peerPred > ownPred {
+			// TODO: this is again very similar to epidemic - could we put that in a function as well?
+
+			log.WithFields(log.Fields{
+				"bundle":      bndl.ID(),
+				"destination": destination,
+				"peer":        peerID,
+				"ownPred":     ownPred,
+				"peerPred":    peerPred,
+			}).Debug("Found possible forwarding candidate")
+
+			skip := false
+			for _, eid := range sentEids {
+				if peerID == eid {
+					skip = true
+					log.WithFields(log.Fields{
+						"bundle": bndl.ID(),
+						"peer":   peerID,
+					}).Debug("Peer already has this bundle")
+					break
+				}
+			}
+
+			if !skip {
+				sender = append(sender, cs)
+				sentEids = append(sentEids, peerID)
+				log.WithFields(log.Fields{
+					"bundle": bndl.ID(),
+					"peer":   peerID,
+				}).Debug("Will forward bundle to peer.")
+			}
+		} else {
+			log.WithFields(log.Fields{
+				"bundle":      bndl.ID(),
+				"destination": destination,
+				"peer":        peerID,
+				"ownPred":     ownPred,
+				"peerPred":    peerPred,
+			}).Debug("Peer is not good forwarding candidate")
+		}
+	}
+
+	if len(sender) == 0 {
+		log.WithFields(
+			log.Fields{
+				"bundle": bndl.ID(),
+			}).Debug("Did not find peer to forward to")
+		return
+	}
+
+	bundleItem.Properties["routing/prophet/sent"] = sentEids
+	if err := prophet.c.store.Update(bundleItem); err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Warn("Updating BundleItem failed")
+	}
+
+	log.WithFields(log.Fields{
+		"bundle":              bndl.ID(),
+		"sent":                sentEids,
+		"convergence-senders": sender,
+	}).Debug("Prophet selected Convergence Senders for an outgoing bundle")
+
+	return
 }
 
 func (prophet *Prophet) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
@@ -322,9 +425,11 @@ func (prophet *Prophet) ReportPeerAppeared(peer cla.Convergence) {
 	prophet.sendMetadata(peerID)
 }
 
-// TODO: dummy implementation
 func (prophet *Prophet) ReportPeerDisappeared(peer cla.Convergence) {
-
+	log.WithFields(log.Fields{
+		"address": peer,
+	}).Debug("Peer disappeared")
+	// again, there really isn't anything to do upon a peer's disappearance
 }
 
 // TODO: Turn this into an administrative record
