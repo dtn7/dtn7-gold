@@ -10,11 +10,11 @@ import (
 const KEEPALIVE uint8 = 0x04
 
 // KeepaliveMessage is the KEEPALIVE message for session upkeep.
-type KeepaliveMessage uint8
+type KeepaliveMessage struct{}
 
 // NewKeepaliveMessage creates a new KeepaliveMessage.
 func NewKeepaliveMessage() KeepaliveMessage {
-	return KeepaliveMessage(KEEPALIVE)
+	return KeepaliveMessage{}
 }
 
 func (_ KeepaliveMessage) String() string {
@@ -22,20 +22,15 @@ func (_ KeepaliveMessage) String() string {
 }
 
 func (km KeepaliveMessage) Marshal(w io.Writer) error {
-	if uint8(km) != KEEPALIVE {
-		return fmt.Errorf("KEEPALIVE's value is %d instead of %d", uint8(km), KEEPALIVE)
-	}
-
-	return binary.Write(w, binary.BigEndian, km)
+	return binary.Write(w, binary.BigEndian, KEEPALIVE)
 }
 
 func (km *KeepaliveMessage) Unmarshal(r io.Reader) error {
-	if err := binary.Read(r, binary.BigEndian, km); err != nil {
+	var kmType uint8
+	if err := binary.Read(r, binary.BigEndian, &kmType); err != nil {
 		return err
-	}
-
-	if uint8(*km) != KEEPALIVE {
-		return fmt.Errorf("KEEPALIVE's value is %d instead of %d", uint8(*km), KEEPALIVE)
+	} else if kmType != KEEPALIVE {
+		return fmt.Errorf("KEEPALIVE's value is %d instead of %d", kmType, KEEPALIVE)
 	}
 
 	return nil
