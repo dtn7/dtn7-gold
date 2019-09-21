@@ -2,6 +2,7 @@ package tcpcl
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 
 	"github.com/dtn7/dtn7-go/bundle"
@@ -25,6 +26,10 @@ func NewTransfer(id uint64) (t *Transfer, w io.Writer) {
 	}
 
 	return
+}
+
+func (t Transfer) String() string {
+	return fmt.Sprintf("%d", t.Id)
 }
 
 // NewBundleTransfer creates a new Transfer for a Bundle.
@@ -57,6 +62,7 @@ func (t *Transfer) NextSegment(mru uint64) (dtm DataTransmissionMessage, err err
 		err = rErr
 		return
 	} else if uint64(n) < mru {
+		buf = buf[:n]
 		segFlags |= SegmentEnd
 	}
 
