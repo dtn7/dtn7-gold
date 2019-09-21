@@ -44,6 +44,8 @@ type TCPCLClient struct {
 	keepaliveStopSyn chan struct{}
 	keepaliveStopAck chan struct{}
 	keepaliveLast    time.Time
+
+	transferIdOut uint64
 }
 
 func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {

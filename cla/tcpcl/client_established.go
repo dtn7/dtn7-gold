@@ -105,7 +105,14 @@ func (client *TCPCLClient) handleEstablished() error {
 
 func (client *TCPCLClient) Send(bndl *bundle.Bundle) error {
 	var logger = log.WithField("session", client)
-	var t = NewBundleTransfer(23, *bndl)
+
+	client.transferIdOut += 1
+	var t = NewBundleTransfer(client.transferIdOut, *bndl)
+
+	logger.WithFields(log.Fields{
+		"bundle":   bndl,
+		"transfer": t,
+	}).Info("Started Bundle Transfer")
 
 	for {
 		dtm, err := t.NextSegment(client.segmentMru)
