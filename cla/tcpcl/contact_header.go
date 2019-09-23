@@ -58,10 +58,8 @@ func (ch ContactHeader) Marshal(w io.Writer) error {
 func (ch *ContactHeader) Unmarshal(r io.Reader) error {
 	var data = make([]byte, 6)
 
-	if n, err := r.Read(data); err != nil {
+	if _, err := io.ReadFull(r, data); err != nil {
 		return err
-	} else if n != len(data) {
-		return fmt.Errorf("Read %d octets instead of %d", n, len(data))
 	}
 
 	if !bytes.Equal(data[:4], []byte("dtn!")) {
