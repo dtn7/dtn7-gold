@@ -47,3 +47,8 @@ func (cs *ClientState) Next() {
 func (cs *ClientState) Terminate() {
 	*cs = Termination
 }
+
+// IsTerminated checks if the ClientState is in a terminated state.
+func (cs ClientState) IsTerminated() bool {
+	return cs == Termination
+}

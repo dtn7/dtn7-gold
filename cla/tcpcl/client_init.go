@@ -35,6 +35,11 @@ func (client *TCPCLClient) handleSessInit() error {
 			client.initRecv = true
 			client.log().WithField("msg", client.sessInitRecv).Debug("Received SESS_INIT message")
 
+		case *SessionTerminationMessage:
+			sesstermMsg := *msg.(*SessionTerminationMessage)
+			client.log().WithField("msg", sesstermMsg).Info("Received SESS_TERM")
+			return sessTermErr
+
 		default:
 			client.log().WithField("msg", msg).Warn("Received wrong message")
 			return fmt.Errorf("Wrong message type")
