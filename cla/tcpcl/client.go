@@ -18,7 +18,9 @@ type TCPCLClient struct {
 	peerEndpointID bundle.EndpointID
 
 	conn net.Conn
-	rw   *bufio.ReadWriter
+
+	msgsOut chan Message
+	msgsIn  chan Message
 
 	active bool
 	state  ClientState
@@ -52,6 +54,8 @@ func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
 	return &TCPCLClient{
 		conn:             conn,
 		active:           false,
+		msgsOut:          make(chan Message),
+		msgsIn:           make(chan Message),
 		endpointID:       endpointID,
 		keepaliveStopSyn: make(chan struct{}),
 		keepaliveStopAck: make(chan struct{}),
@@ -62,13 +66,15 @@ func Dial(address string, endpointID bundle.EndpointID) *TCPCLClient {
 	return &TCPCLClient{
 		address:          address,
 		active:           true,
+		msgsOut:          make(chan Message),
+		msgsIn:           make(chan Message),
 		endpointID:       endpointID,
 		keepaliveStopSyn: make(chan struct{}),
 		keepaliveStopAck: make(chan struct{}),
 	}
 }
 
-func (client *TCPCLClient) String() string {
+func (client TCPCLClient) String() string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "TCPCL(")
@@ -77,6 +83,14 @@ func (client *TCPCLClient) String() string {
 	fmt.Fprintf(&b, ")")
 
 	return b.String()
+}
+
+// log prepares a new log entry with predefined session data.
+func (client TCPCLClient) log() *log.Entry {
+	return log.WithFields(log.Fields{
+		"session": client.String(),
+		"state":   client.state,
+	})
 }
 
 func (client *TCPCLClient) Start() (err error, retry bool) {
@@ -88,12 +102,52 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 			client.conn = conn
 		}
 	}
-	client.rw = bufio.NewReadWriter(bufio.NewReader(client.conn), bufio.NewWriter(client.conn))
 
 	log.Info("Starting client")
 
+	go client.handleConnection()
 	go client.handler()
+
 	return
+}
+
+func (client *TCPCLClient) handleConnection() {
+	defer func() {
+		// TODO
+		client.log().Debug("Leaving handler function")
+	}()
+
+	var rw = bufio.NewReadWriter(bufio.NewReader(client.conn), bufio.NewWriter(client.conn))
+
+	for {
+		select {
+		case msg := <-client.msgsOut:
+			if err := msg.Marshal(rw); err != nil {
+				client.log().WithError(err).WithField("msg", msg).Error("Sending message errored")
+				return
+			} else if err := rw.Flush(); err != nil {
+				client.log().WithError(err).WithField("msg", msg).Error("Flushing errored")
+				return
+			} else {
+				client.log().WithField("msg", msg).Debug("Sent message")
+			}
+
+		default:
+			if err := client.conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
+				client.log().WithError(err).Error("Setting read deadline errored")
+				return
+			}
+
+			if msg, err := ReadMessage(rw); err == nil {
+				client.log().WithField("msg", msg).Debug("Received message")
+				client.msgsIn <- msg
+			} else if netErr, ok := err.(net.Error); ok && !netErr.Timeout() {
+				client.log().WithError(netErr).Warn("Network error occured")
+			} else if !ok {
+				client.log().WithError(err).Warn("Parsing next message errored")
+			}
+		}
+	}
 }
 
 func (client *TCPCLClient) handler() {

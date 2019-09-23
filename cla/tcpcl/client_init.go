@@ -1,6 +1,8 @@
 package tcpcl
 
 import (
+	"fmt"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/bundle"
@@ -10,11 +12,6 @@ import (
 
 // handleSessInit manges the initialization state.
 func (client *TCPCLClient) handleSessInit() error {
-	var logger = log.WithFields(log.Fields{
-		"session": client,
-		"state":   "initialization",
-	})
-
 	// XXX
 	const (
 		keepalive   = 10
@@ -25,21 +22,22 @@ func (client *TCPCLClient) handleSessInit() error {
 	switch {
 	case client.active && !client.initSent, !client.active && !client.initSent && client.initRecv:
 		client.sessInitSent = NewSessionInitMessage(keepalive, segmentMru, transferMru, client.endpointID.String())
-		if err := client.sessInitSent.Marshal(client.rw); err != nil {
-			return err
-		} else if err := client.rw.Flush(); err != nil {
-			return err
-		} else {
-			client.initSent = true
-			logger.WithField("msg", client.sessInitSent).Debug("Sent SESS_INIT message")
-		}
+		client.initSent = true
+
+		client.msgsOut <- &client.sessInitSent
+		client.log().WithField("msg", client.sessInitSent).Debug("Sent SESS_INIT message")
 
 	case !client.active && !client.initRecv, client.active && client.initSent && !client.initRecv:
-		if err := client.sessInitRecv.Unmarshal(client.rw); err != nil {
-			return err
-		} else {
+		msg := <-client.msgsIn
+		switch msg.(type) {
+		case *SessionInitMessage:
+			client.sessInitRecv = *msg.(*SessionInitMessage)
 			client.initRecv = true
-			logger.WithField("msg", client.sessInitRecv).Debug("Received SESS_INIT message")
+			client.log().WithField("msg", client.sessInitRecv).Debug("Received SESS_INIT message")
+
+		default:
+			client.log().WithField("msg", msg).Warn("Received wrong message")
+			return fmt.Errorf("Wrong message type")
 		}
 
 	case client.initSent && client.initRecv:
@@ -62,7 +60,7 @@ func (client *TCPCLClient) handleSessInit() error {
 			client.transferMru = client.sessInitRecv.TransferMru
 		}
 
-		logger.WithFields(log.Fields{
+		client.log().WithFields(log.Fields{
 			"endpoint ID":  client.peerEndpointID,
 			"keepalive":    client.keepalive,
 			"segment MRU":  client.segmentMru,

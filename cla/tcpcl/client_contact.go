@@ -1,41 +1,37 @@
 package tcpcl
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
 )
 
 // This file contains code for the Client's contact state.
 
 // handleContact manges the contact state for the Contact Header exchange.
 func (client *TCPCLClient) handleContact() error {
-	var logger = log.WithFields(log.Fields{
-		"session": client,
-		"state":   "contact",
-	})
-
 	switch {
 	case client.active && !client.contactSent, !client.active && !client.contactSent && client.contactRecv:
 		client.chSent = NewContactHeader(0)
-		if err := client.chSent.Marshal(client.rw); err != nil {
-			return err
-		} else if err := client.rw.Flush(); err != nil {
-			return err
-		} else {
-			client.contactSent = true
-			logger.WithField("msg", client.chSent).Debug("Sent Contact Header")
-		}
+		client.contactSent = true
+
+		client.msgsOut <- &client.chSent
+		client.log().WithField("msg", client.chSent).Debug("Sent Contact Header")
 
 	case !client.active && !client.contactRecv, client.active && client.contactSent && !client.contactRecv:
-		if err := client.chRecv.Unmarshal(client.rw); err != nil {
-			return err
-		} else {
+		msg := <-client.msgsIn
+		switch msg.(type) {
+		case *ContactHeader:
+			client.chRecv = *msg.(*ContactHeader)
 			client.contactRecv = true
-			logger.WithField("msg", client.chRecv).Debug("Received Contact Header")
+			client.log().WithField("msg", client.chRecv).Debug("Received Contact Header")
+
+		default:
+			client.log().WithField("msg", msg).Warn("Received wrong message")
+			return fmt.Errorf("Wrong message type")
 		}
 
 	case client.contactSent && client.contactRecv:
 		// TODO: check contact header flags
-		logger.Debug("Exchanged Contact Headers")
+		client.log().Debug("Exchanged Contact Headers")
 		client.state.Next()
 	}
 

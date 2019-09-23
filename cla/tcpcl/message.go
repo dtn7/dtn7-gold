@@ -24,6 +24,7 @@ var messages = map[uint8]Message{
 	XFER_REFUSE:  &TransferRefusalMessage{},
 	KEEPALIVE:    &KeepaliveMessage{},
 	MSG_REJECT:   &MessageRejectionMessage{},
+	0x64:         &ContactHeader{},
 }
 
 // NewMessage creates a new Message type for a given type code.
