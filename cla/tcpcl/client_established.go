@@ -11,77 +11,54 @@ import (
 
 // This file contains code for the Client's established state.
 
-// keepaliveHandler handles the KEEPALIVE messages.
-// TODO: re-enable code
-func (client *TCPCLClient) keepaliveHandler() {
-	/*
-		var logger = log.WithField("session", client)
-
-		var keepaliveTicker = time.NewTicker(time.Duration(client.keepalive) * time.Second)
-		defer keepaliveTicker.Stop()
-
-		for {
-			select {
-			case <-keepaliveTicker.C:
-				// Send a keepalive
-				var keepaliveMsg = NewKeepaliveMessage()
-				if err := keepaliveMsg.Marshal(client.rw); err != nil {
-					logger.WithError(err).Warn("Sending KEEPALIVE errored")
-				} else if err := client.rw.Flush(); err != nil {
-					logger.WithError(err).Warn("Flushing KEEPALIVE errored")
-				} else {
-					logger.WithField("msg", keepaliveMsg).Debug("Sent KEEPALIVE message")
-				}
-				// TODO: terminate session
-
-				// Check last received keepalive
-				var diff = time.Since(client.keepaliveLast)
-				if diff > 2*time.Duration(client.keepalive)*time.Second {
-					logger.WithFields(log.Fields{
-						"last keepalive": client.keepaliveLast,
-						"interval":       time.Duration(client.keepalive) * time.Second,
-					}).Warn("No KEEPALIVE was received within expected time frame")
-
-					// TODO: terminate session
-				} else {
-					logger.WithField("last keepalive", client.keepaliveLast).Debug(
-						"Received last KEEPALIVE within expected time frame")
-				}
-
-			case <-client.keepaliveStopSyn:
-				close(client.keepaliveStopAck)
-				return
-			}
-		}
-	*/
-}
-
 // handleEstablished manges the established state.
 func (client *TCPCLClient) handleEstablished() error {
 	if !client.keepaliveStarted {
-		// TODO
-		// go client.keepaliveHandler()
-		// client.keepaliveStarted = true
+		client.keepaliveTicker = time.NewTicker(time.Duration(client.keepalive) * time.Second)
+		client.keepaliveLast = time.Now()
+		client.keepaliveStarted = true
 	}
 
-	msg := <-client.msgsIn
-	switch msg.(type) {
-	case *KeepaliveMessage:
-		keepaliveMsg := *msg.(*KeepaliveMessage)
-		client.keepaliveLast = time.Now()
-		client.log().WithField("msg", keepaliveMsg).Debug("Received KEEPALIVE message")
+	select {
+	case <-client.keepaliveTicker.C:
+		// Send a keepalive
+		var keepaliveMsg = NewKeepaliveMessage()
+		client.msgsOut <- &keepaliveMsg
+		client.log().WithField("msg", keepaliveMsg).Debug("Sent KEEPALIVE message")
 
-	case *SessionTerminationMessage:
-		sesstermMsg := *msg.(*SessionTerminationMessage)
-		client.log().WithField("msg", sesstermMsg).Info("Received SESS_TERM")
-		client.state.Terminate()
+		// Check last received keepalive
+		var diff = time.Since(client.keepaliveLast)
+		if diff > 2*time.Duration(client.keepalive)*time.Second {
+			client.log().WithFields(log.Fields{
+				"last keepalive": client.keepaliveLast,
+				"interval":       time.Duration(client.keepalive) * time.Second,
+			}).Warn("No KEEPALIVE was received within expected time frame")
 
-	case *DataTransmissionMessage:
-		dataTransMsg := *msg.(*DataTransmissionMessage)
-		client.log().WithField("msg", dataTransMsg).Info("Received XFER_SEGMENT")
+			// TODO: terminate session
+		} else {
+			client.log().WithField("last keepalive", client.keepaliveLast).Debug(
+				"Received last KEEPALIVE within expected time frame")
+		}
 
-	default:
-		client.log().WithField("msg", msg).Warn("Received unexpected message")
+	case msg := <-client.msgsIn:
+		switch msg.(type) {
+		case *KeepaliveMessage:
+			keepaliveMsg := *msg.(*KeepaliveMessage)
+			client.keepaliveLast = time.Now()
+			client.log().WithField("msg", keepaliveMsg).Debug("Received KEEPALIVE message")
+
+		case *SessionTerminationMessage:
+			sesstermMsg := *msg.(*SessionTerminationMessage)
+			client.log().WithField("msg", sesstermMsg).Info("Received SESS_TERM")
+			client.state.Terminate()
+
+		case *DataTransmissionMessage:
+			dataTransMsg := *msg.(*DataTransmissionMessage)
+			client.log().WithField("msg", dataTransMsg).Info("Received XFER_SEGMENT")
+
+		default:
+			client.log().WithField("msg", msg).Warn("Received unexpected message")
+		}
 	}
 
 	return nil

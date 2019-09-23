@@ -43,34 +43,29 @@ type TCPCLClient struct {
 
 	// Established state fields:
 	keepaliveStarted bool
-	keepaliveStopSyn chan struct{}
-	keepaliveStopAck chan struct{}
 	keepaliveLast    time.Time
+	keepaliveTicker  *time.Ticker
 
 	transferIdOut uint64
 }
 
 func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
 	return &TCPCLClient{
-		conn:             conn,
-		active:           false,
-		msgsOut:          make(chan Message),
-		msgsIn:           make(chan Message),
-		endpointID:       endpointID,
-		keepaliveStopSyn: make(chan struct{}),
-		keepaliveStopAck: make(chan struct{}),
+		conn:       conn,
+		active:     false,
+		msgsOut:    make(chan Message, 100),
+		msgsIn:     make(chan Message),
+		endpointID: endpointID,
 	}
 }
 
 func Dial(address string, endpointID bundle.EndpointID) *TCPCLClient {
 	return &TCPCLClient{
-		address:          address,
-		active:           true,
-		msgsOut:          make(chan Message),
-		msgsIn:           make(chan Message),
-		endpointID:       endpointID,
-		keepaliveStopSyn: make(chan struct{}),
-		keepaliveStopAck: make(chan struct{}),
+		address:    address,
+		active:     true,
+		msgsOut:    make(chan Message, 100),
+		msgsIn:     make(chan Message),
+		endpointID: endpointID,
 	}
 }
 
@@ -106,7 +101,7 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 	log.Info("Starting client")
 
 	go client.handleConnection()
-	go client.handler()
+	go client.handleState()
 
 	return
 }
@@ -114,7 +109,7 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 func (client *TCPCLClient) handleConnection() {
 	defer func() {
 		// TODO
-		client.log().Debug("Leaving handler function")
+		client.log().Debug("Leaving connection handler function")
 	}()
 
 	var rw = bufio.NewReadWriter(bufio.NewReader(client.conn), bufio.NewWriter(client.conn))
@@ -142,7 +137,8 @@ func (client *TCPCLClient) handleConnection() {
 				client.log().WithField("msg", msg).Debug("Received message")
 				client.msgsIn <- msg
 			} else if netErr, ok := err.(net.Error); ok && !netErr.Timeout() {
-				client.log().WithError(netErr).Warn("Network error occured")
+				client.log().WithError(netErr).Error("Network error occured")
+				return
 			} else if !ok {
 				client.log().WithError(err).Warn("Parsing next message errored")
 			}
@@ -150,17 +146,17 @@ func (client *TCPCLClient) handleConnection() {
 	}
 }
 
-func (client *TCPCLClient) handler() {
-	var logger = log.WithFields(log.Fields{
-		"session": client,
-		"state":   client.state,
-	})
+func (client *TCPCLClient) handleState() {
+	defer func() {
+		// TODO
+		client.log().Debug("Leaving state handler function")
+	}()
 
 	for {
 		switch client.state {
 		case Contact:
 			if err := client.handleContact(); err != nil {
-				logger.WithError(err).Warn("Error occured during contact header exchange")
+				client.log().WithError(err).Warn("Error occured during contact header exchange")
 
 				client.terminate(TerminationContactFailure)
 				return
@@ -168,7 +164,7 @@ func (client *TCPCLClient) handler() {
 
 		case Init:
 			if err := client.handleSessInit(); err != nil {
-				logger.WithError(err).Warn("Error occured during session initialization")
+				client.log().WithError(err).Warn("Error occured during session initialization")
 
 				client.terminate(TerminationUnknown)
 				return
@@ -176,24 +172,19 @@ func (client *TCPCLClient) handler() {
 
 		case Established:
 			if err := client.handleEstablished(); err != nil {
-				logger.WithError(err).Warn("Error occured during established session")
+				client.log().WithError(err).Warn("Error occured during established session")
 
-				// TODO
+				client.terminate(TerminationUnknown)
 				return
 			}
 
 		case Termination:
-			logger.Debug("Entering Termination state")
-
-			if client.keepaliveStarted {
-				close(client.keepaliveStopSyn)
-				<-client.keepaliveStopAck
-				client.keepaliveStarted = false
-			}
+			// TODO
+			client.log().Debug("Entering Termination state")
 
 			client.terminate(TerminationUnknown)
 
-			logger.Info("rip in pieces")
+			client.log().Info("rip in pieces")
 			return
 		}
 	}
