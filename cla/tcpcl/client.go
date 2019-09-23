@@ -2,15 +2,21 @@ package tcpcl
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/bundle"
 )
+
+// sessTermErr will be returned from a state handler iff a SESS_TERM was received.
+var sessTermErr = errors.New("SESS_TERM received")
 
 type TCPCLClient struct {
 	address        string
@@ -21,6 +27,9 @@ type TCPCLClient struct {
 
 	msgsOut chan Message
 	msgsIn  chan Message
+
+	closed   bool
+	closedWg sync.WaitGroup
 
 	active bool
 	state  ClientState
@@ -100,6 +109,7 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 
 	log.Info("Starting client")
 
+	client.closedWg.Add(2)
 	go client.handleConnection()
 	go client.handleState()
 
@@ -108,8 +118,11 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 
 func (client *TCPCLClient) handleConnection() {
 	defer func() {
-		// TODO
 		client.log().Debug("Leaving connection handler function")
+		client.state.Terminate()
+
+		client.closed = true
+		client.closedWg.Done()
 	}()
 
 	var rw = bufio.NewReadWriter(bufio.NewReader(client.conn), bufio.NewWriter(client.conn))
@@ -127,6 +140,15 @@ func (client *TCPCLClient) handleConnection() {
 				client.log().WithField("msg", msg).Debug("Sent message")
 			}
 
+			if _, ok := msg.(*SessionTerminationMessage); ok {
+				client.log().WithField("msg", msg).Debug("Closing connection after sending SESS_TERM")
+
+				if err := client.conn.Close(); err != nil {
+					client.log().WithError(err).Warn("Failed to close TCP connection")
+				}
+				return
+			}
+
 		default:
 			if err := client.conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
 				client.log().WithError(err).Error("Setting read deadline errored")
@@ -136,11 +158,15 @@ func (client *TCPCLClient) handleConnection() {
 			if msg, err := ReadMessage(rw); err == nil {
 				client.log().WithField("msg", msg).Debug("Received message")
 				client.msgsIn <- msg
+			} else if err == io.EOF {
+				client.log().Info("Read EOF, closing down.")
+				return
 			} else if netErr, ok := err.(net.Error); ok && !netErr.Timeout() {
 				client.log().WithError(netErr).Error("Network error occured")
 				return
 			} else if !ok {
-				client.log().WithError(err).Warn("Parsing next message errored")
+				client.log().WithError(err).Error("Parsing next message errored")
+				return
 			}
 		}
 	}
@@ -148,43 +174,51 @@ func (client *TCPCLClient) handleConnection() {
 
 func (client *TCPCLClient) handleState() {
 	defer func() {
-		// TODO
 		client.log().Debug("Leaving state handler function")
+
+		client.closed = true
+		client.closedWg.Done()
 	}()
 
 	for {
 		switch client.state {
-		case Contact:
-			if err := client.handleContact(); err != nil {
-				client.log().WithError(err).Warn("Error occured during contact header exchange")
+		case Contact, Init, Established:
+			var stateHandler func() error
 
-				client.terminate(TerminationContactFailure)
-				return
+			switch client.state {
+			case Contact:
+				stateHandler = client.handleContact
+			case Init:
+				stateHandler = client.handleSessInit
+			case Established:
+				stateHandler = client.handleEstablished
 			}
 
-		case Init:
-			if err := client.handleSessInit(); err != nil {
-				client.log().WithError(err).Warn("Error occured during session initialization")
+			if err := stateHandler(); err != nil {
+				if err == sessTermErr {
+					client.log().Info("Received SESS_TERM, switching to Termination state")
+				} else {
+					client.log().WithError(err).Warn("State handler errored")
+				}
 
-				client.terminate(TerminationUnknown)
-				return
+				client.state.Terminate()
+				goto terminationCase
 			}
+			break
 
-		case Established:
-			if err := client.handleEstablished(); err != nil {
-				client.log().WithError(err).Warn("Error occured during established session")
-
-				client.terminate(TerminationUnknown)
-				return
-			}
+		terminationCase:
+			fallthrough
 
 		case Termination:
-			// TODO
-			client.log().Debug("Entering Termination state")
+			client.log().Info("Entering Termination state")
 
-			client.terminate(TerminationUnknown)
+			var sessTerm = NewSessionTerminationMessage(0, TerminationUnknown)
+			client.msgsOut <- &sessTerm
 
-			client.log().Info("rip in pieces")
+			return
+		}
+
+		if client.closed {
 			return
 		}
 	}
@@ -192,4 +226,5 @@ func (client *TCPCLClient) handleState() {
 
 func (client *TCPCLClient) Close() {
 	client.state.Terminate()
+	client.closedWg.Wait()
 }

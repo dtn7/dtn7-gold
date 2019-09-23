@@ -1,6 +1,7 @@
 package tcpcl
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -12,7 +13,13 @@ import (
 // This file contains code for the Client's established state.
 
 // handleEstablished manges the established state.
-func (client *TCPCLClient) handleEstablished() error {
+func (client *TCPCLClient) handleEstablished() (err error) {
+	defer func() {
+		if err != nil && client.keepaliveStarted {
+			client.keepaliveTicker.Stop()
+		}
+	}()
+
 	if !client.keepaliveStarted {
 		client.keepaliveTicker = time.NewTicker(time.Duration(client.keepalive) * time.Second)
 		client.keepaliveLast = time.Now()
@@ -34,7 +41,7 @@ func (client *TCPCLClient) handleEstablished() error {
 				"interval":       time.Duration(client.keepalive) * time.Second,
 			}).Warn("No KEEPALIVE was received within expected time frame")
 
-			// TODO: terminate session
+			return fmt.Errorf("No KEEPALIVE was received within expected time frame")
 		} else {
 			client.log().WithField("last keepalive", client.keepaliveLast).Debug(
 				"Received last KEEPALIVE within expected time frame")
@@ -47,18 +54,22 @@ func (client *TCPCLClient) handleEstablished() error {
 			client.keepaliveLast = time.Now()
 			client.log().WithField("msg", keepaliveMsg).Debug("Received KEEPALIVE message")
 
-		case *SessionTerminationMessage:
-			sesstermMsg := *msg.(*SessionTerminationMessage)
-			client.log().WithField("msg", sesstermMsg).Info("Received SESS_TERM")
-			client.state.Terminate()
-
 		case *DataTransmissionMessage:
 			dataTransMsg := *msg.(*DataTransmissionMessage)
 			client.log().WithField("msg", dataTransMsg).Info("Received XFER_SEGMENT")
 
+		case *SessionTerminationMessage:
+			sesstermMsg := *msg.(*SessionTerminationMessage)
+			client.log().WithField("msg", sesstermMsg).Info("Received SESS_TERM")
+			return sessTermErr
+
 		default:
 			client.log().WithField("msg", msg).Warn("Received unexpected message")
 		}
+
+	case <-time.After(100 * time.Millisecond):
+		// This case prevents blocking. Otherwise the select statement would wait
+		// for the keepaliveTicker or an incoming message.
 	}
 
 	return nil
