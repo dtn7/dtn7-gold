@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+
+	"github.com/dtn7/dtn7-go/bundle"
 )
 
+// IncomingTransfer represents an incoming Bundle Transfer for the TCPCL.
 type IncomingTransfer struct {
 	Id uint64
 
@@ -13,6 +16,7 @@ type IncomingTransfer struct {
 	buf     *bytes.Buffer
 }
 
+// NewIncomingTransfer creates a new IncomingTransfer for the given Transfer ID.
 func NewIncomingTransfer(id uint64) *IncomingTransfer {
 	return &IncomingTransfer{
 		Id:  id,
@@ -24,8 +28,14 @@ func (t IncomingTransfer) String() string {
 	return fmt.Sprintf("INCOMING_TRANSFER(%d)", t.Id)
 }
 
+// IsFinished indicates if this Transfer is finished.
+func (t IncomingTransfer) IsFinished() bool {
+	return t.endFlag
+}
+
+// NextSegment reads data from a XFER_SEGMENT and retruns a XFER_ACK or an error.
 func (t *IncomingTransfer) NextSegment(dtm DataTransmissionMessage) (dam DataAcknowledgementMessage, err error) {
-	if t.endFlag {
+	if t.IsFinished() {
 		err = fmt.Errorf("Transfer has already received an end flag")
 		return
 	}
@@ -49,6 +59,13 @@ func (t *IncomingTransfer) NextSegment(dtm DataTransmissionMessage) (dam DataAck
 	return
 }
 
-func (t *IncomingTransfer) IsFinished() bool {
-	return t.endFlag
+// ToBundle returns the Bundle for a finished Transfer.
+func (t *IncomingTransfer) ToBundle() (bndl bundle.Bundle, err error) {
+	if !t.IsFinished() {
+		err = fmt.Errorf("Transfer has not been finished")
+		return
+	}
+
+	err = bndl.UnmarshalCbor(t.buf)
+	return
 }
