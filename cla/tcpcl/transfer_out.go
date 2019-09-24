@@ -29,7 +29,7 @@ func NewOutgoingTransfer(id uint64) (t *OutgoingTransfer, w io.Writer) {
 }
 
 func (t OutgoingTransfer) String() string {
-	return fmt.Sprintf("%d", t.Id)
+	return fmt.Sprintf("OUTGOING_TRANSFER(%d)", t.Id)
 }
 
 // NewBundleOutgoingTransfer creates a new OutgoingTransfer for a Bundle.

@@ -59,6 +59,8 @@ type TCPCLClient struct {
 	transferOutId    uint64
 	transferOutSend  chan Message
 	transferOutAck   chan Message
+
+	transferIn *IncomingTransfer
 }
 
 func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
