@@ -7,7 +7,7 @@ import (
 	"io"
 	"net"
 	"strings"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -28,11 +28,10 @@ type TCPCLClient struct {
 	msgsOut chan Message
 	msgsIn  chan Message
 
-	closed   bool
-	closedWg sync.WaitGroup
+	handleCounter int32
 
 	active bool
-	state  ClientState
+	state  *ClientState
 
 	// Contact state fields:
 	contactSent bool
@@ -62,6 +61,7 @@ func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
 	return &TCPCLClient{
 		conn:       conn,
 		active:     false,
+		state:      new(ClientState),
 		msgsOut:    make(chan Message, 100),
 		msgsIn:     make(chan Message),
 		endpointID: endpointID,
@@ -72,13 +72,14 @@ func Dial(address string, endpointID bundle.EndpointID) *TCPCLClient {
 	return &TCPCLClient{
 		address:    address,
 		active:     true,
+		state:      new(ClientState),
 		msgsOut:    make(chan Message, 100),
 		msgsIn:     make(chan Message),
 		endpointID: endpointID,
 	}
 }
 
-func (client TCPCLClient) String() string {
+func (client *TCPCLClient) String() string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "TCPCL(")
@@ -90,9 +91,9 @@ func (client TCPCLClient) String() string {
 }
 
 // log prepares a new log entry with predefined session data.
-func (client TCPCLClient) log() *log.Entry {
+func (client *TCPCLClient) log() *log.Entry {
 	return log.WithFields(log.Fields{
-		"session": client.String(),
+		"session": client,
 		"state":   client.state,
 	})
 }
@@ -107,9 +108,9 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 		}
 	}
 
-	log.Info("Starting client")
+	client.log().Info("Starting client")
 
-	client.closedWg.Add(2)
+	client.handleCounter = 2
 	go client.handleConnection()
 	go client.handleState()
 
@@ -121,8 +122,7 @@ func (client *TCPCLClient) handleConnection() {
 		client.log().Debug("Leaving connection handler function")
 		client.state.Terminate()
 
-		client.closed = true
-		client.closedWg.Done()
+		atomic.AddInt32(&client.handleCounter, -1)
 	}()
 
 	var rw = bufio.NewReadWriter(bufio.NewReader(client.conn), bufio.NewWriter(client.conn))
@@ -176,21 +176,20 @@ func (client *TCPCLClient) handleState() {
 	defer func() {
 		client.log().Debug("Leaving state handler function")
 
-		client.closed = true
-		client.closedWg.Done()
+		atomic.AddInt32(&client.handleCounter, -1)
 	}()
 
 	for {
-		switch client.state {
-		case Contact, Init, Established:
+		switch {
+		case !client.state.IsTerminated():
 			var stateHandler func() error
 
-			switch client.state {
-			case Contact:
+			switch {
+			case client.state.IsContact():
 				stateHandler = client.handleContact
-			case Init:
+			case client.state.IsInit():
 				stateHandler = client.handleSessInit
-			case Established:
+			case client.state.IsEstablished():
 				stateHandler = client.handleEstablished
 			}
 
@@ -209,7 +208,7 @@ func (client *TCPCLClient) handleState() {
 		terminationCase:
 			fallthrough
 
-		case Termination:
+		default:
 			client.log().Info("Entering Termination state")
 
 			var sessTerm = NewSessionTerminationMessage(0, TerminationUnknown)
@@ -218,7 +217,7 @@ func (client *TCPCLClient) handleState() {
 			return
 		}
 
-		if client.closed {
+		if atomic.LoadInt32(&client.handleCounter) != 2 {
 			return
 		}
 	}
@@ -226,5 +225,8 @@ func (client *TCPCLClient) handleState() {
 
 func (client *TCPCLClient) Close() {
 	client.state.Terminate()
-	client.closedWg.Wait()
+
+	for atomic.LoadInt32(&client.handleCounter) > 0 {
+		time.Sleep(time.Millisecond)
+	}
 }

@@ -1,35 +1,43 @@
 package tcpcl
 
+import "sync"
+
 // ClientState describes the state of a TCPCL Client. Each Client can always
 // upgrade its state to a later one, but cannot go back to a previous state.
 // A transition can be made into the following or the termination state.
-type ClientState int
+type ClientState struct {
+	phase int
+	mutex sync.Mutex
+}
 
 const (
-	// Contact is the initial Contact Header exchange state, entered directly
+	// phaseContact is the initial Contact Header exchange state, entered directly
 	// after a TCP connection was established.
-	Contact ClientState = iota
+	phaseContact int = iota
 
-	// Init is the SESS_INIT state.
-	Init ClientState = iota
+	// init is the SESS_INIT state.
+	phaseInit int = iota
 
-	// Established describes an established connection, allowing Bundles to be exchanged.
-	Established ClientState = iota
+	// phaseEstablished describes an established connection, allowing Bundles to be exchanged.
+	phaseEstablished int = iota
 
-	// Termination is the final state, entered when at least one client wants to
+	// phaseTermination is the final state, entered when at least one client wants to
 	// terminate/close the session.
-	Termination ClientState = iota
+	phaseTermination int = iota
 )
 
-func (cs ClientState) String() string {
-	switch cs {
-	case Contact:
+func (cs *ClientState) String() string {
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
+
+	switch cs.phase {
+	case phaseContact:
 		return "contact"
-	case Init:
+	case phaseInit:
 		return "initialization"
-	case Established:
+	case phaseEstablished:
 		return "established"
-	case Termination:
+	case phaseTermination:
 		return "termination"
 	default:
 		return "INVALID"
@@ -38,17 +46,45 @@ func (cs ClientState) String() string {
 
 // Next enters the following ClientState.
 func (cs *ClientState) Next() {
-	if *cs != Termination {
-		*cs += 1
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
+
+	if cs.phase != phaseTermination {
+		cs.phase += 1
 	}
 }
 
 // Terminate sets the ClientState into the termination state.
 func (cs *ClientState) Terminate() {
-	*cs = Termination
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
+
+	cs.phase = phaseTermination
 }
 
-// IsTerminated checks if the ClientState is in a terminated state.
-func (cs ClientState) IsTerminated() bool {
-	return cs == Termination
+func (cs *ClientState) isPhase(phase int) bool {
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
+
+	return cs.phase == phase
+}
+
+// IsContact checks if the ClientState is in the contact state.
+func (cs *ClientState) IsContact() bool {
+	return cs.isPhase(phaseContact)
+}
+
+// IsInit checks if the ClientState is in the initialization state.
+func (cs *ClientState) IsInit() bool {
+	return cs.isPhase(phaseInit)
+}
+
+// IsEstablished checks if the ClientState is in the established state.
+func (cs *ClientState) IsEstablished() bool {
+	return cs.isPhase(phaseEstablished)
+}
+
+// IsTerminated checks if the ClientState is in the terminated state.
+func (cs *ClientState) IsTerminated() bool {
+	return cs.isPhase(phaseTermination)
 }
