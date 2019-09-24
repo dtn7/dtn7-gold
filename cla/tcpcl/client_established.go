@@ -56,7 +56,15 @@ func (client *TCPCLClient) handleEstablished() (err error) {
 
 		case *DataTransmissionMessage:
 			dataTransMsg := *msg.(*DataTransmissionMessage)
-			client.log().WithField("msg", dataTransMsg).Info("Received XFER_SEGMENT")
+			client.log().WithField("msg", dataTransMsg).Debug("Received XFER_SEGMENT")
+
+			// TODO: create correct ACK
+			ackMsg := NewDataAcknowledgementMessage(dataTransMsg.Flags, dataTransMsg.TransferId, 0)
+			client.msgsOut <- &ackMsg
+			client.log().WithField("msg", ackMsg).Debug("Sent XFER_ACK")
+
+		case *DataAcknowledgementMessage, *TransferRefusalMessage:
+			client.transferOutAck <- msg
 
 		case *SessionTerminationMessage:
 			sesstermMsg := *msg.(*SessionTerminationMessage)
@@ -88,26 +96,42 @@ func (client *TCPCLClient) Send(bndl *bundle.Bundle) error {
 	client.transferOutMutex.Lock()
 	defer client.transferOutMutex.Unlock()
 
-	client.transferIdOut += 1
-	var t = NewBundleOutgoingTransfer(client.transferIdOut, *bndl)
+	client.transferOutId += 1
+	var t = NewBundleOutgoingTransfer(client.transferOutId, *bndl)
 
-	client.log().WithFields(log.Fields{
+	var tlog = client.log().WithFields(log.Fields{
 		"bundle":   bndl,
 		"transfer": t,
-	}).Info("Started Bundle Transfer")
+	})
+	tlog.Info("Started Bundle Transfer")
 
 	for {
 		dtm, err := t.NextSegment(client.segmentMru)
 
 		if err == io.EOF {
-			client.log().Info("Finished Transfer")
+			tlog.Info("Finished Transfer")
 			return nil
 		} else if err != nil {
-			client.log().WithError(err).Warn("Fetching Segment errored")
+			tlog.WithError(err).Warn("Fetching Segment errored")
 			return err
 		}
 
 		client.transferOutSend <- &dtm
-		client.log().WithField("msg", dtm).Debug("Send disposed XFER_SEGMENT")
+		tlog.WithField("msg", dtm).Debug("Send disposed XFER_SEGMENT")
+
+		ackMsg := <-client.transferOutAck
+		switch ackMsg.(type) {
+		case *DataAcknowledgementMessage:
+			tlog.WithField("msg", ackMsg).Debug("Received XFER_ACK")
+			// TODO: insepct ack
+
+		case *TransferRefusalMessage:
+			tlog.WithField("msg", ackMsg).Warn("Received XFER_REFUSE, aborting transfer")
+			return fmt.Errorf("Received XFER_REFUSE, aborting transfer")
+
+		default:
+			tlog.WithField("msg", ackMsg).Warn("Received wrong message type")
+			return fmt.Errorf("Received wrong message type")
+		}
 	}
 }
