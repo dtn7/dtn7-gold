@@ -55,13 +55,49 @@ func (client *TCPCLClient) handleEstablished() (err error) {
 			client.log().WithField("msg", keepaliveMsg).Debug("Received KEEPALIVE message")
 
 		case *DataTransmissionMessage:
-			dataTransMsg := *msg.(*DataTransmissionMessage)
-			client.log().WithField("msg", dataTransMsg).Debug("Received XFER_SEGMENT")
+			dtm := *msg.(*DataTransmissionMessage)
+			client.log().WithField("msg", dtm).Debug("Received XFER_SEGMENT")
 
-			// TODO: create correct ACK
-			ackMsg := NewDataAcknowledgementMessage(dataTransMsg.Flags, dataTransMsg.TransferId, 0)
-			client.msgsOut <- &ackMsg
-			client.log().WithField("msg", ackMsg).Debug("Sent XFER_ACK")
+			if client.transferIn != nil && dtm.Flags&SegmentStart != 0 {
+				client.log().WithField("msg", dtm).Warn(
+					"Received XFER_SEGMENT with START flag, but has old transfer; resetting")
+
+				client.transferIn = NewIncomingTransfer(dtm.TransferId)
+			} else if client.transferIn == nil {
+				if dtm.Flags&SegmentStart == 0 {
+					client.log().WithField("msg", dtm).Warn(
+						"Received XFER_SEGMENT without a START flag, but no transfer state")
+
+					ackMsg := NewTransferRefusalMessage(RefusalUnknown, dtm.TransferId)
+					client.msgsOut <- &ackMsg
+				} else {
+					client.log().WithField("msg", dtm).Debug("Create new incoming transfer")
+
+					client.transferIn = NewIncomingTransfer(dtm.TransferId)
+				}
+			}
+
+			if client.transferIn != nil {
+				if dam, err := client.transferIn.NextSegment(dtm); err != nil {
+					client.log().WithError(err).WithField("msg", dtm).Warn(
+						"Parsing next incoming segment errored")
+
+					ackMsg := NewTransferRefusalMessage(RefusalUnknown, dtm.TransferId)
+					client.msgsOut <- &ackMsg
+				} else {
+					client.msgsOut <- &dam
+					client.log().WithField("msg", dam).Debug("Sent XFER_ACK")
+				}
+
+				if client.transferIn.IsFinished() {
+					client.log().WithField("transfer", client.transferIn).Info(
+						"Finished incoming transfer")
+
+					// TODO: extract and forward bundle
+
+					client.transferIn = nil
+				}
+			}
 
 		case *DataAcknowledgementMessage, *TransferRefusalMessage:
 			client.transferOutAck <- msg
@@ -122,8 +158,13 @@ func (client *TCPCLClient) Send(bndl *bundle.Bundle) error {
 		ackMsg := <-client.transferOutAck
 		switch ackMsg.(type) {
 		case *DataAcknowledgementMessage:
-			tlog.WithField("msg", ackMsg).Debug("Received XFER_ACK")
-			// TODO: insepct ack
+			dam := ackMsg.(*DataAcknowledgementMessage)
+			tlog.WithField("msg", dam).Debug("Received XFER_ACK")
+
+			if dam.TransferId != dtm.TransferId || dam.Flags != dtm.Flags {
+				tlog.WithField("msg", dam).Warn("XFER_ACK does not match XFER_SEGMENT")
+				return fmt.Errorf("XFER_ACK does not match XFER_SEGMENT")
+			}
 
 		case *TransferRefusalMessage:
 			tlog.WithField("msg", ackMsg).Warn("Received XFER_REFUSE, aborting transfer")
