@@ -8,7 +8,7 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
-// OutgoingTransfer represents a Bundle OutgoingTransfer for the TCPCL.
+// OutgoingTransfer represents an outgoing Bundle Transfer for the TCPCL.
 type OutgoingTransfer struct {
 	Id uint64
 

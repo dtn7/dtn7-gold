@@ -93,7 +93,16 @@ func (client *TCPCLClient) handleEstablished() (err error) {
 					client.log().WithField("transfer", client.transferIn).Info(
 						"Finished incoming transfer")
 
-					// TODO: extract and forward bundle
+					if bndl, err := client.transferIn.ToBundle(); err != nil {
+						client.log().WithError(err).WithField("transfer", client.transferIn).Warn(
+							"Unmarshalling Bundle errored")
+					} else {
+						client.log().WithFields(log.Fields{
+							"transfer": client.transferIn,
+							"bundle":   bndl,
+						}).Info("Received Bundle")
+					}
+					// TODO: forward bundle
 
 					client.transferIn = nil
 				}
