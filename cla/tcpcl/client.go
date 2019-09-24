@@ -56,10 +56,9 @@ type TCPCLClient struct {
 	keepaliveTicker  *time.Ticker
 
 	transferOutMutex sync.Mutex
+	transferOutId    uint64
 	transferOutSend  chan Message
 	transferOutAck   chan Message
-
-	transferIdOut uint64
 }
 
 func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
