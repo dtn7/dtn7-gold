@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -54,28 +55,36 @@ type TCPCLClient struct {
 	keepaliveLast    time.Time
 	keepaliveTicker  *time.Ticker
 
+	transferOutMutex sync.Mutex
+	transferOutSend  chan Message
+	transferOutAck   chan Message
+
 	transferIdOut uint64
 }
 
 func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
 	return &TCPCLClient{
-		conn:       conn,
-		active:     false,
-		state:      new(ClientState),
-		msgsOut:    make(chan Message, 100),
-		msgsIn:     make(chan Message),
-		endpointID: endpointID,
+		conn:            conn,
+		active:          false,
+		state:           new(ClientState),
+		msgsOut:         make(chan Message, 100),
+		msgsIn:          make(chan Message),
+		transferOutSend: make(chan Message),
+		transferOutAck:  make(chan Message),
+		endpointID:      endpointID,
 	}
 }
 
 func Dial(address string, endpointID bundle.EndpointID) *TCPCLClient {
 	return &TCPCLClient{
-		address:    address,
-		active:     true,
-		state:      new(ClientState),
-		msgsOut:    make(chan Message, 100),
-		msgsIn:     make(chan Message),
-		endpointID: endpointID,
+		address:         address,
+		active:          true,
+		state:           new(ClientState),
+		msgsOut:         make(chan Message, 100),
+		msgsIn:          make(chan Message),
+		transferOutSend: make(chan Message),
+		transferOutAck:  make(chan Message),
+		endpointID:      endpointID,
 	}
 }
 

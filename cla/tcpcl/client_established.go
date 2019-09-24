@@ -67,7 +67,16 @@ func (client *TCPCLClient) handleEstablished() (err error) {
 			client.log().WithField("msg", msg).Warn("Received unexpected message")
 		}
 
-	case <-time.After(100 * time.Millisecond):
+	case msg := <-client.transferOutSend:
+		if _, ok := msg.(*DataTransmissionMessage); !ok {
+			client.log().WithField("msg", msg).Warn(
+				"Transfer Out received a non XFER_SEGMENT message")
+		} else {
+			client.msgsOut <- msg
+			client.log().WithField("msg", msg).Debug("Forwarded XFER_SEGMENT")
+		}
+
+	case <-time.After(time.Millisecond):
 		// This case prevents blocking. Otherwise the select statement would wait
 		// for the keepaliveTicker or an incoming message.
 	}
@@ -76,8 +85,11 @@ func (client *TCPCLClient) handleEstablished() (err error) {
 }
 
 func (client *TCPCLClient) Send(bndl *bundle.Bundle) error {
+	client.transferOutMutex.Lock()
+	defer client.transferOutMutex.Unlock()
+
 	client.transferIdOut += 1
-	var t = NewBundleTransfer(client.transferIdOut, *bndl)
+	var t = NewBundleOutgoingTransfer(client.transferIdOut, *bndl)
 
 	client.log().WithFields(log.Fields{
 		"bundle":   bndl,
@@ -95,7 +107,7 @@ func (client *TCPCLClient) Send(bndl *bundle.Bundle) error {
 			return err
 		}
 
-		client.msgsOut <- &dtm
-		client.log().WithField("msg", dtm).Debug("Sent XFER_SEGMENT")
+		client.transferOutSend <- &dtm
+		client.log().WithField("msg", dtm).Debug("Send disposed XFER_SEGMENT")
 	}
 }
