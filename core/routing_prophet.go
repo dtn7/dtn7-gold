@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
@@ -23,20 +22,12 @@ type ProphetConfig struct {
 	AgeInterval string
 }
 
-// predictabilities contains a node's ID as well as the delivery predictabilities for other nodes
-type predictabilities struct {
-	// id is this node's EndpointID
-	id bundle.EndpointID
-	// Mapping NodeID->Encounter Probability
-	predictability map[bundle.EndpointID]float64
-}
-
 type Prophet struct {
 	c *Core
 	// predictabilities are this node's delivery probabilities for other nodes
-	predictabilities predictabilities
+	predictabilities map[bundle.EndpointID]float64
 	// Map containing the predictability-maps of other nodes
-	peerPredictabilities map[bundle.EndpointID]predictabilities
+	peerPredictabilities map[bundle.EndpointID]map[bundle.EndpointID]float64
 	// dataMutex is a RW-mutex which protects change operations to the algorithm's metadata
 	dataMutex sync.RWMutex
 	// config contains the values for prophet constants
@@ -52,12 +43,9 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 	}).Info("Initialised Prophet")
 
 	prophet := Prophet{
-		c: c,
-		predictabilities: predictabilities{
-			id:             c.NodeId,
-			predictability: make(map[bundle.EndpointID]float64),
-		},
-		peerPredictabilities: make(map[bundle.EndpointID]predictabilities),
+		c:                    c,
+		predictabilities:     make(map[bundle.EndpointID]float64),
+		peerPredictabilities: make(map[bundle.EndpointID]map[bundle.EndpointID]float64),
 		config:               config,
 	}
 
@@ -87,9 +75,9 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 
 // encounter updates the predictability for an encountered node
 func (prophet *Prophet) encounter(peer bundle.EndpointID) {
-	pOld := prophet.predictabilities.predictability[peer]
+	pOld := prophet.predictabilities[peer]
 	pNew := pOld + ((1 - pOld) * prophet.config.PInit)
-	prophet.predictabilities.predictability[peer] = pNew
+	prophet.predictabilities[peer] = pNew
 	log.WithFields(log.Fields{
 		"peer": peer,
 		"pOld": pOld,
@@ -99,9 +87,9 @@ func (prophet *Prophet) encounter(peer bundle.EndpointID) {
 
 // agePred "ages" - decreases over time - the predictability for a node
 func (prophet *Prophet) agePred(peer bundle.EndpointID) {
-	pOld := prophet.predictabilities.predictability[peer]
+	pOld := prophet.predictabilities[peer]
 	pNew := pOld * prophet.config.Gamma
-	prophet.predictabilities.predictability[peer] = pNew
+	prophet.predictabilities[peer] = pNew
 	log.WithFields(log.Fields{
 		"peer": peer,
 		"pOld": pOld,
@@ -113,7 +101,7 @@ func (prophet *Prophet) agePred(peer bundle.EndpointID) {
 func (prophet *Prophet) ageCron() {
 	prophet.dataMutex.Lock()
 	defer prophet.dataMutex.Unlock()
-	for peer := range prophet.predictabilities.predictability {
+	for peer := range prophet.predictabilities {
 		prophet.agePred(peer)
 	}
 }
@@ -134,11 +122,11 @@ func (prophet *Prophet) transitivity(peer bundle.EndpointID) {
 		"peer": peer,
 	}).Debug("Updating transitive predictabilities")
 
-	for otherPeer, otherPeerPred := range peerPredictabilities.predictability {
-		peerPred := prophet.predictabilities.predictability[peer]
-		pOld := prophet.predictabilities.predictability[otherPeer]
+	for otherPeer, otherPeerPred := range peerPredictabilities {
+		peerPred := prophet.predictabilities[peer]
+		pOld := prophet.predictabilities[otherPeer]
 		pNew := pOld + ((1 - pOld) * peerPred * otherPeerPred * prophet.config.Beta)
-		prophet.predictabilities.predictability[otherPeer] = pNew
+		prophet.predictabilities[otherPeer] = pNew
 		log.WithFields(log.Fields{
 			"beta":            prophet.config.Beta,
 			"peer":            peer,
@@ -202,6 +190,7 @@ func (prophet *Prophet) NotifyIncoming(bp BundlePack) {
 
 		prophetBlock := metaDataBlock.Value.(*ProphetBlock)
 		data := prophetBlock.getPredictabilities()
+		peerID := bp.MustBundle().PrimaryBlock.SourceNode
 
 		log.WithFields(log.Fields{
 			"source": bp.MustBundle().PrimaryBlock.SourceNode,
@@ -211,28 +200,28 @@ func (prophet *Prophet) NotifyIncoming(bp BundlePack) {
 		prophet.dataMutex.Lock()
 		defer prophet.dataMutex.Unlock()
 
-		_, present := prophet.peerPredictabilities[data.id]
+		_, present := prophet.peerPredictabilities[peerID]
 		if present {
 			log.WithFields(log.Fields{
-				"peer": data.id,
+				"peer": peerID,
 			}).Debug("Updating peer metadata")
 		} else {
 			log.WithFields(log.Fields{
-				"peer": data.id,
+				"peer": peerID,
 			}).Debug("Metadata for new peer")
 		}
 
 		// import new metadata
-		prophet.peerPredictabilities[data.id] = data
+		prophet.peerPredictabilities[peerID] = data
 
 		// update own predictabilities via the transitive property
-		prophet.transitivity(data.id)
+		prophet.transitivity(peerID)
 
 		return
 	}
 
 	// handle non-metadata bundles
-	// TODO: this is basicall copy-pasted from routing_epidemic - extract this code into a reusable function
+	// TODO: this is basically copy-pasted from routing_epidemic - extract this code into a reusable function
 
 	bundleItem, err := prophet.c.store.QueryId(bp.Id)
 	if err != nil {
@@ -325,8 +314,8 @@ func (prophet *Prophet) SenderForBundle(bp BundlePack) (sender []cla.Convergence
 
 	for _, cs := range prophet.c.claManager.Sender() {
 		peerID := cs.GetPeerEndpointID()
-		peerPred := prophet.peerPredictabilities[peerID].predictability[destination]
-		ownPred := prophet.predictabilities.predictability[destination]
+		peerPred := prophet.peerPredictabilities[peerID][destination]
+		ownPred := prophet.predictabilities[destination]
 
 		// is the peers delivery predictability for the destination greater than ours?
 		if peerPred > ownPred {
@@ -437,15 +426,15 @@ func (prophet *Prophet) ReportPeerDisappeared(peer cla.Convergence) {
 const ExtBlockTypeProphetBlock uint64 = 194
 
 // DTLSRBlock contains routing metadata
-type ProphetBlock predictabilities
+type ProphetBlock map[bundle.EndpointID]float64
 
-func newProphetBlock(data predictabilities) *ProphetBlock {
+func newProphetBlock(data map[bundle.EndpointID]float64) *ProphetBlock {
 	newBlock := ProphetBlock(data)
 	return &newBlock
 }
 
-func (pBlock *ProphetBlock) getPredictabilities() predictabilities {
-	return predictabilities(*pBlock)
+func (pBlock *ProphetBlock) getPredictabilities() map[bundle.EndpointID]float64 {
+	return *pBlock
 }
 
 func (pBlock *ProphetBlock) BlockTypeCode() uint64 {
@@ -457,23 +446,13 @@ func (pBlock ProphetBlock) CheckValid() error {
 }
 
 func (pBlock *ProphetBlock) MarshalCbor(w io.Writer) error {
-	// start with the outer array
-	if err := cboring.WriteArrayLength(2, w); err != nil {
-		return err
-	}
-
-	// write endpoint id
-	if err := cboring.Marshal(&pBlock.id, w); err != nil {
-		return err
-	}
-
 	// write the peer data array header
-	if err := cboring.WriteArrayLength(uint64(len(pBlock.predictability)), w); err != nil {
+	if err := cboring.WriteArrayLength(uint64(len(*pBlock)), w); err != nil {
 		return err
 	}
 
 	// write the actual data
-	for peerID, pred := range pBlock.predictability {
+	for peerID, pred := range *pBlock {
 		if err := cboring.Marshal(&peerID, w); err != nil {
 			return err
 		}
@@ -486,21 +465,6 @@ func (pBlock *ProphetBlock) MarshalCbor(w io.Writer) error {
 }
 
 func (pBlock *ProphetBlock) UnmarshalCbor(r io.Reader) error {
-	// read the outer array
-	if l, err := cboring.ReadArrayLength(r); err != nil {
-		return err
-	} else if l != 2 {
-		return fmt.Errorf("expected 2 fields, got %d", l)
-	}
-
-	// read endpoint id
-	id := bundle.EndpointID{}
-	if err := cboring.Unmarshal(&id, r); err != nil {
-		return err
-	} else {
-		pBlock.id = id
-	}
-
 	var lenData uint64
 
 	// read length of data array
@@ -526,7 +490,7 @@ func (pBlock *ProphetBlock) UnmarshalCbor(r io.Reader) error {
 		predictability[peerID] = pred
 	}
 
-	pBlock.predictability = predictability
+	*pBlock = predictability
 
 	return nil
 }
