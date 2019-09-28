@@ -80,7 +80,10 @@ purgetime = "10m"
 
 # config for prophet
 [routing.prophetconf]
+# pinit ist the prophet initialisation constant (default value provided by the PROPHET-paper)
 pinit = 0.75
+# beta is the prophet scaling factor for transitive predictability (default value provided by the PROPHET-paper)
 beta = 0.25
+# gamma is the prophet ageing factor (default value provided by the PROPHET-paper)
 gamma = 0.98
 ageinterval = "1m"
