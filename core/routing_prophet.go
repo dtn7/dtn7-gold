@@ -75,6 +75,7 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 
 // encounter updates the predictability for an encountered node
 func (prophet *Prophet) encounter(peer bundle.EndpointID) {
+	// map will return 0 if no value is stored for key
 	pOld := prophet.predictabilities[peer]
 	pNew := pOld + ((1 - pOld) * prophet.config.PInit)
 	prophet.predictabilities[peer] = pNew
@@ -106,10 +107,11 @@ func (prophet *Prophet) ageCron() {
 	}
 }
 
-// transitivity increases predicability for nodes based on a peer's corresponding predicability
+// transitivity increases predictability for nodes based on a peer's corresponding predictability
 // If we are likely to reencounter node b and node b is likely to reencounter node c
 // then we are also a good forwarder for node c
 func (prophet *Prophet) transitivity(peer bundle.EndpointID) {
+	// map will return 0 if no value is stored for key
 	peerPredictabilities, present := prophet.peerPredictabilities[peer]
 	if !present {
 		log.WithFields(log.Fields{
@@ -123,6 +125,7 @@ func (prophet *Prophet) transitivity(peer bundle.EndpointID) {
 	}).Debug("Updating transitive predictabilities")
 
 	for otherPeer, otherPeerPred := range peerPredictabilities {
+		// map will return 0 if no value is stored for key
 		peerPred := prophet.predictabilities[peer]
 		pOld := prophet.predictabilities[otherPeer]
 		pNew := pOld + ((1 - pOld) * peerPred * otherPeerPred * prophet.config.Beta)
@@ -262,7 +265,7 @@ func (prophet *Prophet) NotifyIncoming(bp BundlePack) {
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),
 		"eid":    prevNode,
-	}).Debug("EpidemicRouting received an incomming bundle and checked its PreviousNodeBlock")
+	}).Debug("Prophet received an incomming bundle and checked its PreviousNodeBlock")
 
 	bundleItem.Properties["routing/prophet/sent"] = append(sentEids, prevNode)
 	if err := prophet.c.store.Update(bundleItem); err != nil {
@@ -385,7 +388,51 @@ func (prophet *Prophet) SenderForBundle(bp BundlePack) (sender []cla.Convergence
 }
 
 func (prophet *Prophet) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
-	// When a transmission fails, that's unfortunate bet there really is not a whole lot to do
+	bundleItem, err := prophet.c.store.QueryId(bp.Id)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"bundle": bp.ID(),
+			"error":  err.Error(),
+		}).Warn("Failed to get bundle metadata")
+		return
+	}
+
+	sentEids, ok := bundleItem.Properties["routing/epidemic/sent"].([]bundle.EndpointID)
+	if !ok {
+		// this shouldn't really happen, no?
+		log.WithFields(log.Fields{
+			"bundle": bp.ID(),
+		}).Warn("Bundle had no stored sender-list")
+		return
+	}
+
+	log.WithFields(log.Fields{
+		"bundle": bp.ID(),
+		"peer":   sender,
+	}).Info("Failed to transmit bundle")
+
+	for i := 0; i < len(sentEids); i++ {
+		if sentEids[i] == sender.GetPeerEndpointID() {
+			sentEids = append(sentEids[:i], sentEids[i+1:]...)
+			break
+		}
+	}
+
+	bundleItem.Properties["routing/epidemic/sent"] = sentEids
+
+	if err := prophet.c.store.Update(bundleItem); err != nil {
+		log.WithFields(log.Fields{
+			"bundle": bp.ID(),
+			"error":  err,
+		}).Warn("Updating BundleItem failed")
+		return
+	}
+
+	log.WithFields(log.Fields{
+		"bundle": bp.ID(),
+		"peer":   sender,
+		"clas":   sentEids,
+	}).Debug("Removed peer from sent list")
 }
 
 func (prophet *Prophet) ReportPeerAppeared(peer cla.Convergence) {
