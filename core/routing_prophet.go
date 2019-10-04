@@ -397,7 +397,7 @@ func (prophet *Prophet) ReportFailure(bp BundlePack, sender cla.ConvergenceSende
 		return
 	}
 
-	sentEids, ok := bundleItem.Properties["routing/epidemic/sent"].([]bundle.EndpointID)
+	sentEids, ok := bundleItem.Properties["routing/prophet/sent"].([]bundle.EndpointID)
 	if !ok {
 		// this shouldn't really happen, no?
 		log.WithFields(log.Fields{
@@ -418,7 +418,7 @@ func (prophet *Prophet) ReportFailure(bp BundlePack, sender cla.ConvergenceSende
 		}
 	}
 
-	bundleItem.Properties["routing/epidemic/sent"] = sentEids
+	bundleItem.Properties["routing/prophet/sent"] = sentEids
 
 	if err := prophet.c.store.Update(bundleItem); err != nil {
 		log.WithFields(log.Fields{
@@ -442,7 +442,7 @@ func (prophet *Prophet) ReportPeerAppeared(peer cla.Convergence) {
 
 	peerReceiver, ok := peer.(cla.ConvergenceSender)
 	if !ok {
-		log.Warn("Peer was not a ConvergenceSender")
+		log.Debug("Peer was not a ConvergenceSender")
 		return
 	}
 
@@ -465,7 +465,7 @@ func (prophet *Prophet) ReportPeerDisappeared(peer cla.Convergence) {
 	log.WithFields(log.Fields{
 		"address": peer,
 	}).Debug("Peer disappeared")
-	// again, there really isn't anything to do upon a peer's disappearance
+	// there really isn't anything to do upon a peer's disappearance
 }
 
 // TODO: Turn this into an administrative record
