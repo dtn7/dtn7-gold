@@ -672,7 +672,7 @@ func (dtlsrb *DTLSRBlock) MarshalCbor(w io.Writer) error {
 	}
 
 	// write the peer data array header
-	if err := cboring.WriteArrayLength(uint64(len(dtlsrb.peers)), w); err != nil {
+	if err := cboring.WriteMapPairLength(uint64(len(dtlsrb.peers)), w); err != nil {
 		return err
 	}
 
@@ -715,7 +715,7 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 	var lenData uint64
 
 	// read length of data array
-	lenData, err := cboring.ReadArrayLength(r)
+	lenData, err := cboring.ReadMapPairLength(r)
 	if err != nil {
 		return err
 	}
