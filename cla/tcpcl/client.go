@@ -22,6 +22,7 @@ var sessTermErr = errors.New("SESS_TERM received")
 
 type TCPCLClient struct {
 	address        string
+	started        bool
 	permanent      bool
 	endpointID     bundle.EndpointID
 	peerEndpointID bundle.EndpointID
@@ -68,9 +69,8 @@ type TCPCLClient struct {
 }
 
 func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
-	address, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 	return &TCPCLClient{
-		address:         address,
+		address:         conn.RemoteAddr().String(),
 		conn:            conn,
 		active:          false,
 		state:           new(ClientState),
@@ -116,12 +116,25 @@ func (client *TCPCLClient) log() *log.Entry {
 }
 
 func (client *TCPCLClient) Start() (err error, retry bool) {
+	if client.started {
+		if client.active {
+			client.conn = nil
+		} else {
+			err = fmt.Errorf("Passive client cannot be restarted")
+			retry = false
+			return
+		}
+	}
+
+	client.started = true
+
 	if client.conn == nil {
 		if conn, connErr := net.DialTimeout("tcp", client.address, time.Second); connErr != nil {
 			err = connErr
 			return
 		} else {
 			client.conn = conn
+			client.address = conn.RemoteAddr().String()
 		}
 	}
 

@@ -38,15 +38,16 @@ func handleServer(serverAddr string, msgs, clients int, clientWg, serverWg *sync
 
 	defer serverWg.Done()
 
-	serv := NewTCPCLServer(serverAddr, bundle.MustNewEndpointID("dtn://server/"), true)
-	if err, _ := serv.Start(); err != nil {
+	manager := cla.NewManager()
+	listener := NewTCPCLListener(serverAddr, bundle.MustNewEndpointID("dtn://server/"), manager)
+	if err := listener.Start(); err != nil {
 		errs <- err
 		return
 	}
 
 	go func() {
 		for {
-			switch cs := <-serv.Channel(); cs.MessageType {
+			switch cs := <-manager.Channel(); cs.MessageType {
 			case cla.ReceivedBundle:
 				atomic.AddUint32(&msgsRecv, 1)
 
