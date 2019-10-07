@@ -32,27 +32,19 @@ func getRandomPort(t *testing.T) int {
 func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sync.WaitGroup, errs chan error) {
 	var (
 		msgsRecv  uint32
-		msgsDsprd uint32
 		msgsApprd uint32
 	)
 
 	defer serverWg.Done()
 
 	manager := cla.NewManager()
-	listener := NewTCPCLListener(serverAddr, bundle.MustNewEndpointID("dtn://server/"), manager)
-	if err := listener.Start(); err != nil {
-		errs <- err
-		return
-	}
+	manager.Register(NewTCPCLListener(serverAddr, bundle.MustNewEndpointID("dtn://server/")))
 
 	go func() {
 		for {
 			switch cs := <-manager.Channel(); cs.MessageType {
 			case cla.ReceivedBundle:
 				atomic.AddUint32(&msgsRecv, 1)
-
-			case cla.PeerDisappeared:
-				atomic.AddUint32(&msgsDsprd, 1)
 
 			case cla.PeerAppeared:
 				atomic.AddUint32(&msgsApprd, 1)
@@ -82,15 +74,12 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 	}()
 
 	clientWg.Wait()
-	listener.Close()
+	manager.Close()
 
 	time.Sleep(250 * time.Millisecond)
 
 	if r := atomic.LoadUint32(&msgsRecv); r != uint32(msgs*clients) {
 		errs <- fmt.Errorf("Listener received %d messages instead of %d", r, msgs*clients)
-	}
-	if d := atomic.LoadUint32(&msgsDsprd); d != uint32(clients) {
-		errs <- fmt.Errorf("Listener received %d disappeared peers instead of %d", d, clients)
 	}
 	if a := atomic.LoadUint32(&msgsApprd); a != uint32(clients) {
 		errs <- fmt.Errorf("Listener received %d appeared peers instead of %d", a, clients)
@@ -170,7 +159,7 @@ func startTestTCPCLNetwork(msgs, clients int, t *testing.T) {
 	serverWg.Add(1)
 
 	go handleListener(serverAddr, msgs, clients, &clientWg, &serverWg, errs)
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 
 	for i := 0; i < clients; i++ {
 		go handleClient(serverAddr, i, msgs, &clientWg, errs)
