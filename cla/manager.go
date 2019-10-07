@@ -24,6 +24,11 @@ type Manager struct {
 	// convs: Map[string]*convergenceElem
 	convs *sync.Map
 
+	// providers is an array of ConvergenceProvider. Those will report their
+	// created Convergence objects to this Manager, which also supervises it.
+	providers      []ConvergenceProvider
+	providersMutex sync.Mutex
+
 	// inChnl receives ConvergenceStatus while outChnl passes it on. Both channels
 	// are not buffered. While this is not a problem for inChnl, outChnl must
 	// always be read, otherwise the Manager will block.
@@ -48,7 +53,7 @@ func NewManager() *Manager {
 
 		convs: new(sync.Map),
 
-		inChnl:  make(chan ConvergenceStatus),
+		inChnl:  make(chan ConvergenceStatus, 100),
 		outChnl: make(chan ConvergenceStatus),
 
 		stopSyn: make(chan struct{}),
@@ -70,12 +75,18 @@ func (manager *Manager) handler() {
 	for {
 		select {
 		case <-manager.stopSyn:
-			log.Debug("CLA Manager received closing-signal")
+			log.Debug("CLA Manager received closing signal")
 
 			manager.convs.Range(func(_, convElem interface{}) bool {
 				manager.Unregister(convElem.(*convergenceElem).conv)
 				return true
 			})
+
+			manager.providersMutex.Lock()
+			for _, provider := range manager.providers {
+				provider.Close()
+			}
+			manager.providersMutex.Unlock()
 
 			close(manager.inChnl)
 			close(manager.outChnl)
@@ -146,12 +157,22 @@ func (manager *Manager) Close() {
 	<-manager.stopAck
 }
 
-// Register a new CLA.
-func (manager *Manager) Register(conv Convergence) {
+// Register any kind of Convergable.
+func (manager *Manager) Register(conv Convergable) {
 	if manager.isStopped() {
 		return
 	}
 
+	if c, ok := conv.(Convergence); ok {
+		manager.registerConvergence(c)
+	} else if c, ok := conv.(ConvergenceProvider); ok {
+		manager.registerProvider(c)
+	} else {
+		log.WithField("convergence", conv).Warn("Unknown kind of Convergable")
+	}
+}
+
+func (manager *Manager) registerConvergence(conv Convergence) {
 	// Check if this CLA is already known. Re-activate a deactivated CLA or abort.
 	var ce *convergenceElem
 	if convElem, exists := manager.convs.Load(conv.Address()); exists {
@@ -192,8 +213,38 @@ func (manager *Manager) Register(conv Convergence) {
 	}
 }
 
-// Unregister an already known CLA.
-func (manager *Manager) Unregister(conv Convergence) {
+func (manager *Manager) registerProvider(conv ConvergenceProvider) {
+	manager.providersMutex.Lock()
+	defer manager.providersMutex.Unlock()
+
+	for _, provider := range manager.providers {
+		if conv == provider {
+			log.WithField("provider", conv).Debug("Provider registration aborted, already known")
+			return
+		}
+	}
+
+	manager.providers = append(manager.providers, conv)
+
+	conv.RegisterManager(manager)
+
+	if err := conv.Start(); err != nil {
+		log.WithError(err).WithField("provider", conv).Warn("Starting Provider errored")
+	}
+}
+
+// Unregister any kind of Convergable.
+func (manager *Manager) Unregister(conv Convergable) {
+	if c, ok := conv.(Convergence); ok {
+		manager.unregisterConvergence(c)
+	} else if c, ok := conv.(ConvergenceProvider); ok {
+		manager.unregisterProvider(c)
+	} else {
+		log.WithField("convergence", conv).Warn("Unknown kind of Convergable")
+	}
+}
+
+func (manager *Manager) unregisterConvergence(conv Convergence) {
 	convElem, exists := manager.convs.Load(conv.Address())
 	if !exists {
 		log.WithFields(log.Fields{
@@ -208,8 +259,20 @@ func (manager *Manager) Unregister(conv Convergence) {
 	manager.convs.Delete(conv.Address())
 }
 
-// Restart an already known CLA.
-func (manager *Manager) Restart(conv Convergence) {
+func (manager *Manager) unregisterProvider(conv ConvergenceProvider) {
+	manager.providersMutex.Lock()
+	defer manager.providersMutex.Unlock()
+
+	for i, provider := range manager.providers {
+		if conv == provider {
+			manager.providers = append(manager.providers[:i], manager.providers[i+1:]...)
+			return
+		}
+	}
+}
+
+// Restart a known Convergable.
+func (manager *Manager) Restart(conv Convergable) {
 	manager.Unregister(conv)
 	manager.Register(conv)
 }
