@@ -18,9 +18,9 @@ func (client *TCPCLClient) handleContact() error {
 
 	case !client.active && !client.contactRecv, client.active && client.contactSent && !client.contactRecv:
 		msg := <-client.msgsIn
-		switch msg.(type) {
+		switch msg := msg.(type) {
 		case *ContactHeader:
-			client.chRecv = *msg.(*ContactHeader)
+			client.chRecv = *msg
 			client.contactRecv = true
 			client.log().WithField("msg", client.chRecv).Debug("Received Contact Header")
 

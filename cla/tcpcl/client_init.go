@@ -30,14 +30,14 @@ func (client *TCPCLClient) handleSessInit() error {
 
 	case !client.active && !client.initRecv, client.active && client.initSent && !client.initRecv:
 		msg := <-client.msgsIn
-		switch msg.(type) {
+		switch msg := msg.(type) {
 		case *SessionInitMessage:
-			client.sessInitRecv = *msg.(*SessionInitMessage)
+			client.sessInitRecv = *msg
 			client.initRecv = true
 			client.log().WithField("msg", client.sessInitRecv).Debug("Received SESS_INIT message")
 
 		case *SessionTerminationMessage:
-			sesstermMsg := *msg.(*SessionTerminationMessage)
+			sesstermMsg := *msg
 			client.log().WithField("msg", sesstermMsg).Info("Received SESS_TERM")
 			return sessTermErr
 
