@@ -15,6 +15,7 @@ type TCPCLListener struct {
 	listenAddress string
 	endpointID    bundle.EndpointID
 	manager       *cla.Manager
+	clas          []cla.Convergence
 
 	stopSyn chan struct{}
 	stopAck chan struct{}
@@ -46,6 +47,10 @@ func (listener *TCPCLListener) Start() error {
 		for {
 			select {
 			case <-listener.stopSyn:
+				for _, c := range listener.clas {
+					listener.manager.Unregister(c)
+				}
+
 				ln.Close()
 				close(listener.stopAck)
 
@@ -58,7 +63,9 @@ func (listener *TCPCLListener) Start() error {
 
 					listener.Close()
 				} else if conn, err := ln.Accept(); err == nil {
-					listener.manager.Register(NewTCPCLClient(conn, listener.endpointID))
+					client := NewTCPCLClient(conn, listener.endpointID)
+					listener.clas = append(listener.clas, client)
+					listener.manager.Register(client)
 				}
 			}
 		}

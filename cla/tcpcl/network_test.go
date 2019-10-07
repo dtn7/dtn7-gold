@@ -29,7 +29,7 @@ func getRandomPort(t *testing.T) int {
 	return l.Addr().(*net.TCPAddr).Port
 }
 
-func handleServer(serverAddr string, msgs, clients int, clientWg, serverWg *sync.WaitGroup, errs chan error) {
+func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sync.WaitGroup, errs chan error) {
 	var (
 		msgsRecv  uint32
 		msgsDsprd uint32
@@ -61,19 +61,18 @@ func handleServer(serverAddr string, msgs, clients int, clientWg, serverWg *sync
 	}()
 
 	clientWg.Wait()
-	// TODO
-	// serv.Close()
+	listener.Close()
 
 	time.Sleep(250 * time.Millisecond)
 
 	if r := atomic.LoadUint32(&msgsRecv); r != uint32(msgs*clients) {
-		errs <- fmt.Errorf("Server received %d messages instead of %d", r, msgs*clients)
+		errs <- fmt.Errorf("Listener received %d messages instead of %d", r, msgs*clients)
 	}
 	if d := atomic.LoadUint32(&msgsDsprd); d != uint32(clients) {
-		errs <- fmt.Errorf("Server received %d disappeared peers instead of %d", d, clients)
+		errs <- fmt.Errorf("Listener received %d disappeared peers instead of %d", d, clients)
 	}
 	if a := atomic.LoadUint32(&msgsApprd); a != uint32(clients) {
-		errs <- fmt.Errorf("Server received %d appeared peers instead of %d", a, clients)
+		errs <- fmt.Errorf("Listener received %d appeared peers instead of %d", a, clients)
 	}
 }
 
@@ -139,7 +138,7 @@ func startTestTCPCLNetwork(msgs, clients int, t *testing.T) {
 	clientWg.Add(clients)
 	serverWg.Add(1)
 
-	go handleServer(serverAddr, msgs, clients, &clientWg, &serverWg, errs)
+	go handleListener(serverAddr, msgs, clients, &clientWg, &serverWg, errs)
 	time.Sleep(100 * time.Millisecond)
 
 	for i := 0; i < clients; i++ {
