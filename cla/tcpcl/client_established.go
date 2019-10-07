@@ -49,14 +49,14 @@ func (client *TCPCLClient) handleEstablished() (err error) {
 		}
 
 	case msg := <-client.msgsIn:
-		switch msg.(type) {
+		switch msg := msg.(type) {
 		case *KeepaliveMessage:
-			keepaliveMsg := *msg.(*KeepaliveMessage)
+			keepaliveMsg := *msg
 			client.keepaliveLast = time.Now()
 			client.log().WithField("msg", keepaliveMsg).Debug("Received KEEPALIVE message")
 
 		case *DataTransmissionMessage:
-			dtm := *msg.(*DataTransmissionMessage)
+			dtm := *msg
 			client.log().WithField("msg", dtm).Debug("Received XFER_SEGMENT")
 
 			if client.transferIn != nil && dtm.Flags&SegmentStart != 0 {
@@ -115,7 +115,7 @@ func (client *TCPCLClient) handleEstablished() (err error) {
 			client.transferOutAck <- msg
 
 		case *SessionTerminationMessage:
-			sesstermMsg := *msg.(*SessionTerminationMessage)
+			sesstermMsg := *msg
 			client.log().WithField("msg", sesstermMsg).Info("Received SESS_TERM")
 			return sessTermErr
 
@@ -172,13 +172,12 @@ func (client *TCPCLClient) Send(bndl *bundle.Bundle) error {
 		tlog.WithField("msg", dtm).Debug("Send disposed XFER_SEGMENT")
 
 		ackMsg := <-client.transferOutAck
-		switch ackMsg.(type) {
+		switch ackMsg := ackMsg.(type) {
 		case *DataAcknowledgementMessage:
-			dam := ackMsg.(*DataAcknowledgementMessage)
-			tlog.WithField("msg", dam).Debug("Received XFER_ACK")
+			tlog.WithField("msg", ackMsg).Debug("Received XFER_ACK")
 
-			if dam.TransferId != dtm.TransferId || dam.Flags != dtm.Flags {
-				tlog.WithField("msg", dam).Warn("XFER_ACK does not match XFER_SEGMENT")
+			if ackMsg.TransferId != dtm.TransferId || ackMsg.Flags != dtm.Flags {
+				tlog.WithField("msg", ackMsg).Warn("XFER_ACK does not match XFER_SEGMENT")
 				return fmt.Errorf("XFER_ACK does not match XFER_SEGMENT")
 			}
 
