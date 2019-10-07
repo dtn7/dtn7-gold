@@ -233,6 +233,8 @@ func (client *TCPCLClient) handleState() {
 			var sessTerm = NewSessionTerminationMessage(0, TerminationUnknown)
 			client.msgsOut <- &sessTerm
 
+			client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.peerEndpointID)
+
 			return
 		}
 
