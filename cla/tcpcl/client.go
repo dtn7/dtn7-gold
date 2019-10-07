@@ -75,7 +75,7 @@ func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
 		active:          false,
 		state:           new(ClientState),
 		msgsOut:         make(chan Message, 100),
-		msgsIn:          make(chan Message),
+		msgsIn:          make(chan Message, 100),
 		transferOutSend: make(chan Message),
 		transferOutAck:  make(chan Message),
 		endpointID:      endpointID,
@@ -89,7 +89,7 @@ func Dial(address string, endpointID bundle.EndpointID, permanent bool) *TCPCLCl
 		active:          true,
 		state:           new(ClientState),
 		msgsOut:         make(chan Message, 100),
-		msgsIn:          make(chan Message),
+		msgsIn:          make(chan Message, 100),
 		transferOutSend: make(chan Message),
 		transferOutAck:  make(chan Message),
 		endpointID:      endpointID,
@@ -140,7 +140,7 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 
 	client.log().Info("Starting client")
 
-	client.reportChan = make(chan cla.ConvergenceStatus)
+	client.reportChan = make(chan cla.ConvergenceStatus, 100)
 
 	client.handleCounter = 2
 	go client.handleConnection()

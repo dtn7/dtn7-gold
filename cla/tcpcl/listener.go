@@ -21,15 +21,18 @@ type TCPCLListener struct {
 	stopAck chan struct{}
 }
 
-func NewTCPCLListener(listenAddress string, endpointID bundle.EndpointID, manager *cla.Manager) *TCPCLListener {
+func NewTCPCLListener(listenAddress string, endpointID bundle.EndpointID) *TCPCLListener {
 	return &TCPCLListener{
 		listenAddress: listenAddress,
 		endpointID:    endpointID,
-		manager:       manager,
 
 		stopSyn: make(chan struct{}),
 		stopAck: make(chan struct{}),
 	}
+}
+
+func (listener *TCPCLListener) RegisterManager(manager *cla.Manager) {
+	listener.manager = manager
 }
 
 func (listener *TCPCLListener) Start() error {
@@ -47,10 +50,6 @@ func (listener *TCPCLListener) Start() error {
 		for {
 			select {
 			case <-listener.stopSyn:
-				for _, c := range listener.clas {
-					listener.manager.Unregister(c)
-				}
-
 				ln.Close()
 				close(listener.stopAck)
 
