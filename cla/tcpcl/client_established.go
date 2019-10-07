@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 // This file contains code for the Client's established state.
@@ -101,8 +102,10 @@ func (client *TCPCLClient) handleEstablished() (err error) {
 							"transfer": client.transferIn,
 							"bundle":   bndl,
 						}).Info("Received Bundle")
+
+						client.reportChan <- cla.NewConvergenceReceivedBundle(
+							client, client.endpointID, &bndl)
 					}
-					// TODO: forward bundle
 
 					client.transferIn = nil
 				}

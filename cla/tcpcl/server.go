@@ -15,7 +15,6 @@ type TCPCLServer struct {
 	listenAddress string
 	reportChan    chan cla.ConvergenceStatus
 	endpointID    bundle.EndpointID
-	permanent     bool
 
 	stopSyn chan struct{}
 	stopAck chan struct{}
@@ -26,7 +25,6 @@ func NewTCPCLServer(listenAddress string, endpointID bundle.EndpointID, permanen
 		listenAddress: listenAddress,
 		reportChan:    make(chan cla.ConvergenceStatus),
 		endpointID:    endpointID,
-		permanent:     permanent,
 		stopSyn:       make(chan struct{}),
 		stopAck:       make(chan struct{}),
 	}
@@ -62,9 +60,18 @@ func (serv *TCPCLServer) Start() (error, bool) {
 
 					serv.Close()
 				} else if conn, err := ln.Accept(); err == nil {
-					// TODO
-					client := NewTCPCLClient(conn, serv.endpointID)
-					_, _ = client.Start()
+					go func() {
+						client := NewTCPCLClient(conn, serv.endpointID)
+
+						if err, _ := client.Start(); err != nil {
+							log.WithError(err).WithField("cla", serv).Warn("Starting Client errored")
+							return
+						}
+
+						for {
+							serv.reportChan <- <-client.Channel()
+						}
+					}()
 				}
 			}
 		}
@@ -82,18 +89,6 @@ func (serv *TCPCLServer) Close() {
 	<-serv.stopAck
 }
 
-func (serv TCPCLServer) GetEndpointID() bundle.EndpointID {
-	return serv.endpointID
-}
-
-func (serv TCPCLServer) Address() string {
-	return fmt.Sprintf("tcpcl://%s", serv.listenAddress)
-}
-
-func (serv TCPCLServer) IsPermanent() bool {
-	return serv.permanent
-}
-
 func (serv TCPCLServer) String() string {
-	return serv.Address()
+	return fmt.Sprintf("tcpcl://%s", serv.listenAddress)
 }

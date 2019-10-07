@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 // sessTermErr will be returned from a state handler iff a SESS_TERM was received.
@@ -21,6 +22,7 @@ var sessTermErr = errors.New("SESS_TERM received")
 
 type TCPCLClient struct {
 	address        string
+	permanent      bool
 	endpointID     bundle.EndpointID
 	peerEndpointID bundle.EndpointID
 
@@ -61,10 +63,14 @@ type TCPCLClient struct {
 	transferOutAck   chan Message
 
 	transferIn *IncomingTransfer
+
+	reportChan chan cla.ConvergenceStatus
 }
 
 func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
+	address, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 	return &TCPCLClient{
+		address:         address,
 		conn:            conn,
 		active:          false,
 		state:           new(ClientState),
@@ -76,9 +82,10 @@ func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
 	}
 }
 
-func Dial(address string, endpointID bundle.EndpointID) *TCPCLClient {
+func Dial(address string, endpointID bundle.EndpointID, permanent bool) *TCPCLClient {
 	return &TCPCLClient{
 		address:         address,
+		permanent:       permanent,
 		active:          true,
 		state:           new(ClientState),
 		msgsOut:         make(chan Message, 100),
@@ -119,6 +126,8 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 	}
 
 	client.log().Info("Starting client")
+
+	client.reportChan = make(chan cla.ConvergenceStatus)
 
 	client.handleCounter = 2
 	go client.handleConnection()
@@ -239,4 +248,24 @@ func (client *TCPCLClient) Close() {
 	for atomic.LoadInt32(&client.handleCounter) > 0 {
 		time.Sleep(time.Millisecond)
 	}
+}
+
+func (client *TCPCLClient) Channel() chan cla.ConvergenceStatus {
+	return client.reportChan
+}
+
+func (client *TCPCLClient) Address() string {
+	return client.address
+}
+
+func (client *TCPCLClient) IsPermanent() bool {
+	return client.permanent
+}
+
+func (client *TCPCLClient) GetEndpointID() bundle.EndpointID {
+	return client.endpointID
+}
+
+func (client *TCPCLClient) GetPeerEndpointID() bundle.EndpointID {
+	return client.peerEndpointID
 }
