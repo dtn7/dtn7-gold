@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,20 +29,51 @@ func getRandomPort(t *testing.T) int {
 	return l.Addr().(*net.TCPAddr).Port
 }
 
-func handleServer(serverAddr string, wg *sync.WaitGroup, errs chan error) {
+func handleServer(serverAddr string, msgs, clients int, clientWg, serverWg *sync.WaitGroup, errs chan error) {
+	var (
+		msgsRecv  uint32
+		msgsDsprd uint32
+		msgsApprd uint32
+	)
+
+	defer serverWg.Done()
+
 	serv := NewTCPCLServer(serverAddr, bundle.MustNewEndpointID("dtn://server/"), true)
 	if err, _ := serv.Start(); err != nil {
 		errs <- err
 		return
 	}
 
-	go func(serv *TCPCLServer) {
+	go func() {
 		for {
-			<-serv.Channel()
-		}
-	}(serv)
+			switch cs := <-serv.Channel(); cs.MessageType {
+			case cla.ReceivedBundle:
+				atomic.AddUint32(&msgsRecv, 1)
 
-	wg.Wait()
+			case cla.PeerDisappeared:
+				atomic.AddUint32(&msgsDsprd, 1)
+
+			case cla.PeerAppeared:
+				atomic.AddUint32(&msgsApprd, 1)
+			}
+		}
+	}()
+
+	clientWg.Wait()
+	// TODO
+	// serv.Close()
+
+	time.Sleep(250 * time.Millisecond)
+
+	if r := atomic.LoadUint32(&msgsRecv); r != uint32(msgs*clients) {
+		errs <- fmt.Errorf("Server received %d messages instead of %d", r, msgs*clients)
+	}
+	if d := atomic.LoadUint32(&msgsDsprd); d != uint32(clients) {
+		errs <- fmt.Errorf("Server received %d disappeared peers instead of %d", d, clients)
+	}
+	if a := atomic.LoadUint32(&msgsApprd); a != uint32(clients) {
+		errs <- fmt.Errorf("Server received %d appeared peers instead of %d", a, clients)
+	}
 }
 
 func handleClient(serverAddr string, clientNo, msgs int, wg *sync.WaitGroup, errs chan error) {
@@ -57,13 +89,13 @@ func handleClient(serverAddr string, clientNo, msgs int, wg *sync.WaitGroup, err
 	var clientWg sync.WaitGroup
 	clientWg.Add(1)
 
-	go func(client cla.Convergence) {
+	go func() {
 		for {
 			<-client.Channel()
 		}
-	}(client)
+	}()
 
-	go func(client *TCPCLClient, clientEid string, msgs int, clientWg *sync.WaitGroup, errs chan error) {
+	go func() {
 		defer clientWg.Done()
 
 		for !client.state.IsEstablished() {
@@ -88,7 +120,7 @@ func handleClient(serverAddr string, clientNo, msgs int, wg *sync.WaitGroup, err
 				return
 			}
 		}
-	}(client, clientEid, msgs, wg, errs)
+	}()
 
 	clientWg.Wait()
 	client.Close()
@@ -99,21 +131,24 @@ func startTestTCPCLNetwork(msgs, clients int, t *testing.T) {
 
 	var serverAddr = fmt.Sprintf("localhost:%d", getRandomPort(t))
 	var errs = make(chan error)
-	var wg sync.WaitGroup
 
-	wg.Add(clients)
+	var clientWg sync.WaitGroup
+	var serverWg sync.WaitGroup
 
-	go handleServer(serverAddr, &wg, errs)
+	clientWg.Add(clients)
+	serverWg.Add(1)
+
+	go handleServer(serverAddr, msgs, clients, &clientWg, &serverWg, errs)
 	time.Sleep(100 * time.Millisecond)
 
 	for i := 0; i < clients; i++ {
-		go handleClient(serverAddr, i, msgs, &wg, errs)
+		go handleClient(serverAddr, i, msgs, &clientWg, errs)
 	}
 
-	go func(wg *sync.WaitGroup, errs chan error) {
-		wg.Wait()
+	go func() {
+		serverWg.Wait()
 		close(errs)
-	}(&wg, errs)
+	}()
 
 	for err := range errs {
 		if err != nil {
