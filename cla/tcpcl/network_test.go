@@ -56,6 +56,27 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 
 			case cla.PeerAppeared:
 				atomic.AddUint32(&msgsApprd, 1)
+
+				go func(c cla.Convergence) {
+					if sender, ok := c.(cla.ConvergenceSender); !ok {
+						errs <- fmt.Errorf("New peer is not a ConvergenceSender; %v", cs)
+					} else {
+						bndl, err := bundle.Builder().
+							CRC(bundle.CRC32).
+							Source("dtn://server/").
+							Destination(cs.Message).
+							CreationTimestampNow().
+							Lifetime("30m").
+							HopCountBlock(64).
+							PayloadBlock([]byte("hello back!")).
+							Build()
+						if err != nil {
+							errs <- err
+						} else if err := sender.Send(&bndl); err != nil {
+							errs <- err
+						}
+					}
+				}(cs.Sender)
 			}
 		}
 	}()
@@ -79,6 +100,8 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 func handleClient(serverAddr string, clientNo, msgs int, wg *sync.WaitGroup, errs chan error) {
 	defer wg.Done()
 
+	var msgsRecv uint32
+
 	clientEid := fmt.Sprintf("dtn://client-%d/", clientNo)
 	client := Dial(serverAddr, bundle.MustNewEndpointID(clientEid), false)
 	if err, _ := client.Start(); err != nil {
@@ -91,7 +114,10 @@ func handleClient(serverAddr string, clientNo, msgs int, wg *sync.WaitGroup, err
 
 	go func() {
 		for {
-			<-client.Channel()
+			switch cs := <-client.Channel(); cs.MessageType {
+			case cla.ReceivedBundle:
+				atomic.AddUint32(&msgsRecv, 1)
+			}
 		}
 	}()
 
@@ -99,6 +125,7 @@ func handleClient(serverAddr string, clientNo, msgs int, wg *sync.WaitGroup, err
 		defer clientWg.Done()
 
 		for !client.state.IsEstablished() {
+			// Busy waiting..
 		}
 
 		for i := 0; i < msgs; i++ {
@@ -124,6 +151,10 @@ func handleClient(serverAddr string, clientNo, msgs int, wg *sync.WaitGroup, err
 
 	clientWg.Wait()
 	client.Close()
+
+	if r := atomic.LoadUint32(&msgsRecv); r != 1 {
+		errs <- fmt.Errorf("Client received %d messages instead of 1", r)
+	}
 }
 
 func startTestTCPCLNetwork(msgs, clients int, t *testing.T) {
