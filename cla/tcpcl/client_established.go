@@ -144,6 +144,10 @@ func (client *TCPCLClient) Send(bndl *bundle.Bundle) error {
 	client.transferOutMutex.Lock()
 	defer client.transferOutMutex.Unlock()
 
+	if !client.state.IsEstablished() {
+		return fmt.Errorf("TCPCLClient is not in an established state")
+	}
+
 	client.transferOutId += 1
 	var t = NewBundleOutgoingTransfer(client.transferOutId, *bndl)
 

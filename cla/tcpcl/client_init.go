@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 // This file contains code for the Client's contact state.
@@ -72,6 +73,8 @@ func (client *TCPCLClient) handleSessInit() error {
 			"transfer MRU": client.transferMru,
 		}).Debug("Exchanged SESS_INIT messages")
 		client.state.Next()
+
+		client.reportChan <- cla.NewConvergencePeerAppeared(client, client.peerEndpointID)
 	}
 
 	return nil
