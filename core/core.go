@@ -271,7 +271,7 @@ func (c *Core) SendStatusReport(bp BundlePack,
 	c.SendBundle(&outBndl)
 }
 
-// RegisterCla is the exposed Register method from the CLA Manager.
-func (c *Core) RegisterConvergence(conv cla.Convergence) {
+// RegisterConvergable is the exposed Register method from the CLA Manager.
+func (c *Core) RegisterConvergable(conv cla.Convergable) {
 	c.claManager.Register(conv)
 }
