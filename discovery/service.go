@@ -52,13 +52,23 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		"message":   dm,
 	}).Debug("Peer discovery received a message")
 
+	if dm.Endpoint == ds.c.NodeId {
+		log.WithFields(log.Fields{
+			"discovery": ds,
+			"peer":      addr,
+			"message":   dm,
+		}).Debug("Peer discovery is from this node, dropping")
+
+		return
+	}
+
 	var client cla.Convergence
 	switch dm.Type {
 	case MTCP:
 		client = mtcp.NewMTCPClient(fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint, false)
 
 	case TCPCL:
-		client = tcpcl.Dial(fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint, false)
+		client = tcpcl.Dial(fmt.Sprintf("%s:%d", addr, dm.Port), ds.c.NodeId, false)
 
 	default:
 		log.WithFields(log.Fields{
