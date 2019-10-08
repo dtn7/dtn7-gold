@@ -69,7 +69,7 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		return
 	}
 
-	ds.c.RegisterConvergence(client)
+	ds.c.RegisterConvergable(client)
 }
 
 // Close shuts the DiscoveryService down.

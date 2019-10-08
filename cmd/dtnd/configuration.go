@@ -12,6 +12,7 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/mtcp"
+	"github.com/dtn7/dtn7-go/cla/tcpcl"
 	"github.com/dtn7/dtn7-go/core"
 	"github.com/dtn7/dtn7-go/discovery"
 )
@@ -62,15 +63,19 @@ type convergenceConf struct {
 	Endpoint string
 }
 
-// parseListen inspects a "listen" convergenceConf and returns a ConvergenceReceiver.
-func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.ConvergenceReceiver, discovery.DiscoveryMessage, error) {
-	var defaultDisc = discovery.DiscoveryMessage{}
+// parseListen inspects a "listen" convergenceConf and returns a Convergable.
+func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergable, discovery.DiscoveryMessage, error) {
+	_, portStr, err := net.SplitHostPort(conv.Endpoint)
+	if err != nil {
+		return nil, discovery.DiscoveryMessage{}, err
+	}
+	portInt, err := strconv.Atoi(portStr)
+	if err != nil {
+		return nil, discovery.DiscoveryMessage{}, err
+	}
 
 	switch conv.Protocol {
 	case "mtcp":
-		_, portStr, _ := net.SplitHostPort(conv.Endpoint)
-		portInt, _ := strconv.Atoi(portStr)
-
 		msg := discovery.DiscoveryMessage{
 			Type:     discovery.MTCP,
 			Endpoint: nodeId,
@@ -79,20 +84,34 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergenc
 
 		return mtcp.NewMTCPServer(conv.Endpoint, nodeId, true), msg, nil
 
+	case "tcpcl":
+		listener := tcpcl.NewTCPCLListener(conv.Endpoint, nodeId)
+
+		msg := discovery.DiscoveryMessage{
+			Type:     discovery.TCPCL,
+			Endpoint: nodeId,
+			Port:     uint(portInt),
+		}
+
+		return listener, msg, nil
+
 	default:
-		return nil, defaultDisc, fmt.Errorf("Unknown listen.protocol \"%s\"", conv.Protocol)
+		return nil, discovery.DiscoveryMessage{}, fmt.Errorf("Unknown listen.protocol \"%s\"", conv.Protocol)
 	}
 }
 
 func parsePeer(conv convergenceConf) (cla.ConvergenceSender, error) {
+	endpointID, err := bundle.NewEndpointID(conv.Node)
+	if err != nil {
+		return nil, err
+	}
+
 	switch conv.Protocol {
 	case "mtcp":
-		endpointID, err := bundle.NewEndpointID(conv.Node)
-		if err != nil {
-			return nil, err
-		}
-
 		return mtcp.NewMTCPClient(conv.Endpoint, endpointID, true), nil
+
+	case "tcpcl":
+		return tcpcl.Dial(conv.Endpoint, endpointID, true), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown peer.protocol \"%s\"", conv.Protocol)
@@ -182,17 +201,13 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 
 	// Listen/ConvergenceReceiver
 	for _, conv := range conf.Listen {
-		var convRec cla.ConvergenceReceiver
-		var discoMsg discovery.DiscoveryMessage
-
-		convRec, discoMsg, err = parseListen(conv, c.NodeId)
-		if err != nil {
+		if convRec, discoMsg, lErr := parseListen(conv, c.NodeId); lErr != nil {
+			err = lErr
 			return
+		} else {
+			discoveryMsgs = append(discoveryMsgs, discoMsg)
+			c.RegisterConvergable(convRec)
 		}
-
-		discoveryMsgs = append(discoveryMsgs, discoMsg)
-
-		c.RegisterConvergence(convRec)
 	}
 
 	// Peer/ConvergenceSender
@@ -206,7 +221,7 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 			continue
 		}
 
-		c.RegisterConvergence(convRec)
+		c.RegisterConvergable(convRec)
 	}
 
 	// Discovery
