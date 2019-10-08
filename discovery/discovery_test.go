@@ -15,17 +15,17 @@ func TestDiscoveryMessageCbor(t *testing.T) {
 			Port:     8000,
 		},
 		{
-			Type:     MTCP,
+			Type:     TCPCL,
 			Endpoint: bundle.MustNewEndpointID("dtn:foobar"),
 			Port:     8000,
 		},
 		{
-			Type:     TCPCLV4,
+			Type:     MTCP,
 			Endpoint: bundle.MustNewEndpointID("ipn:1337.23"),
 			Port:     12345,
 		},
 		{
-			Type:     TCPCLV4,
+			Type:     TCPCL,
 			Endpoint: bundle.MustNewEndpointID("ipn:1337.23"),
 			Port:     12345,
 		},

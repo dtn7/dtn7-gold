@@ -27,9 +27,9 @@ const (
 type CLAType uint
 
 const (
-	// TCPCLV4 is the "Delay-Tolerant Networking TCP Convergence Layer Protocol
-	// Version 4" as specified in draft-ietf-dtn-tcpclv4-10 or newer documents.
-	TCPCLV4 CLAType = 0
+	// TCPCL is the "Delay-Tolerant Networking TCP Convergence Layer Protocol
+	// Version 4" as specified in draft-ietf-dtn-tcpclv4-14 or newer.
+	TCPCL CLAType = 0
 
 	// MTCP is the "Minimal TCP Convergence-Layer Protocol" as specified in
 	// draft-ietf-dtn-mtcpcl-01 or newer documents.
@@ -134,8 +134,8 @@ func (dm DiscoveryMessage) String() string {
 	fmt.Fprintf(&builder, "DiscoveryMessage(")
 
 	switch dm.Type {
-	case TCPCLV4:
-		fmt.Fprintf(&builder, "TCPCLv4")
+	case TCPCL:
+		fmt.Fprintf(&builder, "TCPCL")
 	case MTCP:
 		fmt.Fprintf(&builder, "MTCP")
 	default:
