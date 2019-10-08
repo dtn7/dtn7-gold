@@ -100,7 +100,7 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergabl
 	}
 }
 
-func parsePeer(conv convergenceConf) (cla.ConvergenceSender, error) {
+func parsePeer(conv convergenceConf, nodeId bundle.EndpointID) (cla.ConvergenceSender, error) {
 	endpointID, err := bundle.NewEndpointID(conv.Node)
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func parsePeer(conv convergenceConf) (cla.ConvergenceSender, error) {
 		return mtcp.NewMTCPClient(conv.Endpoint, endpointID, true), nil
 
 	case "tcpcl":
-		return tcpcl.Dial(conv.Endpoint, endpointID, true), nil
+		return tcpcl.Dial(conv.Endpoint, nodeId, true), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown peer.protocol \"%s\"", conv.Protocol)
@@ -212,7 +212,7 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 
 	// Peer/ConvergenceSender
 	for _, conv := range conf.Peer {
-		convRec, err := parsePeer(conv)
+		convRec, err := parsePeer(conv, c.NodeId)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"peer":  conv.Endpoint,
