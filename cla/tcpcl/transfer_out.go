@@ -58,12 +58,12 @@ func (t *OutgoingTransfer) NextSegment(mru uint64) (dtm DataTransmissionMessage,
 	}
 
 	var buf = make([]byte, mru)
-	if n, rErr := t.dataStream.Read(buf); rErr != nil {
-		err = rErr
-		return
-	} else if uint64(n) < mru {
+	if n, rErr := io.ReadFull(t.dataStream, buf); rErr == io.ErrUnexpectedEOF {
 		buf = buf[:n]
 		segFlags |= SegmentEnd
+	} else if rErr != nil {
+		err = rErr
+		return
 	}
 
 	dtm = NewDataTransmissionMessage(segFlags, t.Id, buf)
