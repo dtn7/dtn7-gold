@@ -6,7 +6,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/mtcp"
+	"github.com/dtn7/dtn7-go/cla/tcpcl"
 	"github.com/dtn7/dtn7-go/core"
 	"github.com/schollz/peerdiscovery"
 )
@@ -50,7 +52,15 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		"message":   dm,
 	}).Debug("Peer discovery received a message")
 
-	if dm.Type != MTCP {
+	var client cla.Convergence
+	switch dm.Type {
+	case MTCP:
+		client = mtcp.NewMTCPClient(fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint, false)
+
+	case TCPCL:
+		client = tcpcl.Dial(fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint, false)
+
+	default:
 		log.WithFields(log.Fields{
 			"discovery": ds,
 			"peer":      addr,
@@ -59,8 +69,6 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		return
 	}
 
-	client := mtcp.NewMTCPClient(
-		fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint, false)
 	ds.c.RegisterConvergence(client)
 }
 
