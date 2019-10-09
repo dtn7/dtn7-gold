@@ -43,11 +43,8 @@ func NewMessage(typeCode uint8) (msg Message, err error) {
 // ReadMessage parses the next TCPCL message from the Reader.
 func ReadMessage(r io.Reader) (msg Message, err error) {
 	msgTypeBytes := make([]byte, 1)
-	if n, msgTypeErr := r.Read(msgTypeBytes); msgTypeErr != nil {
+	if _, msgTypeErr := io.ReadFull(r, msgTypeBytes); msgTypeErr != nil {
 		err = msgTypeErr
-		return
-	} else if n != 1 {
-		err = fmt.Errorf("Expected one byte, got %d bytes", n)
 		return
 	}
 
