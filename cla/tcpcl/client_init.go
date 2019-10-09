@@ -16,7 +16,7 @@ func (client *TCPCLClient) handleSessInit() error {
 	// XXX
 	const (
 		keepalive   = 10
-		segmentMru  = 10485760
+		segmentMru  = 1048576
 		transferMru = 0xFFFFFFFF
 	)
 

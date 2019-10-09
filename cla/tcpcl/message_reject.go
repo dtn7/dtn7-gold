@@ -69,10 +69,7 @@ func (mrm MessageRejectionMessage) String() string {
 }
 
 func (mrm MessageRejectionMessage) Marshal(w io.Writer) error {
-	var fields = []interface{}{
-		MSG_REJECT,
-		mrm.ReasonCode,
-		mrm.MessageHeader}
+	var fields = []interface{}{MSG_REJECT, mrm}
 
 	for _, field := range fields {
 		if err := binary.Write(w, binary.BigEndian, field); err != nil {
@@ -93,12 +90,8 @@ func (mrm *MessageRejectionMessage) Unmarshal(r io.Reader) error {
 			messageHeader, MSG_REJECT)
 	}
 
-	var fields = []interface{}{&mrm.ReasonCode, &mrm.MessageHeader}
-
-	for _, field := range fields {
-		if err := binary.Read(r, binary.BigEndian, field); err != nil {
-			return err
-		}
+	if err := binary.Read(r, binary.BigEndian, mrm); err != nil {
+		return err
 	}
 
 	if !mrm.ReasonCode.IsValid() {

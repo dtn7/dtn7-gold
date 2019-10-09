@@ -32,11 +32,7 @@ func (dam DataAcknowledgementMessage) String() string {
 }
 
 func (dam DataAcknowledgementMessage) Marshal(w io.Writer) error {
-	var fields = []interface{}{
-		XFER_ACK,
-		dam.Flags,
-		dam.TransferId,
-		dam.AckLen}
+	var fields = []interface{}{XFER_ACK, dam}
 
 	for _, field := range fields {
 		if err := binary.Write(w, binary.BigEndian, field); err != nil {
@@ -55,12 +51,8 @@ func (dam *DataAcknowledgementMessage) Unmarshal(r io.Reader) error {
 		return fmt.Errorf("XFER_ACK's Message Header is wrong: %d instead of %d", messageHeader, XFER_ACK)
 	}
 
-	var fields = []interface{}{&dam.Flags, &dam.TransferId, &dam.AckLen}
-
-	for _, field := range fields {
-		if err := binary.Read(r, binary.BigEndian, field); err != nil {
-			return err
-		}
+	if err := binary.Read(r, binary.BigEndian, dam); err != nil {
+		return err
 	}
 
 	return nil
