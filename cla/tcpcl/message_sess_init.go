@@ -87,10 +87,8 @@ func (si *SessionInitMessage) Unmarshal(r io.Reader) error {
 	}
 
 	var eidBuff = make([]byte, eidLength)
-	if n, err := r.Read(eidBuff); err != nil {
+	if _, err := io.ReadFull(r, eidBuff); err != nil {
 		return err
-	} else if uint16(n) != eidLength {
-		return fmt.Errorf("SESS_INIT's EID length differs: expected %d and got %d", eidLength, n)
 	} else {
 		si.Eid = string(eidBuff)
 	}
@@ -102,12 +100,8 @@ func (si *SessionInitMessage) Unmarshal(r io.Reader) error {
 	} else if sessionExtsLen > 0 {
 		sessionExtsBuff := make([]byte, sessionExtsLen)
 
-		if n, err := r.Read(sessionExtsBuff); err != nil {
+		if _, err := io.ReadFull(r, sessionExtsBuff); err != nil {
 			return err
-		} else if uint32(n) != sessionExtsLen {
-			return fmt.Errorf(
-				"SESS_INIT's Session Extension Length  differs: expected %d and got %d",
-				sessionExtsLen, n)
 		}
 	}
 

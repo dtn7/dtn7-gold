@@ -102,12 +102,8 @@ func (dtm *DataTransmissionMessage) Unmarshal(r io.Reader) error {
 	if transferExtLen > 0 {
 		transferExtBuff := make([]byte, transferExtLen)
 
-		if n, err := r.Read(transferExtBuff); err != nil {
+		if _, err := io.ReadFull(r, transferExtBuff); err != nil {
 			return err
-		} else if uint32(n) != transferExtLen {
-			return fmt.Errorf(
-				"XFER_SEGMENT's Transfer Extension Length differs: expected %d and got %d",
-				transferExtLen, n)
 		}
 	}
 
@@ -117,12 +113,8 @@ func (dtm *DataTransmissionMessage) Unmarshal(r io.Reader) error {
 	} else if dataLen > 0 {
 		dataBuff := make([]byte, dataLen)
 
-		if n, err := r.Read(dataBuff); err != nil {
+		if _, err := io.ReadFull(r, dataBuff); err != nil {
 			return err
-		} else if uint64(n) != dataLen {
-			return fmt.Errorf(
-				"XFER_SEGMENT's Data length differs: expected %d and got %d",
-				dataLen, n)
 		} else {
 			dtm.Data = dataBuff
 		}
