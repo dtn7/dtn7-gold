@@ -79,7 +79,7 @@ func (trm TransferRefusalMessage) String() string {
 }
 
 func (trm TransferRefusalMessage) Marshal(w io.Writer) error {
-	var fields = []interface{}{XFER_REFUSE, trm.ReasonCode, trm.TransferId}
+	var fields = []interface{}{XFER_REFUSE, trm}
 
 	for _, field := range fields {
 		if err := binary.Write(w, binary.BigEndian, field); err != nil {
@@ -98,12 +98,8 @@ func (trm *TransferRefusalMessage) Unmarshal(r io.Reader) error {
 		return fmt.Errorf("XFER_REFUSE's Message Header is wrong: %d instead of %d", messageHeader, XFER_REFUSE)
 	}
 
-	var fields = []interface{}{&trm.ReasonCode, &trm.TransferId}
-
-	for _, field := range fields {
-		if err := binary.Read(r, binary.BigEndian, field); err != nil {
-			return err
-		}
+	if err := binary.Read(r, binary.BigEndian, trm); err != nil {
+		return err
 	}
 
 	if !trm.ReasonCode.IsValid() {
