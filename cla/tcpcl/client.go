@@ -100,7 +100,11 @@ func (client *TCPCLClient) String() string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "TCPCL(")
-	fmt.Fprintf(&b, "peer=%v, ", client.conn.RemoteAddr())
+	if client.conn != nil {
+		fmt.Fprintf(&b, "peer=%v, ", client.conn.RemoteAddr())
+	} else {
+		fmt.Fprintf(&b, "peer=NONE, ")
+	}
 	fmt.Fprintf(&b, "active peer=%t", client.active)
 	fmt.Fprintf(&b, ")")
 
@@ -131,6 +135,7 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 	if client.conn == nil {
 		if conn, connErr := net.DialTimeout("tcp", client.address, time.Second); connErr != nil {
 			err = connErr
+			retry = true
 			return
 		} else {
 			client.conn = conn
@@ -157,15 +162,17 @@ func (client *TCPCLClient) handleConnection() {
 		atomic.AddInt32(&client.handleCounter, -1)
 	}()
 
-	var rw = bufio.NewReadWriter(bufio.NewReader(client.conn), bufio.NewWriter(client.conn))
+	// var rw = bufio.NewReadWriter(bufio.NewReader(client.conn), bufio.NewWriter(client.conn))
+	var r = bufio.NewReader(client.conn)
+	var w = bufio.NewWriter(client.conn)
 
 	for {
 		select {
 		case msg := <-client.msgsOut:
-			if err := msg.Marshal(rw); err != nil {
+			if err := msg.Marshal(w); err != nil {
 				client.log().WithError(err).WithField("msg", msg).Error("Sending message errored")
 				return
-			} else if err := rw.Flush(); err != nil {
+			} else if err := w.Flush(); err != nil {
 				client.log().WithError(err).WithField("msg", msg).Error("Flushing errored")
 				return
 			} else {
@@ -187,7 +194,7 @@ func (client *TCPCLClient) handleConnection() {
 				return
 			}
 
-			if msg, err := ReadMessage(rw); err == nil {
+			if msg, err := ReadMessage(r); err == nil {
 				client.log().WithField("msg", msg).Debug("Received message")
 				client.msgsIn <- msg
 			} else if err == io.EOF {
@@ -223,6 +230,8 @@ func (client *TCPCLClient) handleState() {
 				stateHandler = client.handleSessInit
 			case client.state.IsEstablished():
 				stateHandler = client.handleEstablished
+			default:
+				client.log().WithField("state", client.state).Fatal("Illegal state")
 			}
 
 			if err := stateHandler(); err != nil {
@@ -246,7 +255,10 @@ func (client *TCPCLClient) handleState() {
 			var sessTerm = NewSessionTerminationMessage(0, TerminationUnknown)
 			client.msgsOut <- &sessTerm
 
-			client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.peerEndpointID)
+			emptyEndpoint := bundle.EndpointID{}
+			if client.endpointID != emptyEndpoint {
+				client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.peerEndpointID)
+			}
 
 			return
 		}
