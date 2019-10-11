@@ -5,12 +5,26 @@ Protocol Version 7.
 
 
 ## Protocols
-This software implements the current draft of the seventh version of the Bundle
-Protocol and the MTCP Convergence Layer to exchange bundles between nodes.
+This software implements the current draft of the Bundle Protocol Version 7.
 
 - Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-14.txt][dtn-bpbis-14])
+
+### Convergence Layer
+Bundles might be exchanged between nodes by the following protocols.
+
+- TCP Convergence Layer Protocol Version 4
+  ([draft-ietf-dtn-tcpclv4-14][dtn-tcpcl-14])
 - Minimal TCP Convergence-Layer Protocol
   ([draft-ietf-dtn-mtcpcl-01.txt][dtn-mtcpcl-01])
+
+### Routing
+One of the following routing protocols might be used.
+
+- Delay-Tolerant Link State Routing (DTLSR)
+- Epidemic Routing
+- Probabilistic Routing Protocol using History of Encounters and Transitivity
+  (PRoPHET)
+- Spray and Wait, vanilla and binary
 
 
 ## Software
@@ -77,6 +91,7 @@ interested in working with this code, check out the
 
 [dtn-bpbis-14]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-14
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
+[dtn-tcpcl-14]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-14
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
 [godoc]: https://godoc.org/github.com/dtn7/dtn7-go
 [golang]: https://golang.org/
