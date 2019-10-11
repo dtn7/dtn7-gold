@@ -31,7 +31,7 @@ var messages = map[uint8]Message{
 func NewMessage(typeCode uint8) (msg Message, err error) {
 	msgType, exists := messages[typeCode]
 	if !exists {
-		err = fmt.Errorf("No TCPCL Message registered for type code %d", typeCode)
+		err = fmt.Errorf("No TCPCL Message registered for type code %X", typeCode)
 		return
 	}
 

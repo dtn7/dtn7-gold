@@ -111,12 +111,11 @@ func (dtm *DataTransmissionMessage) Unmarshal(r io.Reader) error {
 	if err := binary.Read(r, binary.BigEndian, &dataLen); err != nil {
 		return err
 	} else if dataLen > 0 {
-		dataBuff := make([]byte, dataLen)
-
-		if _, err := io.ReadFull(r, dataBuff); err != nil {
+		dtm.Data = make([]byte, dataLen)
+		if _, err := io.ReadFull(r, dtm.Data); err != nil {
 			return err
-		} else {
-			dtm.Data = dataBuff
+		} else if dataLen != uint64(len(dtm.Data)) {
+			return fmt.Errorf("XFER_SEGMENT's data length should be %d, got %d bytes", dataLen, len(dtm.Data))
 		}
 	}
 

@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 )
@@ -74,9 +72,10 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 	}()
 
 	clientWg.Wait()
-	manager.Close()
-
+	// Wait for last transmission to be finished
 	time.Sleep(250 * time.Millisecond)
+
+	manager.Close()
 
 	if r := atomic.LoadUint32(&msgsRecv); r != uint32(msgs*clients) {
 		errs <- fmt.Errorf("Listener received %d messages instead of %d", r, msgs*clients)
@@ -86,7 +85,7 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 	}
 }
 
-func handleClient(serverAddr string, clientNo, msgs int, wg *sync.WaitGroup, errs chan error) {
+func handleClient(serverAddr string, clientNo, msgs, payload int, wg *sync.WaitGroup, errs chan error) {
 	defer wg.Done()
 
 	var msgsRecv uint32
@@ -125,7 +124,7 @@ func handleClient(serverAddr string, clientNo, msgs int, wg *sync.WaitGroup, err
 				CreationTimestampNow().
 				Lifetime("30m").
 				HopCountBlock(64).
-				PayloadBlock([]byte("hello world!")).
+				PayloadBlock(testGetRandomData(payload)).
 				Build()
 
 			if err != nil {
@@ -146,9 +145,7 @@ func handleClient(serverAddr string, clientNo, msgs int, wg *sync.WaitGroup, err
 	}
 }
 
-func startTestTCPCLNetwork(msgs, clients int, t *testing.T) {
-	log.SetLevel(log.DebugLevel)
-
+func startTestTCPCLNetwork(msgs, clients, payload int, t *testing.T) {
 	var serverAddr = fmt.Sprintf("localhost:%d", getRandomPort(t))
 	var errs = make(chan error)
 
@@ -162,7 +159,7 @@ func startTestTCPCLNetwork(msgs, clients int, t *testing.T) {
 	time.Sleep(250 * time.Millisecond)
 
 	for i := 0; i < clients; i++ {
-		go handleClient(serverAddr, i, msgs, &clientWg, errs)
+		go handleClient(serverAddr, i, msgs, payload, &clientWg, errs)
 	}
 
 	go func() {
@@ -188,7 +185,17 @@ func TestTCPCLNetwork(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d_clients_%d_msgs", test.clients, test.msgs), func(t *testing.T) {
-			startTestTCPCLNetwork(test.msgs, test.clients, t)
+			startTestTCPCLNetwork(test.msgs, test.clients, 64, t)
+		})
+	}
+}
+
+func TestTCPCLPayloadNetwork(t *testing.T) {
+	sizes := []int{64, 1024, 1048576, 10485760}
+
+	for _, size := range sizes {
+		t.Run(fmt.Sprintf("%d", size), func(t *testing.T) {
+			startTestTCPCLNetwork(10, 1, size, t)
 		})
 	}
 }
