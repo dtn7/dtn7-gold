@@ -12,7 +12,7 @@ import (
 // This file contains code for the Client's contact state.
 
 // handleSessInit manges the initialization state.
-func (client *TCPCLClient) handleSessInit() error {
+func (client *Client) handleSessInit() error {
 	// XXX
 	const (
 		keepalive   = 10

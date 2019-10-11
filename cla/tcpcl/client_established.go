@@ -14,7 +14,7 @@ import (
 // This file contains code for the Client's established state.
 
 // handleEstablished manges the established state.
-func (client *TCPCLClient) handleEstablished() (err error) {
+func (client *Client) handleEstablished() (err error) {
 	defer func() {
 		if err != nil && client.keepaliveStarted {
 			client.keepaliveTicker.Stop()
@@ -140,12 +140,12 @@ func (client *TCPCLClient) handleEstablished() (err error) {
 	return nil
 }
 
-func (client *TCPCLClient) Send(bndl *bundle.Bundle) error {
+func (client *Client) Send(bndl *bundle.Bundle) error {
 	client.transferOutMutex.Lock()
 	defer client.transferOutMutex.Unlock()
 
 	if !client.state.IsEstablished() {
-		return fmt.Errorf("TCPCLClient is not in an established state")
+		return fmt.Errorf("Client is not in an established state")
 	}
 
 	client.transferOutId += 1

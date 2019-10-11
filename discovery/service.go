@@ -68,7 +68,7 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		client = mtcp.NewMTCPClient(fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint, false)
 
 	case TCPCL:
-		client = tcpcl.Dial(fmt.Sprintf("%s:%d", addr, dm.Port), ds.c.NodeId, false)
+		client = tcpcl.DialClient(fmt.Sprintf("%s:%d", addr, dm.Port), ds.c.NodeId, false)
 
 	default:
 		log.WithFields(log.Fields{
