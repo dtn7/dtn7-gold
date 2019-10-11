@@ -1,14 +1,11 @@
 package tcpcl
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -32,7 +29,11 @@ type TCPCLClient struct {
 	msgsOut chan Message
 	msgsIn  chan Message
 
-	handleCounter int32
+	handleMetaStop     chan struct{}
+	handleMetaStopAck  chan struct{}
+	handlerConnInStop  chan struct{}
+	handlerConnOutStop chan struct{}
+	handlerStateStop   chan struct{}
 
 	active bool
 	state  *ClientState
@@ -145,136 +146,25 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 
 	client.log().Info("Starting client")
 
+	client.handleMetaStop = make(chan struct{}, 10)
+	client.handleMetaStopAck = make(chan struct{}, 2)
+	client.handlerConnInStop = make(chan struct{}, 2)
+	client.handlerConnOutStop = make(chan struct{}, 2)
+	client.handlerStateStop = make(chan struct{}, 2)
+
 	client.reportChan = make(chan cla.ConvergenceStatus, 100)
 
-	client.handleCounter = 2
-	go client.handleConnection()
+	go client.handleMeta()
+	go client.handleConnIn()
+	go client.handleConnOut()
 	go client.handleState()
 
 	return
 }
 
-func (client *TCPCLClient) handleConnection() {
-	defer func() {
-		client.log().Debug("Leaving connection handler function")
-		client.state.Terminate()
-
-		atomic.AddInt32(&client.handleCounter, -1)
-	}()
-
-	// var rw = bufio.NewReadWriter(bufio.NewReader(client.conn), bufio.NewWriter(client.conn))
-	var r = bufio.NewReader(client.conn)
-	var w = bufio.NewWriter(client.conn)
-
-	for {
-		select {
-		case msg := <-client.msgsOut:
-			if err := msg.Marshal(w); err != nil {
-				client.log().WithError(err).WithField("msg", msg).Error("Sending message errored")
-				return
-			} else if err := w.Flush(); err != nil {
-				client.log().WithError(err).WithField("msg", msg).Error("Flushing errored")
-				return
-			} else {
-				client.log().WithField("msg", msg).Debug("Sent message")
-			}
-
-			if _, ok := msg.(*SessionTerminationMessage); ok {
-				client.log().WithField("msg", msg).Debug("Closing connection after sending SESS_TERM")
-
-				if err := client.conn.Close(); err != nil {
-					client.log().WithError(err).Warn("Failed to close TCP connection")
-				}
-				return
-			}
-
-		default:
-			if err := client.conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
-				client.log().WithError(err).Error("Setting read deadline errored")
-				return
-			}
-
-			if msg, err := ReadMessage(r); err == nil {
-				client.log().WithField("msg", msg).Debug("Received message")
-				client.msgsIn <- msg
-			} else if err == io.EOF {
-				client.log().Info("Read EOF, closing down.")
-				return
-			} else if netErr, ok := err.(net.Error); ok && !netErr.Timeout() {
-				client.log().WithError(netErr).Error("Network error occured")
-				return
-			} else if !ok {
-				client.log().WithError(err).Error("Parsing next message errored")
-				return
-			}
-		}
-	}
-}
-
-func (client *TCPCLClient) handleState() {
-	defer func() {
-		client.log().Debug("Leaving state handler function")
-
-		atomic.AddInt32(&client.handleCounter, -1)
-	}()
-
-	for {
-		switch {
-		case !client.state.IsTerminated():
-			var stateHandler func() error
-
-			switch {
-			case client.state.IsContact():
-				stateHandler = client.handleContact
-			case client.state.IsInit():
-				stateHandler = client.handleSessInit
-			case client.state.IsEstablished():
-				stateHandler = client.handleEstablished
-			default:
-				client.log().WithField("state", client.state).Fatal("Illegal state")
-			}
-
-			if err := stateHandler(); err != nil {
-				if err == sessTermErr {
-					client.log().Info("Received SESS_TERM, switching to Termination state")
-				} else {
-					client.log().WithError(err).Warn("State handler errored")
-				}
-
-				client.state.Terminate()
-				goto terminationCase
-			}
-			break
-
-		terminationCase:
-			fallthrough
-
-		default:
-			client.log().Info("Entering Termination state")
-
-			var sessTerm = NewSessionTerminationMessage(0, TerminationUnknown)
-			client.msgsOut <- &sessTerm
-
-			emptyEndpoint := bundle.EndpointID{}
-			if client.endpointID != emptyEndpoint {
-				client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.peerEndpointID)
-			}
-
-			return
-		}
-
-		if atomic.LoadInt32(&client.handleCounter) != 2 {
-			return
-		}
-	}
-}
-
 func (client *TCPCLClient) Close() {
-	client.state.Terminate()
-
-	for atomic.LoadInt32(&client.handleCounter) > 0 {
-		time.Sleep(time.Millisecond)
-	}
+	client.handleMetaStop <- struct{}{}
+	<-client.handleMetaStopAck
 }
 
 func (client *TCPCLClient) Channel() chan cla.ConvergenceStatus {

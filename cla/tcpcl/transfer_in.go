@@ -3,9 +3,8 @@ package tcpcl
 import (
 	"bytes"
 	"fmt"
-	"io"
-
 	"github.com/dtn7/dtn7-go/bundle"
+	"io"
 )
 
 // IncomingTransfer represents an incoming Bundle Transfer for the TCPCL.
@@ -45,9 +44,11 @@ func (t *IncomingTransfer) NextSegment(dtm DataTransmissionMessage) (dam DataAck
 		return
 	}
 
-	dtmReader := bytes.NewBuffer(dtm.Data)
-	if _, cpyErr := io.Copy(t.buf, dtmReader); cpyErr != nil {
-		err = cpyErr
+	if n, dtmErr := t.buf.Write(dtm.Data); dtmErr != nil && dtmErr != io.EOF {
+		err = dtmErr
+		return
+	} else if n != len(dtm.Data) {
+		err = fmt.Errorf("Expected %d bytes instead of  %d", len(dtm.Data), n)
 		return
 	}
 
