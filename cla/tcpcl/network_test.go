@@ -12,7 +12,7 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 )
 
-func getRandomPort(t *testing.T) int {
+func getRandomPort(t *testing.T) (port int) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
 		t.Fatal(err)
@@ -23,8 +23,13 @@ func getRandomPort(t *testing.T) int {
 		t.Fatal(err)
 	}
 
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port
+	port = l.Addr().(*net.TCPAddr).Port
+
+	if err := l.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	return
 }
 
 func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sync.WaitGroup, errs chan error) {
@@ -36,7 +41,7 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 	defer serverWg.Done()
 
 	manager := cla.NewManager()
-	manager.Register(NewTCPCLListener(serverAddr, bundle.MustNewEndpointID("dtn://server/")))
+	manager.Register(NewListener(serverAddr, bundle.MustNewEndpointID("dtn://server/")))
 
 	go func() {
 		for {
@@ -73,7 +78,7 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 
 	clientWg.Wait()
 	// Wait for last transmission to be finished
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(time.Second)
 
 	manager.Close()
 
@@ -91,7 +96,7 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, wg *sync.WaitG
 	var msgsRecv uint32
 
 	clientEid := fmt.Sprintf("dtn://client-%d/", clientNo)
-	client := Dial(serverAddr, bundle.MustNewEndpointID(clientEid), false)
+	client := DialClient(serverAddr, bundle.MustNewEndpointID(clientEid), false)
 	if err, _ := client.Start(); err != nil {
 		errs <- err
 		return

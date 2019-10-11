@@ -85,7 +85,7 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergabl
 		return mtcp.NewMTCPServer(conv.Endpoint, nodeId, true), msg, nil
 
 	case "tcpcl":
-		listener := tcpcl.NewTCPCLListener(conv.Endpoint, nodeId)
+		listener := tcpcl.NewListener(conv.Endpoint, nodeId)
 
 		msg := discovery.DiscoveryMessage{
 			Type:     discovery.TCPCL,
@@ -111,7 +111,7 @@ func parsePeer(conv convergenceConf, nodeId bundle.EndpointID) (cla.ConvergenceS
 		return mtcp.NewMTCPClient(conv.Endpoint, endpointID, true), nil
 
 	case "tcpcl":
-		return tcpcl.Dial(conv.Endpoint, nodeId, true), nil
+		return tcpcl.DialClient(conv.Endpoint, nodeId, true), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown peer.protocol \"%s\"", conv.Protocol)

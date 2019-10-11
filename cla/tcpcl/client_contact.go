@@ -7,7 +7,7 @@ import (
 // This file contains code for the Client's contact state.
 
 // handleContact manges the contact state for the Contact Header exchange.
-func (client *TCPCLClient) handleContact() error {
+func (client *Client) handleContact() error {
 	switch {
 	case client.active && !client.contactSent, !client.active && !client.contactSent && client.contactRecv:
 		client.chSent = NewContactHeader(0)

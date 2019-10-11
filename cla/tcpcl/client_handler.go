@@ -10,24 +10,23 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 )
 
-func (client *TCPCLClient) handleMeta() {
-	for range client.handleMetaStop {
-		client.log().Info("Handler received stop signal")
+// handleMeta supervises the other handlers and propagates shutdown signals.
+func (client *Client) handleMeta() {
+	<-client.handleMetaStop
+	client.log().Info("Handler received stop signal")
 
-		client.state.Terminate()
+	client.state.Terminate()
 
-		chans := []chan struct{}{client.handlerConnInStop, client.handlerConnOutStop, client.handlerStateStop}
-		for _, chn := range chans {
-			close(chn)
-		}
-
-		close(client.handleMetaStopAck)
-
-		return
+	chans := []chan struct{}{client.handlerConnInStop, client.handlerConnOutStop, client.handlerStateStop}
+	for _, chn := range chans {
+		close(chn)
 	}
+
+	close(client.handleMetaStopAck)
 }
 
-func (client *TCPCLClient) handleConnIn() {
+// handleConnIn handles incoming connections.
+func (client *Client) handleConnIn() {
 	defer func() {
 		client.log().Debug("Leaving incoming connection handler")
 		client.handleMetaStop <- struct{}{}
@@ -63,7 +62,8 @@ func (client *TCPCLClient) handleConnIn() {
 	}
 }
 
-func (client *TCPCLClient) handleConnOut() {
+// handleConnOut handles outgoing connections.
+func (client *Client) handleConnOut() {
 	defer func() {
 		client.log().Debug("Leaving outgoing connection handler")
 		client.handleMetaStop <- struct{}{}
@@ -99,7 +99,8 @@ func (client *TCPCLClient) handleConnOut() {
 	}
 }
 
-func (client *TCPCLClient) handleState() {
+// handleState handles the current or future state and starts the state's handler.
+func (client *Client) handleState() {
 	defer func() {
 		client.log().Debug("Leaving state handler")
 		client.handleMetaStop <- struct{}{}

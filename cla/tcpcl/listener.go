@@ -11,7 +11,9 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 )
 
-type TCPCLListener struct {
+// Listener is a TCPCL server bound to a TCP port to accept incoming TCPCL connections.
+// This type implements the cla.ConvergenceProvider and should be supervised by a cla.Manager.
+type Listener struct {
 	listenAddress string
 	endpointID    bundle.EndpointID
 	manager       *cla.Manager
@@ -21,8 +23,10 @@ type TCPCLListener struct {
 	stopAck chan struct{}
 }
 
-func NewTCPCLListener(listenAddress string, endpointID bundle.EndpointID) *TCPCLListener {
-	return &TCPCLListener{
+// NewListener creates a new Listener which should be bound to the given address and advertises the endpoint ID as
+// its own node identifier.
+func NewListener(listenAddress string, endpointID bundle.EndpointID) *Listener {
+	return &Listener{
 		listenAddress: listenAddress,
 		endpointID:    endpointID,
 
@@ -31,11 +35,11 @@ func NewTCPCLListener(listenAddress string, endpointID bundle.EndpointID) *TCPCL
 	}
 }
 
-func (listener *TCPCLListener) RegisterManager(manager *cla.Manager) {
+func (listener *Listener) RegisterManager(manager *cla.Manager) {
 	listener.manager = manager
 }
 
-func (listener *TCPCLListener) Start() error {
+func (listener *Listener) Start() error {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", listener.listenAddress)
 	if err != nil {
 		return err
@@ -58,11 +62,11 @@ func (listener *TCPCLListener) Start() error {
 			default:
 				if err := ln.SetDeadline(time.Now().Add(50 * time.Millisecond)); err != nil {
 					log.WithError(err).WithField("cla", listener).Warn(
-						"TCPCLListener failed to set deadline on TCP socket")
+						"Listener failed to set deadline on TCP socket")
 
 					listener.Close()
 				} else if conn, err := ln.Accept(); err == nil {
-					client := NewTCPCLClient(conn, listener.endpointID)
+					client := NewClient(conn, listener.endpointID)
 					listener.clas = append(listener.clas, client)
 					listener.manager.Register(client)
 				}
@@ -73,11 +77,11 @@ func (listener *TCPCLListener) Start() error {
 	return nil
 }
 
-func (listener *TCPCLListener) Close() {
+func (listener *Listener) Close() {
 	close(listener.stopSyn)
 	<-listener.stopAck
 }
 
-func (listener TCPCLListener) String() string {
+func (listener Listener) String() string {
 	return fmt.Sprintf("tcpcl://%s", listener.listenAddress)
 }

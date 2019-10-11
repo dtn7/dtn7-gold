@@ -17,7 +17,10 @@ import (
 // sessTermErr will be returned from a state handler iff a SESS_TERM was received.
 var sessTermErr = errors.New("SESS_TERM received")
 
-type TCPCLClient struct {
+// Client is a TCPCL client for a bidirectional Bundle exchange. Thus, the Client type implements both
+// cla.ConvergenceReceiver and cla.ConvergenceSender. A Client can be created by the Listener for incoming
+// connections or dialed for outbounding connections.
+type Client struct {
 	address        string
 	started        bool
 	permanent      bool
@@ -69,8 +72,9 @@ type TCPCLClient struct {
 	reportChan chan cla.ConvergenceStatus
 }
 
-func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
-	return &TCPCLClient{
+// NewClient creates a new Client on an existing connection. This function is used from the Listener.
+func NewClient(conn net.Conn, endpointID bundle.EndpointID) *Client {
+	return &Client{
 		address:         conn.RemoteAddr().String(),
 		conn:            conn,
 		active:          false,
@@ -83,8 +87,9 @@ func NewTCPCLClient(conn net.Conn, endpointID bundle.EndpointID) *TCPCLClient {
 	}
 }
 
-func Dial(address string, endpointID bundle.EndpointID, permanent bool) *TCPCLClient {
-	return &TCPCLClient{
+// DialClient tries to establish a new TCPCL Client to a remote server.
+func DialClient(address string, endpointID bundle.EndpointID, permanent bool) *Client {
+	return &Client{
 		address:         address,
 		permanent:       permanent,
 		active:          true,
@@ -97,7 +102,7 @@ func Dial(address string, endpointID bundle.EndpointID, permanent bool) *TCPCLCl
 	}
 }
 
-func (client *TCPCLClient) String() string {
+func (client *Client) String() string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "TCPCL(")
@@ -113,14 +118,14 @@ func (client *TCPCLClient) String() string {
 }
 
 // log prepares a new log entry with predefined session data.
-func (client *TCPCLClient) log() *log.Entry {
+func (client *Client) log() *log.Entry {
 	return log.WithFields(log.Fields{
 		"session": client,
 		"state":   client.state,
 	})
 }
 
-func (client *TCPCLClient) Start() (err error, retry bool) {
+func (client *Client) Start() (err error, retry bool) {
 	if client.started {
 		if client.active {
 			client.conn = nil
@@ -162,27 +167,27 @@ func (client *TCPCLClient) Start() (err error, retry bool) {
 	return
 }
 
-func (client *TCPCLClient) Close() {
+func (client *Client) Close() {
 	client.handleMetaStop <- struct{}{}
 	<-client.handleMetaStopAck
 }
 
-func (client *TCPCLClient) Channel() chan cla.ConvergenceStatus {
+func (client *Client) Channel() chan cla.ConvergenceStatus {
 	return client.reportChan
 }
 
-func (client *TCPCLClient) Address() string {
+func (client *Client) Address() string {
 	return client.address
 }
 
-func (client *TCPCLClient) IsPermanent() bool {
+func (client *Client) IsPermanent() bool {
 	return client.permanent
 }
 
-func (client *TCPCLClient) GetEndpointID() bundle.EndpointID {
+func (client *Client) GetEndpointID() bundle.EndpointID {
 	return client.endpointID
 }
 
-func (client *TCPCLClient) GetPeerEndpointID() bundle.EndpointID {
+func (client *Client) GetPeerEndpointID() bundle.EndpointID {
 	return client.peerEndpointID
 }
