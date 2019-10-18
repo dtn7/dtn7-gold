@@ -1,4 +1,4 @@
-package rf95
+package bbc
 
 // Fragment is a part of a Transmission. Multiple Fragments represent an entire Transmission.
 //
