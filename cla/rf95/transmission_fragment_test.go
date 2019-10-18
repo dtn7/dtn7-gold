@@ -61,3 +61,21 @@ func TestFragmentAllCombinations(t *testing.T) {
 		}
 	}
 }
+
+func TestNextSequenceNumber(t *testing.T) {
+	tests := []struct {
+		seq  byte
+		succ byte
+	}{
+		{0, 1},
+		{1, 2},
+		{2, 3},
+		{3, 0},
+	}
+
+	for _, test := range tests {
+		if succ := nextSequenceNumber(test.seq); succ != test.succ {
+			t.Fatalf("Succeeding sequence number of %x is %x, not %x", test.seq, succ, test.succ)
+		}
+	}
+}

@@ -68,3 +68,8 @@ func (f Fragment) StartBit() bool {
 func (f Fragment) EndBit() bool {
 	return f.identifier&0x01 != 0
 }
+
+// nextSequenceNumber returns the succeeding sequence number.
+func nextSequenceNumber(seq byte) byte {
+	return (seq + 1) % 4
+}
