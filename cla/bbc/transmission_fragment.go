@@ -31,6 +31,9 @@ type Fragment struct {
 	Payload    []byte
 }
 
+// fragmentIdentifierSize is the additional size for each Fragment's header.
+const fragmentIdentifierSize int = 1
+
 // NewFragment creates a new Fragment based on the given arguments.
 func NewFragment(transmissionID, sequenceNo byte, start, end bool, payload []byte) Fragment {
 	var identifier byte = 0x00

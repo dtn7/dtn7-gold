@@ -104,7 +104,7 @@ func NewOutgoingTransmission(transmissionID byte, payload []byte, mtu int) (t *O
 			Payload:        payload,
 			finished:       fin,
 		},
-		mtu:           mtu,
+		mtu:           mtu - fragmentIdentifierSize,
 		start:         true,
 		nextSegmentNo: 0,
 	}

@@ -56,7 +56,7 @@ func TestSuccessfulOutgoingTransmission(t *testing.T) {
 			}
 		}
 
-		if i > len(payload)/3 {
+		if i > len(payload)/(3-fragmentIdentifierSize) {
 			t.Fatalf("Processed %d fragments", i)
 		}
 	}
