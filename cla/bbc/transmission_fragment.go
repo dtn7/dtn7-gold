@@ -1,5 +1,11 @@
 package bbc
 
+import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+)
+
 // Fragment is a part of a Transmission. Multiple Fragments represent an entire Transmission.
 //
 // For identification, a tuple consisting of a transmission ID, a sequence number, a start and an end
@@ -52,6 +58,18 @@ func NewFragment(transmissionID, sequenceNo byte, start, end bool, payload []byt
 	}
 }
 
+func ParseFragment(data []byte) (f Fragment, err error) {
+	if len(data) < 2 {
+		err = fmt.Errorf("byte array is shorter than two bytes")
+		return
+	}
+
+	f.identifier = data[0]
+	f.Payload = data[1:]
+
+	return
+}
+
 // TransmissionID returns the four bit transmission ID.
 func (f Fragment) TransmissionID() byte {
 	return f.identifier >> 4 & 0x0F
@@ -70,6 +88,16 @@ func (f Fragment) StartBit() bool {
 // EndBit checks if the end bit is set.
 func (f Fragment) EndBit() bool {
 	return f.identifier&0x01 != 0
+}
+
+// Bytes creates a byte array for this Fragment.
+func (f Fragment) Bytes() []byte {
+	buf := new(bytes.Buffer)
+	for _, v := range []interface{}{f.identifier, f.Payload} {
+		_ = binary.Write(buf, binary.LittleEndian, v)
+	}
+
+	return buf.Bytes()
 }
 
 // nextSequenceNumber returns the succeeding sequence number.

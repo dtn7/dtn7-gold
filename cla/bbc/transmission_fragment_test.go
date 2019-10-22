@@ -1,6 +1,10 @@
 package bbc
 
-import "testing"
+import (
+	"bytes"
+	"reflect"
+	"testing"
+)
 
 func TestFragmentBitMask(t *testing.T) {
 	tests := []struct {
@@ -76,6 +80,28 @@ func TestNextSequenceNumber(t *testing.T) {
 	for _, test := range tests {
 		if succ := nextSequenceNumber(test.seq); succ != test.succ {
 			t.Fatalf("Succeeding sequence number of %x is %x, not %x", test.seq, succ, test.succ)
+		}
+	}
+}
+
+func TestFragmentBytes(t *testing.T) {
+	tests := []struct {
+		seq []byte
+		f   Fragment
+	}{
+		{[]byte{0xC0, 0xFF, 0xEE}, Fragment{0xC0, []byte{0xFF, 0xEE}}},
+		{[]byte{0xAC, 0xAB}, Fragment{0xAc, []byte{0xAB}}},
+	}
+
+	for _, test := range tests {
+		if f, err := ParseFragment(test.seq); err != nil {
+			t.Fatal(err)
+		} else if !reflect.DeepEqual(f, test.f) {
+			t.Fatalf("Fragments do not match: %v != %v", f, test.f)
+		}
+
+		if blob := test.f.Bytes(); !bytes.Equal(blob, test.seq) {
+			t.Fatalf("Bytes do not match: %x != %x", blob, test.seq)
 		}
 	}
 }
