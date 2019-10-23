@@ -1,6 +1,10 @@
 package core
 
-import "github.com/dtn7/dtn7-go/cla"
+import (
+	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla"
+	log "github.com/sirupsen/logrus"
+)
 
 // RoutingAlgorithm is an interface to specify routing algorithms for
 // delay-tolerant networks. An implementation might store a reference to a Core
@@ -46,4 +50,33 @@ type RoutingConf struct {
 	DTLSRConf DTLSRConfig
 	// ProphetConf contains data to initialise prophet
 	ProphetConf ProphetConfig
+}
+
+// sendMetadataBundle can be used by routing algorithm to send relevant metadata to peers
+// Metadata needs to be serialised as an ExtensionBlock
+func sendMetadataBundle(c *Core, source bundle.EndpointID, destination bundle.EndpointID, metadataBlock bundle.ExtensionBlock) error {
+	bundleBuilder := bundle.Builder()
+	bundleBuilder.Source(source)
+	bundleBuilder.Destination(destination)
+	bundleBuilder.CreationTimestampNow()
+	bundleBuilder.Lifetime("1m")
+	bundleBuilder.BundleCtrlFlags(bundle.MustNotFragmented)
+	// no Payload
+	bundleBuilder.PayloadBlock(byte(1))
+
+	bundleBuilder.Canonical(metadataBlock)
+	metadataBundle, err := bundleBuilder.Build()
+	if err != nil {
+		return err
+	} else {
+		log.Debug("Metadata Bundle built")
+	}
+
+	log.Debug("Sending metadata bundle")
+	c.SendBundle(&metadataBundle)
+	log.WithFields(log.Fields{
+		"bundle": metadataBundle,
+	}).Debug("Successfully sent metadata bundle")
+
+	return nil
 }
