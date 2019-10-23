@@ -18,7 +18,7 @@ func NewRf95Modem(device string) (rfModem *Rf95Modem, err error) {
 	return
 }
 
-func (rfModem *Rf95Modem) MTU() int {
+func (rfModem *Rf95Modem) Mtu() int {
 	mtu, _ := rfModem.modem.Mtu()
 	return mtu
 }
@@ -29,7 +29,7 @@ func (rfModem *Rf95Modem) Send(f Fragment) error {
 }
 
 func (rfModem *Rf95Modem) Receive() (fragment Fragment, err error) {
-	buf := make([]byte, rfModem.MTU())
+	buf := make([]byte, rfModem.Mtu())
 	if n, readErr := rfModem.modem.Read(buf); readErr != nil {
 		err = readErr
 	} else if f, fErr := ParseFragment(buf[:n]); fErr != nil {

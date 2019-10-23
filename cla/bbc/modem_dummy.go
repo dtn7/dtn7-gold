@@ -46,7 +46,7 @@ func (d *dummyModem) deliver(f Fragment) {
 	d.inChan <- f
 }
 
-func (d *dummyModem) MTU() int {
+func (d *dummyModem) Mtu() int {
 	return d.mtu
 }
 

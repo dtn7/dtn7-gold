@@ -1,6 +1,10 @@
 package bbc
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+	"github.com/dtn7/dtn7-go/bundle"
+)
 
 // Transmission allows the transmission of data, for example Bundles, between several endpoints.
 //
@@ -75,6 +79,16 @@ func (t *IncomingTransmission) ReadFragment(f Fragment) (finished bool, err erro
 	t.prevSequenceNo = f.SequenceNumber()
 
 	finished = t.IsFinished()
+	return
+}
+
+func (t *IncomingTransmission) Bundle() (bndl bundle.Bundle, err error) {
+	if !t.IsFinished() {
+		err = fmt.Errorf("Transmission is not finished yet")
+		return
+	}
+
+	err = bndl.UnmarshalCbor(bytes.NewBuffer(t.Payload))
 	return
 }
 
