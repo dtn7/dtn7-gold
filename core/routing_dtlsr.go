@@ -556,35 +556,17 @@ func (dtlsr *DTLSR) broadcast() {
 	log.Debug("Broadcasting metadata")
 
 	dtlsr.dataMutex.RLock()
-	// send broadcast bundle with our new peer data
-	bundleBuilder := bundle.Builder()
-	bundleBuilder.Destination(dtlsr.broadcastAddress)
-	bundleBuilder.Source(dtlsr.c.NodeId)
-	bundleBuilder.CreationTimestampNow()
-	bundleBuilder.Lifetime("10m")
-	bundleBuilder.BundleCtrlFlags(bundle.MustNotFragmented)
-	// no Payload
-	bundleBuilder.PayloadBlock(byte(1))
-
+	source := dtlsr.c.NodeId
+	destination := dtlsr.broadcastAddress
 	metadataBlock := NewDTLSRBlock(dtlsr.peers)
 	dtlsr.dataMutex.RUnlock()
 
-	bundleBuilder.Canonical(metadataBlock)
-	metadatBundle, err := bundleBuilder.Build()
+	err := sendMetadataBundle(dtlsr.c, source, destination, metadataBlock)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err.Error(),
-		}).Warn("Unable to build metadata bundle")
-		return
-	} else {
-		log.Debug("Metadata Bundle built")
+		}).Warn("Unable to send metadata")
 	}
-
-	log.Debug("Sending metadata bundle")
-	dtlsr.c.SendBundle(&metadatBundle)
-	log.WithFields(log.Fields{
-		"bundle": metadatBundle,
-	}).Debug("Successfully sent metadata bundle")
 }
 
 // broadcastCron gets called periodically by the core's cron module.
