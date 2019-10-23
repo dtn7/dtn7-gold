@@ -143,38 +143,21 @@ func (prophet *Prophet) transitivity(peer bundle.EndpointID) {
 }
 
 // sendMetadata sends our summary-vector with our delivery predictabilities to a peer
-func (prophet *Prophet) sendMetadata(recipient bundle.EndpointID) {
+func (prophet *Prophet) sendMetadata(destination bundle.EndpointID) {
 	prophet.dataMutex.RLock()
-
-	bundleBuilder := bundle.Builder()
-	bundleBuilder.Destination(recipient)
-	bundleBuilder.Source(prophet.c.NodeId)
-	bundleBuilder.CreationTimestampNow()
-	bundleBuilder.Lifetime("10m")
-	bundleBuilder.BundleCtrlFlags(bundle.MustNotFragmented)
-	// no Payload
-	bundleBuilder.PayloadBlock(byte(1))
-
+	source := prophet.c.NodeId
 	metadataBlock := newProphetBlock(prophet.predictabilities)
-
 	prophet.dataMutex.RUnlock()
 
-	bundleBuilder.Canonical(metadataBlock)
-	metadatBundle, err := bundleBuilder.Build()
+	err := sendMetadataBundle(prophet.c, source, destination, metadataBlock)
+
 	if err != nil {
 		log.WithFields(log.Fields{
+			"peer":   destination,
 			"reason": err.Error(),
-		}).Warn("Unable to build metadata bundle")
+		}).Warn("Unable to send metadata bundle")
 		return
-	} else {
-		log.Debug("Metadata Bundle built")
 	}
-
-	log.Debug("Sending metadata bundle")
-	prophet.c.SendBundle(&metadatBundle)
-	log.WithFields(log.Fields{
-		"bundle": metadatBundle,
-	}).Debug("Successfully sent metadata bundle")
 }
 
 func (prophet *Prophet) NotifyIncoming(bp BundlePack) {
