@@ -3,6 +3,7 @@ package bbc
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
@@ -25,6 +26,10 @@ type Transmission struct {
 // IsFinished indicates a finished Transmission.
 func (t Transmission) IsFinished() bool {
 	return t.finished
+}
+
+func (t Transmission) String() string {
+	return fmt.Sprintf("Transmission(TID: %d, Finished: %T)", t.TransmissionID, t.IsFinished())
 }
 
 // IncomingTransmission are the incoming Transmissions from external sources.

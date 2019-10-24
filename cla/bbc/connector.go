@@ -3,10 +3,11 @@ package bbc
 import (
 	"bytes"
 	"fmt"
-	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/dtn7/dtn7-go/cla"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 // Connector implements both a cla.ConvergenceReceiver and cla.ConvergenceSender and supplies the possibility
@@ -38,18 +39,20 @@ func (c *Connector) Start() (error, bool) {
 }
 
 func (c *Connector) handler() {
+	var logger = log.WithField("bbc", c.Address())
+
 	for {
 		if frag, err := c.modem.Receive(); err != nil {
-			log.WithError(err).Warn("Receiving Fragments from Modem errored")
+			logger.WithError(err).Warn("Receiving Fragments from Modem errored")
 		} else if trans, ok := c.transmissions[frag.TransmissionID()]; ok {
 			if fin, err := trans.ReadFragment(frag); err != nil {
-				log.WithError(err).WithField("transaction", trans).Warn("Reading Fragment from Modem errored")
+				logger.WithError(err).WithField("transaction", trans).Warn("Reading Fragment from Modem errored")
 			} else if fin {
 				if bndl, err := trans.Bundle(); err != nil {
-					log.WithError(err).WithField("transaction", trans).Warn(
+					logger.WithError(err).WithField("transaction", trans).Warn(
 						"Extracting Bundle from Transmission errored")
 				} else {
-					log.WithFields(log.Fields{
+					logger.WithFields(log.Fields{
 						"transaction": trans,
 						"bundle":      bndl.ID(),
 					}).Info("Bundle Broadcasting Connector received Bundle")
@@ -58,17 +61,17 @@ func (c *Connector) handler() {
 					delete(c.transmissions, frag.TransmissionID())
 				}
 			} else {
-				log.WithField("transaction", trans).Debug("Received next Fragment for a Transaction")
+				logger.WithField("transaction", trans).Debug("Received next Fragment for a Transaction")
 			}
 		} else { // Transmission ID is not stored in the map
 			if trans, err := NewIncomingTransmission(frag); err != nil {
-				log.WithError(err).Warn("Creating new Transmission from first Fragment errored")
+				logger.WithError(err).Warn("Creating new Transmission from first Fragment errored")
 			} else if trans.IsFinished() {
 				if bndl, err := trans.Bundle(); err != nil {
-					log.WithError(err).WithField("transaction", trans).Warn(
+					logger.WithError(err).WithField("transaction", trans).Warn(
 						"Extracting Bundle from Transmission errored")
 				} else {
-					log.WithFields(log.Fields{
+					logger.WithFields(log.Fields{
 						"transaction": trans,
 						"bundle":      bndl.ID(),
 					}).Info("Bundle Broadcasting Connector received Bundle")
@@ -76,7 +79,7 @@ func (c *Connector) handler() {
 					c.reportChan <- cla.NewConvergenceReceivedBundle(c, bundle.DtnNone(), &bndl)
 				}
 			} else {
-				log.WithField("transaction", trans).Debug("Starting new Transaction")
+				logger.WithField("transaction", trans).Debug("Starting new Transaction")
 
 				c.transmissions[frag.TransmissionID()] = trans
 			}
@@ -85,7 +88,9 @@ func (c *Connector) handler() {
 }
 
 func (c *Connector) Close() {
-	// TODO
+	if err := c.modem.Close(); err != nil {
+		log.WithField("bbc", c.Address()).WithError(err).Warn("Closing Modem errored")
+	}
 }
 
 func (c *Connector) Channel() chan cla.ConvergenceStatus {
@@ -112,17 +117,23 @@ func (c *Connector) Send(bndl *bundle.Bundle) error {
 	}
 
 	for {
-		if f, fin, err := t.WriteFragment(); err != nil {
-			log.WithError(err).WithField("fragment", f).Warn("Creating Fragment errored")
+		f, fin, err := t.WriteFragment()
+		logger := log.WithFields(log.Fields{
+			"bbc":      c.Address(),
+			"fragment": f,
+		})
+
+		if err != nil {
+			logger.WithError(err).Warn("Creating Fragment errored")
 			return err
 		} else if err := c.modem.Send(f); err != nil {
-			log.WithError(err).WithField("fragment", f).Warn("Transmitting Fragment errored")
+			logger.WithError(err).Warn("Transmitting Fragment errored")
 			return err
 		} else if fin {
-			log.WithField("fragment", f).Debug("Transmitted last Fragment")
+			logger.Debug("Transmitted last Fragment")
 			break
 		} else {
-			log.WithField("fragment", f).Debug("Transmitted Fragment")
+			logger.Debug("Transmitted Fragment")
 		}
 	}
 
@@ -135,4 +146,8 @@ func (c *Connector) GetPeerEndpointID() bundle.EndpointID {
 
 func (c *Connector) GetEndpointID() bundle.EndpointID {
 	return bundle.DtnNone()
+}
+
+func (c *Connector) String() string {
+	return c.Address()
 }

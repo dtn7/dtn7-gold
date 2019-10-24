@@ -20,5 +20,12 @@ func TestRf95Modem(t *testing.T) {
 	} else if !bytes.Equal(f.Payload, msg) {
 		t.Fatalf("Wrong payload: expected %x, got %x", msg, f.Payload)
 	}
+
+	if err := m0.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := m1.Close(); err != nil {
+		t.Fatal(err)
+	}
 }
 */

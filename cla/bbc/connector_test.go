@@ -1,8 +1,9 @@
 package bbc
 
 import (
-	"github.com/dtn7/dtn7-go/bundle"
 	"testing"
+
+	"github.com/dtn7/dtn7-go/bundle"
 )
 
 func TestConnector(t *testing.T) {
@@ -32,6 +33,8 @@ func TestConnector(t *testing.T) {
 // The following test relies on a system which is equipped with two rf95modems..
 /*
 func TestLoRaConnector(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+
 	m0, _ := NewRf95Modem("/dev/ttyUSB0")
 	c0 := NewConnector(m0, true)
 	_, _ = c0.Start()
@@ -56,6 +59,9 @@ func TestLoRaConnector(t *testing.T) {
 	}
 
 	uff := <-c1.Channel()
-	t.Log(uff)
+	log.WithField("message", uff).Info("Received Bundle, yay")
+
+	c0.Close()
+	c1.Close()
 }
 */

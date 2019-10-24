@@ -59,3 +59,7 @@ func (d *dummyModem) Receive() (f Fragment, err error) {
 	f = <-d.inChan
 	return
 }
+
+func (d *dummyModem) Close() error {
+	return nil
+}

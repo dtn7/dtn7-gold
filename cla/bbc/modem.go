@@ -12,4 +12,7 @@ type Modem interface {
 
 	// Receive waits for the next Fragment to be received. This method blocks.
 	Receive() (Fragment, error)
+
+	// Close this Modem. Furthermore, the Receive method should be interrupted.
+	Close() error
 }

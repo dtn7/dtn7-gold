@@ -1,12 +1,15 @@
 package bbc
 
 import (
+	"fmt"
+
 	"github.com/dtn7/rf95modem-go/rf95"
 )
 
 // Rf95Modem is a Modem for transmitting and receiving Fragments by using LoRa over a rf95modem.
 type Rf95Modem struct {
-	modem *rf95.Modem
+	device string
+	modem  *rf95.Modem
 }
 
 // NewRf95Modem creates a new Rf95Modem using a serial connection to the given device, e.g., /dev/ttyUSB0.
@@ -14,7 +17,10 @@ func NewRf95Modem(device string) (rfModem *Rf95Modem, err error) {
 	if m, mErr := rf95.OpenModem(device); mErr != nil {
 		err = mErr
 	} else {
-		rfModem = &Rf95Modem{modem: m}
+		rfModem = &Rf95Modem{
+			device: device,
+			modem:  m,
+		}
 	}
 
 	return
@@ -41,4 +47,12 @@ func (rfModem *Rf95Modem) Receive() (fragment Fragment, err error) {
 	}
 
 	return
+}
+
+func (rfModem *Rf95Modem) Close() error {
+	return rfModem.modem.Close()
+}
+
+func (rfModem *Rf95Modem) String() string {
+	return fmt.Sprintf("rf95modem:%s", rfModem.device)
 }

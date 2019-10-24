@@ -70,6 +70,11 @@ func ParseFragment(data []byte) (f Fragment, err error) {
 	return
 }
 
+func (f Fragment) String() string {
+	return fmt.Sprintf("Fragment(TID: %d, Seq.No: %d, SB: %t, EB: %t)",
+		f.TransmissionID(), f.SequenceNumber(), f.StartBit(), f.EndBit())
+}
+
 // TransmissionID returns the four bit transmission ID.
 func (f Fragment) TransmissionID() byte {
 	return f.identifier >> 4 & 0x0F
