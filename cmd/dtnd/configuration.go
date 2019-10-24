@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/dtn7/dtn7-go/cla/bbc"
 	"net"
 	"strconv"
 	"time"
@@ -63,19 +64,29 @@ type convergenceConf struct {
 	Endpoint string
 }
 
+func parseListenPort(endpoint string) (port int, err error) {
+	var portStr string
+	_, portStr, err = net.SplitHostPort(endpoint)
+	if err != nil {
+		return
+	}
+	port, err = strconv.Atoi(portStr)
+	return
+}
+
 // parseListen inspects a "listen" convergenceConf and returns a Convergable.
 func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergable, discovery.DiscoveryMessage, error) {
-	_, portStr, err := net.SplitHostPort(conv.Endpoint)
-	if err != nil {
-		return nil, discovery.DiscoveryMessage{}, err
-	}
-	portInt, err := strconv.Atoi(portStr)
-	if err != nil {
-		return nil, discovery.DiscoveryMessage{}, err
-	}
-
 	switch conv.Protocol {
+	case "bbc":
+		conn, err := bbc.NewBundleBroadcastingConnector(conv.Endpoint, true)
+		return conn, discovery.DiscoveryMessage{}, err
+
 	case "mtcp":
+		portInt, err := parseListenPort(conv.Endpoint)
+		if err != nil {
+			return nil, discovery.DiscoveryMessage{}, err
+		}
+
 		msg := discovery.DiscoveryMessage{
 			Type:     discovery.MTCP,
 			Endpoint: nodeId,
@@ -85,6 +96,11 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergabl
 		return mtcp.NewMTCPServer(conv.Endpoint, nodeId, true), msg, nil
 
 	case "tcpcl":
+		portInt, err := parseListenPort(conv.Endpoint)
+		if err != nil {
+			return nil, discovery.DiscoveryMessage{}, err
+		}
+
 		listener := tcpcl.NewListener(conv.Endpoint, nodeId)
 
 		msg := discovery.DiscoveryMessage{

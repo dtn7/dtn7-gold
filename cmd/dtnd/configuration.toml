@@ -43,10 +43,14 @@ listen = "127.0.0.1:8080"
 # Each listen is another convergence layer adapter (CLA). Multiple [[listen]]
 # blocks are usable.
 [[listen]]
-# Protocol to use, one of tcpcl, mtcp.
+# Protocol to use, one of tcpcl, mtcp, bbc.
 protocol = "tcpcl"
 # Address to bind this CLA to.
 endpoint = ":4556"
+
+[[listen]]
+protocol = "bbc"
+endpoint = "bbc://rf95modem/dev/ttyUSB0"
 
 # Multiple [[peers]] might be configured.
 [[peer]]
