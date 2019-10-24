@@ -3,6 +3,8 @@ package bbc
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/rf95modem-go/rf95"
 )
 
@@ -24,6 +26,26 @@ func NewRf95Modem(device string) (rfModem *Rf95Modem, err error) {
 	}
 
 	return
+}
+
+// Frequency changes the internal rf95modem's frequency, specified in MHz.
+func (rfModem *Rf95Modem) Frequency(frequency float64) error {
+	log.WithFields(log.Fields{
+		"modem":     rfModem,
+		"frequency": frequency,
+	}).Debug("Shifting frequency")
+
+	return rfModem.modem.Frequency(frequency)
+}
+
+// Mode sets the internal rf95modem's modem config.
+func (rfModem *Rf95Modem) Mode(mode rf95.ModemMode) error {
+	log.WithFields(log.Fields{
+		"modem": rfModem,
+		"mode":  mode,
+	}).Debug("Changing mode")
+
+	return rfModem.modem.Mode(mode)
 }
 
 func (rfModem *Rf95Modem) Mtu() (mtu int) {
@@ -54,5 +76,10 @@ func (rfModem *Rf95Modem) Close() error {
 }
 
 func (rfModem *Rf95Modem) String() string {
-	return fmt.Sprintf("rf95modem:%s", rfModem.device)
+	status, err := rfModem.modem.FetchStatus()
+	if err != nil {
+		return fmt.Sprintf("rf95modem%s", rfModem.device)
+	}
+
+	return fmt.Sprintf("rf95modem%s?frequency=%f&mode=%d", rfModem.device, status.Frequency, status.Mode)
 }

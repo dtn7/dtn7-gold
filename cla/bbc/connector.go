@@ -98,7 +98,7 @@ func (c *Connector) Channel() chan cla.ConvergenceStatus {
 }
 
 func (c *Connector) Address() string {
-	return fmt.Sprintf("bbc://%v/", c.modem)
+	return fmt.Sprintf("bbc://%v", c.modem)
 }
 
 func (c *Connector) IsPermanent() bool {
