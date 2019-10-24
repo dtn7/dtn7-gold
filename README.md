@@ -16,6 +16,8 @@ Bundles might be exchanged between nodes by the following protocols.
   ([draft-ietf-dtn-tcpclv4-14][dtn-tcpcl-14])
 - Minimal TCP Convergence-Layer Protocol
   ([draft-ietf-dtn-mtcpcl-01.txt][dtn-mtcpcl-01])
+- Bundle Broadcasting Connector, a generic Broadcasting Interface
+    - [rf95modem] based CLA for LoRa PHY 
 
 ### Routing
 One of the following routing protocols might be used.
@@ -95,3 +97,4 @@ interested in working with this code, check out the
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
 [godoc]: https://godoc.org/github.com/dtn7/dtn7-go
 [golang]: https://golang.org/
+[rf95modem]: https://github.com/gh0st42/rf95modem
