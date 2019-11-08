@@ -185,8 +185,7 @@ func TestTCPCLNetwork(t *testing.T) {
 		msgs    int
 	}{{clients: 1, msgs: 1},
 		{clients: 1, msgs: 25},
-		{clients: 5, msgs: 25},
-		{clients: 10, msgs: 25}}
+		{clients: 5, msgs: 25}}
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d_clients_%d_msgs", test.clients, test.msgs), func(t *testing.T) {
@@ -196,7 +195,7 @@ func TestTCPCLNetwork(t *testing.T) {
 }
 
 func TestTCPCLPayloadNetwork(t *testing.T) {
-	sizes := []int{64, 1024, 1048576, 10485760}
+	sizes := []int{64, 1024, 1048576}
 
 	for _, size := range sizes {
 		t.Run(fmt.Sprintf("%d", size), func(t *testing.T) {

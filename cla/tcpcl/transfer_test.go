@@ -20,7 +20,7 @@ func testGetRandomData(size int) []byte {
 }
 
 func TestTransfer(t *testing.T) {
-	var sizes = []int{1, 1024, 1048576, 10485760}
+	var sizes = []int{1, 1024, 1048576}
 
 	for _, size := range sizes {
 		t.Run(fmt.Sprintf("%d", size), func(t *testing.T) {
