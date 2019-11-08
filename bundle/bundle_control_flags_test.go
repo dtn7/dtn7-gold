@@ -7,6 +7,23 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
+func TestBundleControlFlagsReserved(t *testing.T) {
+	var allFlags BundleControlFlags = 0
+	allFlags |= IsFragment
+	allFlags |= AdministrativeRecordPayload
+	allFlags |= MustNotFragmented
+	allFlags |= RequestUserApplicationAck
+	allFlags |= RequestStatusTime
+	allFlags |= StatusRequestReception
+	allFlags |= StatusRequestForward
+	allFlags |= StatusRequestDelivery
+	allFlags |= StatusRequestDeletion
+
+	if resvFlags := ^allFlags; resvFlags != bndlCFReservedFields {
+		t.Fatalf("Reverted flags %x differ from reserved flags %x", resvFlags, bndlCFReservedFields)
+	}
+}
+
 func TestBundleControlFlagsHas(t *testing.T) {
 	var cf BundleControlFlags = IsFragment |
 		RequestStatusTime

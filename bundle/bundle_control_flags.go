@@ -12,36 +12,35 @@ import (
 type BundleControlFlags uint64
 
 const (
-	// StatusRequestDeletion: Request reporting of bundle deletion.
-	StatusRequestDeletion BundleControlFlags = 0x1000
+	// IsFragment: bundle is a fragment.
+	IsFragment BundleControlFlags = 0x000001
 
-	// StatusRequestDelivery: Request reporting of bundle delivery.
-	StatusRequestDelivery BundleControlFlags = 0x0800
+	// AdministrativeRecordPayload: payload is an administrative record.
+	AdministrativeRecordPayload BundleControlFlags = 0x000002
 
-	// StatusRequestForward: Request reporting of bundle forwarding.
-	StatusRequestForward BundleControlFlags = 0x0400
+	// MustNotFragmented: bundle must not be fragmented.
+	MustNotFragmented BundleControlFlags = 0x000004
 
-	// StatusRequestReception: Request reporting of bundle reception.
-	StatusRequestReception BundleControlFlags = 0x0100
+	// RequestUserApplicationAck: user application acknowledgement is requested.
+	RequestUserApplicationAck BundleControlFlags = 0x000020
 
-	// RequestStatusTime: Status time is requested in all status reports.
-	RequestStatusTime BundleControlFlags = 0x0040
+	// RequestStatusTime: status time is requested in all status reports.
+	RequestStatusTime BundleControlFlags = 0x000040
 
-	// RequestUserApplicationAck: Acknowledgment by the user application
-	// is requested.
-	RequestUserApplicationAck BundleControlFlags = 0x0020
+	// StatusRequestReception: bundle reception status reports are requested.
+	StatusRequestReception BundleControlFlags = 0x004000
 
-	// MustNotFragmented: The bundle must not be fragmented.
-	MustNotFragmented BundleControlFlags = 0x0004
+	// StatusRequestForward: bundle forwarding status reports are requested.
+	StatusRequestForward BundleControlFlags = 0x010000
 
-	// AdministrativeRecordPayload: The bundle's payload is an
-	// administrative record.
-	AdministrativeRecordPayload BundleControlFlags = 0x0002
+	// StatusRequestDelivery: bundle delivery status reports are requested.
+	StatusRequestDelivery BundleControlFlags = 0x020000
 
-	// IsFragment: The bundle is a fragment.
-	IsFragment BundleControlFlags = 0x0001
+	// StatusRequestDeletion: bundle deletion status reports are requested.
+	StatusRequestDeletion BundleControlFlags = 0x040000
 
-	bndlCFReservedFields BundleControlFlags = 0xE218
+	// bndlCFReservedFields are both reserved and unassigned flags.
+	bndlCFReservedFields BundleControlFlags = 0xFFFFFFFFFFF8BF98
 )
 
 // Has returns true if a given flag or mask of flags is set.
@@ -86,7 +85,7 @@ func (bcf BundleControlFlags) String() string {
 		{StatusRequestDeletion, "REQUESTED_DELETION_STATUS_REPORT"},
 		{StatusRequestDelivery, "REQUESTED_DELIVERY_STATUS_REPORT"},
 		{StatusRequestForward, "REQUESTED_FORWARD_STATUS_REPORT"},
-		{StatusRequestReception, "REQUESTED_RECEPTIONSTATUS_REPORT"},
+		{StatusRequestReception, "REQUESTED_RECEPTION_STATUS_REPORT"},
 		{RequestStatusTime, "REQUESTED_TIME_IN_STATUS_REPORT"},
 		{RequestUserApplicationAck, "REQUESTED_APPLICATION_ACK"},
 		{MustNotFragmented, "MUST_NO_BE_FRAGMENTED"},
