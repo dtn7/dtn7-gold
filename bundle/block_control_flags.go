@@ -10,20 +10,20 @@ import (
 type BlockControlFlags uint64
 
 const (
-	// DeleteBundle: Bundle must be deleted if this block can't be processed.
-	DeleteBundle BlockControlFlags = 0x08
-
-	// StatusReportBlock: Transmission of a status report is requested if this
-	// block can't be processed.
-	StatusReportBlock BlockControlFlags = 0x04
-
-	// RemoveBlock: Block must be removed from the bundle if it can't be processed.
-	RemoveBlock BlockControlFlags = 0x02
-
-	// ReplicateBlock: This block must be replicated in every fragment.
+	// ReplicateBlock: block must be replicated in every fragment.
 	ReplicateBlock BlockControlFlags = 0x01
 
-	blckCFReservedFields BlockControlFlags = 0xF0
+	// StatusReportBlock: transmission of a status report is requested if block can't be processed.
+	StatusReportBlock BlockControlFlags = 0x02
+
+	// DeleteBundle: bundle must be deleted if block can't be processed.
+	DeleteBundle BlockControlFlags = 0x04
+
+	// RemoveBlock: block must be removed from bundle if it can't be processed.
+	RemoveBlock BlockControlFlags = 0x10
+
+	// blckCFReservedFields are both reserved and unassigned flags.
+	blckCFReservedFields BlockControlFlags = 0xFFFFFFFFFFFFFFE8
 )
 
 // Has returns true if a given flag or mask of flags is set.

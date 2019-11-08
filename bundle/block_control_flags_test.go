@@ -4,9 +4,20 @@ import (
 	"testing"
 )
 
+func TestBlockControlFlagsReserved(t *testing.T) {
+	var allFlags BlockControlFlags = 0
+	allFlags |= ReplicateBlock
+	allFlags |= StatusReportBlock
+	allFlags |= DeleteBundle
+	allFlags |= RemoveBlock
+
+	if resvFlags := ^allFlags; resvFlags != blckCFReservedFields {
+		t.Fatalf("Reverted flags %x differ from reserved flags %x", resvFlags, blckCFReservedFields)
+	}
+}
+
 func TestBlockControlFlagsHas(t *testing.T) {
-	var cf BlockControlFlags = ReplicateBlock |
-		DeleteBundle
+	var cf BlockControlFlags = ReplicateBlock | DeleteBundle
 
 	if !cf.Has(ReplicateBlock) {
 		t.Error("cf has no ReplicateBlock-flag even when it was set")
