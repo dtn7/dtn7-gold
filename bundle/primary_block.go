@@ -49,7 +49,7 @@ func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
 		CRC:                nil,
 	}
 
-	_ = pb.calcualteCRC()
+	_ = pb.calculateCRC()
 	return pb
 }
 
@@ -78,14 +78,13 @@ func (pb *PrimaryBlock) SetCRCType(crcType CRCType) {
 	}
 
 	pb.CRCType = crcType
-	_ = pb.calcualteCRC()
+	_ = pb.calculateCRC()
 }
 
-// calcualteCRC serializes the PrimaryBlock once to calcualte its CRC value,
-// which is mandatory since dtn-bpbis-14. Since this block is immutable, this
-// should not cause any errors. This method must be called both when creating
-// the block and when changing its CRC.
-func (pb *PrimaryBlock) calcualteCRC() error {
+// calculateCRC serializes the PrimaryBlock once to calculate its CRC value.
+// Since this block is immutable, this should not cause any errors. This method
+// must be called both when creating the block and when changing its CRC.
+func (pb *PrimaryBlock) calculateCRC() error {
 	pb.CRC = nil
 	return pb.MarshalCbor(new(bytes.Buffer))
 }
@@ -226,7 +225,9 @@ func (pb PrimaryBlock) CheckValid() (errs error) {
 			fmt.Errorf("PrimaryBlock: Wrong Version, %d instead of %d", pb.Version, dtnVersion))
 	}
 
-	// A CRC value is mandatory sinde dtn-bpbis-14
+	// A CRC value is mandatory since bpbis-14. However, bpbis-17 allows for the omission of such a CRC
+	// iff a BPSec Block Integrity Block exists. Currently, this is not part of the implementation, so a
+	// CRC is required.
 	if !pb.HasCRC() {
 		errs = multierror.Append(errs, fmt.Errorf("PrimaryBlock: No CRC is present"))
 	}
