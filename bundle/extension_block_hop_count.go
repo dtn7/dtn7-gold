@@ -7,7 +7,7 @@ import (
 	"github.com/dtn7/cboring"
 )
 
-const ExtBlockTypeHopCountBlock uint64 = 9
+const ExtBlockTypeHopCountBlock uint64 = 10
 
 // HopCountBlock implements the Bundle Protocol's Hop Count Block.
 type HopCountBlock struct {

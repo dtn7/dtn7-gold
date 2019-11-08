@@ -6,7 +6,7 @@ import (
 	"github.com/dtn7/cboring"
 )
 
-const ExtBlockTypeBundleAgeBlock uint64 = 8
+const ExtBlockTypeBundleAgeBlock uint64 = 7
 
 // BundleAgeBlock implements the Bundle Protocol's Bundle Age Block.
 type BundleAgeBlock uint64

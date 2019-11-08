@@ -6,7 +6,7 @@ import (
 	"github.com/dtn7/cboring"
 )
 
-const ExtBlockTypePreviousNodeBlock uint64 = 7
+const ExtBlockTypePreviousNodeBlock uint64 = 6
 
 // PreviousNodeBlock implements the Bundle Protocol's Previous Node Block.
 type PreviousNodeBlock EndpointID
