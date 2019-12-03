@@ -143,6 +143,8 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, wg *sync.WaitG
 	}()
 
 	clientWg.Wait()
+	time.Sleep(time.Second)
+
 	client.Close()
 
 	if r := atomic.LoadUint32(&msgsRecv); r != 1 {
