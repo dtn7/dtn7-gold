@@ -78,30 +78,20 @@ type Client struct {
 // NewClient creates a new Client on an existing connection. This function is used from the Listener.
 func NewClient(conn net.Conn, endpointID bundle.EndpointID) *Client {
 	return &Client{
-		address:         conn.RemoteAddr().String(),
-		conn:            conn,
-		active:          false,
-		state:           new(ClientState),
-		msgsOut:         make(chan Message, 100),
-		msgsIn:          make(chan Message, 100),
-		transferOutSend: make(chan Message),
-		transferOutAck:  make(chan Message),
-		endpointID:      endpointID,
+		address:    conn.RemoteAddr().String(),
+		conn:       conn,
+		active:     false,
+		endpointID: endpointID,
 	}
 }
 
 // DialClient tries to establish a new TCPCL Client to a remote server.
 func DialClient(address string, endpointID bundle.EndpointID, permanent bool) *Client {
 	return &Client{
-		address:         address,
-		permanent:       permanent,
-		active:          true,
-		state:           new(ClientState),
-		msgsOut:         make(chan Message, 100),
-		msgsIn:          make(chan Message, 100),
-		transferOutSend: make(chan Message),
-		transferOutAck:  make(chan Message),
-		endpointID:      endpointID,
+		address:    address,
+		permanent:  permanent,
+		active:     true,
+		endpointID: endpointID,
 	}
 }
 
@@ -129,6 +119,8 @@ func (client *Client) log() *log.Entry {
 }
 
 func (client *Client) Start() (err error, retry bool) {
+	client.state = new(ClientState)
+
 	if client.started {
 		if client.active {
 			client.log().Debug("Clearing connection for reactivation")
@@ -142,6 +134,7 @@ func (client *Client) Start() (err error, retry bool) {
 	}
 
 	client.started = true
+
 	if client.conn == nil {
 		client.log().Debug("Trying to establish a connection")
 
@@ -156,6 +149,19 @@ func (client *Client) Start() (err error, retry bool) {
 	}
 
 	client.log().Info("Starting client")
+
+	client.contactSent = false
+	client.contactRecv = false
+	client.initSent = false
+	client.initRecv = false
+	client.keepaliveStarted = false
+	client.transferOutId = 0
+	client.transferIn = nil
+
+	client.msgsOut = make(chan Message, 100)
+	client.msgsIn = make(chan Message, 100)
+	client.transferOutSend = make(chan Message)
+	client.transferOutAck = make(chan Message)
 
 	client.handleMetaStop = make(chan struct{}, 10)
 	client.handleMetaStopAck = make(chan struct{}, 2)

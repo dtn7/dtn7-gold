@@ -132,6 +132,8 @@ func (client *Client) handleState() {
 					stateHandler = client.handleSessInit
 				case client.state.IsEstablished():
 					stateHandler = client.handleEstablished
+				case client.state.IsTerminated():
+					goto terminationCase
 				default:
 					client.log().WithField("state", client.state).Fatal("Illegal state")
 				}
