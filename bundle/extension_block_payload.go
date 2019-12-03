@@ -1,11 +1,5 @@
 package bundle
 
-import (
-	"io"
-
-	"github.com/dtn7/cboring"
-)
-
 const ExtBlockTypePayloadBlock uint64 = 1
 
 // PayloadBlock implements the Bundle Protocol's Payload Block.
@@ -23,20 +17,16 @@ func NewPayloadBlock(data []byte) *PayloadBlock {
 
 // Data returns this PayloadBlock's payload.
 func (pb *PayloadBlock) Data() []byte {
-	return []byte(*pb)
+	return *pb
 }
 
-func (pb *PayloadBlock) MarshalCbor(w io.Writer) error {
-	return cboring.WriteByteString([]byte(*pb), w)
+func (pb *PayloadBlock) MarshalBinary() ([]byte, error) {
+	return *pb, nil
 }
 
-func (pb *PayloadBlock) UnmarshalCbor(r io.Reader) error {
-	if pl, err := cboring.ReadByteString(r); err != nil {
-		return err
-	} else {
-		*pb = PayloadBlock(pl)
-		return nil
-	}
+func (pb *PayloadBlock) UnmarshalBinary(data []byte) error {
+	*pb = data
+	return nil
 }
 
 func (pb *PayloadBlock) CheckValid() error {

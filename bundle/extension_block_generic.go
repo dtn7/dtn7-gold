@@ -1,11 +1,5 @@
 package bundle
 
-import (
-	"io"
-
-	"github.com/dtn7/cboring"
-)
-
 // GenericExtensionBlock is a dummy ExtensionBlock to cover for unknown or unregistered ExtensionBlocks.
 type GenericExtensionBlock struct {
 	data     []byte
@@ -20,13 +14,13 @@ func NewGenericExtensionBlock(data []byte, typeCode uint64) *GenericExtensionBlo
 	}
 }
 
-func (geb *GenericExtensionBlock) MarshalCbor(w io.Writer) error {
-	return cboring.WriteByteString(geb.data, w)
+func (geb *GenericExtensionBlock) MarshalBinary() ([]byte, error) {
+	return geb.data, nil
 }
 
-func (geb *GenericExtensionBlock) UnmarshalCbor(r io.Reader) (err error) {
-	geb.data, err = cboring.ReadByteString(r)
-	return
+func (geb *GenericExtensionBlock) UnmarshalBinary(data []byte) error {
+	geb.data = data
+	return nil
 }
 
 func (geb *GenericExtensionBlock) CheckValid() error {

@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"bytes"
+	"encoding"
 	"fmt"
 	"io"
 	"reflect"
@@ -10,8 +11,10 @@ import (
 	"github.com/dtn7/cboring"
 )
 
-// ExtensionBlock is a specific shape of a Canonical Block, i.e., the Payload
-// Block or a more generic Extension Block as defined in section 4.3.
+// ExtensionBlock describes the block-type specific data of any Canonical Block. Such an ExtensionBlock
+// must implement either the cboring.CborMarshaler interface, if its serializable to / from CBOR, or both
+// encoding.BinaryMarshaler and encoding.BinaryUnmarshaler. The latter allows any kind of serialization,
+// e.g., to a totally custom format.
 type ExtensionBlock interface {
 	Valid
 
@@ -88,10 +91,14 @@ func (ebm *ExtensionBlockManager) createBlock(typeCode uint64) ExtensionBlock {
 // Unknown block types are treated as GenericExtensionBlock.
 func (ebm *ExtensionBlockManager) WriteBlock(b ExtensionBlock, w io.Writer) error {
 	switch b.(type) {
-	// TODO: binary encoding case
+	case encoding.BinaryMarshaler:
+		if data, err := b.(encoding.BinaryMarshaler).MarshalBinary(); err != nil {
+			return fmt.Errorf("marshalling binary for Block errored: %v", err)
+		} else {
+			return cboring.WriteByteString(data, w)
+		}
 
 	case cboring.CborMarshaler:
-		// If the Block can be encoded as CBOR, then this encoding is wrapped in another CBOR byte string.
 		var buff bytes.Buffer
 		if err := cboring.Marshal(b.(cboring.CborMarshaler), &buff); err != nil {
 			return fmt.Errorf("marshalling CBOR for Block errored: %v", err)
@@ -109,10 +116,14 @@ func (ebm *ExtensionBlockManager) ReadBlock(typeCode uint64, r io.Reader) (b Ext
 	b = ebm.createBlock(typeCode)
 
 	switch b.(type) {
-	// TODO: binary decoding case
+	case encoding.BinaryUnmarshaler:
+		if data, dataErr := cboring.ReadByteString(r); dataErr != nil {
+			err = dataErr
+		} else {
+			err = b.(encoding.BinaryUnmarshaler).UnmarshalBinary(data)
+		}
 
 	case cboring.CborMarshaler:
-		// A CBOR encoded block is wrapped in a CBOR byte string itself.
 		if data, dataErr := cboring.ReadByteString(r); dataErr != nil {
 			err = dataErr
 		} else {

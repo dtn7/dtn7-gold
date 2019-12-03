@@ -45,15 +45,14 @@ func TestExtensionBlockManagerRWBlock(t *testing.T) {
 		to       []byte
 		typeCode uint64
 	}{
-		// With a wrapped CBOR byte string
+		// CBOR; wrapped within a CBOR byte string
 		{NewBundleAgeBlock(23), []byte{0x41, 0x17}, ExtBlockTypeBundleAgeBlock},
 		{NewHopCountBlock(16), []byte{0x43, 0x82, 0x10, 0x00}, ExtBlockTypeHopCountBlock},
 		{NewPreviousNodeBlock(MustNewEndpointID("dtn:23")), []byte{0x45, 0x82, 0x01, 0x62, 0x32, 0x33}, ExtBlockTypePreviousNodeBlock},
 
-		// Directly converted
-		// TODO: add "binary" code; remove byte string bytes
-		{NewGenericExtensionBlock([]byte{0xFF}, 192), []byte{0x42, 0x41, 0xFF}, 192},
-		{NewPayloadBlock([]byte("lel")), []byte{0x44, 0x43, 0x6C, 0x65, 0x6C}, ExtBlockTypePayloadBlock},
+		// Binary; also wrapped, of course
+		{NewGenericExtensionBlock([]byte{0xFF}, 192), []byte{0x41, 0xFF}, 192},
+		{NewPayloadBlock([]byte("lel")), []byte{0x43, 0x6C, 0x65, 0x6C}, ExtBlockTypePayloadBlock},
 	}
 
 	for _, test := range tests {
