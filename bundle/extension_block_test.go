@@ -48,3 +48,12 @@ func TestExtensionBlockManagerSingleton(t *testing.T) {
 		}
 	}
 }
+
+func TestExtensionBlockManagerGenericRegister(t *testing.T) {
+	var ebm = NewExtensionBlockManager()
+	var geb = NewGenericExtensionBlock([]byte("nope"), 192)
+
+	if err := ebm.Register(geb); err == nil {
+		t.Fatalf("Registering a GenericExtensionBlock did not errored")
+	}
+}

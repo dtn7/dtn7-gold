@@ -44,6 +44,10 @@ func (ebm *ExtensionBlockManager) Register(eb ExtensionBlock) error {
 	extCode := eb.BlockTypeCode()
 	extType := reflect.TypeOf(eb).Elem()
 
+	if extType == reflect.TypeOf((*GenericExtensionBlock)(nil)).Elem() {
+		return fmt.Errorf("not allowed to register a GenericExtensionBlock")
+	}
+
 	if otherType, exists := ebm.data[extCode]; exists {
 		return fmt.Errorf("Block type code %d is already registered for %s",
 			extCode, otherType.Name())
