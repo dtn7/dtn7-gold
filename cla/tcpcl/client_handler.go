@@ -13,14 +13,20 @@ import (
 // handleMeta supervises the other handlers and propagates shutdown signals.
 func (client *Client) handleMeta() {
 	<-client.handleMetaStop
-	client.log().Info("Handler received stop signal")
+	client.log().Debug("Handler received stop signal")
 
 	client.state.Terminate()
 
-	chans := []chan struct{}{client.handlerConnInStop, client.handlerConnOutStop, client.handlerStateStop}
-	for _, chn := range chans {
-		close(chn)
+	closeChans := []chan struct{}{
+		client.handlerConnInStop, client.handlerConnInStopAck,
+		client.handlerConnOutStop, client.handlerConnOutStopAck,
+		client.handlerStateStop, client.handlerStateStopAck}
+	for i := 0; i < len(closeChans); i += 2 {
+		close(closeChans[i])
+		<-closeChans[i+1]
 	}
+
+	client.log().Debug("Handler stopped all sub handlers")
 
 	close(client.handleMetaStopAck)
 }
@@ -29,6 +35,7 @@ func (client *Client) handleMeta() {
 func (client *Client) handleConnIn() {
 	defer func() {
 		client.log().Debug("Leaving incoming connection handler")
+		close(client.handlerConnInStopAck)
 		client.handleMetaStop <- struct{}{}
 	}()
 
@@ -40,7 +47,7 @@ func (client *Client) handleConnIn() {
 			return
 
 		default:
-			if err := client.conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+			if err := client.conn.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
 				client.log().WithError(err).Error("Setting read deadline errored")
 				return
 			}
@@ -66,6 +73,7 @@ func (client *Client) handleConnIn() {
 func (client *Client) handleConnOut() {
 	defer func() {
 		client.log().Debug("Leaving outgoing connection handler")
+		close(client.handlerConnOutStopAck)
 		client.handleMetaStop <- struct{}{}
 	}()
 
@@ -103,6 +111,7 @@ func (client *Client) handleConnOut() {
 func (client *Client) handleState() {
 	defer func() {
 		client.log().Debug("Leaving state handler")
+		close(client.handlerStateStopAck)
 		client.handleMetaStop <- struct{}{}
 	}()
 

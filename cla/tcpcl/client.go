@@ -32,11 +32,14 @@ type Client struct {
 	msgsOut chan Message
 	msgsIn  chan Message
 
-	handleMetaStop     chan struct{}
-	handleMetaStopAck  chan struct{}
-	handlerConnInStop  chan struct{}
-	handlerConnOutStop chan struct{}
-	handlerStateStop   chan struct{}
+	handleMetaStop        chan struct{}
+	handleMetaStopAck     chan struct{}
+	handlerConnInStop     chan struct{}
+	handlerConnInStopAck  chan struct{}
+	handlerConnOutStop    chan struct{}
+	handlerConnOutStopAck chan struct{}
+	handlerStateStop      chan struct{}
+	handlerStateStopAck   chan struct{}
 
 	active bool
 	state  *ClientState
@@ -128,6 +131,8 @@ func (client *Client) log() *log.Entry {
 func (client *Client) Start() (err error, retry bool) {
 	if client.started {
 		if client.active {
+			client.log().Debug("Clearing connection for reactivation")
+			<-client.handleMetaStopAck
 			client.conn = nil
 		} else {
 			err = fmt.Errorf("Passive client cannot be restarted")
@@ -137,8 +142,9 @@ func (client *Client) Start() (err error, retry bool) {
 	}
 
 	client.started = true
-
 	if client.conn == nil {
+		client.log().Debug("Trying to establish a connection")
+
 		if conn, connErr := net.DialTimeout("tcp", client.address, time.Second); connErr != nil {
 			err = connErr
 			retry = true
@@ -154,8 +160,11 @@ func (client *Client) Start() (err error, retry bool) {
 	client.handleMetaStop = make(chan struct{}, 10)
 	client.handleMetaStopAck = make(chan struct{}, 2)
 	client.handlerConnInStop = make(chan struct{}, 2)
+	client.handlerConnInStopAck = make(chan struct{}, 2)
 	client.handlerConnOutStop = make(chan struct{}, 2)
+	client.handlerConnOutStopAck = make(chan struct{}, 2)
 	client.handlerStateStop = make(chan struct{}, 2)
+	client.handlerStateStopAck = make(chan struct{}, 2)
 
 	client.reportChan = make(chan cla.ConvergenceStatus, 100)
 
