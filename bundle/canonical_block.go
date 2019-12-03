@@ -29,8 +29,8 @@ func NewCanonicalBlock(no uint64, bcf BlockControlFlags, value ExtensionBlock) C
 	}
 }
 
-// BlockTypeCode returns the block type code.
-func (cb CanonicalBlock) BlockTypeCode() uint64 {
+// TypeCode returns the block type code.
+func (cb CanonicalBlock) TypeCode() uint64 {
 	return cb.Value.BlockTypeCode()
 }
 
@@ -64,7 +64,7 @@ func (cb *CanonicalBlock) MarshalCbor(w io.Writer) error {
 		return err
 	}
 
-	fields := []uint64{cb.BlockTypeCode(), cb.BlockNumber,
+	fields := []uint64{cb.TypeCode(), cb.BlockNumber,
 		uint64(cb.BlockControlFlags), uint64(cb.CRCType)}
 	for _, f := range fields {
 		if err := cboring.WriteUInt(f, w); err != nil {
@@ -72,8 +72,8 @@ func (cb *CanonicalBlock) MarshalCbor(w io.Writer) error {
 		}
 	}
 
-	if err := cboring.Marshal(cb.Value, w); err != nil {
-		return fmt.Errorf("Marshalling value failed: %v", err)
+	if err := GetExtensionBlockManager().WriteBlock(cb.Value, w); err != nil {
+		return fmt.Errorf("marshalling value failed: %v", err)
 	}
 
 	if cb.HasCRC() {
@@ -134,13 +134,10 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 		cb.CRCType = CRCType(crcT)
 	}
 
-	if eb, ebErr := GetExtensionBlockManager().CreateBlock(blockType); ebErr != nil {
-		return fmt.Errorf("Unsupported block type code: %d", blockType)
+	if b, err := GetExtensionBlockManager().ReadBlock(blockType, r); err != nil {
+		return fmt.Errorf("unmarshalling block type %d failed: %v", blockType, err)
 	} else {
-		cb.Value = eb
-		if err := cboring.Unmarshal(cb.Value, r); err != nil {
-			return fmt.Errorf("Unmarshalling block type %d failed: %v", blockType, err)
-		}
+		cb.Value = b
 	}
 
 	if blockLen == 6 {

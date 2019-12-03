@@ -299,7 +299,7 @@ func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 
 	case CanonicalBlock:
 		cb := args[0].(CanonicalBlock)
-		if cb.BlockTypeCode() == ExtBlockTypePayloadBlock {
+		if cb.TypeCode() == ExtBlockTypePayloadBlock {
 			blockNumber = 1
 		} else {
 			blockNumber = bldr.canonicalCounter

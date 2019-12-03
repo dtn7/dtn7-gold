@@ -17,23 +17,23 @@ func TestExtensionBlockManager(t *testing.T) {
 		t.Fatal("Registering the PayloadBlock twice did not errored")
 	}
 
-	extBlock, extBlockErr := ebm.CreateBlock(payloadBlock.BlockTypeCode())
-	if extBlockErr != nil {
-		t.Fatal(extBlockErr)
+	if !ebm.IsKnown(payloadBlock.BlockTypeCode()) {
+		t.Fatal("PayloadBlock's type code is unknown")
 	}
 
+	extBlock := ebm.createBlock(payloadBlock.BlockTypeCode())
 	if extBlock.BlockTypeCode() != payloadBlock.BlockTypeCode() {
 		t.Fatalf("Block type code differs: %d != %d",
 			extBlock.BlockTypeCode(), payloadBlock.BlockTypeCode())
 	}
 
-	if _, err := ebm.CreateBlock(9001); err == nil {
-		t.Fatal("CreateBlock for an unknown number did not result in an errored")
+	if ebm.IsKnown(9001) {
+		t.Fatal("CreateBlock for an unknown number is possible")
 	}
 
 	ebm.Unregister(payloadBlock)
-	if _, err := ebm.CreateBlock(payloadBlock.BlockTypeCode()); err == nil {
-		t.Fatal("CreateBlock for an unregistered number did not result in an error")
+	if ebm.IsKnown(payloadBlock.BlockTypeCode()) {
+		t.Fatal("PayloadBlock's type code is known")
 	}
 }
 
@@ -71,22 +71,6 @@ func TestExtensionBlockManagerRWBlock(t *testing.T) {
 			t.Fatal(err)
 		} else if !reflect.DeepEqual(b, test.from) {
 			t.Fatalf("Blocks differ: %v %v", test.from, b)
-		}
-	}
-}
-
-func TestExtensionBlockManagerSingleton(t *testing.T) {
-	var ebm = GetExtensionBlockManager()
-
-	tests := []uint64{
-		ExtBlockTypePayloadBlock,
-		ExtBlockTypePreviousNodeBlock,
-		ExtBlockTypeBundleAgeBlock,
-		ExtBlockTypeHopCountBlock}
-
-	for _, test := range tests {
-		if _, err := ebm.CreateBlock(test); err != nil {
-			t.Fatalf("CreateBlock failed for %d", test)
 		}
 	}
 }

@@ -74,21 +74,21 @@ func (c *Core) receive(bp BundlePack) {
 	for i := len(bp.MustBundle().CanonicalBlocks) - 1; i >= 0; i-- {
 		var cb = &bp.MustBundle().CanonicalBlocks[i]
 
-		if bundle.GetExtensionBlockManager().IsKnown(cb.BlockTypeCode()) {
+		if bundle.GetExtensionBlockManager().IsKnown(cb.TypeCode()) {
 			continue
 		}
 
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
 			"number": i,
-			"type":   cb.BlockTypeCode(),
+			"type":   cb.TypeCode(),
 		}).Warn("Bundle's canonical block is unknown")
 
 		if cb.BlockControlFlags.Has(bundle.StatusReportBlock) {
 			log.WithFields(log.Fields{
 				"bundle": bp.ID(),
 				"number": i,
-				"type":   cb.BlockTypeCode(),
+				"type":   cb.TypeCode(),
 			}).Info("Bundle's unknown canonical block requested reporting")
 
 			c.SendStatusReport(bp, arecord.ReceivedBundle, arecord.BlockUnintelligible)
@@ -98,7 +98,7 @@ func (c *Core) receive(bp BundlePack) {
 			log.WithFields(log.Fields{
 				"bundle": bp.ID(),
 				"number": i,
-				"type":   cb.BlockTypeCode(),
+				"type":   cb.TypeCode(),
 			}).Info("Bundle's unknown canonical block requested bundle deletion")
 
 			c.bundleDeletion(bp, arecord.BlockUnintelligible)
@@ -109,7 +109,7 @@ func (c *Core) receive(bp BundlePack) {
 			log.WithFields(log.Fields{
 				"bundle": bp.ID(),
 				"number": i,
-				"type":   cb.BlockTypeCode(),
+				"type":   cb.TypeCode(),
 			}).Info("Bundle's unknown canonical block requested to be removed")
 
 			bp.MustBundle().CanonicalBlocks = append(

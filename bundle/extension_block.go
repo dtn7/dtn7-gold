@@ -13,7 +13,6 @@ import (
 // ExtensionBlock is a specific shape of a Canonical Block, i.e., the Payload
 // Block or a more generic Extension Block as defined in section 4.3.
 type ExtensionBlock interface {
-	cboring.CborMarshaler
 	Valid
 
 	// BlockTypeCode must return a constant integer, indicating the block type code.
@@ -74,20 +73,6 @@ func (ebm *ExtensionBlockManager) IsKnown(typeCode uint64) bool {
 
 	_, known := ebm.data[typeCode]
 	return known
-}
-
-// CreateBlock returns an instance of the ExtensionBlock for the requested
-// block type code.
-// TODO: remove this method!
-func (ebm *ExtensionBlockManager) CreateBlock(typeCode uint64) (eb ExtensionBlock, err error) {
-	extType, exists := ebm.data[typeCode]
-	if !exists {
-		err = fmt.Errorf("No ExtensionBlock for block type code %d", typeCode)
-		return
-	}
-
-	eb = reflect.New(extType).Interface().(ExtensionBlock)
-	return
 }
 
 // createBlock returns either a specific ExtensionBlock or, if type code is not registered, an GenericExtensionBlock.

@@ -58,7 +58,7 @@ func (b *Bundle) forEachBlock(f func(block)) {
 func (b *Bundle) ExtensionBlock(blockType uint64) (*CanonicalBlock, error) {
 	for i := 0; i < len(b.CanonicalBlocks); i++ {
 		cb := &b.CanonicalBlocks[i]
-		if cb.BlockTypeCode() == blockType {
+		if cb.TypeCode() == blockType {
 			return cb, nil
 		}
 	}
