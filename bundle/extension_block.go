@@ -1,7 +1,9 @@
 package bundle
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"reflect"
 	"sync"
 
@@ -76,6 +78,7 @@ func (ebm *ExtensionBlockManager) IsKnown(typeCode uint64) bool {
 
 // CreateBlock returns an instance of the ExtensionBlock for the requested
 // block type code.
+// TODO: remove this method!
 func (ebm *ExtensionBlockManager) CreateBlock(typeCode uint64) (eb ExtensionBlock, err error) {
 	extType, exists := ebm.data[typeCode]
 	if !exists {
@@ -84,6 +87,58 @@ func (ebm *ExtensionBlockManager) CreateBlock(typeCode uint64) (eb ExtensionBloc
 	}
 
 	eb = reflect.New(extType).Interface().(ExtensionBlock)
+	return
+}
+
+// createBlock returns either a specific ExtensionBlock or, if type code is not registered, an GenericExtensionBlock.
+func (ebm *ExtensionBlockManager) createBlock(typeCode uint64) ExtensionBlock {
+	if extType, exists := ebm.data[typeCode]; exists {
+		return reflect.New(extType).Interface().(ExtensionBlock)
+	} else {
+		return &GenericExtensionBlock{typeCode: typeCode}
+	}
+}
+
+// WriteBlock writes an ExtensionBlock in its correct binary format into the io.Writer.
+// Unknown block types are treated as GenericExtensionBlock.
+func (ebm *ExtensionBlockManager) WriteBlock(b ExtensionBlock, w io.Writer) error {
+	switch b.(type) {
+	// TODO: binary encoding case
+
+	case cboring.CborMarshaler:
+		// If the Block can be encoded as CBOR, then this encoding is wrapped in another CBOR byte string.
+		var buff bytes.Buffer
+		if err := cboring.Marshal(b.(cboring.CborMarshaler), &buff); err != nil {
+			return fmt.Errorf("marshalling CBOR for Block errored: %v", err)
+		}
+		return cboring.WriteByteString(buff.Bytes(), w)
+
+	default:
+		return fmt.Errorf("ExtensionBlock does not implement any expected types")
+	}
+}
+
+// ReadBlock reads an ExtensionBlock from its correct binary format from the io.Reader.
+// Unknown block types are treated as GenericExtensionBlock.
+func (ebm *ExtensionBlockManager) ReadBlock(typeCode uint64, r io.Reader) (b ExtensionBlock, err error) {
+	b = ebm.createBlock(typeCode)
+
+	switch b.(type) {
+	// TODO: binary decoding case
+
+	case cboring.CborMarshaler:
+		// A CBOR encoded block is wrapped in a CBOR byte string itself.
+		if data, dataErr := cboring.ReadByteString(r); dataErr != nil {
+			err = dataErr
+		} else {
+			var buff = bytes.NewBuffer(data)
+			err = cboring.Unmarshal(b.(cboring.CborMarshaler), buff)
+		}
+
+	default:
+		err = fmt.Errorf("ExtensionBlock does not implement any expected types")
+	}
+
 	return
 }
 
