@@ -86,30 +86,12 @@ func (er *EpidemicRouting) clasForBundle(bp BundlePack, updateDb bool) (css []cl
 		return nil, false
 	}
 
-	sentEids, ok := bi.Properties["routing/epidemic/sent"].([]bundle.EndpointID)
-	if !ok {
-		sentEids = make([]bundle.EndpointID, 0)
-	}
+	css, sentEids := filterCLAs(bi, er.c.claManager.Sender())
 
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),
 		"sent":   sentEids,
-	}).Debug("EpidemicRouting is processing outbounding bundle")
-
-	for _, cs := range er.c.claManager.Sender() {
-		var skip bool = false
-		for _, eid := range sentEids {
-			if cs.GetPeerEndpointID() == eid {
-				skip = true
-				break
-			}
-		}
-
-		if !skip {
-			css = append(css, cs)
-			sentEids = append(sentEids, cs.GetPeerEndpointID())
-		}
-	}
+	}).Debug("EpidemicRouting is processing an outgoing bundle")
 
 	if updateDb {
 		bi.Properties["routing/epidemic/sent"] = sentEids
