@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
+	"github.com/dtn7/dtn7-go/storage"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -79,4 +80,32 @@ func sendMetadataBundle(c *Core, source bundle.EndpointID, destination bundle.En
 	}).Debug("Successfully sent metadata bundle")
 
 	return nil
+}
+
+// filterCLAs filters the node's current peers by which ones have already received a copy of the bundle
+func filterCLAs(bundleItem storage.BundleItem, clas []cla.ConvergenceSender) (filtered []cla.ConvergenceSender, sentEids []bundle.EndpointID) {
+	filtered = make([]cla.ConvergenceSender, 0)
+
+	sentEids, ok := bundleItem.Properties["routing/sent"].([]bundle.EndpointID)
+	if !ok {
+		sentEids = make([]bundle.EndpointID, 0)
+	}
+
+	for _, cs := range clas {
+		skip := false
+
+		for _, eid := range sentEids {
+			if cs.GetPeerEndpointID() == eid {
+				skip = true
+				break
+			}
+		}
+
+		if !skip {
+			filtered = append(filtered, cs)
+			sentEids = append(sentEids, cs.GetPeerEndpointID())
+		}
+	}
+
+	return
 }

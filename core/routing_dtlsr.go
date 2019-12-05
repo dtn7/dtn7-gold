@@ -250,10 +250,7 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 			return
 		}
 
-		sentEids, ok := bundleItem.Properties["routing/dtlsr/sent"].([]bundle.EndpointID)
-		if !ok {
-			sentEids = make([]bundle.EndpointID, 0)
-		}
+		sender, sentEids := filterCLAs(bundleItem, dtlsr.c.claManager.Sender())
 
 		// broadcast bundles are always forwarded to everyone
 		log.WithFields(log.Fields{
@@ -261,30 +258,6 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 			"recipient": bndl.PrimaryBlock.Destination,
 			"CLAs":      sender,
 		}).Debug("Relaying broadcast bundle")
-
-		for _, cs := range dtlsr.c.claManager.Sender() {
-			var skip = false
-			for _, eid := range sentEids {
-				if cs.GetPeerEndpointID() == eid {
-					skip = true
-					break
-				}
-			}
-
-			if !skip {
-				log.WithFields(log.Fields{
-					"peer":   cs.GetPeerEndpointID(),
-					"bundle": bndl.ID(),
-				}).Debug("Forwarding broadcast bundle to peer")
-				sender = append(sender, cs)
-				sentEids = append(sentEids, cs.GetPeerEndpointID())
-			} else {
-				log.WithFields(log.Fields{
-					"peer":   cs.GetPeerEndpointID(),
-					"bundle": bndl.ID(),
-				}).Debug("Peer had already received bundle")
-			}
-		}
 
 		bundleItem.Properties["routing/dtlsr/sent"] = sentEids
 		if err := dtlsr.c.store.Update(bundleItem); err != nil {
@@ -297,7 +270,7 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 			"bundle": bndl.ID(),
 			"peers":  sender,
 		}).Debug("Forwarding metadata-bundle to theses peers.")
-		return
+		return sender, delete
 	}
 
 	recipient := bndl.PrimaryBlock.Destination
