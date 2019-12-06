@@ -3,6 +3,7 @@ package bundle
 import (
 	"bytes"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"testing"
 )
@@ -111,5 +112,40 @@ func TestBundleFragmentHugeMtu(t *testing.T) {
 	}
 	if !reflect.DeepEqual(bndl, frags[0]) {
 		t.Fatal("Bundles differ")
+	}
+}
+
+func TestIsBundleReassemblable(t *testing.T) {
+	bndl, err := Builder().
+		Source("dtn://src").
+		Destination("dtn://dst").
+		CreationTimestampNow().
+		Lifetime("5m").
+		PayloadBlock(make([]byte, 1024)).
+		Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	frags, err := bndl.Fragment(128)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !IsBundleReassemblable(frags) {
+		t.Fatal("Fragments are not reassemblable")
+	}
+
+	rand.Seed(23)
+	rand.Shuffle(len(frags), func(i, j int) {
+		frags[i], frags[j] = frags[j], frags[i]
+	})
+
+	if !IsBundleReassemblable(frags) {
+		t.Fatal("Fragments are not reassemblable")
+	}
+
+	if IsBundleReassemblable(frags[:len(frags)-1]) {
+		t.Fatal("Incomplete fragments are reassemblable")
 	}
 }

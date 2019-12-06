@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"sort"
 
 	"github.com/dtn7/cboring"
 )
@@ -154,4 +155,38 @@ func fragmentExtensionBlocksLen(b Bundle, mtu int) (first int, others int, err e
 	}
 
 	return
+}
+
+// prepareReassembly sorts the slice of Bundle fragments and checks if their are any gaps left.
+func prepareReassembly(bs []Bundle) error {
+	sort.Slice(bs, func(i, j int) bool {
+		return bs[i].PrimaryBlock.FragmentOffset < bs[j].PrimaryBlock.FragmentOffset
+	})
+
+	lastIndex := uint64(0)
+	for _, b := range bs {
+		if !b.PrimaryBlock.BundleControlFlags.Has(IsFragment) {
+			return fmt.Errorf("bundle is not a fragment")
+		}
+
+		if fragOff := b.PrimaryBlock.FragmentOffset; fragOff > lastIndex {
+			return fmt.Errorf("next fragment starts at offset %d, gap from %d to %d", fragOff, lastIndex, fragOff)
+		} else if payloadBlock, err := b.PayloadBlock(); err != nil {
+			return err
+		} else {
+			lastIndex = fragOff + uint64(len(payloadBlock.Value.(*PayloadBlock).Data()))
+		}
+	}
+
+	if total := bs[0].PrimaryBlock.TotalDataLength; total != lastIndex {
+		return fmt.Errorf("last index is %d and does not match total length of %d", lastIndex, total)
+	}
+
+	return nil
+}
+
+// IsBundleReassemblable checks if a Bundle can be reassembled from the given fragments. This method might sort the
+// given array as a side effect.
+func IsBundleReassemblable(bs []Bundle) bool {
+	return prepareReassembly(bs) == nil
 }
