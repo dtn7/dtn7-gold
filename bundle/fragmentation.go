@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+
+	"github.com/dtn7/cboring"
 )
 
 // Fragment a Bundle into multiple Bundles, with each serialized Bundle limited to mtu bytes.
@@ -27,7 +29,7 @@ func (b Bundle) Fragment(mtu int) (bs []Bundle, err error) {
 	}
 	payloadBlockLen = len(payloadBlock.Value.(*PayloadBlock).Data())
 
-	if extFirstOverhead, extOtherOverhead, err = fragmentExtensionBlocksLen(b); err != nil {
+	if extFirstOverhead, extOtherOverhead, err = fragmentExtensionBlocksLen(b, mtu); err != nil {
 		return
 	}
 
@@ -48,7 +50,7 @@ func (b Bundle) Fragment(mtu int) (bs []Bundle, err error) {
 			overhead += extOtherOverhead
 		}
 
-		if overhead > mtu {
+		if overhead >= mtu {
 			err = fmt.Errorf("bundle overhead of fragment %d exceeds MTU", i)
 			return
 		}
@@ -92,29 +94,41 @@ func (b Bundle) Fragment(mtu int) (bs []Bundle, err error) {
 
 // fragmentPrimaryBlock creates a fragment's Primary Block and calculates its length.
 func fragmentPrimaryBlock(pb PrimaryBlock, fragmentOffset, totalDataLength int) (fragPb PrimaryBlock, l int, err error) {
-	fragPb = pb
-
-	fragPb.BundleControlFlags |= IsFragment
-	fragPb.CRCType = CRC32
-	fragPb.FragmentOffset = uint64(fragmentOffset)
-	fragPb.TotalDataLength = uint64(totalDataLength)
+	fragPb = PrimaryBlock{
+		Version:            pb.Version,
+		BundleControlFlags: pb.BundleControlFlags | IsFragment,
+		CRCType:            CRC32,
+		Destination:        pb.Destination,
+		SourceNode:         pb.SourceNode,
+		ReportTo:           pb.ReportTo,
+		CreationTimestamp:  pb.CreationTimestamp,
+		Lifetime:           pb.Lifetime,
+		FragmentOffset:     uint64(fragmentOffset),
+		TotalDataLength:    uint64(totalDataLength),
+	}
 
 	buff := new(bytes.Buffer)
 
-	err = pb.MarshalCbor(buff)
+	err = fragPb.MarshalCbor(buff)
 	l = buff.Len()
 	return
 }
 
 // fragmentExtensionBlocksLen calculates the estimated maximum length for the Extension Blocks for the
 // first and the other fragments.
-func fragmentExtensionBlocksLen(b Bundle) (first int, others int, err error) {
+func fragmentExtensionBlocksLen(b Bundle, mtu int) (first int, others int, err error) {
 	buff := new(bytes.Buffer)
 
 	for _, cb := range b.CanonicalBlocks {
 		if cb.TypeCode() == ExtBlockTypePayloadBlock {
-			continue
+			cb = CanonicalBlock{
+				BlockNumber:       cb.BlockNumber,
+				BlockControlFlags: cb.BlockControlFlags,
+				Value:             NewPayloadBlock(nil),
+			}
 		}
+
+		cb.CRCType = CRC32
 
 		if err = cb.MarshalCbor(buff); err != nil {
 			return
@@ -124,6 +138,16 @@ func fragmentExtensionBlocksLen(b Bundle) (first int, others int, err error) {
 		first += cbLen
 		if cb.BlockControlFlags.Has(ReplicateBlock) {
 			others += cbLen
+		}
+
+		if cb.TypeCode() == ExtBlockTypePayloadBlock {
+			// Update the byte string length field
+			buff.Reset()
+			if err = cboring.WriteByteStringLen(uint64(mtu), buff); err != nil {
+				return
+			}
+			first += buff.Len() - 1
+			others += cbLen + buff.Len() - 1
 		}
 
 		buff.Reset()
