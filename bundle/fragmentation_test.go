@@ -149,3 +149,74 @@ func TestIsBundleReassemblable(t *testing.T) {
 		t.Fatal("Incomplete fragments are reassemblable")
 	}
 }
+
+func TestReassembleFragments(t *testing.T) {
+	payloadData := make([]byte, 1024)
+	rand.Seed(23)
+	_, _ = rand.Read(payloadData)
+
+	bndl, err := Builder().
+		Source("dtn://src").
+		Destination("dtn://dst").
+		CreationTimestampNow().
+		Lifetime("5m").
+		PayloadBlock(payloadData).
+		Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	frags, err := bndl.Fragment(128)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rand.Seed(42)
+	rand.Shuffle(len(frags), func(i, j int) {
+		frags[i], frags[j] = frags[j], frags[i]
+	})
+
+	bndl2, err := ReassembleFragments(frags)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var buff1, buff2 bytes.Buffer
+	if err = bndl.MarshalCbor(&buff1); err != nil {
+		t.Fatal(err)
+	}
+	if err = bndl2.MarshalCbor(&buff2); err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(buff1.Bytes(), buff2.Bytes()) {
+		t.Fatalf("Bundles differ:\n%x\n%x", buff1.Bytes(), buff2.Bytes())
+	}
+}
+
+func TestReassembleFragmentsMissing(t *testing.T) {
+	bndl, err := Builder().
+		Source("dtn://src").
+		Destination("dtn://dst").
+		CreationTimestampNow().
+		Lifetime("5m").
+		PayloadBlock(make([]byte, 1024)).
+		Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	frags, err := bndl.Fragment(128)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rand.Seed(42)
+	rand.Shuffle(len(frags), func(i, j int) {
+		frags[i], frags[j] = frags[j], frags[i]
+	})
+
+	if _, err = ReassembleFragments(frags[:len(frags)-1]); err == nil {
+		t.Fatalf("Expected error for missing fragment")
+	}
+}

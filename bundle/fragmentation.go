@@ -159,6 +159,10 @@ func fragmentExtensionBlocksLen(b Bundle, mtu int) (first int, others int, err e
 
 // prepareReassembly sorts the slice of Bundle fragments and checks if their are any gaps left.
 func prepareReassembly(bs []Bundle) error {
+	if len(bs) == 0 {
+		return fmt.Errorf("slice of fragments is empty")
+	}
+
 	sort.Slice(bs, func(i, j int) bool {
 		return bs[i].PrimaryBlock.FragmentOffset < bs[j].PrimaryBlock.FragmentOffset
 	})
@@ -189,4 +193,58 @@ func prepareReassembly(bs []Bundle) error {
 // given array as a side effect.
 func IsBundleReassemblable(bs []Bundle) bool {
 	return prepareReassembly(bs) == nil
+}
+
+// mergeFragmentPayload merges the fragmented payload.
+func mergeFragmentPayload(bs []Bundle) (data []byte, err error) {
+	lastIndex := 0
+	for _, b := range bs {
+		var (
+			fragStartIndex   int
+			fragPayloadBlock *CanonicalBlock
+			fragPayloadData  []byte
+		)
+
+		fragStartIndex = int(b.PrimaryBlock.FragmentOffset)
+
+		if fragPayloadBlock, err = b.PayloadBlock(); err != nil {
+			return
+		}
+		fragPayloadData = fragPayloadBlock.Value.(*PayloadBlock).Data()
+
+		data = append(data, fragPayloadData[lastIndex-fragStartIndex:]...)
+		lastIndex = fragStartIndex + len(fragPayloadData)
+	}
+
+	return
+}
+
+// ReassembleFragments merges a slice of Bundle fragments into the reassembled Bundle.
+func ReassembleFragments(bs []Bundle) (b Bundle, err error) {
+	if err = prepareReassembly(bs); err != nil {
+		return
+	}
+
+	b.PrimaryBlock = bs[0].PrimaryBlock
+	b.PrimaryBlock.BundleControlFlags &^= IsFragment
+	b.PrimaryBlock.FragmentOffset = 0
+	b.PrimaryBlock.TotalDataLength = 0
+
+	for _, cb := range bs[0].CanonicalBlocks {
+		if cb.TypeCode() == ExtBlockTypePayloadBlock {
+			continue
+		}
+
+		b.AddExtensionBlock(cb)
+	}
+
+	if payload, payloadErr := mergeFragmentPayload(bs); payloadErr != nil {
+		err = payloadErr
+		return
+	} else {
+		b.AddExtensionBlock(NewCanonicalBlock(1, 0, NewPayloadBlock(payload)))
+	}
+
+	err = b.CheckValid()
+	return
 }
