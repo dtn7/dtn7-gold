@@ -221,8 +221,10 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 			err = lErr
 			return
 		} else {
-			discoveryMsgs = append(discoveryMsgs, discoMsg)
 			c.RegisterConvergable(convRec)
+			if discoMsg != (discovery.DiscoveryMessage{}) {
+				discoveryMsgs = append(discoveryMsgs, discoMsg)
+			}
 		}
 	}
 
