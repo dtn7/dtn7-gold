@@ -241,7 +241,11 @@ func (c *Core) SendStatusReport(bp BundlePack,
 	}
 
 	var aaEndpoint = bp.Receiver
-	if !c.HasEndpoint(aaEndpoint) {
+	if aaEndpoint == bundle.DtnNone() {
+		aaEndpoint = c.NodeId
+	}
+
+	if !c.HasEndpoint(aaEndpoint) && aaEndpoint != c.NodeId {
 		log.WithFields(log.Fields{
 			"bundle":   bp.ID(),
 			"endpoint": aaEndpoint,
