@@ -29,7 +29,7 @@ func (t Transmission) IsFinished() bool {
 }
 
 func (t Transmission) String() string {
-	return fmt.Sprintf("Transmission(TID: %d, Finished: %T)", t.TransmissionID, t.IsFinished())
+	return fmt.Sprintf("Transmission(TID: %d, Finished: %t)", t.TransmissionID, t.IsFinished())
 }
 
 // IncomingTransmission are the incoming Transmissions from external sources.

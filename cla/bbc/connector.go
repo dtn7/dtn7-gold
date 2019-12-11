@@ -44,47 +44,68 @@ func (c *Connector) handler() {
 	for {
 		if frag, err := c.modem.Receive(); err != nil {
 			logger.WithError(err).Warn("Receiving Fragments from Modem errored")
-		} else if trans, ok := c.transmissions[frag.TransmissionID()]; ok {
-			if fin, err := trans.ReadFragment(frag); err != nil {
-				logger.WithError(err).WithField("transaction", trans).Warn("Reading Fragment from Modem errored")
-			} else if fin {
-				if bndl, err := trans.Bundle(); err != nil {
-					logger.WithError(err).WithField("transaction", trans).Warn(
-						"Extracting Bundle from Transmission errored")
-				} else {
-					logger.WithFields(log.Fields{
-						"transaction": trans,
-						"bundle":      bndl.ID(),
-					}).Info("Bundle Broadcasting Connector received Bundle")
-
-					c.reportChan <- cla.NewConvergenceReceivedBundle(c, bundle.DtnNone(), &bndl)
-					delete(c.transmissions, frag.TransmissionID())
-				}
-			} else {
-				logger.WithField("transaction", trans).Debug("Received next Fragment for a Transaction")
-			}
-		} else { // Transmission ID is not stored in the map
-			if trans, err := NewIncomingTransmission(frag); err != nil {
-				logger.WithError(err).Warn("Creating new Transmission from first Fragment errored")
-			} else if trans.IsFinished() {
-				if bndl, err := trans.Bundle(); err != nil {
-					logger.WithError(err).WithField("transaction", trans).Warn(
-						"Extracting Bundle from Transmission errored")
-				} else {
-					logger.WithFields(log.Fields{
-						"transaction": trans,
-						"bundle":      bndl.ID(),
-					}).Info("Bundle Broadcasting Connector received Bundle")
-
-					c.reportChan <- cla.NewConvergenceReceivedBundle(c, bundle.DtnNone(), &bndl)
-				}
-			} else {
-				logger.WithField("transaction", trans).Debug("Starting new Transaction")
-
-				c.transmissions[frag.TransmissionID()] = trans
-			}
+		} else if err = c.handleIncomingFragment(frag); err != nil {
+			logger.WithError(err).Warn("Handling incoming Fragment errored")
 		}
 	}
+}
+
+// handleIncomingFragment inspects a new Fragment and tries to add it to a new or a known Transmission.
+func (c *Connector) handleIncomingFragment(frag Fragment) (err error) {
+	var (
+		logger = log.WithField("bbc", c.Address())
+
+		transmission *IncomingTransmission
+		known        bool
+	)
+
+	if transmission, known = c.transmissions[frag.TransmissionID()]; !known {
+		transmission, err = c.handleIncomingNewTransmission(frag)
+	} else {
+		err = c.handleIncomingKnownTransmission(frag, transmission)
+	}
+	if err != nil {
+		logger.WithError(err).WithField("transmission", transmission).Warn(
+			"Fetching or creating Transmission errored")
+
+		return
+	}
+
+	if transmission.IsFinished() {
+		var bndl bundle.Bundle
+
+		if bndl, err = transmission.Bundle(); err == nil {
+			logger.WithFields(log.Fields{
+				"transaction": transmission,
+				"bundle":      bndl.ID(),
+			}).Info("Bundle Broadcasting Connector received Bundle")
+
+			c.reportChan <- cla.NewConvergenceReceivedBundle(c, bundle.DtnNone(), &bndl)
+		} else {
+			// Returning error variable err keeps its value and cleanup code follows. That's why we don't return here.
+			logger.WithError(err).WithField("transmission", transmission).Warn(
+				"Extracting Bundle from Transmission errored")
+		}
+
+		delete(c.transmissions, transmission.TransmissionID)
+	}
+	return
+}
+
+// handleIncomingNewTransmission creates a new Transmission for a Fragment with an unknown Transmission ID.
+func (c *Connector) handleIncomingNewTransmission(frag Fragment) (trans *IncomingTransmission, err error) {
+	if trans, err = NewIncomingTransmission(frag); err == nil {
+		c.transmissions[trans.TransmissionID] = trans
+	}
+	return
+}
+
+// handleIncomingKnownTransmission updates a known Transmission with the next Fragment.
+func (c *Connector) handleIncomingKnownTransmission(frag Fragment, trans *IncomingTransmission) (err error) {
+	if _, err = trans.ReadFragment(frag); err != nil {
+		delete(c.transmissions, trans.TransmissionID)
+	}
+	return
 }
 
 func (c *Connector) Close() {
