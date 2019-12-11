@@ -82,11 +82,11 @@ func sendMetadataBundle(c *Core, source bundle.EndpointID, destination bundle.En
 	return nil
 }
 
-// filterCLAs filters the node's current peers by which ones have already received a copy of the bundle
-func filterCLAs(bundleItem storage.BundleItem, clas []cla.ConvergenceSender) (filtered []cla.ConvergenceSender, sentEids []bundle.EndpointID) {
+// filterCLAs filters the node's which already received a Bundle for a specific routing algorithm, e.g., "epidemic".
+func filterCLAs(bundleItem storage.BundleItem, clas []cla.ConvergenceSender, algorithm string) (filtered []cla.ConvergenceSender, sentEids []bundle.EndpointID) {
 	filtered = make([]cla.ConvergenceSender, 0)
 
-	sentEids, ok := bundleItem.Properties["routing/sent"].([]bundle.EndpointID)
+	sentEids, ok := bundleItem.Properties["routing/"+algorithm+"/sent"].([]bundle.EndpointID)
 	if !ok {
 		sentEids = make([]bundle.EndpointID, 0)
 	}

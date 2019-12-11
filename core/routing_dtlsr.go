@@ -250,7 +250,7 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSend
 			return
 		}
 
-		sender, sentEids := filterCLAs(bundleItem, dtlsr.c.claManager.Sender())
+		sender, sentEids := filterCLAs(bundleItem, dtlsr.c.claManager.Sender(), "dtlsr")
 
 		// broadcast bundles are always forwarded to everyone
 		log.WithFields(log.Fields{

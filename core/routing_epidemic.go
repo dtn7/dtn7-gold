@@ -86,7 +86,7 @@ func (er *EpidemicRouting) clasForBundle(bp BundlePack, updateDb bool) (css []cl
 		return nil, false
 	}
 
-	css, sentEids := filterCLAs(bi, er.c.claManager.Sender())
+	css, sentEids := filterCLAs(bi, er.c.claManager.Sender(), "epidemic")
 
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),
