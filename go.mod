@@ -4,7 +4,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/RyanCarrier/dijkstra v0.0.0-20190613134106-3f5a38e7002e
 	github.com/dtn7/cboring v0.1.4
-	github.com/dtn7/rf95modem-go v0.1.3
+	github.com/dtn7/rf95modem-go v0.1.4
 	github.com/felixge/tcpkeepalive v0.0.0-20160804073959-5bb0b2dea91e
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/hashicorp/go-multierror v1.0.0
@@ -15,7 +15,7 @@ require (
 	github.com/timshannon/badgerhold v0.0.0-20190415130923-192650dd187a
 	github.com/ugorji/go/codec v1.1.7
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
-	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd // indirect
+	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
 )
 
 exclude (
