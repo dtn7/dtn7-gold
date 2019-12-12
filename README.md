@@ -1,4 +1,4 @@
-# dtn7-go [![Build Status](https://travis-ci.org/dtn7/dtn7-go.svg?branch=master)](https://travis-ci.org/dtn7/dtn7-go) [![GoDoc](https://godoc.org/github.com/dtn7/dtn7-go?status.svg)](https://godoc.org/github.com/dtn7/dtn7-go)
+# dtn7-go [![Build Status](https://github.com/dtn7/dtn7-go/workflows/Build%20dtn7-go/badge.svg)](https://github.com/dtn7/dtn7-go/actions) [![GoDoc](https://godoc.org/github.com/dtn7/dtn7-go?status.svg)](https://godoc.org/github.com/dtn7/dtn7-go)
 
 Delay-Tolerant Networking software suite and library based on the Bundle
 Protocol Version 7.
@@ -17,7 +17,7 @@ Bundles might be exchanged between nodes by the following protocols.
 - Minimal TCP Convergence-Layer Protocol
   ([draft-ietf-dtn-mtcpcl-01.txt][dtn-mtcpcl-01])
 - Bundle Broadcasting Connector, a generic Broadcasting Interface
-    - [rf95modem] based CLA for LoRa PHY 
+    - [rf95modem] based CLA for LoRa PHY
 
 ### Routing
 One of the following routing protocols might be used.
