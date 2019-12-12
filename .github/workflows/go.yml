@@ -1,0 +1,28 @@
+name: Go
+on: [push, pull_request]
+jobs:
+  build_go:
+    name: Build dtn7-go
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        go: [ '1.11', '1.12', '1.13' ]
+    steps:
+    - name: Set up Go ${{ matrix.go }}
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Check out code
+      uses: actions/checkout@v1
+
+    - name: Build on Go ${{ matrix.go }}
+      run: go build -v ./...
+
+    - name: Check syntax
+      run: |
+        gofmt -l -e -d .
+        go vet ./...
+
+    - name: Test
+      run: go test -v -race ./...
