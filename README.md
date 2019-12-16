@@ -31,6 +31,15 @@ One of the following routing protocols might be used.
 
 ## Software
 ### Installation
+
+#### Package Manager
+
+- Arch Linux: [`dtn7` (AUR)][aur-dtn7]
+- Nix / NixOS: [*dtn7/nur-packages*][nur-dtn7] as a [NUR][nur]
+
+
+#### From Source
+
 Install the [Go programming language][golang], version 1.11 or later.
 
 ```bash
@@ -91,10 +100,13 @@ interested in working with this code, check out the
 [documentation][godoc].
 
 
+[aur-dtn7]: https://aur.archlinux.org/packages/dtn7/
 [dtn-bpbis-17]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-17
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
 [dtn-tcpcl-14]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-14
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
 [godoc]: https://godoc.org/github.com/dtn7/dtn7-go
 [golang]: https://golang.org/
+[nur-dtn7]: https://github.com/dtn7/nur-packages
+[nur]: https://github.com/nix-community/NUR
 [rf95modem]: https://github.com/gh0st42/rf95modem
