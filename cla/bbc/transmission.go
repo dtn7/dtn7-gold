@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/ulikunitz/xz"
 )
 
 // Transmission allows the transmission of data, for example Bundles, between several endpoints.
@@ -93,7 +94,13 @@ func (t *IncomingTransmission) Bundle() (bndl bundle.Bundle, err error) {
 		return
 	}
 
-	err = bndl.UnmarshalCbor(bytes.NewBuffer(t.Payload))
+	xzR, xzErr := xz.NewReader(bytes.NewBuffer(t.Payload))
+	if xzErr != nil {
+		err = xzErr
+		return
+	}
+
+	err = bndl.UnmarshalCbor(xzR)
 	return
 }
 
@@ -105,8 +112,22 @@ type OutgoingTransmission struct {
 	nextSegmentNo byte
 }
 
-// NewOutgoingTransmission creates a new OutgoingTransmission for some payload.
-func NewOutgoingTransmission(transmissionID byte, payload []byte, mtu int) (t *OutgoingTransmission, err error) {
+// NewOutgoingTransmission creates a new OutgoingTransmission for a Bundle.
+func NewOutgoingTransmission(transmissionID byte, bndl bundle.Bundle, mtu int) (t *OutgoingTransmission, err error) {
+	var buf bytes.Buffer
+	if xzW, xzErr := xz.NewWriter(&buf); xzErr != nil {
+		err = xzErr
+		return
+	} else if err = bndl.WriteBundle(xzW); err != nil {
+		return
+	} else if err = xzW.Close(); err != nil {
+		return
+	}
+
+	return newPlainOutgoingTransmission(transmissionID, buf.Bytes(), mtu)
+}
+
+func newPlainOutgoingTransmission(transmissionID byte, payload []byte, mtu int) (t *OutgoingTransmission, err error) {
 	var fin = false
 	if len(payload) == 0 {
 		fin = true

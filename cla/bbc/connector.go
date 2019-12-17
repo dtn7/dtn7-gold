@@ -1,7 +1,6 @@
 package bbc
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 
@@ -197,12 +196,7 @@ func (c *Connector) IsPermanent() bool {
 }
 
 func (c *Connector) Send(bndl *bundle.Bundle) error {
-	var buf bytes.Buffer
-	if err := bndl.WriteBundle(&buf); err != nil {
-		return err
-	}
-
-	var t, tErr = NewOutgoingTransmission(c.tid, buf.Bytes(), c.modem.Mtu())
+	var t, tErr = NewOutgoingTransmission(c.tid, *bndl, c.modem.Mtu())
 	if tErr != nil {
 		return tErr
 	}

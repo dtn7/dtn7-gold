@@ -40,7 +40,7 @@ func TestSuccessfulIncomingTransmission(t *testing.T) {
 func TestSuccessfulOutgoingTransmission(t *testing.T) {
 	payload := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18}
 
-	tr, trErr := NewOutgoingTransmission(3, payload, 3)
+	tr, trErr := newPlainOutgoingTransmission(3, payload, 3)
 	if trErr != nil {
 		t.Fatal(trErr)
 	}
@@ -72,7 +72,7 @@ func TestSuccessfulOutgoingTransmission(t *testing.T) {
 
 func TestDummyTransmission(t *testing.T) {
 	payload := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18}
-	out, outErr := NewOutgoingTransmission(0, payload, 4)
+	out, outErr := newPlainOutgoingTransmission(0, payload, 4)
 	if outErr != nil {
 		t.Fatal(outErr)
 	}
@@ -105,7 +105,7 @@ func TestDummyTransmission(t *testing.T) {
 
 func TestTransmissionMissingFragment(t *testing.T) {
 	payload := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18}
-	out, outErr := NewOutgoingTransmission(0, payload, 4)
+	out, outErr := newPlainOutgoingTransmission(0, payload, 4)
 	if outErr != nil {
 		t.Fatal(outErr)
 	}
