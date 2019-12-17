@@ -3,6 +3,7 @@ package bbc
 import (
 	"bytes"
 	"fmt"
+	"io"
 
 	log "github.com/sirupsen/logrus"
 
@@ -45,17 +46,21 @@ func (c *Connector) Start() (error, bool) {
 }
 
 func (c *Connector) handler() {
+	defer close(c.closedAck)
+
 	var logger = log.WithField("bbc", c.Address())
 
 	for {
 		select {
 		case <-c.closedSyn:
 			logger.Info("Received close signal, stopping handler")
-			close(c.closedAck)
 			return
 
 		default:
-			if frag, err := c.modem.Receive(); err != nil {
+			if frag, err := c.modem.Receive(); err == io.EOF {
+				logger.Info("Read EOF, stopping handler")
+				return
+			} else if err != nil {
 				logger.WithError(err).Warn("Receiving Fragments from Modem errored")
 			} else if err = c.handleIncomingFragment(frag); err != nil {
 				logger.WithError(err).Warn("Handling incoming Fragment errored")
@@ -123,11 +128,12 @@ func (c *Connector) handleIncomingKnownTransmission(frag Fragment, trans *Incomi
 }
 
 func (c *Connector) Close() {
+	close(c.closedSyn)
+
 	if err := c.modem.Close(); err != nil {
 		log.WithField("bbc", c.Address()).WithError(err).Warn("Closing Modem errored")
 	}
 
-	close(c.closedSyn)
 	<-c.closedAck
 }
 

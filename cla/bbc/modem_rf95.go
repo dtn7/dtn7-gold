@@ -16,7 +16,7 @@ type Rf95Modem struct {
 
 // NewRf95Modem creates a new Rf95Modem using a serial connection to the given device, e.g., /dev/ttyUSB0.
 func NewRf95Modem(device string) (rfModem *Rf95Modem, err error) {
-	if m, mErr := rf95.OpenModem(device); mErr != nil {
+	if m, mErr := rf95.OpenSerial(device); mErr != nil {
 		err = mErr
 	} else {
 		rfModem = &Rf95Modem{
