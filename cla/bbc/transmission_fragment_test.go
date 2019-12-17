@@ -1,6 +1,8 @@
 package bbc
 
 import (
+	"bytes"
+	"reflect"
 	"testing"
 )
 
@@ -84,19 +86,36 @@ func TestNextSequenceNumber(t *testing.T) {
 
 	for _, test := range tests {
 		if succ := nextSequenceNumber(test.seq); succ != test.succ {
-			t.Fatalf("Succeeding sequence number of %x is %x, not %x", test.seq, succ, test.succ)
+			t.Fatalf("Succeeding sequence number of %d is %d, not %d", test.seq, succ, test.succ)
 		}
 	}
 }
 
-/*
+func TestNextTransmissionId(t *testing.T) {
+	tests := []struct {
+		tid  byte
+		succ byte
+	}{
+		{0, 1},
+		{1, 2},
+		{254, 255},
+		{255, 0},
+	}
+
+	for _, test := range tests {
+		if succ := nextTransmissionId(test.tid); succ != test.succ {
+			t.Fatalf("Succeeding transmission ID of %d is %d, not %d", test.tid, succ, test.succ)
+		}
+	}
+}
+
 func TestFragmentBytes(t *testing.T) {
 	tests := []struct {
 		seq []byte
 		f   Fragment
 	}{
-		{[]byte{0xC0, 0xFF, 0xEE}, Fragment{0xC0, []byte{0xFF, 0xEE}}},
-		{[]byte{0xAC, 0xAB}, Fragment{0xAc, []byte{0xAB}}},
+		{[]byte{0xC0, 0xFF, 0xEE}, Fragment{0xC0, 0xFF, []byte{0xEE}}},
+		{[]byte{0xAC, 0xAB, 0xAC, 0xAB}, Fragment{0xAC, 0xAB, []byte{0xAC, 0xAB}}},
 	}
 
 	for _, test := range tests {
@@ -111,5 +130,3 @@ func TestFragmentBytes(t *testing.T) {
 		}
 	}
 }
-
-*/

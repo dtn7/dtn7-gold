@@ -29,7 +29,7 @@ func NewConnector(modem Modem, permanent bool) *Connector {
 	return &Connector{
 		modem:         modem,
 		permanent:     permanent,
-		tid:           1,
+		tid:           randomTransmissionId(),
 		transmissions: make(map[byte]*IncomingTransmission),
 		reportChan:    make(chan cla.ConvergenceStatus, 64),
 	}
@@ -153,6 +153,8 @@ func (c *Connector) Send(bndl *bundle.Bundle) error {
 	if tErr != nil {
 		return tErr
 	}
+
+	c.tid = nextTransmissionId(c.tid)
 
 	for {
 		f, fin, err := t.WriteFragment()

@@ -11,7 +11,7 @@ import (
 //
 // Due to the maximum transmission unit (MTU), most Transmissions are likely to be fragmented. This results
 // in Fragments. In order to keep the Fragments apart and to associate them with their Transmission, a
-// transmission ID exists. Since the data size is very limited, the transmission ID is reduced to four bits.
+// transmission ID exists. Since the data size is very limited, the transmission ID is reduced to a byte.
 // In order to avoid collisions, the transmission ID should be chosen as randomly or cleverly as possible.
 //
 // In the following, a distinction is made between incoming and outgoing Transmissions: IncomingTransmission
@@ -107,11 +107,6 @@ type OutgoingTransmission struct {
 
 // NewOutgoingTransmission creates a new OutgoingTransmission for some payload.
 func NewOutgoingTransmission(transmissionID byte, payload []byte, mtu int) (t *OutgoingTransmission, err error) {
-	if transmissionID&0xF0 != 0 {
-		err = fmt.Errorf("transmission ID %x is greater than four bits", transmissionID)
-		return
-	}
-
 	var fin = false
 	if len(payload) == 0 {
 		fin = true

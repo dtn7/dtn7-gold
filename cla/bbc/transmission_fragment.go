@@ -2,8 +2,10 @@ package bbc
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"math/big"
 )
 
 // Fragment is a part of a Transmission. Multiple Fragments represent an entire Transmission.
@@ -112,6 +114,17 @@ func (f Fragment) Bytes() []byte {
 	}
 
 	return buf.Bytes()
+}
+
+// randomTransmissionId creates a pseudorandom transmission ID.
+func randomTransmissionId() byte {
+	randInt, _ := rand.Int(rand.Reader, big.NewInt(256))
+	return byte(randInt.Int64())
+}
+
+// nextTransmissionId returns the succeeding transmission ID.
+func nextTransmissionId(tid byte) byte {
+	return tid + 1
 }
 
 // nextSequenceNumber returns the succeeding sequence number.
