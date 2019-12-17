@@ -19,6 +19,9 @@ type Connector struct {
 	tid           byte
 	transmissions map[byte]*IncomingTransmission
 	reportChan    chan cla.ConvergenceStatus
+
+	closedSyn chan struct{}
+	closedAck chan struct{}
 }
 
 // NewConnector creates a new Connector, wrapping around the given Modem.
@@ -33,6 +36,9 @@ func NewConnector(modem Modem, permanent bool) *Connector {
 }
 
 func (c *Connector) Start() (error, bool) {
+	c.closedSyn = make(chan struct{})
+	c.closedAck = make(chan struct{})
+
 	go c.handler()
 
 	return nil, false
@@ -42,10 +48,18 @@ func (c *Connector) handler() {
 	var logger = log.WithField("bbc", c.Address())
 
 	for {
-		if frag, err := c.modem.Receive(); err != nil {
-			logger.WithError(err).Warn("Receiving Fragments from Modem errored")
-		} else if err = c.handleIncomingFragment(frag); err != nil {
-			logger.WithError(err).Warn("Handling incoming Fragment errored")
+		select {
+		case <-c.closedSyn:
+			logger.Info("Received close signal, stopping handler")
+			close(c.closedAck)
+			return
+
+		default:
+			if frag, err := c.modem.Receive(); err != nil {
+				logger.WithError(err).Warn("Receiving Fragments from Modem errored")
+			} else if err = c.handleIncomingFragment(frag); err != nil {
+				logger.WithError(err).Warn("Handling incoming Fragment errored")
+			}
 		}
 	}
 }
@@ -112,6 +126,9 @@ func (c *Connector) Close() {
 	if err := c.modem.Close(); err != nil {
 		log.WithField("bbc", c.Address()).WithError(err).Warn("Closing Modem errored")
 	}
+
+	close(c.closedSyn)
+	<-c.closedAck
 }
 
 func (c *Connector) Channel() chan cla.ConvergenceStatus {

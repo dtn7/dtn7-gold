@@ -2,6 +2,7 @@ package bbc
 
 import (
 	"testing"
+	"time"
 
 	"github.com/dtn7/dtn7-go/bundle"
 )
@@ -28,6 +29,39 @@ func TestConnector(t *testing.T) {
 
 	uff := <-c.Channel()
 	t.Log(uff)
+}
+
+func TestConnectorUnregisterTransmission(t *testing.T) {
+	hub := newDummyHubDrop(3)
+	c := NewConnector(newDummyModem(10, hub), true)
+	_, _ = c.Start()
+
+	b, bErr := bundle.Builder().
+		Source("dtn://src/").
+		Destination("dtn://dst/").
+		CreationTimestampNow().
+		Lifetime("10m").
+		PayloadBlock([]byte("hello world")).
+		Build()
+	if bErr != nil {
+		t.Fatal(bErr)
+	}
+
+	if err := c.Send(&b); err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case rec := <-c.Channel():
+		t.Fatalf("Received Bundle: %v", rec)
+
+	case <-time.After(100 * time.Millisecond):
+		c.Close()
+	}
+
+	if len(c.transmissions) > 0 {
+		t.Fatalf("Connector holds Transmissions after failed reception: %v", c.transmissions)
+	}
 }
 
 // The following test relies on a system which is equipped with two rf95modems..

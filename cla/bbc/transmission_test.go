@@ -102,3 +102,31 @@ func TestDummyTransmission(t *testing.T) {
 		t.Fatalf("Sent payload of %x, got %x", payload, in.Payload)
 	}
 }
+
+func TestTransmissionMissingFragment(t *testing.T) {
+	payload := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18}
+	out, outErr := NewOutgoingTransmission(0, payload, 4)
+	if outErr != nil {
+		t.Fatal(outErr)
+	}
+
+	f, _, fErr := out.WriteFragment()
+	if fErr != nil {
+		t.Fatal(fErr)
+	}
+	in, inErr := NewIncomingTransmission(f)
+	if inErr != nil {
+		t.Fatal(inErr)
+	}
+
+	// Drop second Fragment
+	if _, _, fErr := out.WriteFragment(); fErr != nil {
+		t.Fatal(fErr)
+	}
+
+	if f, _, fErr := out.WriteFragment(); fErr != nil {
+		t.Fatal(fErr)
+	} else if _, fErr := in.ReadFragment(f); fErr == nil {
+		t.Fatalf("Reading skipped Fragment did not errored")
+	}
+}
