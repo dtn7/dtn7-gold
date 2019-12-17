@@ -15,12 +15,13 @@ import (
 // to receive and send Bundles over a Modem. However, based on the broadcasting nature of this CLA, addressing
 // specific recipients is not possible. Furthermore, attributing senders is also not possible.
 type Connector struct {
-	modem         Modem
-	permanent     bool
-	tid           byte
-	transmissions map[byte]*IncomingTransmission
-	fragmentOut   chan Fragment
-	reportChan    chan cla.ConvergenceStatus
+	modem            Modem
+	permanent        bool
+	tid              byte
+	transmissions    map[byte]*IncomingTransmission
+	fragmentOut      chan Fragment
+	failTransmission chan byte
+	reportChan       chan cla.ConvergenceStatus
 
 	closedRSyn chan struct{}
 	closedRAck chan struct{}
@@ -31,12 +32,13 @@ type Connector struct {
 // NewConnector creates a new Connector, wrapping around the given Modem.
 func NewConnector(modem Modem, permanent bool) *Connector {
 	return &Connector{
-		modem:         modem,
-		permanent:     permanent,
-		tid:           randomTransmissionId(),
-		transmissions: make(map[byte]*IncomingTransmission),
-		fragmentOut:   make(chan Fragment, 64),
-		reportChan:    make(chan cla.ConvergenceStatus, 64),
+		modem:            modem,
+		permanent:        permanent,
+		tid:              randomTransmissionId(),
+		transmissions:    make(map[byte]*IncomingTransmission),
+		fragmentOut:      make(chan Fragment, 64),
+		failTransmission: make(chan byte, 64),
+		reportChan:       make(chan cla.ConvergenceStatus, 64),
 	}
 }
 
@@ -96,9 +98,8 @@ func (c *Connector) handleIncomingFragment(frag Fragment) (err error) {
 		logger.WithField("fragment", frag).Info("Broadcasting failure Fragment")
 	}()
 
-	// TODO
 	if frag.FailBit() {
-		logger.WithField("fragment", frag).Info("Received failure Fragment")
+		c.failTransmission <- frag.TransmissionID()
 		return
 	}
 
@@ -209,25 +210,32 @@ func (c *Connector) Send(bndl *bundle.Bundle) error {
 	c.tid = nextTransmissionId(c.tid)
 
 	for {
-		f, fin, err := t.WriteFragment()
-		logger := log.WithFields(log.Fields{
-			"bbc":      c.Address(),
-			"fragment": f,
-		})
+		select {
+		case failedTransmissionId := <-c.failTransmission:
+			if failedTransmissionId == t.TransmissionID {
+				log.WithField("bbc", c.Address()).Warn("Received failure Fragment")
+				return fmt.Errorf("peer send failure Fragment")
+			}
 
-		if err != nil {
-			logger.WithError(err).Warn("Creating Fragment errored")
-			return err
-		}
+		default:
+			f, fin, err := t.WriteFragment()
+			logger := log.WithFields(log.Fields{
+				"bbc":      c.Address(),
+				"fragment": f,
+			})
 
-		c.fragmentOut <- f
-		if fin {
-			logger.Debug("Transmitted last Fragment")
-			break
+			if err != nil {
+				logger.WithError(err).Warn("Creating Fragment errored")
+				return err
+			}
+
+			c.fragmentOut <- f
+			if fin {
+				logger.Debug("Transmitted last Fragment")
+				return nil
+			}
 		}
 	}
-
-	return nil
 }
 
 func (c *Connector) GetPeerEndpointID() bundle.EndpointID {
