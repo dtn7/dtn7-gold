@@ -7,11 +7,11 @@ import (
 
 func TestSuccessfulIncomingTransmission(t *testing.T) {
 	fs := []Fragment{
-		NewFragment(0, 0, true, false, []byte{1, 2, 3, 4}),
-		NewFragment(0, 1, false, false, []byte{5, 6, 7, 8}),
-		NewFragment(0, 2, false, false, []byte{9, 10, 11, 12}),
-		NewFragment(0, 3, false, false, []byte{13, 14, 15, 16}),
-		NewFragment(0, 0, false, true, []byte{17, 18}),
+		NewFragment(0, 5, true, false, false, []byte{1, 2, 3, 4}),
+		NewFragment(0, 6, false, false, false, []byte{5, 6, 7, 8}),
+		NewFragment(0, 7, false, false, false, []byte{9, 10, 11, 12}),
+		NewFragment(0, 8, false, false, false, []byte{13, 14, 15, 16}),
+		NewFragment(0, 9, false, true, false, []byte{17, 18}),
 	}
 
 	tr, trErr := NewIncomingTransmission(fs[0])

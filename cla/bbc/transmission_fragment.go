@@ -8,97 +8,106 @@ import (
 
 // Fragment is a part of a Transmission. Multiple Fragments represent an entire Transmission.
 //
-// For identification, a tuple consisting of a transmission ID, a sequence number, a start and an end
-// bit is used. Because of memory reasons, the whole identifier has a size of one byte. First the
-// transmission ID with a length of four bits is given, followed by the two bit long sequence number and
-// the two start and end bits.
+// For identification, a tuple consisting of a transmission ID, a sequence number, a start bit, an end bit,
+// and a fail bit is used. Because of memory reasons, the whole header has a size of two bytes. First the
+// transmission ID with a length of one byte is given, followed by the two five long sequence number and
+// the three flags, the start, end and fail bits.
 //
 // The transmission ID is taken from the respective Transmission. If this Fragment is the first of a
 // Transmission, the start bit is set to one. The same applies to the end bit for the last Fragment.
 //
-// The two bit sequence number represents a simple binary counter, which is incremented for each Fragment.
-// Missing Fragments can thus be detected. Due to the length of two bits, a multiple of four Fragments must
-// be lost so that an error is not recognized. This seems less likely than an error detection by just one
-// alternating bit.
+// The five bit sequence number represents a simple binary counter, which is incremented for each Fragment.
+// Missing Fragments can be detected this way
 //
-// After the one byte identifier the payload of this Fragment follows. This can be as long as the particular
-// MTU will allow.
+// The header is followed by the payload. The total data can be as long as the particular MTU allows.
 //
 //     0   1   2   3   4   5   6   7
 //   +---+---+---+---+---+---+---+---+
-//   |Transmission ID|Seq. No|SB |EB |
+//   |Transmission ID                |
+//   +---+---+---+---+---+---+---+---+
+//   |Seq. No            |SB |EB |FB |
 //   +---+---+---+---+---+---+---+---+
 //   |                               |
 //   +            Payload            +
 //   |                               |
 //
 type Fragment struct {
-	identifier byte
-	Payload    []byte
+	transmissionId byte
+	identifier     byte
+	Payload        []byte
 }
 
 // fragmentIdentifierSize is the additional size for each Fragment's header.
-const fragmentIdentifierSize int = 1
+const fragmentIdentifierSize int = 2
 
 // NewFragment creates a new Fragment based on the given arguments.
-func NewFragment(transmissionID, sequenceNo byte, start, end bool, payload []byte) Fragment {
+func NewFragment(transmissionId, sequenceNo byte, start, end, fail bool, payload []byte) Fragment {
 	var identifier byte = 0x00
-	identifier |= (transmissionID & 0x0F) << 4
-	identifier |= (sequenceNo & 0x03) << 2
+	identifier |= (sequenceNo & 0x1F) << 3
 	if start {
-		identifier |= 0x02
+		identifier |= 0x04
 	}
 	if end {
+		identifier |= 0x02
+	}
+	if fail {
 		identifier |= 0x01
 	}
 
 	return Fragment{
-		identifier: identifier,
-		Payload:    payload,
+		transmissionId: transmissionId,
+		identifier:     identifier,
+		Payload:        payload,
 	}
 }
 
 func ParseFragment(data []byte) (f Fragment, err error) {
-	if len(data) < 2 {
-		err = fmt.Errorf("byte array is shorter than two bytes")
+	if len(data) <= fragmentIdentifierSize {
+		err = fmt.Errorf("byte array has %d bytes, but needs to be greater than %d", len(data), fragmentIdentifierSize)
 		return
 	}
 
-	f.identifier = data[0]
-	f.Payload = data[1:]
+	f.transmissionId = data[0]
+	f.identifier = data[1]
+	f.Payload = data[2:]
 
 	return
 }
 
 func (f Fragment) String() string {
-	return fmt.Sprintf("Fragment(TID: %d, Seq.No: %d, SB: %t, EB: %t)",
-		f.TransmissionID(), f.SequenceNumber(), f.StartBit(), f.EndBit())
+	return fmt.Sprintf("Fragment(TID: %d, Seq.No: %d, SB: %t, EB: %t, FB: %t)",
+		f.TransmissionID(), f.SequenceNumber(), f.StartBit(), f.EndBit(), f.FailBit())
 }
 
 // TransmissionID returns the four bit transmission ID.
 func (f Fragment) TransmissionID() byte {
-	return f.identifier >> 4 & 0x0F
+	return f.transmissionId
 }
 
 // SequenceNumber returns the two bit sequence number.
 func (f Fragment) SequenceNumber() byte {
-	return f.identifier >> 2 & 0x03
+	return f.identifier >> 3 & 0x1F
 }
 
 // StartBit checks if the start bit is set.
 func (f Fragment) StartBit() bool {
-	return f.identifier&0x02 != 0
+	return f.identifier&0x04 != 0
 }
 
 // EndBit checks if the end bit is set.
 func (f Fragment) EndBit() bool {
+	return f.identifier&0x02 != 0
+}
+
+// FailBit checks if the fail bit is set.
+func (f Fragment) FailBit() bool {
 	return f.identifier&0x01 != 0
 }
 
 // Bytes creates a byte array for this Fragment.
 func (f Fragment) Bytes() []byte {
 	buf := new(bytes.Buffer)
-	for _, v := range []interface{}{f.identifier, f.Payload} {
+	for _, v := range []interface{}{f.transmissionId, f.identifier, f.Payload} {
 		_ = binary.Write(buf, binary.LittleEndian, v)
 	}
 
@@ -107,5 +116,5 @@ func (f Fragment) Bytes() []byte {
 
 // nextSequenceNumber returns the succeeding sequence number.
 func nextSequenceNumber(seq byte) byte {
-	return (seq + 1) % 4
+	return (seq + 1) % 16
 }

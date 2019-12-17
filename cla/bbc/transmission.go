@@ -148,7 +148,7 @@ func (t *OutgoingTransmission) WriteFragment() (f Fragment, finished bool, err e
 	}
 
 	t.nextSegmentNo = nextSequenceNumber(t.nextSegmentNo)
-	f = NewFragment(t.TransmissionID, t.nextSegmentNo, t.start, t.finished, nextPayload)
+	f = NewFragment(t.TransmissionID, t.nextSegmentNo, t.start, t.finished, false, nextPayload)
 	t.start = false
 
 	finished = t.IsFinished()
