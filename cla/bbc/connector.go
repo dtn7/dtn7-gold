@@ -19,10 +19,13 @@ type Connector struct {
 	permanent     bool
 	tid           byte
 	transmissions map[byte]*IncomingTransmission
+	fragmentOut   chan Fragment
 	reportChan    chan cla.ConvergenceStatus
 
-	closedSyn chan struct{}
-	closedAck chan struct{}
+	closedRSyn chan struct{}
+	closedRAck chan struct{}
+	closedWSyn chan struct{}
+	closedWAck chan struct{}
 }
 
 // NewConnector creates a new Connector, wrapping around the given Modem.
@@ -32,33 +35,38 @@ func NewConnector(modem Modem, permanent bool) *Connector {
 		permanent:     permanent,
 		tid:           randomTransmissionId(),
 		transmissions: make(map[byte]*IncomingTransmission),
+		fragmentOut:   make(chan Fragment, 64),
 		reportChan:    make(chan cla.ConvergenceStatus, 64),
 	}
 }
 
 func (c *Connector) Start() (error, bool) {
-	c.closedSyn = make(chan struct{})
-	c.closedAck = make(chan struct{})
+	c.closedRSyn = make(chan struct{})
+	c.closedRAck = make(chan struct{})
+	c.closedWSyn = make(chan struct{})
+	c.closedWAck = make(chan struct{})
 
-	go c.handler()
+	go c.handlerRead()
+	go c.handlerWrite()
 
 	return nil, false
 }
 
-func (c *Connector) handler() {
-	defer close(c.closedAck)
+// handlerRead acts on incoming Fragments.
+func (c *Connector) handlerRead() {
+	defer close(c.closedRAck)
 
 	var logger = log.WithField("bbc", c.Address())
 
 	for {
 		select {
-		case <-c.closedSyn:
-			logger.Info("Received close signal, stopping handler")
+		case <-c.closedRSyn:
+			logger.Info("Received close signal, stopping handlerRead")
 			return
 
 		default:
 			if frag, err := c.modem.Receive(); err == io.EOF {
-				logger.Info("Read EOF, stopping handler")
+				logger.Info("Read EOF, stopping handlerRead")
 				return
 			} else if err != nil {
 				logger.WithError(err).Warn("Receiving Fragments from Modem errored")
@@ -77,6 +85,22 @@ func (c *Connector) handleIncomingFragment(frag Fragment) (err error) {
 		transmission *IncomingTransmission
 		known        bool
 	)
+
+	defer func() {
+		// Report a failed Transmission in case of an error.
+		if err == nil {
+			return
+		}
+
+		c.fragmentOut <- frag.ReportFailure()
+		logger.WithField("fragment", frag).Info("Broadcasting failure Fragment")
+	}()
+
+	// TODO
+	if frag.FailBit() {
+		logger.WithField("fragment", frag).Info("Received failure Fragment")
+		return
+	}
 
 	if transmission, known = c.transmissions[frag.TransmissionID()]; !known {
 		transmission, err = c.handleIncomingNewTransmission(frag)
@@ -127,14 +151,36 @@ func (c *Connector) handleIncomingKnownTransmission(frag Fragment, trans *Incomi
 	return
 }
 
+// handlerWrite acts on outgoing Fragments.
+func (c *Connector) handlerWrite() {
+	defer close(c.closedWAck)
+
+	var logger = log.WithField("bbc", c.Address())
+
+	for {
+		select {
+		case <-c.closedWSyn:
+			logger.Info("Received close signal, stopping handlerWrite")
+			return
+
+		case f := <-c.fragmentOut:
+			if err := c.modem.Send(f); err != nil {
+				logger.WithField("fragment", f).WithError(err).Warn("Transmitting Fragment errored")
+			}
+		}
+	}
+}
+
 func (c *Connector) Close() {
-	close(c.closedSyn)
+	close(c.closedRSyn)
+	close(c.closedWSyn)
 
 	if err := c.modem.Close(); err != nil {
 		log.WithField("bbc", c.Address()).WithError(err).Warn("Closing Modem errored")
 	}
 
-	<-c.closedAck
+	<-c.closedRAck
+	<-c.closedWAck
 }
 
 func (c *Connector) Channel() chan cla.ConvergenceStatus {
@@ -172,14 +218,12 @@ func (c *Connector) Send(bndl *bundle.Bundle) error {
 		if err != nil {
 			logger.WithError(err).Warn("Creating Fragment errored")
 			return err
-		} else if err := c.modem.Send(f); err != nil {
-			logger.WithError(err).Warn("Transmitting Fragment errored")
-			return err
-		} else if fin {
+		}
+
+		c.fragmentOut <- f
+		if fin {
 			logger.Debug("Transmitted last Fragment")
 			break
-		} else {
-			logger.Debug("Transmitted Fragment")
 		}
 	}
 

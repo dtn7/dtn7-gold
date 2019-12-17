@@ -64,8 +64,8 @@ func NewFragment(transmissionId, sequenceNo byte, start, end, fail bool, payload
 }
 
 func ParseFragment(data []byte) (f Fragment, err error) {
-	if len(data) <= fragmentIdentifierSize {
-		err = fmt.Errorf("byte array has %d bytes, but needs to be greater than %d", len(data), fragmentIdentifierSize)
+	if len(data) < fragmentIdentifierSize {
+		err = fmt.Errorf("byte array has %d bytes, but needs to be at least %d", len(data), fragmentIdentifierSize)
 		return
 	}
 
@@ -114,6 +114,11 @@ func (f Fragment) Bytes() []byte {
 	}
 
 	return buf.Bytes()
+}
+
+// ReportFailure creates a failure Fragment based on the current one.
+func (f Fragment) ReportFailure() Fragment {
+	return NewFragment(f.TransmissionID(), f.SequenceNumber(), false, false, true, []byte{})
 }
 
 // randomTransmissionId creates a pseudorandom transmission ID.
