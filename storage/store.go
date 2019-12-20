@@ -33,6 +33,7 @@ func NewStore(dir string) (s *Store, err error) {
 	opts.Dir = badgerDir
 	opts.ValueDir = badgerDir
 	opts.Logger = log.StandardLogger()
+	opts.Options.ValueLogFileSize = 1<<28 - 1
 
 	if dirErr := os.MkdirAll(badgerDir, 0700); dirErr != nil {
 		err = dirErr
