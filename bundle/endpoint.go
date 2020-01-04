@@ -208,20 +208,36 @@ func (eid *EndpointID) UnmarshalCbor(r io.Reader) error {
 }
 
 func (eid EndpointID) checkValidDtn() error {
-	switch eid.SchemeSpecificPart.(type) {
+	switch t := eid.SchemeSpecificPart.(type) {
+	case int:
+	case uint:
+	case uint64:
+		if eid.SchemeSpecificPart.(uint64) != 0 {
+			return fmt.Errorf("EndpointID: dtn URI has numeric SSP which is not zero / dtn:none")
+		}
+
 	case string:
 		if eid.SchemeSpecificPart.(string) == "none" {
 			return fmt.Errorf("EndpointID: equals dtn:none, with none as a string")
 		}
+
+	default:
+		return fmt.Errorf("EndpointID: dtn SSP has wrong type %T", t)
 	}
 
 	return nil
 }
 
 func (eid EndpointID) checkValidIpn() error {
-	ssp := eid.SchemeSpecificPart.([2]uint64)
-	if ssp[0] < 1 || ssp[1] < 1 {
-		return fmt.Errorf("EndpointID: IPN's node and service number must be >= 1")
+	switch t := eid.SchemeSpecificPart.(type) {
+	case [2]uint64:
+		ssp := eid.SchemeSpecificPart.([2]uint64)
+		if ssp[0] < 1 || ssp[1] < 1 {
+			return fmt.Errorf("EndpointID: IPN's node and service number must be >= 1")
+		}
+
+	default:
+		return fmt.Errorf("EndpointID: ipn SSP has wrong type %T", t)
 	}
 
 	return nil
