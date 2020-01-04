@@ -5,7 +5,8 @@ package bundle
 import "bytes"
 
 func Fuzz(data []byte) int {
-	if len(data) > 256 {
+	// Make sure go-fuzz has the right start
+	if len(data) > 0 && data[0] != 0x9f {
 		return -1
 	}
 
