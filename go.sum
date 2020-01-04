@@ -17,6 +17,8 @@ github.com/dtn7/rf95modem-go v0.2.0 h1:aYSwBkhk4dKzHR5/aneR7fKVHZjpOS05xRVa6UII5
 github.com/dtn7/rf95modem-go v0.2.0/go.mod h1:qBtIz24g3lJjd7r8/SrVh2IR2/upoQaA5sR4jrL5hOE=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
+github.com/dvyukov/go-fuzz v0.0.0-20191206100749-a378175e205c h1:/bXaeEuNG6V0HeyEGw11DYLW5BGsOPlcVRIXbHNUWSo=
+github.com/dvyukov/go-fuzz v0.0.0-20191206100749-a378175e205c/go.mod h1:11Gm+ccJnvAhCNLlf5+cS9KjtbaD5I5zaZpFMsTHWTw=
 github.com/felixge/tcpkeepalive v0.0.0-20160804073959-5bb0b2dea91e h1:mVIjvOd7NckIwf9J4hLB2YWXBYjhREF4vBeZXZ8mrWM=
 github.com/felixge/tcpkeepalive v0.0.0-20160804073959-5bb0b2dea91e/go.mod h1:z0yk3Pix6k848RFizhkU4uY36ts5pB1t3toBwudGbBo=
 github.com/golang/protobuf v1.2.0 h1:P3YflyNX/ehuJFLhxviNdFxQPkGK5cDcApsge1SqnvM=
