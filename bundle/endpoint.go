@@ -15,6 +15,20 @@ const (
 	endpointURISchemeIPN uint64 = 2
 )
 
+// EndpointType describes a discrete EndpointID.
+// The CborMarshaler must only be implemented for the scheme specific part of this EndpointType.
+type EndpointType interface {
+	// SchemeName must return the static URI scheme type for this endpoint, e.g., "dtn" or "ipn".
+	SchemeName() string
+
+	// SchemeNo must return the static URI scheme type number for this endpoint, e.g., 1 for "dtn".
+	SchemeNo() uint64
+
+	Valid
+	fmt.Stringer
+	cboring.CborMarshaler
+}
+
 // EndpointID represents an Endpoint ID as defined in section 4.1.5.1. The
 // "scheme name" is represented by an uint and the "scheme-specific part"
 // (SSP) by an interface{}. Based on the characteristic of the name, the
