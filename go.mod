@@ -3,7 +3,7 @@ module github.com/dtn7/dtn7-go
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/RyanCarrier/dijkstra v0.0.0-20190613134106-3f5a38e7002e
-	github.com/dtn7/cboring v0.1.4
+	github.com/dtn7/cboring v0.1.5
 	github.com/dtn7/rf95modem-go v0.2.0
 	github.com/dvyukov/go-fuzz v0.0.0-20191206100749-a378175e205c // indirect
 	github.com/felixge/tcpkeepalive v0.0.0-20160804073959-5bb0b2dea91e

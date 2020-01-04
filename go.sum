@@ -13,6 +13,8 @@ github.com/dgryski/go-farm v0.0.0-20190104051053-3adb47b1fb0f h1:dDxpBYafY/GYpcl
 github.com/dgryski/go-farm v0.0.0-20190104051053-3adb47b1fb0f/go.mod h1:SqUrOPUnsFjfmXRMNPybcSiG0BgUW2AuFH8PAnS2iTw=
 github.com/dtn7/cboring v0.1.4 h1:zgG4tM+gpjEkqseNktkPWPf2c2Vp7eqoCMVDRM+ta64=
 github.com/dtn7/cboring v0.1.4/go.mod h1:in0CbowKLmRSo0x0UTJyeWZBAY7tptldG4IU0LtqAOo=
+github.com/dtn7/cboring v0.1.5 h1:KW1mG+/SQZqrAUMC7tr0py9DlND6HFl4jMHhqKEmR0U=
+github.com/dtn7/cboring v0.1.5/go.mod h1:in0CbowKLmRSo0x0UTJyeWZBAY7tptldG4IU0LtqAOo=
 github.com/dtn7/rf95modem-go v0.2.0 h1:aYSwBkhk4dKzHR5/aneR7fKVHZjpOS05xRVa6UII52E=
 github.com/dtn7/rf95modem-go v0.2.0/go.mod h1:qBtIz24g3lJjd7r8/SrVh2IR2/upoQaA5sR4jrL5hOE=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
