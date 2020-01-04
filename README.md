@@ -1,4 +1,4 @@
-# dtn7-go [![Build Status](https://github.com/dtn7/dtn7-go/workflows/Build%20dtn7-go/badge.svg)](https://github.com/dtn7/dtn7-go/actions) [![GoDoc](https://godoc.org/github.com/dtn7/dtn7-go?status.svg)](https://godoc.org/github.com/dtn7/dtn7-go)
+# dtn7-go [![Build Status](https://travis-ci.org/dtn7/dtn7-go.svg?branch=master)](https://travis-ci.org/dtn7/dtn7-go) [![GoDoc](https://godoc.org/github.com/dtn7/dtn7-go?status.svg)](https://godoc.org/github.com/dtn7/dtn7-go)
 
 Delay-Tolerant Networking software suite and library based on the Bundle
 Protocol Version 7.
@@ -34,7 +34,7 @@ One of the following routing protocols might be used.
 
 #### Package Manager
 
-- Arch Linux: [`dtn7` (AUR)][aur-dtn7]
+- Arch Linux: [*dtn7* (AUR)][aur-dtn7]
 - Nix / NixOS: [*dtn7/nur-packages*][nur-dtn7] as a [NUR][nur]
 
 
