@@ -20,34 +20,34 @@ type DtnEndpoint struct {
 }
 
 // NewDtnEndpoint from an URI with the dtn scheme.
-func NewDtnEndpoint(uri string) (e DtnEndpoint, err error) {
+func NewDtnEndpoint(uri string) (e EndpointType, err error) {
 	re := regexp.MustCompile("^" + dtnEndpointSchemeName + ":(.+)$")
 	if !re.MatchString(uri) {
 		err = fmt.Errorf("uri does not match a dtn endpoint")
 		return
 	}
 
-	e.ssp = re.FindStringSubmatch(uri)[1]
+	e = DtnEndpoint{ssp: re.FindStringSubmatch(uri)[1]}
 	return
 }
 
-func (_ *DtnEndpoint) SchemeName() string {
+func (_ DtnEndpoint) SchemeName() string {
 	return dtnEndpointSchemeName
 }
 
-func (_ *DtnEndpoint) SchemeNo() uint64 {
+func (_ DtnEndpoint) SchemeNo() uint64 {
 	return dtnEndpointSchemeNo
 }
 
-func (_ *DtnEndpoint) CheckValid() error {
+func (_ DtnEndpoint) CheckValid() error {
 	return nil
 }
 
-func (e *DtnEndpoint) String() string {
+func (e DtnEndpoint) String() string {
 	return fmt.Sprintf("%s:%s", dtnEndpointSchemeName, e.ssp)
 }
 
-func (e *DtnEndpoint) MarshalCbor(w io.Writer) error {
+func (e DtnEndpoint) MarshalCbor(w io.Writer) error {
 	var isDtnNone = e.ssp == dtnEndpointDtnNoneSsp
 	if isDtnNone {
 		return cboring.WriteUInt(0, w)
@@ -79,4 +79,9 @@ func (e *DtnEndpoint) UnmarshalCbor(r io.Reader) error {
 	}
 
 	return nil
+}
+
+// DtnNone returns the null endpoint "dtn:none".
+func DtnNone() EndpointID {
+	return EndpointID{DtnEndpoint{ssp: dtnEndpointDtnNoneSsp}}
 }

@@ -104,14 +104,14 @@ func TestPrimaryBlockCheckValid(t *testing.T) {
 		// Illegal EndpointID
 		{PrimaryBlock{
 			7, 0, CRCNo,
-			EndpointID{SchemeName: endpointURISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}},
+			EndpointID{&IpnEndpoint{0, 0}},
 			DtnNone(), DtnNone(), NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil},
 			false},
 
 		// Everything from above
 		{PrimaryBlock{
 			23, 0xFF00, CRCNo,
-			EndpointID{SchemeName: endpointURISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}},
+			EndpointID{&IpnEndpoint{0, 0}},
 			DtnNone(), DtnNone(), NewCreationTimestamp(DtnTimeEpoch, 0), 0, 0, 0, nil},
 			false},
 

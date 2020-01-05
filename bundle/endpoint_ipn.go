@@ -21,7 +21,7 @@ type IpnEndpoint struct {
 }
 
 // NewIpnEndpoint from an URI with the ipn scheme.
-func NewIpnEndpoint(uri string) (e IpnEndpoint, err error) {
+func NewIpnEndpoint(uri string) (e EndpointType, err error) {
 	// As defined in RFC 6260, section 2.1:
 	// - node number: ASCII numeric digits between 1 and (2^64-1)
 	// - an ASCII dot
@@ -34,26 +34,29 @@ func NewIpnEndpoint(uri string) (e IpnEndpoint, err error) {
 		return
 	}
 
-	if e.node, err = strconv.ParseUint(matches[1], 10, 64); err != nil {
+	var node, service uint64
+	if node, err = strconv.ParseUint(matches[1], 10, 64); err != nil {
 		return
 	}
-	if e.service, err = strconv.ParseUint(matches[2], 10, 64); err != nil {
+	if service, err = strconv.ParseUint(matches[2], 10, 64); err != nil {
 		return
 	}
 
+	e = IpnEndpoint{node, service}
 	err = e.CheckValid()
+
 	return
 }
 
-func (e *IpnEndpoint) SchemeName() string {
+func (e IpnEndpoint) SchemeName() string {
 	return ipnEndpointSchemeName
 }
 
-func (e *IpnEndpoint) SchemeNo() uint64 {
+func (e IpnEndpoint) SchemeNo() uint64 {
 	return ipnEndpointSchemeNo
 }
 
-func (e *IpnEndpoint) CheckValid() error {
+func (e IpnEndpoint) CheckValid() error {
 	if e.node < 1 || e.service < 1 {
 		return fmt.Errorf("ipn's node and service number must be >= 1")
 	}
@@ -61,11 +64,11 @@ func (e *IpnEndpoint) CheckValid() error {
 	return nil
 }
 
-func (e *IpnEndpoint) String() string {
+func (e IpnEndpoint) String() string {
 	return fmt.Sprintf("%s:%d.%d", ipnEndpointSchemeName, e.node, e.service)
 }
 
-func (e *IpnEndpoint) MarshalCbor(w io.Writer) error {
+func (e IpnEndpoint) MarshalCbor(w io.Writer) error {
 	if err := cboring.WriteArrayLength(2, w); err != nil {
 		return err
 	}

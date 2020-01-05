@@ -3,20 +3,16 @@ package bundle
 import (
 	"fmt"
 	"io"
+	"reflect"
 	"regexp"
-	"strconv"
-	"strings"
 
 	"github.com/dtn7/cboring"
 )
 
-const (
-	endpointURISchemeDTN uint64 = 1
-	endpointURISchemeIPN uint64 = 2
-)
-
 // EndpointType describes a discrete EndpointID.
-// The CborMarshaler must only be implemented for the scheme specific part of this EndpointType.
+// Because of Go's type system, the MarshalCbor function from the cboring library must be implemented as a
+// value receiver in this interface. In addition, the UnmarshalCbor function MUST be implemented as a pointer
+// receiver. Afaik, this is not possible to describe with a Golang interface..
 type EndpointType interface {
 	// SchemeName must return the static URI scheme type for this endpoint, e.g., "dtn" or "ipn".
 	SchemeName() string
@@ -24,295 +20,125 @@ type EndpointType interface {
 	// SchemeNo must return the static URI scheme type number for this endpoint, e.g., 1 for "dtn".
 	SchemeNo() uint64
 
+	// MarshalCbor is the marshalling CBOR function from the cboring library.
+	MarshalCbor(io.Writer) error
+
 	Valid
 	fmt.Stringer
-	cboring.CborMarshaler
 }
 
-// EndpointID represents an Endpoint ID as defined in section 4.1.5.1. The
-// "scheme name" is represented by an uint and the "scheme-specific part"
-// (SSP) by an interface{}. Based on the characteristic of the name, the
-// underlying type of the SSP may vary.
+type endpointManager struct {
+	typeMap map[uint64]reflect.Type
+	newMap  map[string]func(string) (EndpointType, error)
+}
+
+var endpointMngr *endpointManager
+
+func getEndpointManager() *endpointManager {
+	if endpointMngr == nil {
+		endpointMngr = &endpointManager{
+			typeMap: make(map[uint64]reflect.Type),
+			newMap:  make(map[string]func(string) (EndpointType, error)),
+		}
+
+		endpointMngr.typeMap[dtnEndpointSchemeNo] = reflect.TypeOf(DtnEndpoint{})
+		endpointMngr.typeMap[ipnEndpointSchemeNo] = reflect.TypeOf(IpnEndpoint{})
+
+		endpointMngr.newMap[dtnEndpointSchemeName] = NewDtnEndpoint
+		endpointMngr.newMap[ipnEndpointSchemeName] = NewIpnEndpoint
+	}
+
+	return endpointMngr
+}
+
+// EndpointID represents an Endpoint ID as defined in section 4.1.5.1.
+// Its form is specified in an EndpointType, e.g., DtnEndpoint.
 type EndpointID struct {
-	SchemeName         uint64
-	SchemeSpecificPart interface{}
+	endpointType EndpointType
 }
 
-func newEndpointIDDTN(ssp string) (EndpointID, error) {
-	var sspRaw interface{}
-	if ssp == "none" {
-		sspRaw = uint64(0)
+// NewEndpointID based on an URI, e.g., "dtn:seven".
+func NewEndpointID(uri string) (e EndpointID, err error) {
+	re := regexp.MustCompile("^([[:alnum:]]+):.+$")
+	matches := re.FindStringSubmatch(uri)
+
+	if len(matches) == 0 {
+		err = fmt.Errorf("given URI does not match URI regexp")
+		return
+	}
+
+	scheme := matches[1]
+	if f, ok := getEndpointManager().newMap[scheme]; !ok {
+		err = fmt.Errorf("no handler registered for URI scheme %s", scheme)
+	} else if et, etErr := f(uri); etErr != nil {
+		err = etErr
 	} else {
-		sspRaw = string(ssp)
-	}
-
-	return EndpointID{
-		SchemeName:         endpointURISchemeDTN,
-		SchemeSpecificPart: sspRaw,
-	}, nil
-}
-
-func newEndpointIDIPN(ssp string) (ep EndpointID, err error) {
-	// As defined in RFC 6260, section 2.1:
-	// - node number: ASCII numeric digits between 1 and (2^64-1)
-	// - an ASCII dot
-	// - service number: ASCII numeric digits between 1 and (2^64-1)
-
-	re := regexp.MustCompile(`^(\d+)\.(\d+)$`)
-	matches := re.FindStringSubmatch(ssp)
-	if len(matches) != 3 {
-		err = fmt.Errorf("IPN does not satisfy given regex")
-		return
-	}
-
-	nodeNo, err := strconv.ParseUint(matches[1], 10, 64)
-	if err != nil {
-		return
-	}
-
-	serviceNo, err := strconv.ParseUint(matches[2], 10, 64)
-	if err != nil {
-		return
-	}
-
-	if nodeNo < 1 || serviceNo < 1 {
-		err = fmt.Errorf("IPN's node and service number must be >= 1")
-		return
-	}
-
-	ep = EndpointID{
-		SchemeName:         endpointURISchemeIPN,
-		SchemeSpecificPart: [2]uint64{nodeNo, serviceNo},
+		e = EndpointID{et}
 	}
 	return
 }
 
-// NewEndpointID creates a new EndpointID by a given "scheme name" and a
-// "scheme-specific part" (SSP). Currently the "dtn" and "ipn"-scheme names
-// are supported.
-//
-// Example: "dtn:foobar"
-func NewEndpointID(eid string) (e EndpointID, err error) {
-	re := regexp.MustCompile(`^([[:alnum:]]+):(.+)$`)
-	matches := re.FindStringSubmatch(eid)
-
-	if len(matches) != 3 {
-		err = fmt.Errorf("eid does not satisfy regex")
-		return
-	}
-
-	name := matches[1]
-	ssp := matches[2]
-
-	switch name {
-	case "dtn":
-		return newEndpointIDDTN(ssp)
-	case "ipn":
-		return newEndpointIDIPN(ssp)
-	default:
-		return EndpointID{}, fmt.Errorf("Unknown scheme type \"%s", name)
-	}
-}
-
-// MustNewEndpointID returns a new EndpointID like NewEndpointID, but panics
-// in case of an error.
-func MustNewEndpointID(eid string) EndpointID {
-	ep, err := NewEndpointID(eid)
-	if err != nil {
+// MustNewEndpointID based on an URI like NewEndpointID, but panics on an error.
+func MustNewEndpointID(uri string) EndpointID {
+	if ep, err := NewEndpointID(uri); err != nil {
 		panic(err)
+	} else {
+		return ep
 	}
-
-	return ep
 }
 
 func (eid *EndpointID) MarshalCbor(w io.Writer) error {
-	// Start an array with two elements
 	if err := cboring.WriteArrayLength(2, w); err != nil {
 		return err
 	}
 
-	// URI code: scheme name
-	if err := cboring.WriteUInt(eid.SchemeName, w); err != nil {
+	// URI scheme name code
+	if err := cboring.WriteUInt(eid.endpointType.SchemeNo(), w); err != nil {
 		return err
 	}
 
 	// SSP
-	switch eid.SchemeSpecificPart.(type) {
-	case uint64:
-		// dtn:none
-		if err := cboring.WriteUInt(0, w); err != nil {
-			return err
-		}
-
-	case string:
-		// dtn:whatsoever
-		if err := cboring.WriteTextString(eid.SchemeSpecificPart.(string), w); err != nil {
-			return err
-		}
-
-	case [2]uint64:
-		// ipn:23.42
-		var ssps [2]uint64 = eid.SchemeSpecificPart.([2]uint64)
-		if err := cboring.WriteArrayLength(2, w); err != nil {
-			return err
-		}
-
-		for _, ssp := range ssps {
-			if err := cboring.WriteUInt(ssp, w); err != nil {
-				return err
-			}
-		}
+	if err := eid.endpointType.MarshalCbor(w); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (eid *EndpointID) UnmarshalCbor(r io.Reader) error {
-	// Start of an array with two elements
 	if l, err := cboring.ReadArrayLength(r); err != nil {
 		return err
 	} else if l != 2 {
-		return fmt.Errorf("Expected array with length 2, got %d", l)
+		return fmt.Errorf("EndpointID expects array of 2 elements, not %d", l)
 	}
 
-	// URI code: scheme name
-	if sn, err := cboring.ReadUInt(r); err != nil {
+	var epType reflect.Type
+
+	// URI scheme name code
+	if scheme, err := cboring.ReadUInt(r); err != nil {
 		return err
+	} else if ept, ok := getEndpointManager().typeMap[scheme]; !ok {
+		return fmt.Errorf("no URI scheme registered for scheme number %d", scheme)
 	} else {
-		eid.SchemeName = sn
+		epType = ept
 	}
 
 	// SSP
-	if m, n, err := cboring.ReadMajors(r); err != nil {
-		return err
+	tmpEt := reflect.New(epType)
+	tmpEtUnmarshalCbor := tmpEt.MethodByName("UnmarshalCbor")
+	if err := tmpEtUnmarshalCbor.Call([]reflect.Value{reflect.ValueOf(r)})[0].Interface(); err != nil {
+		return err.(error)
 	} else {
-		switch m {
-		case cboring.UInt:
-			// dtn:none
-			eid.SchemeSpecificPart = n
-
-		case cboring.TextString:
-			// dtn:whatsoever
-			if tmp, err := cboring.ReadRawBytes(n, r); err != nil {
-				return err
-			} else {
-				eid.SchemeSpecificPart = string(tmp)
-			}
-
-		case cboring.Array:
-			// ipn:23.42
-			if n != 2 {
-				return fmt.Errorf("Expected array with length 2, got %d", n)
-			}
-
-			var ssps [2]uint64
-			for i := 0; i < 2; i++ {
-				if n, err := cboring.ReadUInt(r); err != nil {
-					return err
-				} else {
-					ssps[i] = n
-				}
-			}
-
-			eid.SchemeSpecificPart = ssps
-		}
-	}
-
-	return nil
-}
-
-func (eid EndpointID) checkValidDtn() error {
-	switch t := eid.SchemeSpecificPart.(type) {
-	case int:
-	case uint:
-	case uint64:
-		if eid.SchemeSpecificPart.(uint64) != 0 {
-			return fmt.Errorf("EndpointID: dtn URI has numeric SSP which is not zero / dtn:none")
-		}
-
-	case string:
-		if eid.SchemeSpecificPart.(string) == "none" {
-			return fmt.Errorf("EndpointID: equals dtn:none, with none as a string")
-		}
-
-	default:
-		return fmt.Errorf("EndpointID: dtn SSP has wrong type %T", t)
-	}
-
-	return nil
-}
-
-func (eid EndpointID) checkValidIpn() error {
-	switch t := eid.SchemeSpecificPart.(type) {
-	case [2]uint64:
-		ssp := eid.SchemeSpecificPart.([2]uint64)
-		if ssp[0] < 1 || ssp[1] < 1 {
-			return fmt.Errorf("EndpointID: IPN's node and service number must be >= 1")
-		}
-
-	default:
-		return fmt.Errorf("EndpointID: ipn SSP has wrong type %T", t)
+		eid.endpointType = tmpEt.Elem().Interface().(EndpointType)
 	}
 
 	return nil
 }
 
 func (eid EndpointID) CheckValid() error {
-	switch eid.SchemeName {
-	case endpointURISchemeDTN:
-		return eid.checkValidDtn()
-
-	case endpointURISchemeIPN:
-		return eid.checkValidIpn()
-
-	default:
-		return fmt.Errorf("EndpointID: unknown scheme name")
-	}
+	return eid.endpointType.CheckValid()
 }
 
 func (eid EndpointID) String() string {
-	var b strings.Builder
-
-	switch eid.SchemeName {
-	case endpointURISchemeDTN:
-		b.WriteString("dtn")
-	case endpointURISchemeIPN:
-		b.WriteString("ipn")
-	default:
-		fmt.Fprintf(&b, "unknown_%d", eid.SchemeName)
-	}
-	b.WriteRune(':')
-
-	switch t := eid.SchemeSpecificPart.(type) {
-	case uint64:
-		if eid.SchemeName == endpointURISchemeDTN && eid.SchemeSpecificPart.(uint64) == 0 {
-			b.WriteString("none")
-		} else {
-			fmt.Fprintf(&b, "%d", eid.SchemeSpecificPart.(uint64))
-		}
-
-	case string:
-		b.WriteString(eid.SchemeSpecificPart.(string))
-
-	case [2]uint64:
-		var ssp [2]uint64 = eid.SchemeSpecificPart.([2]uint64)
-		if eid.SchemeName == endpointURISchemeIPN {
-			fmt.Fprintf(&b, "%d.%d", ssp[0], ssp[1])
-		} else {
-			fmt.Fprintf(&b, "%v", ssp)
-		}
-
-	default:
-		fmt.Fprintf(&b, "unknown %T: %v", t, eid.SchemeSpecificPart)
-	}
-
-	return b.String()
-}
-
-// DtnNone returns the "null endpoint", "dtn:none".
-func DtnNone() EndpointID {
-	return EndpointID{
-		SchemeName:         endpointURISchemeDTN,
-		SchemeSpecificPart: uint64(0),
-	}
+	return eid.endpointType.String()
 }

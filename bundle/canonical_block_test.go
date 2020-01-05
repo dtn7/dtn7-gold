@@ -28,9 +28,6 @@ func TestCanonicalBlockCheckValid(t *testing.T) {
 		{CanonicalBlock{1, 0x80, CRCNo, nil, NewPayloadBlock(nil)}, false},
 
 		// Illegal EndpointID in Previous Node Block
-		{CanonicalBlock{2, 0, CRCNo, nil, NewPreviousNodeBlock(EndpointID{
-			SchemeName: endpointURISchemeIPN, SchemeSpecificPart: [2]uint64{0, 0}})},
-			false},
 		{CanonicalBlock{2, 0, CRCNo, nil, NewPreviousNodeBlock(DtnNone())}, true},
 	}
 
