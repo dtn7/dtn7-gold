@@ -6,6 +6,7 @@ import (
 	"io"
 	"reflect"
 	"regexp"
+	"sync"
 
 	"github.com/dtn7/cboring"
 )
@@ -33,9 +34,15 @@ type endpointManager struct {
 	newMap  map[string]func(string) (EndpointType, error)
 }
 
-var endpointMngr *endpointManager
+var (
+	endpointMngr  *endpointManager
+	endpointMutex sync.Mutex
+)
 
 func getEndpointManager() *endpointManager {
+	endpointMutex.Lock()
+	defer endpointMutex.Unlock()
+
 	if endpointMngr == nil {
 		endpointMngr = &endpointManager{
 			typeMap: make(map[uint64]reflect.Type),
