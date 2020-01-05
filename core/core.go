@@ -39,6 +39,8 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 
 	gob.Register([]bundle.EndpointID{})
 	gob.Register(bundle.EndpointID{})
+	gob.Register(bundle.DtnEndpoint{})
+	gob.Register(bundle.IpnEndpoint{})
 	gob.Register(map[Constraint]bool{})
 	gob.Register(time.Time{})
 

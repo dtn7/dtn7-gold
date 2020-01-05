@@ -30,9 +30,9 @@ func TestNewIpnEndpoint(t *testing.T) {
 		if err == nil != test.valid {
 			t.Fatalf("Expected valid = %t, got err: %v", test.valid, err)
 		} else if err == nil {
-			if ep.(IpnEndpoint).node != test.node || ep.(IpnEndpoint).service != test.service {
+			if ep.(IpnEndpoint).Node != test.node || ep.(IpnEndpoint).service != test.service {
 				t.Fatalf("Expected SSP (%d, %d), got (%d, %d)",
-					test.node, test.service, ep.(IpnEndpoint).node, ep.(IpnEndpoint).service)
+					test.node, test.service, ep.(IpnEndpoint).Node, ep.(IpnEndpoint).service)
 			}
 		}
 	}

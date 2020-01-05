@@ -16,7 +16,7 @@ const (
 
 // DtnEndpoint describes the dtn URI for EndpointIDs, as defined in ietf-dtn-bpbis.
 type DtnEndpoint struct {
-	ssp string
+	Ssp string
 }
 
 // NewDtnEndpoint from an URI with the dtn scheme.
@@ -27,7 +27,7 @@ func NewDtnEndpoint(uri string) (e EndpointType, err error) {
 		return
 	}
 
-	e = DtnEndpoint{ssp: re.FindStringSubmatch(uri)[1]}
+	e = DtnEndpoint{Ssp: re.FindStringSubmatch(uri)[1]}
 	return
 }
 
@@ -44,15 +44,15 @@ func (_ DtnEndpoint) CheckValid() error {
 }
 
 func (e DtnEndpoint) String() string {
-	return fmt.Sprintf("%s:%s", dtnEndpointSchemeName, e.ssp)
+	return fmt.Sprintf("%s:%s", dtnEndpointSchemeName, e.Ssp)
 }
 
 func (e DtnEndpoint) MarshalCbor(w io.Writer) error {
-	var isDtnNone = e.ssp == dtnEndpointDtnNoneSsp
+	var isDtnNone = e.Ssp == dtnEndpointDtnNoneSsp
 	if isDtnNone {
 		return cboring.WriteUInt(0, w)
 	} else {
-		return cboring.WriteTextString(e.ssp, w)
+		return cboring.WriteTextString(e.Ssp, w)
 	}
 }
 
@@ -63,14 +63,14 @@ func (e *DtnEndpoint) UnmarshalCbor(r io.Reader) error {
 		switch m {
 		case cboring.UInt:
 			// dtn:none
-			e.ssp = dtnEndpointDtnNoneSsp
+			e.Ssp = dtnEndpointDtnNoneSsp
 
 		case cboring.TextString:
 			// dtn:whatever
 			if tmp, err := cboring.ReadRawBytes(n, r); err != nil {
 				return err
 			} else {
-				e.ssp = string(tmp)
+				e.Ssp = string(tmp)
 			}
 
 		default:
@@ -83,5 +83,5 @@ func (e *DtnEndpoint) UnmarshalCbor(r io.Reader) error {
 
 // DtnNone returns the null endpoint "dtn:none".
 func DtnNone() EndpointID {
-	return EndpointID{DtnEndpoint{ssp: dtnEndpointDtnNoneSsp}}
+	return EndpointID{DtnEndpoint{Ssp: dtnEndpointDtnNoneSsp}}
 }

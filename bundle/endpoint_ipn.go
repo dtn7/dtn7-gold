@@ -16,7 +16,7 @@ const (
 
 // IpnEndpoint describes the ipn URI for EndpointIDs, as defined in RFC 6260.
 type IpnEndpoint struct {
-	node    uint64
+	Node    uint64
 	service uint64
 }
 
@@ -57,7 +57,7 @@ func (e IpnEndpoint) SchemeNo() uint64 {
 }
 
 func (e IpnEndpoint) CheckValid() error {
-	if e.node < 1 || e.service < 1 {
+	if e.Node < 1 || e.service < 1 {
 		return fmt.Errorf("ipn's node and service number must be >= 1")
 	}
 
@@ -65,7 +65,7 @@ func (e IpnEndpoint) CheckValid() error {
 }
 
 func (e IpnEndpoint) String() string {
-	return fmt.Sprintf("%s:%d.%d", ipnEndpointSchemeName, e.node, e.service)
+	return fmt.Sprintf("%s:%d.%d", ipnEndpointSchemeName, e.Node, e.service)
 }
 
 func (e IpnEndpoint) MarshalCbor(w io.Writer) error {
@@ -73,7 +73,7 @@ func (e IpnEndpoint) MarshalCbor(w io.Writer) error {
 		return err
 	}
 
-	for _, n := range []uint64{e.node, e.service} {
+	for _, n := range []uint64{e.Node, e.service} {
 		if err := cboring.WriteUInt(n, w); err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func (e *IpnEndpoint) UnmarshalCbor(r io.Reader) error {
 		return fmt.Errorf("ipn uri expected array of 2 elements, not %d", n)
 	}
 
-	for _, n := range []*uint64{&e.node, &e.service} {
+	for _, n := range []*uint64{&e.Node, &e.service} {
 		if i, err := cboring.ReadUInt(r); err != nil {
 			return err
 		} else {

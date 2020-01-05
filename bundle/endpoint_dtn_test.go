@@ -28,8 +28,8 @@ func TestNewDtnEndpoint(t *testing.T) {
 		if err == nil != test.valid {
 			t.Fatalf("Expected valid = %t, got err: %v", test.valid, err)
 		} else if err == nil {
-			if ep.(DtnEndpoint).ssp != test.ssp {
-				t.Fatalf("Expected SSP %v, got %v", test.ssp, ep.(DtnEndpoint).ssp)
+			if ep.(DtnEndpoint).Ssp != test.ssp {
+				t.Fatalf("Expected SSP %v, got %v", test.ssp, ep.(DtnEndpoint).Ssp)
 			}
 		}
 	}

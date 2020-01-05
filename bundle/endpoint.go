@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"encoding/gob"
 	"fmt"
 	"io"
 	"reflect"
@@ -41,11 +42,21 @@ func getEndpointManager() *endpointManager {
 			newMap:  make(map[string]func(string) (EndpointType, error)),
 		}
 
-		endpointMngr.typeMap[dtnEndpointSchemeNo] = reflect.TypeOf(DtnEndpoint{})
-		endpointMngr.typeMap[ipnEndpointSchemeNo] = reflect.TypeOf(IpnEndpoint{})
+		epTypes := []struct {
+			schemeNo   uint64
+			schemeName string
+			impl       interface{}
+			newFunc    func(string) (EndpointType, error)
+		}{
+			{dtnEndpointSchemeNo, dtnEndpointSchemeName, DtnEndpoint{}, NewDtnEndpoint},
+			{ipnEndpointSchemeNo, ipnEndpointSchemeName, IpnEndpoint{}, NewIpnEndpoint},
+		}
 
-		endpointMngr.newMap[dtnEndpointSchemeName] = NewDtnEndpoint
-		endpointMngr.newMap[ipnEndpointSchemeName] = NewIpnEndpoint
+		for _, epType := range epTypes {
+			endpointMngr.typeMap[epType.schemeNo] = reflect.TypeOf(epType.impl)
+			endpointMngr.newMap[epType.schemeName] = epType.newFunc
+			gob.Register(epType.impl)
+		}
 	}
 
 	return endpointMngr
@@ -54,7 +65,7 @@ func getEndpointManager() *endpointManager {
 // EndpointID represents an Endpoint ID as defined in section 4.1.5.1.
 // Its form is specified in an EndpointType, e.g., DtnEndpoint.
 type EndpointID struct {
-	endpointType EndpointType
+	EndpointType EndpointType
 }
 
 // NewEndpointID based on an URI, e.g., "dtn:seven".
@@ -93,12 +104,12 @@ func (eid *EndpointID) MarshalCbor(w io.Writer) error {
 	}
 
 	// URI scheme name code
-	if err := cboring.WriteUInt(eid.endpointType.SchemeNo(), w); err != nil {
+	if err := cboring.WriteUInt(eid.EndpointType.SchemeNo(), w); err != nil {
 		return err
 	}
 
 	// SSP
-	if err := eid.endpointType.MarshalCbor(w); err != nil {
+	if err := eid.EndpointType.MarshalCbor(w); err != nil {
 		return err
 	}
 
@@ -129,16 +140,16 @@ func (eid *EndpointID) UnmarshalCbor(r io.Reader) error {
 	if err := tmpEtUnmarshalCbor.Call([]reflect.Value{reflect.ValueOf(r)})[0].Interface(); err != nil {
 		return err.(error)
 	} else {
-		eid.endpointType = tmpEt.Elem().Interface().(EndpointType)
+		eid.EndpointType = tmpEt.Elem().Interface().(EndpointType)
 	}
 
 	return nil
 }
 
 func (eid EndpointID) CheckValid() error {
-	return eid.endpointType.CheckValid()
+	return eid.EndpointType.CheckValid()
 }
 
 func (eid EndpointID) String() string {
-	return eid.endpointType.String()
+	return eid.EndpointType.String()
 }
