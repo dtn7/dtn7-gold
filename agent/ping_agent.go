@@ -1,6 +1,8 @@
 package agent
 
 import (
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
@@ -24,6 +26,10 @@ func NewPing(endpoint bundle.EndpointID) *Ping {
 	return p
 }
 
+func (p *Ping) log() *log.Entry {
+	return log.WithField("Ping", p.endpoint)
+}
+
 func (p *Ping) handler() {
 	defer func() {
 		close(p.receiver)
@@ -39,6 +45,9 @@ func (p *Ping) handler() {
 
 			case ShutdownMessage:
 				return
+
+			default:
+				p.log().WithField("message", m).Info("Received unsupported Message")
 			}
 		}
 	}
@@ -55,10 +64,11 @@ func (p *Ping) ackBundle(b bundle.Bundle) {
 		Build()
 
 	if err != nil {
-		panic(";_;")
+		p.log().WithError(err).Warn("Building ACK Bundle errored")
+	} else {
+		p.log().WithField("bundle", bndl).Info("Sending ACK Bundle")
+		p.sender <- BundleMessage{bndl}
 	}
-
-	p.sender <- BundleMessage{bndl}
 }
 
 func (p *Ping) Endpoints() []bundle.EndpointID {
