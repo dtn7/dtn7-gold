@@ -25,8 +25,8 @@ func TestPingAgent(t *testing.T) {
 	ping.receiver <- BundleMessage{bndlOut}
 
 	select {
-	case <-time.After(time.Millisecond):
-		t.Fatal("Ping did not answer after a second")
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("Ping did not answer after 500ms")
 
 	case m := <-ping.sender:
 		if _, ok := m.(BundleMessage); !ok {

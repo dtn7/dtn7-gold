@@ -1,3 +1,12 @@
+notifications:
+  email: false
+  irc:
+    channels:
+      - "ircs://irc.hackint.org:6697/#dtn7"
+    template:
+      - "[%{repository_name}] %{author}, %{commit}@%{branch}: %{message} "
+    use_notice: true
+
 language: go
 
 go:
@@ -15,6 +24,6 @@ install: true
 
 script:
   - gofmt -l -e -d .
-  - go vet ./...
   - go build ./...
+  - go vet ./...
   - go test -v -race ./...

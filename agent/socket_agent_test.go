@@ -23,7 +23,7 @@ func randomPort(t *testing.T) (port int) {
 }
 
 func isAddrReachable(addr string) (open bool) {
-	if conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond); err != nil {
+	if conn, err := net.DialTimeout("tcp", addr, time.Second); err != nil {
 		open = false
 	} else {
 		open = true
@@ -40,19 +40,27 @@ func TestSocketAgentNew(t *testing.T) {
 	}
 
 	// Let the Socket start..
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 
-	if !isAddrReachable(addr) {
-		t.Fatal("Socket seems to be unreachable")
+	for i := 1; i <= 3; i++ {
+		if isAddrReachable(addr) {
+			break
+		} else if i == 3 {
+			t.Fatal("Socket seems to be unreachable")
+		}
 	}
 
 	socket.receiver <- ShutdownMessage{}
 
 	// Let the Socket shut itself down
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 
-	if isAddrReachable(addr) {
-		t.Fatal("Socket is still reachable..")
+	for i := 1; i <= 3; i++ {
+		if !isAddrReachable(addr) {
+			break
+		} else if i == 3 {
+			t.Fatal("Socket is still reachable")
+		}
 	}
 }
 
@@ -64,11 +72,20 @@ func TestSocketAgentReceive(t *testing.T) {
 	}
 
 	// Let the Socket start..
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 
-	conn, connErr := net.DialTimeout("tcp", addr, 100*time.Millisecond)
-	if connErr != nil {
-		t.Fatal(connErr)
+	var conn net.Conn
+	for i := 1; i <= 3; i++ {
+		c, cErr := net.DialTimeout("tcp", addr, 500*time.Millisecond)
+		if cErr == nil {
+			conn = c
+			break
+		} else if i == 3 {
+			t.Fatal(cErr)
+		}
+	}
+	if conn == nil {
+		t.Fatal("conn is nil, wat")
 	}
 
 	bndl1, bndlErr := bundle.Builder().
@@ -83,17 +100,31 @@ func TestSocketAgentReceive(t *testing.T) {
 		t.Fatal(bndlErr)
 	}
 
+	var bndl2 bundle.Bundle
+
+	fin := make(chan struct{})
+	go func() {
+		if err := bndl2.UnmarshalCbor(conn); err != nil {
+			t.Fatal(err)
+		}
+		close(fin)
+	}()
+
+	time.Sleep(250 * time.Millisecond)
 	socket.receiver <- BundleMessage{bndl1}
 
-	var bndl2 bundle.Bundle
-	if err := bndl2.UnmarshalCbor(conn); err != nil {
-		t.Fatal(err)
+	select {
+	case <-fin:
+		break
+	case <-time.After(3 * time.Second):
+		t.Fatal("Unmarshalling CBOR timed out")
 	}
 
 	if !reflect.DeepEqual(bndl1, bndl2) {
 		t.Fatal("Bundles differ")
 	}
 
+	_ = conn.Close()
 	socket.receiver <- ShutdownMessage{}
 }
 
@@ -105,9 +136,9 @@ func TestSocketAgentSend(t *testing.T) {
 	}
 
 	// Let the Socket start..
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 
-	conn, connErr := net.DialTimeout("tcp", addr, 100*time.Millisecond)
+	conn, connErr := net.DialTimeout("tcp", addr, time.Second)
 	if connErr != nil {
 		t.Fatal(connErr)
 	}
@@ -123,7 +154,6 @@ func TestSocketAgentSend(t *testing.T) {
 	if bndlErr != nil {
 		t.Fatal(bndlErr)
 	}
-
 	if err := bndl.MarshalCbor(conn); err != nil {
 		t.Fatal(err)
 	}
@@ -135,5 +165,6 @@ func TestSocketAgentSend(t *testing.T) {
 		t.Fatal("Bundles differ")
 	}
 
+	_ = conn.Close()
 	socket.receiver <- ShutdownMessage{}
 }
