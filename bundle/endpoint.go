@@ -22,6 +22,12 @@ type EndpointType interface {
 	// SchemeNo must return the static URI scheme type number for this endpoint, e.g., 1 for "dtn".
 	SchemeNo() uint64
 
+	// Authority is the authority part of the Endpoint URI, e.g., "foo" for "dtn://foo/bar".
+	Authority() string
+
+	// Path is the path part of the Endpoint URI, e.g., "/bar" for "dtn://foo/bar".
+	Path() string
+
 	// MarshalCbor is the marshalling CBOR function from the cboring library.
 	MarshalCbor(io.Writer) error
 
@@ -151,6 +157,15 @@ func (eid *EndpointID) UnmarshalCbor(r io.Reader) error {
 	}
 
 	return nil
+}
+
+// Authority is the authority part of the Endpoint URI, e.g., "foo" for "dtn://foo/bar".
+func (eid EndpointID) Authority() string {
+	return eid.EndpointType.Authority()
+}
+
+func (eid EndpointID) Path() string {
+	return eid.EndpointType.Path()
 }
 
 func (eid EndpointID) CheckValid() error {

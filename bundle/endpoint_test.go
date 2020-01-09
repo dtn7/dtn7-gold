@@ -84,3 +84,35 @@ func TestEndpointCbor(t *testing.T) {
 		})
 	}
 }
+
+func TestEndpointUri(t *testing.T) {
+	tests := []struct {
+		eid       string
+		authority string
+		path      string
+	}{
+		{"dtn:none", "none", "/"},
+		{"dtn:foobar", "foobar", "/"},
+		{"dtn://foobar", "foobar", "/"},
+		{"dtn://foobar/", "foobar", "/"},
+		{"dtn:foo/bar", "foo", "/bar"},
+		{"dtn://foo/bar", "foo", "/bar"},
+		{"dtn://foo/bar/", "foo", "/bar/"},
+		{"ipn:1.1", "1", "1"},
+		{"ipn:23.42", "23", "42"},
+	}
+
+	for _, test := range tests {
+		ep, err := NewEndpointID(test.eid)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if authority := ep.Authority(); test.authority != authority {
+			t.Fatalf("Authority: expected %s, got %s", test.authority, authority)
+		}
+		if path := ep.Path(); test.path != path {
+			t.Fatalf("Path: expected %s, got %s", test.path, path)
+		}
+	}
+}

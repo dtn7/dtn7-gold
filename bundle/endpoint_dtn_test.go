@@ -68,3 +68,28 @@ func TestDtnEndpointCbor(t *testing.T) {
 		}
 	}
 }
+
+func TestDtnEndpointUri(t *testing.T) {
+	tests := []struct {
+		ep        DtnEndpoint
+		authority string
+		path      string
+	}{
+		{DtnEndpoint{dtnEndpointDtnNoneSsp}, "none", "/"},
+		{DtnEndpoint{"foobar"}, "foobar", "/"},
+		{DtnEndpoint{"//foobar"}, "foobar", "/"},
+		{DtnEndpoint{"//foobar/"}, "foobar", "/"},
+		{DtnEndpoint{"foo/bar"}, "foo", "/bar"},
+		{DtnEndpoint{"//foo/bar"}, "foo", "/bar"},
+		{DtnEndpoint{"//foo/bar/"}, "foo", "/bar/"},
+	}
+
+	for _, test := range tests {
+		if authority := test.ep.Authority(); test.authority != authority {
+			t.Fatalf("Authority: expected %s, got %s", test.authority, authority)
+		}
+		if path := test.ep.Path(); test.path != path {
+			t.Fatalf("Path: expected %s, got %s", test.path, path)
+		}
+	}
+}

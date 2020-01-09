@@ -3,7 +3,9 @@ package bundle
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/dtn7/cboring"
 )
@@ -37,6 +39,33 @@ func (_ DtnEndpoint) SchemeName() string {
 
 func (_ DtnEndpoint) SchemeNo() uint64 {
 	return dtnEndpointSchemeNo
+}
+
+func (e DtnEndpoint) parseUri() (authority, path string) {
+	// net.url.URL requires two leading slashes.
+	// Thus, we are going to add them temporary - temporary, because this is a value receiver.
+	if !strings.HasPrefix(e.Ssp, "//") {
+		e = DtnEndpoint{"//" + e.Ssp}
+	}
+
+	u, err := url.Parse(e.String())
+	if err != nil {
+		return
+	}
+
+	authority = u.Hostname()
+	path = u.RequestURI()
+	return
+}
+
+func (e DtnEndpoint) Authority() string {
+	authority, _ := e.parseUri()
+	return authority
+}
+
+func (e DtnEndpoint) Path() string {
+	_, path := e.parseUri()
+	return path
 }
 
 func (_ DtnEndpoint) CheckValid() error {
