@@ -6,16 +6,16 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
-// Ping is a simple ApplicationAgent to "pong" / acknowledge incoming Bundles.
-type Ping struct {
+// PingAgent is a simple ApplicationAgent to "pong" / acknowledge incoming Bundles.
+type PingAgent struct {
 	endpoint bundle.EndpointID
 	receiver chan Message
 	sender   chan Message
 }
 
-// NewPing creates a new Ping ApplicationAgent.
-func NewPing(endpoint bundle.EndpointID) *Ping {
-	p := &Ping{
+// NewPing creates a new PingAgent ApplicationAgent.
+func NewPing(endpoint bundle.EndpointID) *PingAgent {
+	p := &PingAgent{
 		endpoint: endpoint,
 		receiver: make(chan Message),
 		sender:   make(chan Message),
@@ -26,11 +26,11 @@ func NewPing(endpoint bundle.EndpointID) *Ping {
 	return p
 }
 
-func (p *Ping) log() *log.Entry {
-	return log.WithField("Ping", p.endpoint)
+func (p *PingAgent) log() *log.Entry {
+	return log.WithField("PingAgent", p.endpoint)
 }
 
-func (p *Ping) handler() {
+func (p *PingAgent) handler() {
 	defer func() {
 		close(p.receiver)
 		close(p.sender)
@@ -53,7 +53,7 @@ func (p *Ping) handler() {
 	}
 }
 
-func (p *Ping) ackBundle(b bundle.Bundle) {
+func (p *PingAgent) ackBundle(b bundle.Bundle) {
 	bndl, err := bundle.Builder().
 		Source(p.endpoint).
 		Destination(b.PrimaryBlock.ReportTo).
@@ -71,14 +71,14 @@ func (p *Ping) ackBundle(b bundle.Bundle) {
 	}
 }
 
-func (p *Ping) Endpoints() []bundle.EndpointID {
+func (p *PingAgent) Endpoints() []bundle.EndpointID {
 	return []bundle.EndpointID{p.endpoint}
 }
 
-func (p *Ping) MessageReceiver() chan Message {
+func (p *PingAgent) MessageReceiver() chan Message {
 	return p.receiver
 }
 
-func (p *Ping) MessageSender() chan Message {
+func (p *PingAgent) MessageSender() chan Message {
 	return p.sender
 }

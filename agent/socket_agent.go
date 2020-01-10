@@ -10,8 +10,8 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
-// Socket is a ApplicationAgent to send and receive raw Bundles on a TCP socket.
-type Socket struct {
+// SocketAgent is a ApplicationAgent to send and receive raw Bundles on a TCP socket.
+type SocketAgent struct {
 	listener *net.TCPListener
 	// children: map[socketChild.id]*socketChild
 	children sync.Map
@@ -20,8 +20,8 @@ type Socket struct {
 	sender   chan Message
 }
 
-// NewSocket starts a new Socket on the given TCP address.
-func NewSocket(address string, endpoint bundle.EndpointID) (s *Socket, err error) {
+// NewSocket starts a new SocketAgent on the given TCP address.
+func NewSocket(address string, endpoint bundle.EndpointID) (s *SocketAgent, err error) {
 	addr, addrErr := net.ResolveTCPAddr("tcp", address)
 	if addrErr != nil {
 		err = addrErr
@@ -34,7 +34,7 @@ func NewSocket(address string, endpoint bundle.EndpointID) (s *Socket, err error
 		return
 	}
 
-	s = &Socket{
+	s = &SocketAgent{
 		listener: l,
 		endpoint: endpoint,
 		receiver: make(chan Message),
@@ -46,11 +46,11 @@ func NewSocket(address string, endpoint bundle.EndpointID) (s *Socket, err error
 	return
 }
 
-func (s *Socket) log() *log.Entry {
-	return log.WithField("Socket", s.listener)
+func (s *SocketAgent) log() *log.Entry {
+	return log.WithField("SocketAgent", s.listener)
 }
 
-func (s *Socket) handler() {
+func (s *SocketAgent) handler() {
 	defer func() {
 		close(s.receiver)
 		close(s.sender)
@@ -86,14 +86,14 @@ func (s *Socket) handler() {
 	}
 }
 
-func (s *Socket) Endpoints() []bundle.EndpointID {
+func (s *SocketAgent) Endpoints() []bundle.EndpointID {
 	return []bundle.EndpointID{s.endpoint}
 }
 
-func (s *Socket) MessageReceiver() chan Message {
+func (s *SocketAgent) MessageReceiver() chan Message {
 	return s.receiver
 }
 
-func (s *Socket) MessageSender() chan Message {
+func (s *SocketAgent) MessageSender() chan Message {
 	return s.sender
 }

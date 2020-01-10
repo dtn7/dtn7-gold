@@ -7,15 +7,15 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
-// socketChild is a child process / managed connection of a Socket.
+// socketChild is a child process / managed connection of a SocketAgent.
 type socketChild struct {
 	id       string
 	conn     net.Conn
-	socket   *Socket
+	socket   *SocketAgent
 	receiver chan bundle.Bundle
 }
 
-func launchSocketChild(conn net.Conn, socket *Socket) {
+func launchSocketChild(conn net.Conn, socket *SocketAgent) {
 	child := &socketChild{
 		id:       conn.RemoteAddr().String(),
 		conn:     conn,

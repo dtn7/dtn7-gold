@@ -39,27 +39,27 @@ func TestSocketAgentNew(t *testing.T) {
 		t.Fatal(socketErr)
 	}
 
-	// Let the Socket start..
+	// Let the SocketAgent start..
 	time.Sleep(250 * time.Millisecond)
 
 	for i := 1; i <= 3; i++ {
 		if isAddrReachable(addr) {
 			break
 		} else if i == 3 {
-			t.Fatal("Socket seems to be unreachable")
+			t.Fatal("SocketAgent seems to be unreachable")
 		}
 	}
 
 	socket.receiver <- ShutdownMessage{}
 
-	// Let the Socket shut itself down
+	// Let the SocketAgent shut itself down
 	time.Sleep(250 * time.Millisecond)
 
 	for i := 1; i <= 3; i++ {
 		if !isAddrReachable(addr) {
 			break
 		} else if i == 3 {
-			t.Fatal("Socket is still reachable")
+			t.Fatal("SocketAgent is still reachable")
 		}
 	}
 }
@@ -71,7 +71,7 @@ func TestSocketAgentReceive(t *testing.T) {
 		t.Fatal(socketErr)
 	}
 
-	// Let the Socket start..
+	// Let the SocketAgent start..
 	time.Sleep(250 * time.Millisecond)
 
 	var conn net.Conn
@@ -135,7 +135,7 @@ func TestSocketAgentSend(t *testing.T) {
 		t.Fatal(socketErr)
 	}
 
-	// Let the Socket start..
+	// Let the SocketAgent start..
 	time.Sleep(250 * time.Millisecond)
 
 	conn, connErr := net.DialTimeout("tcp", addr, time.Second)
