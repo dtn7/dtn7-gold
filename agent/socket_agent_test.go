@@ -10,28 +10,6 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
-func randomPort(t *testing.T) (port int) {
-	if addr, err := net.ResolveTCPAddr("tcp", "localhost:0"); err != nil {
-		t.Fatal(err)
-	} else if l, err := net.ListenTCP("tcp", addr); err != nil {
-		t.Fatal(err)
-	} else {
-		port = l.Addr().(*net.TCPAddr).Port
-		_ = l.Close()
-	}
-	return
-}
-
-func isAddrReachable(addr string) (open bool) {
-	if conn, err := net.DialTimeout("tcp", addr, time.Second); err != nil {
-		open = false
-	} else {
-		open = true
-		_ = conn.Close()
-	}
-	return
-}
-
 func TestSocketAgentNew(t *testing.T) {
 	addr := fmt.Sprintf("localhost:%d", randomPort(t))
 	socket, socketErr := NewSocket(addr, bundle.MustNewEndpointID("dtn://foo/bar"))

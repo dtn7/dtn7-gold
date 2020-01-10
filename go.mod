@@ -8,6 +8,7 @@ require (
 	github.com/dvyukov/go-fuzz v0.0.0-20191206100749-a378175e205c // indirect
 	github.com/felixge/tcpkeepalive v0.0.0-20160804073959-5bb0b2dea91e
 	github.com/golang/protobuf v1.3.2 // indirect
+	github.com/gorilla/websocket v1.4.1
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect

@@ -36,19 +36,16 @@ func (p *PingAgent) handler() {
 		close(p.sender)
 	}()
 
-	for {
-		select {
-		case m := <-p.receiver:
-			switch m.(type) {
-			case BundleMessage:
-				p.ackBundle(m.(BundleMessage).Bundle)
+	for m := range p.receiver {
+		switch m := m.(type) {
+		case BundleMessage:
+			p.ackBundle(m.Bundle)
 
-			case ShutdownMessage:
-				return
+		case ShutdownMessage:
+			return
 
-			default:
-				p.log().WithField("message", m).Info("Received unsupported Message")
-			}
+		default:
+			p.log().WithField("message", m).Info("Received unsupported Message")
 		}
 	}
 }
