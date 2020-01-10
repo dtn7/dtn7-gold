@@ -5,7 +5,8 @@ notifications:
       - "ircs://irc.hackint.org:6697/#dtn7"
     template:
       - "[%{repository_name}] %{author}, %{commit}@%{branch}: %{message} "
-    use_notice: true
+    on_success: change
+    on_failure: always
 
 language: go
 
