@@ -21,11 +21,13 @@ type webAgentMessage interface {
 }
 
 const (
-	wamRegisterCode uint64 = 0
-	wamBundleCode   uint64 = 1
+	wamStatusCode   uint64 = 0
+	wamRegisterCode uint64 = 1
+	wamBundleCode   uint64 = 2
 )
 
 var wamMapping = map[interface{}]reflect.Type{
+	wamStatusCode:   reflect.TypeOf(wamStatus{}),
 	wamRegisterCode: reflect.TypeOf(wamRegister{}),
 	wamBundleCode:   reflect.TypeOf(wamBundle{}),
 }

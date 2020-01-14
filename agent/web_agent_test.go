@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"bytes"
 	"fmt"
 	"net/url"
 	"testing"
@@ -33,16 +32,29 @@ func TestWebAgentNew(t *testing.T) {
 		Host:   addr,
 		Path:   "/ws",
 	}
-	if wsClient, _, err := websocket.DefaultDialer.Dial(u.String(), nil); err != nil {
+	wsClient, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
 		t.Fatal(err)
-	} else if mt, p, err := wsClient.ReadMessage(); err != nil {
+	}
+
+	if w, err := wsClient.NextWriter(websocket.BinaryMessage); err != nil {
 		t.Fatal(err)
-	} else if mt != websocket.TextMessage {
-		t.Fatalf("Message Type is %d, not %d", mt, websocket.TextMessage)
-	} else if !bytes.Equal(p, []byte("GuMo")) {
-		t.Fatalf("Payload was %x / %s", p, p)
-	} else if err := wsClient.Close(); err != nil {
+	} else if err := marshalCbor(newRegisterMessage("dtn:foobar"), w); err != nil {
 		t.Fatal(err)
+	} else if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	if mt, r, err := wsClient.NextReader(); err != nil {
+		t.Fatal(err)
+	} else if mt != websocket.BinaryMessage {
+		t.Fatalf("expected message type %v, got %v", websocket.BinaryMessage, mt)
+	} else if msg, err := unmarshalCbor(r); err != nil {
+		t.Fatal(err)
+	} else if msg.typeCode() != wamStatusCode {
+		t.Fatalf("expected status code %d, got %d", wamStatusCode, msg.typeCode())
+	} else if msg := msg.(*wamStatus); msg.errorMsg != "" {
+		t.Fatal(msg.errorMsg)
 	}
 
 	ws.receiver <- ShutdownMessage{}

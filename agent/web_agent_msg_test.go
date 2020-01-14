@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -23,6 +24,8 @@ func TestWebsocketAgentMessageEnDecode(t *testing.T) {
 	}
 
 	msgs := []webAgentMessage{
+		newStatusMessage(nil),
+		newStatusMessage(fmt.Errorf("oof")),
 		newRegisterMessage("dtn:foobar"),
 		newBundleMessage(b),
 	}

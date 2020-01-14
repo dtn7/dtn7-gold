@@ -91,11 +91,8 @@ func (w *WebAgent) websocketHandler(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := conn.WriteMessage(websocket.TextMessage, []byte("GuMo")); err != nil {
-		w.log().WithError(err).Warn("no gumo ;_;")
-	}
-
-	_ = conn.Close()
+	client := newWebAgentClient(conn)
+	client.start()
 }
 
 func (w *WebAgent) Endpoints() []bundle.EndpointID {

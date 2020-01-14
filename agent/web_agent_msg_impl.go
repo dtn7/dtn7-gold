@@ -7,6 +7,34 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
+// wamStatus is a webAgentMessage to acknowledge a previous message or report an error with a non-empty string.
+// This message might be initiated from both a client or a server.
+type wamStatus struct {
+	errorMsg string
+}
+
+// newStatusMessage creates a new wamStatus webAgentMessage.
+func newStatusMessage(err error) *wamStatus {
+	if err == nil {
+		return &wamStatus{""}
+	} else {
+		return &wamStatus{err.Error()}
+	}
+}
+
+func (_ *wamStatus) typeCode() uint64 {
+	return wamStatusCode
+}
+
+func (ws *wamStatus) MarshalCbor(w io.Writer) error {
+	return cboring.WriteTextString(ws.errorMsg, w)
+}
+
+func (ws *wamStatus) UnmarshalCbor(r io.Reader) (err error) {
+	ws.errorMsg, err = cboring.ReadTextString(r)
+	return
+}
+
 // wamRegister is a webAgentMessage sent from a client to the server to register itself for an endpoint.
 type wamRegister struct {
 	endpoint string
