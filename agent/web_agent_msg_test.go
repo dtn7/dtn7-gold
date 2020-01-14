@@ -1,0 +1,43 @@
+package agent
+
+import (
+	"bytes"
+	"reflect"
+	"testing"
+
+	"github.com/dtn7/dtn7-go/bundle"
+)
+
+func TestWebsocketAgentMessageEnDecode(t *testing.T) {
+	b, err := bundle.Builder().
+		Source("dtn://src/").
+		Destination("dtn://dst/").
+		CreationTimestampEpoch().
+		Lifetime("24h").
+		BundleAgeBlock(0).
+		HopCountBlock(64).
+		PayloadBlock([]byte("hello world")).
+		Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	msgs := []webAgentMessage{
+		newRegisterMessage("dtn:foobar"),
+		newBundleMessage(b),
+	}
+
+	for _, msg := range msgs {
+		var buff bytes.Buffer
+
+		if err := marshalCbor(msg, &buff); err != nil {
+			t.Fatal(err)
+		}
+
+		if msg2, err := unmarshalCbor(&buff); err != nil {
+			t.Fatal(err)
+		} else if !reflect.DeepEqual(msg, msg2) {
+			t.Fatalf("Messages differ: %v %v", msg, msg2)
+		}
+	}
+}

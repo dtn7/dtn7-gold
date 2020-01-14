@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Generic helper functions for tests, used both for SocketAgent and WebsocketAgent.
+// Generic helper functions for tests, used both for SocketAgent and WebAgent.
 
 // randomPort returns a random open TCP port.
 func randomPort(t *testing.T) (port int) {

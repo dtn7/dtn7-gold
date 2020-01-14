@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type WebsocketAgent struct {
+type WebAgent struct {
 	receiver chan Message
 	sender   chan Message
 
@@ -19,14 +19,14 @@ type WebsocketAgent struct {
 	upgrader   websocket.Upgrader
 }
 
-func NewWebsocket(address string) (w *WebsocketAgent, err error) {
+func NewWebAgent(address string) (w *WebAgent, err error) {
 	httpMux := http.NewServeMux()
 	httpServer := &http.Server{
 		Addr:    address,
 		Handler: httpMux,
 	}
 
-	w = &WebsocketAgent{
+	w = &WebAgent{
 		receiver: make(chan Message),
 		sender:   make(chan Message),
 
@@ -56,12 +56,12 @@ func NewWebsocket(address string) (w *WebsocketAgent, err error) {
 	return
 }
 
-func (w *WebsocketAgent) log() *log.Entry {
-	return log.WithField("WebsocketAgent", w.httpServer.Addr)
+func (w *WebAgent) log() *log.Entry {
+	return log.WithField("WebAgent", w.httpServer.Addr)
 }
 
-// handler is the "generic" handler for a WebsocketAgent.
-func (w *WebsocketAgent) handler() {
+// handler is the "generic" handler for a WebAgent.
+func (w *WebAgent) handler() {
 	defer func() {
 		close(w.receiver)
 		close(w.sender)
@@ -84,7 +84,7 @@ func (w *WebsocketAgent) handler() {
 }
 
 // websocketHandler will be called for each HTTP request to /ws, our WebSocket endpoint.
-func (w *WebsocketAgent) websocketHandler(rw http.ResponseWriter, r *http.Request) {
+func (w *WebAgent) websocketHandler(rw http.ResponseWriter, r *http.Request) {
 	conn, connErr := w.upgrader.Upgrade(rw, r, nil)
 	if connErr != nil {
 		w.log().WithError(connErr).Warn("Upgrading HTTP request to WebSocket errored")
@@ -98,15 +98,15 @@ func (w *WebsocketAgent) websocketHandler(rw http.ResponseWriter, r *http.Reques
 	_ = conn.Close()
 }
 
-func (w *WebsocketAgent) Endpoints() []bundle.EndpointID {
+func (w *WebAgent) Endpoints() []bundle.EndpointID {
 	// TODO
 	return nil
 }
 
-func (w *WebsocketAgent) MessageReceiver() chan Message {
+func (w *WebAgent) MessageReceiver() chan Message {
 	return w.receiver
 }
 
-func (w *WebsocketAgent) MessageSender() chan Message {
+func (w *WebAgent) MessageSender() chan Message {
 	return w.sender
 }

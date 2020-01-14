@@ -10,14 +10,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func TestWebsocketAgentNew(t *testing.T) {
+func TestWebAgentNew(t *testing.T) {
 	addr := fmt.Sprintf("localhost:%d", randomPort(t))
-	ws, wsErr := NewWebsocket(addr)
+	ws, wsErr := NewWebAgent(addr)
 	if wsErr != nil {
 		t.Fatal(wsErr)
 	}
 
-	// Let the WebsocketAgent start..
+	// Let the WebAgent start..
 	time.Sleep(250 * time.Millisecond)
 
 	for i := 1; i <= 3; i++ {
@@ -47,14 +47,14 @@ func TestWebsocketAgentNew(t *testing.T) {
 
 	ws.receiver <- ShutdownMessage{}
 
-	// Let the WebsocketAgent shut itself down
+	// Let the WebAgent shut itself down
 	time.Sleep(250 * time.Millisecond)
 
 	for i := 1; i <= 3; i++ {
 		if !isAddrReachable(addr) {
 			break
 		} else if i == 3 {
-			t.Fatal("WebsocketAgent is still reachable")
+			t.Fatal("WebAgent is still reachable")
 		}
 	}
 
