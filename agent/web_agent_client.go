@@ -29,13 +29,38 @@ func newWebAgentClient(conn *websocket.Conn) *webAgentClient {
 }
 
 func (client *webAgentClient) start() {
-	client.handleIncoming()
+	client.handleConn()
 }
 
-func (client *webAgentClient) handleIncoming() {
+func (client *webAgentClient) handleReceiver() {
 	var logger = log.WithField("web agent client", client.conn.RemoteAddr().String())
 
 	defer func() {
+		close(client.receiver)
+		close(client.sender)
+		_ = client.conn.Close()
+	}()
+
+	for msg := range client.receiver {
+		switch msg := msg.(type) {
+		case ShutdownMessage:
+			return
+
+		case BundleMessage:
+			if err := client.handleOutgoingBundle(msg.Bundle); err != nil {
+				logger.WithError(err).Warn("Sending outgoing Bundle errored")
+				return
+			}
+		}
+	}
+}
+
+func (client *webAgentClient) handleConn() {
+	var logger = log.WithField("web agent client", client.conn.RemoteAddr().String())
+
+	defer func() {
+		close(client.receiver)
+		close(client.sender)
 		_ = client.conn.Close()
 	}()
 
@@ -96,6 +121,26 @@ func (client *webAgentClient) handleIncomingRegister(m *wamRegister) error {
 	}
 }
 
+func (client *webAgentClient) handleOutgoingBundle(b bundle.Bundle) error {
+	client.Lock()
+	defer client.Unlock()
+
+	wc, wcErr := client.conn.NextWriter(websocket.BinaryMessage)
+	if wcErr != nil {
+		return wcErr
+	}
+
+	if cborErr := marshalCbor(newBundleMessage(b), wc); cborErr != nil {
+		return cborErr
+	}
+
+	if wcErr := wc.Close(); wcErr != nil {
+		return wcErr
+	}
+
+	return nil
+}
+
 func (client *webAgentClient) acknowledgeIncoming(err error) error {
 	client.Lock()
 	defer client.Unlock()
@@ -114,4 +159,23 @@ func (client *webAgentClient) acknowledgeIncoming(err error) error {
 	}
 
 	return err
+}
+
+func (client *webAgentClient) Endpoints() []bundle.EndpointID {
+	client.Lock()
+	defer client.Unlock()
+
+	if client.endpoint == (bundle.EndpointID{}) {
+		return nil
+	} else {
+		return []bundle.EndpointID{client.endpoint}
+	}
+}
+
+func (client *webAgentClient) MessageReceiver() chan Message {
+	return client.receiver
+}
+
+func (client *webAgentClient) MessageSender() chan Message {
+	return client.sender
 }

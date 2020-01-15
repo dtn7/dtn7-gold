@@ -82,7 +82,7 @@ func TestWebAgentNew(t *testing.T) {
 		t.Fatal(msg.errorMsg)
 	}
 
-	ws.receiver <- ShutdownMessage{}
+	ws.MessageReceiver() <- ShutdownMessage{}
 
 	// Let the WebAgent shut itself down
 	time.Sleep(250 * time.Millisecond)

@@ -11,8 +11,8 @@ import (
 )
 
 type WebAgent struct {
-	receiver chan Message
-	sender   chan Message
+	receiver  chan Message
+	clientMux *MuxAgent
 
 	httpServer *http.Server
 	httpMux    *http.ServeMux
@@ -27,8 +27,8 @@ func NewWebAgent(address string) (w *WebAgent, err error) {
 	}
 
 	w = &WebAgent{
-		receiver: make(chan Message),
-		sender:   make(chan Message),
+		receiver:  make(chan Message),
+		clientMux: NewMuxAgent(),
 
 		httpServer: httpServer,
 		httpMux:    httpMux,
@@ -64,21 +64,14 @@ func (w *WebAgent) log() *log.Entry {
 func (w *WebAgent) handler() {
 	defer func() {
 		close(w.receiver)
-		close(w.sender)
 		_ = w.httpServer.Close()
 	}()
 
-	for m := range w.receiver {
-		switch m := m.(type) {
-		case BundleMessage:
-			// TODO: forward to specific child processes
+	for msg := range w.receiver {
+		w.clientMux.MessageReceiver() <- msg
 
-		case ShutdownMessage:
-			// TODO: shutdown child processes
+		if _, isShutdown := msg.(ShutdownMessage); isShutdown {
 			return
-
-		default:
-			w.log().WithField("message", m).Info("Received unsupported Message")
 		}
 	}
 }
@@ -92,12 +85,13 @@ func (w *WebAgent) websocketHandler(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	client := newWebAgentClient(conn)
+	w.clientMux.Register(client)
+
 	client.start()
 }
 
 func (w *WebAgent) Endpoints() []bundle.EndpointID {
-	// TODO
-	return nil
+	return w.clientMux.Endpoints()
 }
 
 func (w *WebAgent) MessageReceiver() chan Message {
@@ -105,5 +99,5 @@ func (w *WebAgent) MessageReceiver() chan Message {
 }
 
 func (w *WebAgent) MessageSender() chan Message {
-	return w.sender
+	return w.clientMux.MessageSender()
 }
