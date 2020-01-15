@@ -71,6 +71,7 @@ func (w *WebAgent) handler() {
 		w.clientMux.MessageReceiver() <- msg
 
 		if _, isShutdown := msg.(ShutdownMessage); isShutdown {
+			w.log().Info("Received shutdown")
 			return
 		}
 	}

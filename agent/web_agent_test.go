@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -35,6 +37,8 @@ func isAddrReachable(addr string) (open bool) {
 }
 
 func TestWebAgentNew(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+
 	addr := fmt.Sprintf("localhost:%d", randomPort(t))
 	ws, wsErr := NewWebAgent(addr)
 	if wsErr != nil {

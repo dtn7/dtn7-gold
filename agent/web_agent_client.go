@@ -2,6 +2,7 @@ package agent
 
 import (
 	"fmt"
+	"net"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -17,6 +18,8 @@ type webAgentClient struct {
 	endpoint bundle.EndpointID
 	receiver chan Message
 	sender   chan Message
+
+	shutdownOnce sync.Once
 }
 
 func newWebAgentClient(conn *websocket.Conn) *webAgentClient {
@@ -29,44 +32,54 @@ func newWebAgentClient(conn *websocket.Conn) *webAgentClient {
 }
 
 func (client *webAgentClient) start() {
+	go client.handleReceiver()
 	client.handleConn()
 }
 
-func (client *webAgentClient) handleReceiver() {
-	var logger = log.WithField("web agent client", client.conn.RemoteAddr().String())
+func (client *webAgentClient) shutdown() {
+	client.shutdownOnce.Do(func() {
+		log.WithField("web agent client", client.conn.RemoteAddr().String()).Debug("Reached shutdown")
 
-	defer func() {
 		close(client.receiver)
 		close(client.sender)
 		_ = client.conn.Close()
-	}()
+	})
+}
+
+func (client *webAgentClient) handleReceiver() {
+	defer client.shutdown()
+
+	var logger = log.WithField("web agent client", client.conn.RemoteAddr().String())
 
 	for msg := range client.receiver {
 		switch msg := msg.(type) {
 		case ShutdownMessage:
+			logger.Debug("Received Shutdown")
 			return
 
 		case BundleMessage:
 			if err := client.handleOutgoingBundle(msg.Bundle); err != nil {
 				logger.WithError(err).Warn("Sending outgoing Bundle errored")
 				return
+			} else {
+				logger.WithField("bundle", msg.Bundle).Info("Sent Bundle")
 			}
 		}
 	}
 }
 
 func (client *webAgentClient) handleConn() {
-	var logger = log.WithField("web agent client", client.conn.RemoteAddr().String())
+	defer client.shutdown()
 
-	defer func() {
-		close(client.receiver)
-		close(client.sender)
-		_ = client.conn.Close()
-	}()
+	var logger = log.WithField("web agent client", client.conn.RemoteAddr().String())
 
 	for {
 		if messageType, reader, err := client.conn.NextReader(); err != nil {
-			logger.WithError(err).Warn("Opening next Websocket Reader errored")
+			if netErr, ok := err.(*net.OpError); ok && netErr.Err.Error() == "use of closed network connection" {
+				logger.WithError(err).Debug("Reader errored due to closed network connection")
+			} else {
+				logger.WithError(err).Warn("Opening next Websocket Reader errored")
+			}
 			return
 		} else if messageType != websocket.BinaryMessage {
 			logger.WithField("message type", messageType).Warn("Websocket Reader's type is not binary")
