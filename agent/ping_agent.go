@@ -31,10 +31,7 @@ func (p *PingAgent) log() *log.Entry {
 }
 
 func (p *PingAgent) handler() {
-	defer func() {
-		close(p.receiver)
-		close(p.sender)
-	}()
+	defer close(p.sender)
 
 	for m := range p.receiver {
 		switch m := m.(type) {

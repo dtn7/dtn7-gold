@@ -160,5 +160,73 @@ func TestWebAgentNew(t *testing.T) {
 			t.Fatal("WebAgent is still reachable")
 		}
 	}
+}
 
+func TestWebAgentIllegalEndpoint(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+
+	// Start WebAgent server
+	addr := fmt.Sprintf("localhost:%d", randomPort(t))
+	ws, wsErr := NewWebAgent(addr)
+	if wsErr != nil {
+		t.Fatal(wsErr)
+	}
+
+	// Let the WebAgent start..
+	time.Sleep(250 * time.Millisecond)
+
+	for i := 1; i <= 3; i++ {
+		if isAddrReachable(addr) {
+			break
+		} else if i == 3 {
+			t.Fatal("SocketAgent seems to be unreachable")
+		}
+	}
+
+	// Connect dummy client
+	u := url.URL{
+		Scheme: "ws",
+		Host:   addr,
+		Path:   "/ws",
+	}
+	wsClient, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Register client with an illegal endpoint ID
+	if w, err := wsClient.NextWriter(websocket.BinaryMessage); err != nil {
+		t.Fatal(err)
+	} else if err := marshalCbor(newRegisterMessage("uff"), w); err != nil {
+		t.Fatal(err)
+	} else if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Check registration
+	if mt, r, err := wsClient.NextReader(); err != nil {
+		t.Fatal(err)
+	} else if mt != websocket.BinaryMessage {
+		t.Fatalf("expected message type %v, got %v", websocket.BinaryMessage, mt)
+	} else if msg, err := unmarshalCbor(r); err != nil {
+		t.Fatal(err)
+	} else if msg.typeCode() != wamStatusCode {
+		t.Fatalf("expected status code %d, got %d", wamStatusCode, msg.typeCode())
+	} else if msg := msg.(*wamStatus); msg.errorMsg == "" {
+		t.Fatal("Expected error due to illegal endpoint ID")
+	}
+
+	// Shutdown WebAgent
+	ws.MessageReceiver() <- ShutdownMessage{}
+
+	// Let the WebAgent shut itself down
+	time.Sleep(250 * time.Millisecond)
+
+	for i := 1; i <= 3; i++ {
+		if !isAddrReachable(addr) {
+			break
+		} else if i == 3 {
+			t.Fatal("WebAgent is still reachable")
+		}
+	}
 }

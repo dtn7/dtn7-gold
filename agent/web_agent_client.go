@@ -40,7 +40,6 @@ func (client *webAgentClient) shutdown() {
 	client.shutdownOnce.Do(func() {
 		log.WithField("web agent client", client.conn.RemoteAddr().String()).Debug("Reached shutdown")
 
-		close(client.receiver)
 		close(client.sender)
 		_ = client.conn.Close()
 	})

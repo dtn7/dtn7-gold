@@ -29,10 +29,7 @@ func NewMuxAgent() (mux *MuxAgent) {
 }
 
 func (mux *MuxAgent) handle() {
-	defer func() {
-		close(mux.receiver)
-		close(mux.sender)
-	}()
+	defer close(mux.sender)
 
 	for msg := range mux.receiver {
 		mux.Lock()
@@ -67,14 +64,16 @@ func (mux *MuxAgent) handleChild(agent ApplicationAgent) {
 		mux.sender <- msg
 	}
 
-	mux.Unregister(agent)
+	mux.unregister(agent)
 }
 
-// Unregister a previously registered ApplicationAgent.
-// This will not automatically shutdown this ApplicationAgent; one has to send a ShutdownMessage manually.
-func (mux *MuxAgent) Unregister(agent ApplicationAgent) {
+// unregister a previously registered ApplicationAgent.
+// This will also automatically shutdown this ApplicationAgent.
+func (mux *MuxAgent) unregister(agent ApplicationAgent) {
 	mux.Lock()
 	defer mux.Unlock()
+
+	close(agent.MessageReceiver())
 
 	for i, child := range mux.children {
 		if child == agent {

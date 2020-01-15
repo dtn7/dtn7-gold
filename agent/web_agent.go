@@ -63,7 +63,6 @@ func (w *WebAgent) log() *log.Entry {
 // handler is the "generic" handler for a WebAgent.
 func (w *WebAgent) handler() {
 	defer func() {
-		close(w.receiver)
 		_ = w.httpServer.Close()
 	}()
 
