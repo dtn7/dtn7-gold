@@ -64,6 +64,9 @@ func (client *webAgentClient) handleReceiver() {
 			} else {
 				logger.WithField("bundle", msg.Bundle).Info("Sent Bundle")
 			}
+
+		default:
+			logger.WithField("message", msg).Info("Received unknown / unsupported message")
 		}
 	}
 }

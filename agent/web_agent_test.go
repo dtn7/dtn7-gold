@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"reflect"
 	"testing"
 	"time"
 
+	"github.com/dtn7/dtn7-go/bundle"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/websocket"
@@ -39,6 +41,7 @@ func isAddrReachable(addr string) (open bool) {
 func TestWebAgentNew(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 
+	// Start WebAgent server
 	addr := fmt.Sprintf("localhost:%d", randomPort(t))
 	ws, wsErr := NewWebAgent(addr)
 	if wsErr != nil {
@@ -56,6 +59,7 @@ func TestWebAgentNew(t *testing.T) {
 		}
 	}
 
+	// Connect dummy client
 	u := url.URL{
 		Scheme: "ws",
 		Host:   addr,
@@ -66,14 +70,16 @@ func TestWebAgentNew(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Register client
 	if w, err := wsClient.NextWriter(websocket.BinaryMessage); err != nil {
 		t.Fatal(err)
-	} else if err := marshalCbor(newRegisterMessage("dtn:foobar"), w); err != nil {
+	} else if err := marshalCbor(newRegisterMessage("dtn://foobar/"), w); err != nil {
 		t.Fatal(err)
 	} else if err := w.Close(); err != nil {
 		t.Fatal(err)
 	}
 
+	// Check registration
 	if mt, r, err := wsClient.NextReader(); err != nil {
 		t.Fatal(err)
 	} else if mt != websocket.BinaryMessage {
@@ -86,6 +92,34 @@ func TestWebAgentNew(t *testing.T) {
 		t.Fatal(msg.errorMsg)
 	}
 
+	// Send Bundle to client
+	b, err := bundle.Builder().
+		Source("dtn:test").
+		Destination("dtn://foobar/").
+		CreationTimestampNow().
+		Lifetime("24h").
+		PayloadBlock([]byte("hello world")).
+		Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ws.MessageReceiver() <- BundleMessage{b}
+
+	// Check received Bundle
+	if mt, r, err := wsClient.NextReader(); err != nil {
+		t.Fatal(err)
+	} else if mt != websocket.BinaryMessage {
+		t.Fatalf("expected message type %v, got %v", websocket.BinaryMessage, mt)
+	} else if msg, err := unmarshalCbor(r); err != nil {
+		t.Fatal(err)
+	} else if msg.typeCode() != wamBundleCode {
+		t.Fatalf("expected status code %d, got %d", wamBundleCode, msg.typeCode())
+	} else if bRecv := msg.(*wamBundle).b; !reflect.DeepEqual(b, bRecv) {
+		t.Fatalf("expected %v, got %v", b, bRecv)
+	}
+
+	// Shutdown WebAgent with all its child processes
 	ws.MessageReceiver() <- ShutdownMessage{}
 
 	// Let the WebAgent shut itself down
