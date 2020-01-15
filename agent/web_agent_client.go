@@ -62,7 +62,7 @@ func (client *webAgentClient) handleReceiver() {
 				logger.WithError(err).Warn("Sending outgoing Bundle errored")
 				return
 			} else {
-				logger.WithField("bundle", msg.Bundle).Info("Sent Bundle")
+				logger.WithField("bundle", msg.Bundle).Info("Sent Bundle to client")
 			}
 
 		default:
@@ -98,10 +98,10 @@ func (client *webAgentClient) handleConn() {
 				err = client.handleIncomingRegister(message)
 
 			case *wamBundle:
-				// TODO
+				err = client.handleIncomingBundle(message)
 
 			default:
-				// TODO
+				logger.WithField("message", message).Info("Received unknown / unsupported message")
 			}
 
 			if err = client.acknowledgeIncoming(err); err != nil {
@@ -137,27 +137,29 @@ func (client *webAgentClient) handleIncomingRegister(m *wamRegister) error {
 	}
 }
 
-func (client *webAgentClient) handleOutgoingBundle(b bundle.Bundle) error {
-	client.Lock()
-	defer client.Unlock()
+func (client *webAgentClient) handleIncomingBundle(m *wamBundle) error {
+	log.WithFields(log.Fields{
+		"web agent client": client.conn.RemoteAddr().String(),
+		"message":          m,
+	}).Info("Received Bundle from client")
 
-	wc, wcErr := client.conn.NextWriter(websocket.BinaryMessage)
-	if wcErr != nil {
-		return wcErr
-	}
-
-	if cborErr := marshalCbor(newBundleMessage(b), wc); cborErr != nil {
-		return cborErr
-	}
-
-	if wcErr := wc.Close(); wcErr != nil {
-		return wcErr
-	}
-
+	client.sender <- BundleMessage{m.b}
 	return nil
 }
 
+func (client *webAgentClient) handleOutgoingBundle(b bundle.Bundle) error {
+	return client.writeMessage(newBundleMessage(b))
+}
+
 func (client *webAgentClient) acknowledgeIncoming(err error) error {
+	if writeErr := client.writeMessage(newStatusMessage(err)); writeErr != nil {
+		return writeErr
+	} else {
+		return err
+	}
+}
+
+func (client *webAgentClient) writeMessage(msg webAgentMessage) error {
 	client.Lock()
 	defer client.Unlock()
 
@@ -166,15 +168,11 @@ func (client *webAgentClient) acknowledgeIncoming(err error) error {
 		return wcErr
 	}
 
-	if cborErr := marshalCbor(newStatusMessage(err), wc); cborErr != nil {
+	if cborErr := marshalCbor(msg, wc); cborErr != nil {
 		return cborErr
 	}
 
-	if wcErr := wc.Close(); wcErr != nil {
-		return wcErr
-	}
-
-	return err
+	return wc.Close()
 }
 
 func (client *webAgentClient) Endpoints() []bundle.EndpointID {

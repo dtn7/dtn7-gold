@@ -38,6 +38,21 @@ func isAddrReachable(addr string) (open bool) {
 	return
 }
 
+// createBundle from src to dst for testing purpose.
+func createBundle(src, dst string, t *testing.T) bundle.Bundle {
+	b, err := bundle.Builder().
+		Source(src).
+		Destination(dst).
+		CreationTimestampNow().
+		Lifetime("24h").
+		PayloadBlock([]byte("hello world")).
+		Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
 func TestWebAgentNew(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 
@@ -93,20 +108,10 @@ func TestWebAgentNew(t *testing.T) {
 	}
 
 	// Send Bundle to client
-	b, err := bundle.Builder().
-		Source("dtn:test").
-		Destination("dtn://foobar/").
-		CreationTimestampNow().
-		Lifetime("24h").
-		PayloadBlock([]byte("hello world")).
-		Build()
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	b := createBundle("dtn://test/", "dtn://foobar/", t)
 	ws.MessageReceiver() <- BundleMessage{b}
 
-	// Check received Bundle
+	// Client checks received Bundle
 	if mt, r, err := wsClient.NextReader(); err != nil {
 		t.Fatal(err)
 	} else if mt != websocket.BinaryMessage {
@@ -117,6 +122,29 @@ func TestWebAgentNew(t *testing.T) {
 		t.Fatalf("expected status code %d, got %d", wamBundleCode, msg.typeCode())
 	} else if bRecv := msg.(*wamBundle).b; !reflect.DeepEqual(b, bRecv) {
 		t.Fatalf("expected %v, got %v", b, bRecv)
+	}
+
+	// Send Bundle from client
+	b = createBundle("dtn://foobar/", "dtn://test/", t)
+	if w, err := wsClient.NextWriter(websocket.BinaryMessage); err != nil {
+		t.Fatal(err)
+	} else if err := marshalCbor(newBundleMessage(b), w); err != nil {
+		t.Fatal(err)
+	} else if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Server checks received Bundle
+	select {
+	case msg := <-ws.MessageSender():
+		if msg, ok := msg.(BundleMessage); !ok {
+			t.Fatalf("Message is not a Bundle Message; %v", msg)
+		} else if !reflect.DeepEqual(b, msg.Bundle) {
+			t.Fatalf("expected %v, got %v", b, msg.Bundle)
+		}
+
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("Bundle reception timed out")
 	}
 
 	// Shutdown WebAgent with all its child processes
