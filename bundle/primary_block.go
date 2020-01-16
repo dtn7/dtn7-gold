@@ -225,7 +225,7 @@ func (pb PrimaryBlock) CheckValid() (errs error) {
 			fmt.Errorf("PrimaryBlock: Wrong Version, %d instead of %d", pb.Version, dtnVersion))
 	}
 
-	// A CRC value is mandatory since bpbis-14. However, bpbis-17 allows for the omission of such a CRC
+	// bpbis-14 enforces a CRC value. However, since bpbis-17 the omission of such a CRC is allowed
 	// iff a BPSec Block Integrity Block exists. Currently, this is not part of the implementation, so a
 	// CRC is required.
 	if !pb.HasCRC() {
