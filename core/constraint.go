@@ -1,7 +1,7 @@
 package core
 
 // Constraint is a retention constraint as defined in the subsections of the
-// fifth chapter of draft-ietf-dtn-bpbis-18.
+// fifth chapter of draft-ietf-dtn-bpbis-19.
 type Constraint int
 
 const (
