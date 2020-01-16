@@ -33,9 +33,10 @@ func (mux *MuxAgent) handle() {
 
 	for msg := range mux.receiver {
 		mux.Lock()
-		// TODO: filter children for recipient
 		for _, child := range mux.children {
-			child.MessageReceiver() <- msg
+			if rec := msg.Recipients(); rec == nil || messageForAgent(msg, child) {
+				child.MessageReceiver() <- msg
+			}
 		}
 		mux.Unlock()
 

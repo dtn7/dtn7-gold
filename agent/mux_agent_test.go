@@ -34,9 +34,9 @@ func TestMuxAgent(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	for i, mock := range []*mockAgent{mock1, mock2} {
-		if msgs := mock.inbox(); len(msgs) != 1 {
-			t.Fatalf("mock agent%d did not receied onemessages; msgs := %v", i, msgs)
-		} else if !reflect.DeepEqual(msgs[0].(BundleMessage).Bundle, b1) {
+		if msgs := mock.inbox(); len(msgs) != 1-i {
+			t.Fatalf("mock agent%d did not receied %d messages; msgs := %v", i+1, 1-i, msgs)
+		} else if 1-i > 0 && !reflect.DeepEqual(msgs[0].(BundleMessage).Bundle, b1) {
 			t.Fatalf("message is not b1; %v %v", msgs[0], b1)
 		}
 	}
@@ -52,15 +52,16 @@ func TestMuxAgent(t *testing.T) {
 		break
 	}
 
+	b1.PrimaryBlock.Destination = bundle.MustNewEndpointID("dtn://agent/mock-2/")
 	mux.MessageReceiver() <- BundleMessage{b1}
 	time.Sleep(500 * time.Millisecond)
 
 	if msgs := mock1.inbox(); len(msgs) != 0 {
-		t.Fatalf("mock agent1 received messages %v", msgs)
+		t.Fatalf("shutdowned mock agent1 received messages %v", msgs)
 	}
 
 	if msgs := mock2.inbox(); len(msgs) != 1 {
-		t.Fatalf("mock agent2 did not receied onemessages; msgs := %v", msgs)
+		t.Fatalf("mock agent2 did not receied messages; msgs := %v", msgs)
 	} else if !reflect.DeepEqual(msgs[0].(BundleMessage).Bundle, b1) {
 		t.Fatalf("message is not b1; %v %v", msgs[0], b1)
 	}
