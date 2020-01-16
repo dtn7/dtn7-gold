@@ -94,7 +94,11 @@ func (client *webAgentClient) handleConn() {
 
 			switch message := message.(type) {
 			case *wamRegister:
-				err = client.handleIncomingRegister(message)
+				err := client.handleIncomingRegister(message)
+				if err = client.acknowledgeIncoming(err); err != nil {
+					logger.WithError(err).Warn("Handling registration errored")
+					return
+				}
 
 			case *wamBundle:
 				err = client.handleIncomingBundle(message)
@@ -103,8 +107,8 @@ func (client *webAgentClient) handleConn() {
 				logger.WithField("message", message).Info("Received unknown / unsupported message")
 			}
 
-			if err = client.acknowledgeIncoming(err); err != nil {
-				logger.WithError(err).Warn("Handling incoming message / acknowledgment errored")
+			if err != nil {
+				logger.WithField("message", message).WithError(err).Warn("Handling message errored")
 				return
 			}
 		}
