@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/gorilla/websocket"
 )
 
