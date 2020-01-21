@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
 )
 
@@ -36,12 +35,16 @@ func (_ SyscallRequestMessage) Recipients() []bundle.EndpointID {
 }
 
 // SyscallResponseMessage is the answer to a SyscallRequestMessage, sent to an ApplicationAgent.
-type SyscallResponseMessage interface {
-	Message
-	cboring.CborMarshaler
+// The Response is stored as a generic byte array. However, its content is defined for each syscall.
+type SyscallResponseMessage struct {
+	Request   string
+	Response  []byte
+	Recipient bundle.EndpointID
+}
 
-	// Request as requested in the SyscallRequestMessage.
-	Request() string
+// Recipients are the sender of the SyscallRequestMessage.
+func (srm SyscallResponseMessage) Recipients() []bundle.EndpointID {
+	return []bundle.EndpointID{srm.Recipient}
 }
 
 // ShutdownMessage indicates the closing down of an ApplicationAgent.

@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"net/url"
@@ -156,17 +157,36 @@ func TestWebAgentNew(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Server checks received syscall
+	// Server responds to the syscall
 	select {
 	case msg := <-ws.MessageSender():
 		if msg, ok := msg.(SyscallRequestMessage); !ok {
 			t.Fatalf("Message is not a SyscallRequestMessage; %v", msg)
 		} else if msg.Request != "test" {
 			t.Fatalf("expected payload of \"test\", not %s", msg.Request)
+		} else {
+			ws.MessageReceiver() <- SyscallResponseMessage{
+				Request:   "test",
+				Response:  []byte{0x23, 0x42},
+				Recipient: bundle.MustNewEndpointID("dtn://foobar/"),
+			}
 		}
 
 	case <-time.After(500 * time.Millisecond):
 		t.Fatal("syscall request reception timed out")
+	}
+
+	// Client checks the syscall response
+	if mt, r, err := wsClient.NextReader(); err != nil {
+		t.Fatal(err)
+	} else if mt != websocket.BinaryMessage {
+		t.Fatalf("expected message type %v, got %v", websocket.BinaryMessage, mt)
+	} else if msg, err := unmarshalCbor(r); err != nil {
+		t.Fatal(err)
+	} else if msg.typeCode() != wamSyscallResponseCode {
+		t.Fatalf("expected status code %d, got %d", wamSyscallResponseCode, msg.typeCode())
+	} else if response := msg.(*wamSyscallResponse).response; !bytes.Equal(response, []byte{0x23, 0x42}) {
+		t.Fatalf("received %x", response)
 	}
 
 	// Shutdown WebAgent with all its child processes

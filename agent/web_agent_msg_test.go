@@ -29,6 +29,7 @@ func TestWebsocketAgentMessageEnDecode(t *testing.T) {
 		newRegisterMessage("dtn:foobar"),
 		newBundleMessage(b),
 		newSyscallRequestMessage("test"),
+		newSyscallResponseMessage("foobar", []byte{0x23, 0x42, 0xAC, 0xAB}),
 	}
 
 	for _, msg := range msgs {

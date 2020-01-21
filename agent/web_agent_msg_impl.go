@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/dtn7/cboring"
@@ -102,4 +103,58 @@ func (wsr *wamSyscallRequest) MarshalCbor(w io.Writer) error {
 func (wsr *wamSyscallRequest) UnmarshalCbor(r io.Reader) (err error) {
 	wsr.request, err = cboring.ReadTextString(r)
 	return
+}
+
+type wamSyscallResponse struct {
+	request  string
+	response []byte
+}
+
+// newSyscallResponseMessage creates a new wamSyscallResponse webAgentMessage.
+func newSyscallResponseMessage(request string, response []byte) *wamSyscallResponse {
+	return &wamSyscallResponse{
+		request:  request,
+		response: response,
+	}
+}
+func (_ *wamSyscallResponse) typeCode() uint64 {
+	return wamSyscallResponseCode
+}
+
+func (wsr *wamSyscallResponse) MarshalCbor(w io.Writer) error {
+	if err := cboring.WriteArrayLength(2, w); err != nil {
+		return err
+	}
+
+	if err := cboring.WriteTextString(wsr.request, w); err != nil {
+		return err
+	}
+
+	if err := cboring.WriteByteString(wsr.response, w); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (wsr *wamSyscallResponse) UnmarshalCbor(r io.Reader) error {
+	if n, err := cboring.ReadArrayLength(r); err != nil {
+		return err
+	} else if n != 2 {
+		return fmt.Errorf("expected CBOR array of 2 elments, not %d", n)
+	}
+
+	if request, err := cboring.ReadTextString(r); err != nil {
+		return err
+	} else {
+		wsr.request = request
+	}
+
+	if response, err := cboring.ReadByteString(r); err != nil {
+		return err
+	} else {
+		wsr.response = response
+	}
+
+	return nil
 }

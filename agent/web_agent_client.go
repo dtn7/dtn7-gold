@@ -57,11 +57,19 @@ func (client *webAgentClient) handleReceiver() {
 			return
 
 		case BundleMessage:
-			if err := client.handleOutgoingBundle(msg.Bundle); err != nil {
+			if err := client.writeMessage(newBundleMessage(msg.Bundle)); err != nil {
 				logger.WithError(err).Warn("Sending outgoing Bundle errored")
 				return
 			} else {
 				logger.WithField("bundle", msg.Bundle).Info("Sent Bundle to client")
+			}
+
+		case SyscallResponseMessage:
+			if err := client.writeMessage(newSyscallResponseMessage(msg.Request, msg.Response)); err != nil {
+				logger.WithError(err).Warn("Sending syscall response errored")
+				return
+			} else {
+				logger.WithField("syscall", msg.Request).Info("Sent syscall response to client")
 			}
 
 		default:
@@ -101,9 +109,11 @@ func (client *webAgentClient) handleConn() {
 				}
 
 			case *wamBundle:
+				logger.WithField("bundle", message.b).Info("Received Bundle")
 				client.sender <- BundleMessage{message.b}
 
 			case *wamSyscallRequest:
+				logger.WithField("syscall", message.request).Info("Received requested syscall")
 				client.sender <- SyscallRequestMessage{message.request}
 
 			default:
@@ -141,10 +151,6 @@ func (client *webAgentClient) handleIncomingRegister(m *wamRegister) error {
 		logger.Warn(msg)
 		return fmt.Errorf(msg)
 	}
-}
-
-func (client *webAgentClient) handleOutgoingBundle(b bundle.Bundle) error {
-	return client.writeMessage(newBundleMessage(b))
 }
 
 func (client *webAgentClient) acknowledgeIncoming(err error) error {
