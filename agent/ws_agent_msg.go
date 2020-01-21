@@ -8,7 +8,7 @@ import (
 	"github.com/dtn7/cboring"
 )
 
-// webAgentMessage describes a message which might be sent over a WebAgent.
+// webAgentMessage describes a message which might be sent over a WebSocketAgent.
 // Implementations are available at the end of this file.
 type webAgentMessage interface {
 	// typeCode is an unique identifier for each message type.

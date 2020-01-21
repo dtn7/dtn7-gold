@@ -3,6 +3,7 @@ package agent
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"net/url"
 	"reflect"
 	"testing"
@@ -14,14 +15,19 @@ import (
 func TestWebAgentConnector(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 
-	// Start WebAgent server
+	// Start WebSocketAgent server
 	addr := fmt.Sprintf("localhost:%d", randomPort(t))
-	ws, wsErr := NewWebAgent(addr)
-	if wsErr != nil {
-		t.Fatal(wsErr)
-	}
+	ws := NewWebSocketAgent()
 
-	// Let the WebAgent start..
+	httpMux := http.NewServeMux()
+	httpMux.HandleFunc("/ws", ws.WebsocketHandler)
+	httpServer := &http.Server{
+		Addr:    addr,
+		Handler: httpMux,
+	}
+	go func() { _ = httpServer.ListenAndServe() }()
+
+	// Let the WebSocketAgent start..
 	time.Sleep(250 * time.Millisecond)
 
 	for i := 1; i <= 3; i++ {
@@ -38,7 +44,7 @@ func TestWebAgentConnector(t *testing.T) {
 		Host:   addr,
 		Path:   "/ws",
 	}
-	wac, wacErr := NewWebAgentConnector(u.String(), "dtn://foobar/23")
+	wac, wacErr := NewWebSocketAgentConnector(u.String(), "dtn://foobar/23")
 	if wacErr != nil {
 		t.Fatal(wacErr)
 	}
@@ -59,7 +65,7 @@ func TestWebAgentConnector(t *testing.T) {
 		}
 
 	case <-time.After(500 * time.Millisecond):
-		t.Fatal("WebAgent did not received message; time out")
+		t.Fatal("WebSocketAgent did not received message; time out")
 	}
 
 	b = createBundle("dtn://server/", "dtn://foobar/23", t)
@@ -105,11 +111,11 @@ func TestWebAgentConnector(t *testing.T) {
 
 	wac.Close()
 
-	// Let the WebAgent act on the closed connection
+	// Let the WebSocketAgent act on the closed connection
 	time.Sleep(250 * time.Millisecond)
 
 	ws.MessageReceiver() <- ShutdownMessage{}
 
-	// Let the WebAgent shut itself down
+	// Let the WebSocketAgent shut itself down
 	time.Sleep(250 * time.Millisecond)
 }

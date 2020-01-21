@@ -8,7 +8,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type WebAgentConnector struct {
+// WebSocketAgentConnector is the client side version of the WebSocketAgent.
+type WebSocketAgentConnector struct {
 	conn *websocket.Conn
 
 	msgOutChan chan webAgentMessage
@@ -21,13 +22,14 @@ type WebAgentConnector struct {
 	closeAck chan struct{}
 }
 
-func NewWebAgentConnector(apiUrl, endpointId string) (wac *WebAgentConnector, err error) {
+// NewWebSocketAgentConnector creates a new WebSocketAgentConnector connection to a WebSocketAgent.
+func NewWebSocketAgentConnector(apiUrl, endpointId string) (wac *WebSocketAgentConnector, err error) {
 	var conn *websocket.Conn
 	if conn, _, err = websocket.DefaultDialer.Dial(apiUrl, nil); err != nil {
 		return
 	}
 
-	wac = &WebAgentConnector{
+	wac = &WebSocketAgentConnector{
 		conn: conn,
 
 		msgOutChan: make(chan webAgentMessage),
@@ -51,7 +53,7 @@ func NewWebAgentConnector(apiUrl, endpointId string) (wac *WebAgentConnector, er
 	return
 }
 
-func (wac *WebAgentConnector) writeMessage(msg webAgentMessage) error {
+func (wac *WebSocketAgentConnector) writeMessage(msg webAgentMessage) error {
 	wc, wcErr := wac.conn.NextWriter(websocket.BinaryMessage)
 	if wcErr != nil {
 		return wcErr
@@ -64,7 +66,7 @@ func (wac *WebAgentConnector) writeMessage(msg webAgentMessage) error {
 	return wc.Close()
 }
 
-func (wac *WebAgentConnector) readMessage() (msg webAgentMessage, err error) {
+func (wac *WebSocketAgentConnector) readMessage() (msg webAgentMessage, err error) {
 	if mt, r, rErr := wac.conn.NextReader(); rErr != nil {
 		err = rErr
 		return
@@ -77,7 +79,7 @@ func (wac *WebAgentConnector) readMessage() (msg webAgentMessage, err error) {
 	}
 }
 
-func (wac *WebAgentConnector) registerEndpoint(endpointId string) error {
+func (wac *WebSocketAgentConnector) registerEndpoint(endpointId string) error {
 	if err := wac.writeMessage(newRegisterMessage(endpointId)); err != nil {
 		return err
 	}
@@ -93,7 +95,7 @@ func (wac *WebAgentConnector) registerEndpoint(endpointId string) error {
 	}
 }
 
-func (wac *WebAgentConnector) handleReader() {
+func (wac *WebSocketAgentConnector) handleReader() {
 	defer close(wac.msgInBundleChan)
 	defer close(wac.msgInSyscallChan)
 
@@ -115,7 +117,7 @@ func (wac *WebAgentConnector) handleReader() {
 	}
 }
 
-func (wac *WebAgentConnector) handler() {
+func (wac *WebSocketAgentConnector) handler() {
 	defer func() {
 		close(wac.closeAck)
 
@@ -136,7 +138,8 @@ func (wac *WebAgentConnector) handler() {
 	}
 }
 
-func (wac *WebAgentConnector) WriteBundle(b bundle.Bundle) (err error) {
+// WriteBundle sends a Bundle to a server.
+func (wac *WebSocketAgentConnector) WriteBundle(b bundle.Bundle) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
@@ -147,7 +150,8 @@ func (wac *WebAgentConnector) WriteBundle(b bundle.Bundle) (err error) {
 	return <-wac.msgOutErr
 }
 
-func (wac *WebAgentConnector) ReadBundle() (b bundle.Bundle, err error) {
+// ReadBundle returns the next incoming Bundle. This method blocks.
+func (wac *WebSocketAgentConnector) ReadBundle() (b bundle.Bundle, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
@@ -158,7 +162,8 @@ func (wac *WebAgentConnector) ReadBundle() (b bundle.Bundle, err error) {
 	return
 }
 
-func (wac *WebAgentConnector) Syscall(request string, timeout time.Duration) (response []byte, err error) {
+// Syscall will be send to the server. An answer or an error after a timeout will be returned.
+func (wac *WebSocketAgentConnector) Syscall(request string, timeout time.Duration) (response []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
@@ -180,7 +185,8 @@ func (wac *WebAgentConnector) Syscall(request string, timeout time.Duration) (re
 	}
 }
 
-func (wac *WebAgentConnector) Close() {
+// Close this WebSocketAgentConnector.
+func (wac *WebSocketAgentConnector) Close() {
 	defer func() {
 		// channel is already closed
 		_ = recover()

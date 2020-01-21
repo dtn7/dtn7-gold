@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"reflect"
 	"testing"
@@ -57,14 +58,19 @@ func createBundle(src, dst string, t *testing.T) bundle.Bundle {
 func TestWebAgentNew(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 
-	// Start WebAgent server
+	// Start WebSocketAgent server
 	addr := fmt.Sprintf("localhost:%d", randomPort(t))
-	ws, wsErr := NewWebAgent(addr)
-	if wsErr != nil {
-		t.Fatal(wsErr)
-	}
+	ws := NewWebSocketAgent()
 
-	// Let the WebAgent start..
+	httpMux := http.NewServeMux()
+	httpMux.HandleFunc("/ws", ws.WebsocketHandler)
+	httpServer := &http.Server{
+		Addr:    addr,
+		Handler: httpMux,
+	}
+	go func() { _ = httpServer.ListenAndServe() }()
+
+	// Let the WebSocketAgent start..
 	time.Sleep(250 * time.Millisecond)
 
 	for i := 1; i <= 3; i++ {
@@ -189,32 +195,26 @@ func TestWebAgentNew(t *testing.T) {
 		t.Fatalf("received %x", response)
 	}
 
-	// Shutdown WebAgent with all its child processes
+	// Shutdown WebSocketAgent with all its child processes
 	ws.MessageReceiver() <- ShutdownMessage{}
-
-	// Let the WebAgent shut itself down
-	time.Sleep(250 * time.Millisecond)
-
-	for i := 1; i <= 3; i++ {
-		if !isAddrReachable(addr) {
-			break
-		} else if i == 3 {
-			t.Fatal("WebAgent is still reachable")
-		}
-	}
 }
 
 func TestWebAgentIllegalEndpoint(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 
-	// Start WebAgent server
+	// Start WebSocketAgent server
 	addr := fmt.Sprintf("localhost:%d", randomPort(t))
-	ws, wsErr := NewWebAgent(addr)
-	if wsErr != nil {
-		t.Fatal(wsErr)
-	}
+	ws := NewWebSocketAgent()
 
-	// Let the WebAgent start..
+	httpMux := http.NewServeMux()
+	httpMux.HandleFunc("/ws", ws.WebsocketHandler)
+	httpServer := &http.Server{
+		Addr:    addr,
+		Handler: httpMux,
+	}
+	go func() { _ = httpServer.ListenAndServe() }()
+
+	// Let the WebSocketAgent start..
 	time.Sleep(250 * time.Millisecond)
 
 	for i := 1; i <= 3; i++ {
@@ -258,17 +258,6 @@ func TestWebAgentIllegalEndpoint(t *testing.T) {
 		t.Fatal("Expected error due to illegal endpoint ID")
 	}
 
-	// Shutdown WebAgent
+	// Shutdown WebSocketAgent
 	ws.MessageReceiver() <- ShutdownMessage{}
-
-	// Let the WebAgent shut itself down
-	time.Sleep(250 * time.Millisecond)
-
-	for i := 1; i <= 3; i++ {
-		if !isAddrReachable(addr) {
-			break
-		} else if i == 3 {
-			t.Fatal("WebAgent is still reachable")
-		}
-	}
 }
