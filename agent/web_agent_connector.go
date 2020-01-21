@@ -2,6 +2,7 @@ package agent
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/gorilla/websocket"
@@ -13,7 +14,8 @@ type WebAgentConnector struct {
 	msgOutChan chan webAgentMessage
 	msgOutErr  chan error
 
-	msgInBundleChan chan bundle.Bundle
+	msgInBundleChan  chan bundle.Bundle
+	msgInSyscallChan chan []byte
 
 	closeSyn chan struct{}
 	closeAck chan struct{}
@@ -31,7 +33,8 @@ func NewWebAgentConnector(apiUrl, endpointId string) (wac *WebAgentConnector, er
 		msgOutChan: make(chan webAgentMessage),
 		msgOutErr:  make(chan error),
 
-		msgInBundleChan: make(chan bundle.Bundle),
+		msgInBundleChan:  make(chan bundle.Bundle),
+		msgInSyscallChan: make(chan []byte),
 
 		closeSyn: make(chan struct{}),
 		closeAck: make(chan struct{}),
@@ -92,6 +95,7 @@ func (wac *WebAgentConnector) registerEndpoint(endpointId string) error {
 
 func (wac *WebAgentConnector) handleReader() {
 	defer close(wac.msgInBundleChan)
+	defer close(wac.msgInSyscallChan)
 
 	for {
 		if msg, err := wac.readMessage(); err != nil {
@@ -100,6 +104,9 @@ func (wac *WebAgentConnector) handleReader() {
 			switch msg := msg.(type) {
 			case *wamBundle:
 				wac.msgInBundleChan <- msg.b
+
+			case *wamSyscallResponse:
+				wac.msgInSyscallChan <- msg.response
 
 			default:
 				// oof
@@ -149,6 +156,28 @@ func (wac *WebAgentConnector) ReadBundle() (b bundle.Bundle, err error) {
 
 	b = <-wac.msgInBundleChan
 	return
+}
+
+func (wac *WebAgentConnector) Syscall(request string, timeout time.Duration) (response []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+
+	wac.msgOutChan <- newSyscallRequestMessage(request)
+	if err = <-wac.msgOutErr; err != nil {
+		return
+	}
+
+	select {
+	case response = <-wac.msgInSyscallChan:
+		return
+
+	case <-time.After(timeout):
+		err = fmt.Errorf("syscall response timed out")
+		return
+	}
 }
 
 func (wac *WebAgentConnector) Close() {

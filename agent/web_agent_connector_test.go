@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bytes"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -81,6 +82,25 @@ func TestWebAgentConnector(t *testing.T) {
 		break
 	case <-time.After(time.Second):
 		t.Fatal("timeout")
+	}
+
+	go func() {
+		msg := <-ws.MessageSender()
+		if msg, ok := msg.(SyscallRequestMessage); !ok {
+			t.Fatal("wrong message type")
+		} else {
+			ws.MessageReceiver() <- SyscallResponseMessage{
+				Request:   msg.Request,
+				Response:  []byte{0xAC, 0xAB},
+				Recipient: msg.Sender,
+			}
+		}
+	}()
+
+	if response, err := wac.Syscall("test", time.Millisecond); err != nil {
+		t.Fatal(err)
+	} else if !bytes.Equal(response, []byte{0xAC, 0xAB}) {
+		t.Fatalf("received %x", response)
 	}
 
 	wac.Close()

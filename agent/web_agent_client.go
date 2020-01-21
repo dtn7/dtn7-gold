@@ -94,34 +94,37 @@ func (client *webAgentClient) handleConn() {
 		} else if messageType != websocket.BinaryMessage {
 			logger.WithField("message type", messageType).Warn("Websocket Reader's type is not binary")
 			return
-		} else if message, err := unmarshalCbor(reader); err != nil {
+		} else if msg, err := unmarshalCbor(reader); err != nil {
 			logger.WithError(err).Warn("Unmarshal CBOR errored")
 			return
 		} else {
 			var err error
 
-			switch message := message.(type) {
+			switch msg := msg.(type) {
 			case *wamRegister:
-				err := client.handleIncomingRegister(message)
+				err := client.handleIncomingRegister(msg)
 				if err = client.acknowledgeIncoming(err); err != nil {
 					logger.WithError(err).Warn("Handling registration errored")
 					return
 				}
 
 			case *wamBundle:
-				logger.WithField("bundle", message.b).Info("Received Bundle")
-				client.sender <- BundleMessage{message.b}
+				logger.WithField("bundle", msg.b).Info("Received Bundle")
+				client.sender <- BundleMessage{msg.b}
 
 			case *wamSyscallRequest:
-				logger.WithField("syscall", message.request).Info("Received requested syscall")
-				client.sender <- SyscallRequestMessage{message.request}
+				logger.WithField("syscall", msg.request).Info("Received requested syscall")
+				client.sender <- SyscallRequestMessage{
+					Sender:  client.endpoint,
+					Request: msg.request,
+				}
 
 			default:
-				logger.WithField("message", message).Info("Received unknown / unsupported message")
+				logger.WithField("message", msg).Info("Received unknown / unsupported message")
 			}
 
 			if err != nil {
-				logger.WithField("message", message).WithError(err).Warn("Handling message errored")
+				logger.WithField("message", msg).WithError(err).Warn("Handling message errored")
 				return
 			}
 		}

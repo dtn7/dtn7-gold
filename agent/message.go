@@ -26,12 +26,13 @@ func (bm BundleMessage) Recipients() []bundle.EndpointID {
 
 // SyscallRequestMessage is sent from an ApplicationAgent to request some "syscall" specific information.
 type SyscallRequestMessage struct {
+	Sender  bundle.EndpointID
 	Request string
 }
 
 // Recipients are not available for a SyscallRequestMessage.
-func (_ SyscallRequestMessage) Recipients() []bundle.EndpointID {
-	return nil
+func (srm SyscallRequestMessage) Recipients() []bundle.EndpointID {
+	return []bundle.EndpointID{srm.Sender}
 }
 
 // SyscallResponseMessage is the answer to a SyscallRequestMessage, sent to an ApplicationAgent.
