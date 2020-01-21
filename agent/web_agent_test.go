@@ -147,6 +147,28 @@ func TestWebAgentNew(t *testing.T) {
 		t.Fatal("Bundle reception timed out")
 	}
 
+	// Send syscall request from client
+	if w, err := wsClient.NextWriter(websocket.BinaryMessage); err != nil {
+		t.Fatal(err)
+	} else if err := marshalCbor(newSyscallRequestMessage("test"), w); err != nil {
+		t.Fatal(err)
+	} else if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Server checks received syscall
+	select {
+	case msg := <-ws.MessageSender():
+		if msg, ok := msg.(SyscallRequestMessage); !ok {
+			t.Fatalf("Message is not a SyscallRequestMessage; %v", msg)
+		} else if msg.Request != "test" {
+			t.Fatalf("expected payload of \"test\", not %s", msg.Request)
+		}
+
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("syscall request reception timed out")
+	}
+
 	// Shutdown WebAgent with all its child processes
 	ws.MessageReceiver() <- ShutdownMessage{}
 

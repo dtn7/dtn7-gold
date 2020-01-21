@@ -101,7 +101,10 @@ func (client *webAgentClient) handleConn() {
 				}
 
 			case *wamBundle:
-				err = client.handleIncomingBundle(message)
+				client.sender <- BundleMessage{message.b}
+
+			case *wamSyscallRequest:
+				client.sender <- SyscallRequestMessage{message.request}
 
 			default:
 				logger.WithField("message", message).Info("Received unknown / unsupported message")
@@ -138,16 +141,6 @@ func (client *webAgentClient) handleIncomingRegister(m *wamRegister) error {
 		logger.Warn(msg)
 		return fmt.Errorf(msg)
 	}
-}
-
-func (client *webAgentClient) handleIncomingBundle(m *wamBundle) error {
-	log.WithFields(log.Fields{
-		"web agent client": client.conn.RemoteAddr().String(),
-		"message":          m,
-	}).Info("Received Bundle from client")
-
-	client.sender <- BundleMessage{m.b}
-	return nil
 }
 
 func (client *webAgentClient) handleOutgoingBundle(b bundle.Bundle) error {

@@ -21,15 +21,18 @@ type webAgentMessage interface {
 }
 
 const (
-	wamStatusCode   uint64 = 0
-	wamRegisterCode uint64 = 1
-	wamBundleCode   uint64 = 2
+	wamStatusCode          uint64 = 0
+	wamRegisterCode        uint64 = 1
+	wamBundleCode          uint64 = 2
+	wamSyscallRequestCode  uint64 = 3
+	wamSyscallResponseCode uint64 = 4
 )
 
 var wamMapping = map[interface{}]reflect.Type{
-	wamStatusCode:   reflect.TypeOf(wamStatus{}),
-	wamRegisterCode: reflect.TypeOf(wamRegister{}),
-	wamBundleCode:   reflect.TypeOf(wamBundle{}),
+	wamStatusCode:         reflect.TypeOf(wamStatus{}),
+	wamRegisterCode:       reflect.TypeOf(wamRegister{}),
+	wamBundleCode:         reflect.TypeOf(wamBundle{}),
+	wamSyscallRequestCode: reflect.TypeOf(wamSyscallRequest{}),
 }
 
 // marshalCbor writes a webAgentMessage wrapped with its type code as CBOR.

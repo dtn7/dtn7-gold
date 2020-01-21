@@ -1,6 +1,9 @@
 package agent
 
-import "github.com/dtn7/dtn7-go/bundle"
+import (
+	"github.com/dtn7/cboring"
+	"github.com/dtn7/dtn7-go/bundle"
+)
 
 // Message is a generic interface to specify an information exchange between an ApplicationAgent and some Manager.
 // The following types named *Message are implementations of this interface.
@@ -20,6 +23,25 @@ type BundleMessage struct {
 // Recipients are the Bundle destination for a BundleMessage.
 func (bm BundleMessage) Recipients() []bundle.EndpointID {
 	return []bundle.EndpointID{bm.Bundle.PrimaryBlock.Destination}
+}
+
+// SyscallRequestMessage is sent from an ApplicationAgent to request some "syscall" specific information.
+type SyscallRequestMessage struct {
+	Request string
+}
+
+// Recipients are not available for a SyscallRequestMessage.
+func (_ SyscallRequestMessage) Recipients() []bundle.EndpointID {
+	return nil
+}
+
+// SyscallResponseMessage is the answer to a SyscallRequestMessage, sent to an ApplicationAgent.
+type SyscallResponseMessage interface {
+	Message
+	cboring.CborMarshaler
+
+	// Request as requested in the SyscallRequestMessage.
+	Request() string
 }
 
 // ShutdownMessage indicates the closing down of an ApplicationAgent.

@@ -28,6 +28,7 @@ func TestWebsocketAgentMessageEnDecode(t *testing.T) {
 		newStatusMessage(fmt.Errorf("oof")),
 		newRegisterMessage("dtn:foobar"),
 		newBundleMessage(b),
+		newSyscallRequestMessage("test"),
 	}
 
 	for _, msg := range msgs {

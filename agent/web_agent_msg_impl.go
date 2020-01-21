@@ -80,3 +80,26 @@ func (wb *wamBundle) MarshalCbor(w io.Writer) error {
 func (wb *wamBundle) UnmarshalCbor(r io.Reader) error {
 	return cboring.Unmarshal(&wb.b, r)
 }
+
+// wamSyscallRequest is a webAgentMessage for requesting syscalls from the client side.
+type wamSyscallRequest struct {
+	request string
+}
+
+// newSyscallRequestMessage creates a new wamSyscallRequest webAgentMessage.
+func newSyscallRequestMessage(request string) *wamSyscallRequest {
+	return &wamSyscallRequest{request}
+}
+
+func (_ *wamSyscallRequest) typeCode() uint64 {
+	return wamSyscallRequestCode
+}
+
+func (wsr *wamSyscallRequest) MarshalCbor(w io.Writer) error {
+	return cboring.WriteTextString(wsr.request, w)
+}
+
+func (wsr *wamSyscallRequest) UnmarshalCbor(r io.Reader) (err error) {
+	wsr.request, err = cboring.ReadTextString(r)
+	return
+}
