@@ -34,7 +34,7 @@ func (mux *MuxAgent) handle() {
 	for msg := range mux.receiver {
 		mux.Lock()
 		for _, child := range mux.children {
-			if rec := msg.Recipients(); rec == nil || messageForAgent(msg, child) {
+			if rec := msg.Recipients(); rec == nil || AppAgentContainsEndpoint(child, rec) {
 				child.MessageReceiver() <- msg
 			}
 		}

@@ -57,19 +57,3 @@ type ShutdownMessage struct{}
 func (sm ShutdownMessage) Recipients() []bundle.EndpointID {
 	return nil
 }
-
-// messageForAgent checks if a Message is addressed to an ApplicationAgent.
-func messageForAgent(message Message, agent ApplicationAgent) bool {
-	matches := map[bundle.EndpointID]struct{}{}
-
-	for _, eid := range message.Recipients() {
-		matches[eid] = struct{}{}
-	}
-
-	for _, eid := range agent.Endpoints() {
-		if _, ok := matches[eid]; ok {
-			return true
-		}
-	}
-	return false
-}
