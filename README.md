@@ -36,6 +36,7 @@ One of the following routing protocols might be used.
 
 - Arch Linux: [*dtn7* (AUR)][aur-dtn7]
 - Nix / NixOS: [*dtn7/nur-packages*][nur-dtn7] as a [NUR][nur]
+- macOS: [jonashoechst/hoechst/dtn7][brew-dtn7] via [brew][brew]
 
 
 #### From Source
@@ -110,3 +111,5 @@ interested in working with this code, check out the
 [nur-dtn7]: https://github.com/dtn7/nur-packages
 [nur]: https://github.com/nix-community/NUR
 [rf95modem]: https://github.com/gh0st42/rf95modem
+[brew-dtn7]: https://github.com/jonashoechst/homebrew-hoechst/blob/master/dtn7.rb
+[brew]: https://brew.sh
