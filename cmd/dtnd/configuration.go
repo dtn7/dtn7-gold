@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/dtn7/dtn7-go/agent"
 	"github.com/dtn7/dtn7-go/cla/bbc"
 	"net"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -20,13 +22,13 @@ import (
 
 // tomlConfig describes the TOML-configuration.
 type tomlConfig struct {
-	Core       coreConf
-	Logging    logConf
-	Discovery  discoveryConf
-	SimpleRest simpleRestConf `toml:"simple-rest"`
-	Listen     []convergenceConf
-	Peer       []convergenceConf
-	Routing    core.RoutingConf
+	Core      coreConf
+	Logging   logConf
+	Discovery discoveryConf
+	Agents    agentsConfig
+	Listen    []convergenceConf
+	Peer      []convergenceConf
+	Routing   core.RoutingConf
 }
 
 // coreConf describes the Core-configuration block.
@@ -50,10 +52,16 @@ type discoveryConf struct {
 	Interval uint
 }
 
-// simpleRestConf describes the SimpleRESTAppAgent.
-type simpleRestConf struct {
-	Node   string
-	Listen string
+// agentsConfig describes the ApplicationAgents/Agent-configuration block.
+type agentsConfig struct {
+	Webserver agentsWebserverConfig
+}
+
+// agentsWebserverConfig describes the nested "Webserver" configuration for agents.
+type agentsWebserverConfig struct {
+	Address   string
+	Websocket bool
+	Rest      bool
 }
 
 // convergenceConf describes the Convergence-configuration block, used for
@@ -134,13 +142,45 @@ func parsePeer(conv convergenceConf, nodeId bundle.EndpointID) (cla.ConvergenceS
 	}
 }
 
-func parseSimpleRESTAppAgent(conf simpleRestConf, c *core.Core) (core.ApplicationAgent, error) {
-	endpointID, err := bundle.NewEndpointID(conf.Node)
-	if err != nil {
-		return nil, err
+// parseAgents for the ApplicationAgents.
+func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error) {
+	if (conf.Webserver != agentsWebserverConfig{}) {
+		if !conf.Webserver.Websocket && !conf.Webserver.Rest {
+			err = fmt.Errorf("Webserver agent needs at least one of Websocket or Rest")
+			return
+		}
+
+		httpMux := http.NewServeMux()
+
+		if conf.Webserver.Websocket {
+			ws := agent.NewWebSocketAgent()
+			httpMux.HandleFunc("/ws", ws.WebsocketHandler)
+
+			agents = append(agents, ws)
+		}
+
+		if conf.Webserver.Rest {
+			// TODO
+		}
+
+		httpServer := &http.Server{
+			Addr:    conf.Webserver.Address,
+			Handler: httpMux,
+		}
+
+		errChan := make(chan error)
+		go func() { errChan <- httpServer.ListenAndServe() }()
+
+		select {
+		case err = <-errChan:
+			return
+
+		case <-time.After(100 * time.Millisecond):
+			break
+		}
 	}
 
-	return core.NewSimpleRESTAppAgent(endpointID, c, conf.Listen), nil
+	return
 }
 
 // parseCore creates the Core based on the given TOML configuration.
@@ -204,14 +244,15 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		return
 	}
 
-	// SimpleREST (srest)
-	if conf.SimpleRest != (simpleRestConf{}) {
-		if aa, err := parseSimpleRESTAppAgent(conf.SimpleRest, c); err == nil {
-			c.RegisterApplicationAgent(aa)
+	// Agents
+	if conf.Agents != (agentsConfig{}) {
+		if appAgents, appErr := parseAgents(conf.Agents); appErr != nil {
+			err = appErr
+			return
 		} else {
-			log.WithFields(log.Fields{
-				"error": err,
-			}).Warn("Failed to register SimpleRESTAppAgent")
+			for _, appAgent := range appAgents {
+				c.RegisterApplicationAgent(appAgent)
+			}
 		}
 	}
 

@@ -428,10 +428,8 @@ func (c *Core) localDelivery(bp BundlePack) {
 	bp.AddConstraint(LocalEndpoint)
 	bp.Sync()
 
-	for _, agent := range c.Agents {
-		if agent.EndpointID() == bp.MustBundle().PrimaryBlock.Destination {
-			agent.Deliver(bp)
-		}
+	if err := c.agentManager.Deliver(bp); err != nil {
+		log.WithField("bundle", bp.ID()).WithError(err).Warn("Delivering local bundle errored")
 	}
 
 	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDelivery) {

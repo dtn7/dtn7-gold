@@ -6,6 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/dtn7/dtn7-go/agent"
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/bundle/arecord"
 	"github.com/dtn7/dtn7-go/cla"
@@ -15,14 +16,14 @@ import (
 // Core is the inner core of our DTN which handles transmission, reception and
 // reception of bundles.
 type Core struct {
-	Agents            []ApplicationAgent
 	InspectAllBundles bool
 	NodeId            bundle.EndpointID
 
-	cron       *Cron
-	claManager *cla.Manager
-	idKeeper   IdKeeper
-	routing    RoutingAlgorithm
+	agentManager *AgentManager
+	cron         *Cron
+	claManager   *cla.Manager
+	idKeeper     IdKeeper
+	routing      RoutingAlgorithm
 
 	store *storage.Store
 
@@ -54,6 +55,8 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 	} else {
 		c.store = store
 	}
+
+	c.agentManager = NewAgentManager(c)
 
 	c.claManager = cla.NewManager()
 
@@ -168,8 +171,8 @@ func (c *Core) Close() {
 }
 
 // RegisterApplicationAgent adds a new ApplicationAgent to this Core's list.
-func (c *Core) RegisterApplicationAgent(agent ApplicationAgent) {
-	c.Agents = append(c.Agents, agent)
+func (c *Core) RegisterApplicationAgent(app agent.ApplicationAgent) {
+	c.agentManager.Register(app)
 }
 
 // senderForDestination returns an array of ConvergenceSenders whose endpoint ID
@@ -184,13 +187,15 @@ func (c *Core) senderForDestination(endpoint bundle.EndpointID) (css []cla.Conve
 	return
 }
 
-// hasEndpoint checks if this Core has some endpoint, but does not secure this
-// request with a Mutex. Therefore, the safe HasEndpoint method exists.
-func (c *Core) hasEndpoint(endpoint bundle.EndpointID) bool {
-	for _, agent := range c.Agents {
-		if agent.EndpointID() == endpoint {
-			return true
-		}
+// HasEndpoint checks if the given endpoint ID is assigned either to an
+// application or a CLA governed by this Application Agent.
+func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
+	if c.NodeId.Authority() == endpoint.Authority() {
+		return true
+	}
+
+	if c.agentManager.HasEndpoint(endpoint) {
+		return true
 	}
 
 	for _, cr := range c.claManager.Receiver() {
@@ -200,14 +205,6 @@ func (c *Core) hasEndpoint(endpoint bundle.EndpointID) bool {
 	}
 
 	return false
-}
-
-// HasEndpoint returns true if the given endpoint ID is assigned either to an
-// application or a CLA governed by this Application Agent.
-func (c *Core) HasEndpoint(endpoint bundle.EndpointID) (state bool) {
-	state = c.hasEndpoint(endpoint)
-
-	return
 }
 
 // SendStatusReport creates a new status report in response to the given

@@ -129,6 +129,7 @@ tags
 # End of https://www.gitignore.io/api/go,vim,jetbrains+all
 
 # dtn7 related files
+/dtn-tool
 /dtncat
 /dtnd
 /conf*.toml

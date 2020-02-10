@@ -28,17 +28,15 @@ ipv6 = true
 # Interval between two messages in seconds, defaults to 10.
 interval = 30
 
-# Enable the REST-like API to transmit and receive bundles.
-[simple-rest]
-# Name/endpoint ID of this node, could also be used for a CLA.
-node = "dtn://alpha/"
-# Bind the web server to port 8080 on the localhost (v4).
-# - Create a outbounding bundle to dtn:foobar, containing "hello world"
-#   Payload must be base64 encoded
-#   $ curl -d "{\"Destination\":\"dtn:host\", \"Payload\":\"`base64 <<< "hello world"`\"}" http://localhost:8080/send/
-# - Fetch received bundles. Payload is base64 encoded.
-#   $ curl http://localhost:8080/fetch/
-listen = "127.0.0.1:8080"
+# Agents are applications or interfaces for applications. Those may send or receive Bundles.
+[agents]
+# A webserver based agent starts a local HTTP webserver and allows third party tools to interact over specified
+# interfaces, e.g., WebSockets or REST. The address field specifies the TCP address of the server. The service endpoints
+# are based on this, e.g., an address of "localhost:8080" creates a WebSocket endpoint of "ws://localhost:8080/ws".
+[agents.webserver]
+address = "localhost:8080"
+websocket = true
+rest = false # TODO: not yet implemented!
 
 # Each listen is another convergence layer adapter (CLA). Multiple [[listen]]
 # blocks are usable.
