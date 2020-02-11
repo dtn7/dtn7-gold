@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -236,4 +237,12 @@ func (b *Bundle) UnmarshalCbor(r io.Reader) error {
 	}
 
 	return b.CheckValid()
+}
+
+func (b Bundle) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		PrimaryBlock json.Marshaler `json:"primaryBlock"`
+	}{
+		PrimaryBlock: b.PrimaryBlock,
+	})
 }

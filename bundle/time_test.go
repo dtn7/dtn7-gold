@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -64,6 +65,26 @@ func TestCreationTimestampCbor(t *testing.T) {
 
 			if !reflect.DeepEqual(ct, test.ct) {
 				t.Fatalf("Deserialization failed: %v != %v", ct, test.ct)
+			}
+		})
+	}
+}
+
+func TestCreationTimestampJson(t *testing.T) {
+	tests := []struct {
+		ct        CreationTimestamp
+		jsonBytes []byte
+	}{
+		{NewCreationTimestamp(DtnTimeEpoch, 0), []byte(`{"date":"2000-01-01 00:00:00","sequenceNo":0}`)},
+		{NewCreationTimestamp(DtnTime(631152000), 42), []byte(`{"date":"2020-01-01 00:00:00","sequenceNo":42}`)},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("serialize-%v", test.ct), func(t *testing.T) {
+			if jsonBytes, err := json.Marshal(test.ct); err != nil {
+				t.Fatal(err)
+			} else if !bytes.Equal(test.jsonBytes, jsonBytes) {
+				t.Fatalf("expected %s, got %s", test.jsonBytes, jsonBytes)
 			}
 		})
 	}

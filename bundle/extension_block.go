@@ -53,7 +53,7 @@ func (ebm *ExtensionBlockManager) Register(eb ExtensionBlock) error {
 	}
 
 	if otherType, exists := ebm.data[extCode]; exists {
-		return fmt.Errorf("Block type code %d is already registered for %s",
+		return fmt.Errorf("block type code %d is already registered for %s",
 			extCode, otherType.Name())
 	}
 
@@ -61,7 +61,7 @@ func (ebm *ExtensionBlockManager) Register(eb ExtensionBlock) error {
 	return nil
 }
 
-// Register an ExtensionBlock type through an exemplary instance.
+// Unregister an ExtensionBlock type through an exemplary instance.
 func (ebm *ExtensionBlockManager) Unregister(eb ExtensionBlock) {
 	ebm.mutex.Lock()
 	defer ebm.mutex.Unlock()

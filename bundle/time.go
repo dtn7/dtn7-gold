@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -106,4 +107,14 @@ func (ct *CreationTimestamp) UnmarshalCbor(r io.Reader) error {
 	}
 
 	return nil
+}
+
+func (ct CreationTimestamp) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Date string `json:"date"`
+		Seq  uint64 `json:"sequenceNo"`
+	}{
+		Date: ct.DtnTime().String(),
+		Seq:  ct.SequenceNumber(),
+	})
 }

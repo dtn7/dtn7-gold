@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -217,6 +218,24 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 	}
 
 	return nil
+}
+
+func (pb PrimaryBlock) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		ControlFlags      BundleControlFlags `json:"bundleControlFlags"`
+		Destination       string             `json:"destination"`
+		Source            string             `json:"source"`
+		ReportTo          string             `json:"reportTo"`
+		CreationTimestamp CreationTimestamp  `json:"creationTimestamp"`
+		Lifetime          uint64             `json:"lifetime"`
+	}{
+		ControlFlags:      pb.BundleControlFlags,
+		Destination:       pb.Destination.String(),
+		Source:            pb.SourceNode.String(),
+		ReportTo:          pb.ReportTo.String(),
+		CreationTimestamp: pb.CreationTimestamp,
+		Lifetime:          pb.Lifetime,
+	})
 }
 
 func (pb PrimaryBlock) CheckValid() (errs error) {

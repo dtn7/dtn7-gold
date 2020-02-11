@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -12,31 +13,31 @@ import (
 type BundleControlFlags uint64
 
 const (
-	// IsFragment: bundle is a fragment.
+	// IsFragment indicates this bundle is a fragment.
 	IsFragment BundleControlFlags = 0x000001
 
-	// AdministrativeRecordPayload: payload is an administrative record.
+	// AdministrativeRecordPayload indicates the payload is an administrative record.
 	AdministrativeRecordPayload BundleControlFlags = 0x000002
 
-	// MustNotFragmented: bundle must not be fragmented.
+	// MustNotFragmented forbids bundle fragmentation.
 	MustNotFragmented BundleControlFlags = 0x000004
 
-	// RequestUserApplicationAck: user application acknowledgement is requested.
+	// RequestUserApplicationAck requests an acknowledgement from the application agent.
 	RequestUserApplicationAck BundleControlFlags = 0x000020
 
-	// RequestStatusTime: status time is requested in all status reports.
+	// RequestStatusTime requests a status time in all status reports.
 	RequestStatusTime BundleControlFlags = 0x000040
 
-	// StatusRequestReception: bundle reception status reports are requested.
+	// StatusRequestReception requests a bundle reception status report.
 	StatusRequestReception BundleControlFlags = 0x004000
 
-	// StatusRequestForward: bundle forwarding status reports are requested.
+	// StatusRequestForward requests a bundle forwarding status report.
 	StatusRequestForward BundleControlFlags = 0x010000
 
-	// StatusRequestDelivery: bundle delivery status reports are requested.
+	// StatusRequestDelivery requests a bundle delivery status report.
 	StatusRequestDelivery BundleControlFlags = 0x020000
 
-	// StatusRequestDeletion: bundle deletion status reports are requested.
+	// StatusRequestDeletion requests a bundle deletion status report.
 	StatusRequestDeletion BundleControlFlags = 0x040000
 
 	// bndlCFReservedFields are both reserved and unassigned flags.
@@ -75,9 +76,8 @@ func (bcf BundleControlFlags) CheckValid() (errs error) {
 	return
 }
 
-func (bcf BundleControlFlags) String() string {
-	var fields []string
-
+// Strings returns an array of all flags as a string representation.
+func (bcf BundleControlFlags) Strings() (fields []string) {
 	checks := []struct {
 		field BundleControlFlags
 		text  string
@@ -88,7 +88,7 @@ func (bcf BundleControlFlags) String() string {
 		{StatusRequestReception, "REQUESTED_RECEPTION_STATUS_REPORT"},
 		{RequestStatusTime, "REQUESTED_TIME_IN_STATUS_REPORT"},
 		{RequestUserApplicationAck, "REQUESTED_APPLICATION_ACK"},
-		{MustNotFragmented, "MUST_NO_BE_FRAGMENTED"},
+		{MustNotFragmented, "MUST_NOT_BE_FRAGMENTED"},
 		{AdministrativeRecordPayload, "ADMINISTRATIVE_PAYLOAD"},
 		{IsFragment, "IS_FRAGMENT"},
 	}
@@ -99,5 +99,13 @@ func (bcf BundleControlFlags) String() string {
 		}
 	}
 
-	return strings.Join(fields, ",")
+	return
+}
+
+func (bcf BundleControlFlags) MarshalJSON() ([]byte, error) {
+	return json.Marshal(bcf.Strings())
+}
+
+func (bcf BundleControlFlags) String() string {
+	return strings.Join(bcf.Strings(), ",")
 }

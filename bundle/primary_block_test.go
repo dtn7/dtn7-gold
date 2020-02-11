@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"bytes"
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -79,6 +80,41 @@ func TestPrimaryBlockCbor(t *testing.T) {
 
 		if !reflect.DeepEqual(test.pb1, pb2) {
 			t.Fatalf("PrimaryBlocks differ:\n%v\n%v", test.pb1, pb2)
+		}
+	}
+}
+
+func TestPrimaryBlockJson(t *testing.T) {
+	tests := []struct {
+		pb        PrimaryBlock
+		jsonBytes []byte
+	}{
+		// CRC, No Fragmentation
+		{PrimaryBlock{
+			BundleControlFlags: 0,
+			CRCType:            CRC32,
+			Destination:        MustNewEndpointID("dtn://dst/"),
+			SourceNode:         MustNewEndpointID("dtn://src/"),
+			ReportTo:           MustNewEndpointID("dtn://rprt/"),
+			CreationTimestamp:  NewCreationTimestamp(0, 42),
+			Lifetime:           3600,
+		}, []byte(`{"bundleControlFlags":null,"destination":"dtn://dst/","source":"dtn://src/","reportTo":"dtn://rprt/","creationTimestamp":{"date":"2000-01-01 00:00:00","sequenceNo":42},"lifetime":3600}`)},
+		{PrimaryBlock{
+			BundleControlFlags: MustNotFragmented,
+			CRCType:            CRCNo,
+			Destination:        MustNewEndpointID("ipn:23.42"),
+			SourceNode:         MustNewEndpointID("dtn://foo/"),
+			ReportTo:           MustNewEndpointID("dtn://bar/"),
+			CreationTimestamp:  NewCreationTimestamp(0, 0),
+			Lifetime:           10,
+		}, []byte(`{"bundleControlFlags":["MUST_NOT_BE_FRAGMENTED"],"destination":"ipn:23.42","source":"dtn://foo/","reportTo":"dtn://bar/","creationTimestamp":{"date":"2000-01-01 00:00:00","sequenceNo":0},"lifetime":10}`)},
+	}
+
+	for _, test := range tests {
+		if jsonBytes, err := json.Marshal(test.pb); err != nil {
+			t.Fatal(err)
+		} else if !bytes.Equal(test.jsonBytes, jsonBytes) {
+			t.Fatalf("expected %s, got %s", test.jsonBytes, jsonBytes)
 		}
 	}
 }
