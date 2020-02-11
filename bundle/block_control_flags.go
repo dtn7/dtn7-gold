@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -10,16 +11,16 @@ import (
 type BlockControlFlags uint64
 
 const (
-	// ReplicateBlock: block must be replicated in every fragment.
+	// ReplicateBlock requires this block to be replicated in every fragment.
 	ReplicateBlock BlockControlFlags = 0x01
 
-	// StatusReportBlock: transmission of a status report is requested if block can't be processed.
+	// StatusReportBlock requires transmission of a status report if this block cannot be processed.
 	StatusReportBlock BlockControlFlags = 0x02
 
-	// DeleteBundle: bundle must be deleted if block can't be processed.
+	// DeleteBundle requires bundle deletion if this block cannot be processed.
 	DeleteBundle BlockControlFlags = 0x04
 
-	// RemoveBlock: block must be removed from bundle if it can't be processed.
+	// RemoveBlock requires the block to be removed from the bundle if it cannot be processed.
 	RemoveBlock BlockControlFlags = 0x10
 
 	// blckCFReservedFields are both reserved and unassigned flags.
@@ -39,9 +40,8 @@ func (bcf BlockControlFlags) CheckValid() error {
 	return nil
 }
 
-func (bcf BlockControlFlags) String() string {
-	var fields []string
-
+// Strings returns an array of all flags as a string representation.
+func (bcf BlockControlFlags) Strings() (fields []string) {
 	checks := []struct {
 		field BlockControlFlags
 		text  string
@@ -58,5 +58,13 @@ func (bcf BlockControlFlags) String() string {
 		}
 	}
 
-	return strings.Join(fields, ",")
+	return
+}
+
+func (bcf BlockControlFlags) MarshalJSON() ([]byte, error) {
+	return json.Marshal(bcf.Strings())
+}
+
+func (bcf BlockControlFlags) String() string {
+	return strings.Join(bcf.Strings(), ",")
 }

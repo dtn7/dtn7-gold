@@ -240,9 +240,16 @@ func (b *Bundle) UnmarshalCbor(r io.Reader) error {
 }
 
 func (b Bundle) MarshalJSON() ([]byte, error) {
+	canonicals := make([]json.Marshaler, len(b.CanonicalBlocks))
+	for i := range b.CanonicalBlocks {
+		canonicals[i] = b.CanonicalBlocks[i]
+	}
+
 	return json.Marshal(&struct {
-		PrimaryBlock json.Marshaler `json:"primaryBlock"`
+		PrimaryBlock    json.Marshaler   `json:"primaryBlock"`
+		CanonicalBlocks []json.Marshaler `json:"canonicalBlocks"`
 	}{
-		PrimaryBlock: b.PrimaryBlock,
+		PrimaryBlock:    b.PrimaryBlock,
+		CanonicalBlocks: canonicals,
 	})
 }

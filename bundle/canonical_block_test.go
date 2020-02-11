@@ -1,6 +1,9 @@
 package bundle
 
-import "testing"
+import (
+	"bytes"
+	"testing"
+)
 
 func TestNewCanonicalBlock(t *testing.T) {
 	b := NewCanonicalBlock(1, ReplicateBlock, NewPayloadBlock([]byte("hello world")))
@@ -62,6 +65,31 @@ func TestHopCountBlock(t *testing.T) {
 		if state := test.hcb.Increment(); state != test.exceededAfterIncrement {
 			t.Errorf("Hop count block's state %v is wrong after increment: expected %t, real %t",
 				test.hcb, test.exceededAfterIncrement, state)
+		}
+	}
+}
+
+func TestCanonicalBlockJson(t *testing.T) {
+	tests := []struct {
+		cb        CanonicalBlock
+		jsonBytes []byte
+	}{
+		{CanonicalBlock{
+			BlockNumber: 1,
+			Value:       NewPayloadBlock([]byte("hello world")),
+		}, []byte(`{"blockNumber":1,"blockTypeCode":1,"blockControlFlags":null,"data":"S2hlbGxvIHdvcmxk"}`)},
+		{CanonicalBlock{
+			BlockNumber:       23,
+			BlockControlFlags: DeleteBundle,
+			Value:             NewGenericExtensionBlock(nil, 42),
+		}, []byte(`{"blockNumber":23,"blockTypeCode":42,"blockControlFlags":["DELETE_BUNDLE"],"data":"QA=="}`)},
+	}
+
+	for _, test := range tests {
+		if jsonBytes, err := test.cb.MarshalJSON(); err != nil {
+			t.Fatal(err)
+		} else if !bytes.Equal(test.jsonBytes, jsonBytes) {
+			t.Fatalf("expected %s, got %s", test.jsonBytes, jsonBytes)
 		}
 	}
 }

@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -153,6 +154,25 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 	}
 
 	return nil
+}
+
+func (cb CanonicalBlock) MarshalJSON() ([]byte, error) {
+	var buff bytes.Buffer
+	if err := GetExtensionBlockManager().WriteBlock(cb.Value, &buff); err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(&struct {
+		BlockNumber   uint64            `json:"blockNumber"`
+		BlockTypeCode uint64            `json:"blockTypeCode"`
+		ControlFlags  BlockControlFlags `json:"blockControlFlags"`
+		Data          []byte            `json:"data"`
+	}{
+		BlockNumber:   cb.BlockNumber,
+		BlockTypeCode: cb.Value.BlockTypeCode(),
+		ControlFlags:  cb.BlockControlFlags,
+		Data:          buff.Bytes(),
+	})
 }
 
 func (cb CanonicalBlock) CheckValid() (errs error) {
