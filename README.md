@@ -7,7 +7,7 @@ Protocol Version 7.
 ## Protocols
 This software implements the current draft of the Bundle Protocol Version 7.
 
-- Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-20.txt][dtn-bpbis-20])
+- Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-23.txt][dtn-bpbis-23])
 
 ### Convergence Layer
 Bundles might be exchanged between nodes by the following protocols.
@@ -35,8 +35,8 @@ One of the following routing protocols might be used.
 #### Package Manager
 
 - Arch Linux: [*dtn7* (AUR)][aur-dtn7]
+- macOS: [*jonashoechst/hoechst/dtn7*][brew-dtn7] via [brew][brew]
 - Nix / NixOS: [*dtn7/nur-packages*][nur-dtn7] as a [NUR][nur]
-- macOS: [jonashoechst/hoechst/dtn7][brew-dtn7] via [brew][brew]
 
 
 #### From Source
@@ -47,7 +47,7 @@ Install the [Go programming language][golang], version 1.11 or later.
 git clone https://github.com/dtn7/dtn7-go.git
 cd dtn7-go
 
-go build ./cmd/dtncat
+go build ./cmd/dtn-tool
 go build ./cmd/dtnd
 ```
 
@@ -61,35 +61,29 @@ through a REST-like web interface. The features and their configuration is
 described inside the provided example
 [`configuration.toml`][dtnd-configuration].
 
-#### REST-API usage
-The API might be used with the `dtncat` program or by plain HTTP requests.
+#### REST-API / WebSocekt-API
+This is ongoing work. Will be finalized in version 0.6.0
 
-```bash
-# Create a outbounding bundle to dtn:host, containing "hello world"
-# Payload must be base64 encoded
-curl -d "{\"Destination\":\"dtn:host\", \"Payload\":\"`base64 <<< "hello world"`\"}" http://localhost:8080/send/
 
-# Fetch received bundles. Payload is base64 encoded.
-curl http://localhost:8080/fetch/
+### dtn-tool
+This is ongoing work. Will be finalized in version 0.6.0
+
 ```
+Usage of ./dtn-tool create|show|exchange:
 
-### dtncat
-dtncat is a companion tool for dtnd and allows both sending and receiving
-bundles through dtnd's REST-API.
+./dtn-tool create sender receiver -|filename -|bundle-name
+  Creates a new Bundle, addressed from sender to receiver with the stdin (-)
+  or the given file (filename) as payload. This Bundle will be written to the
+  stdout (-) or saved as bundle-name.
 
-```bash
-$ ./dtncat help
-dtncat [send|fetch|help] ...
+./dtn-tool show -|filename
+  Prints a JSON version of a Bundle, read from stdin (-) or filename.
 
-dtncat send REST-API ENDPOINT-ID
-  sends data from stdin through the given REST-API to the endpoint
+./dtn-tool exchange websocket endpoint-id directory
+  ./dtn-tool registeres itself as an agent on the given websocket and writes
+  incoming Bundles in the directory. If the user dropps a new Bundle in the
+  directory, it will be sent to the server.
 
-dtncat fetch REST-API
-  fetches all bundles from the given REST-API
-
-Examples:
-  dtncat send  "http://127.0.0.1:8080/" "dtn:alpha" <<< "hello world"
-  dtncat fetch "http://127.0.0.1:8080/"
 ```
 
 
@@ -102,7 +96,7 @@ interested in working with this code, check out the
 
 
 [aur-dtn7]: https://aur.archlinux.org/packages/dtn7/
-[dtn-bpbis-20]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-20
+[dtn-bpbis-23]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-23
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
 [dtn-tcpcl-14]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-14
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml

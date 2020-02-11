@@ -1,5 +1,5 @@
 // Package bundle provides a library for interaction with Bundles as defined
-// in the Bundle Protocol Version 7 (draft-ietf-dtn-bpbis-20.txt). This includes
+// in the Bundle Protocol Version 7 (draft-ietf-dtn-bpbis-23.txt). This includes
 // Bundle creation, modification, serialization and deserialization.
 //
 // The easiest way to create new Bundles is to use the BundleBuilder.
