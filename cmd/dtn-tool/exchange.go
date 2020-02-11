@@ -1,0 +1,163 @@
+package main
+
+import (
+	"encoding/hex"
+	"os"
+	"os/signal"
+	"path"
+	"sync"
+
+	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/dtn7-go/agent"
+	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/fsnotify/fsnotify"
+)
+
+// exchange Bundles between an user and a dtnd over the filesystem.
+type exchange struct {
+	directory     string
+	knownFiles    sync.Map
+	websocketConn *agent.WebSocketAgentConnector
+	watcher       *fsnotify.Watcher
+
+	closeChan      chan os.Signal
+	bundleReadChan chan bundle.Bundle
+}
+
+// startExchange to exchange Bundles between client and a dtnd.
+func startExchange(args []string) {
+	if len(args) != 3 {
+		printUsage()
+	}
+
+	var (
+		websocketAddr = args[0]
+		endpointId    = args[1]
+		directory     = args[2]
+
+		err error
+	)
+
+	ex := &exchange{
+		directory:      directory,
+		closeChan:      make(chan os.Signal),
+		bundleReadChan: make(chan bundle.Bundle),
+	}
+
+	signal.Notify(ex.closeChan, os.Interrupt)
+
+	if ex.websocketConn, err = agent.NewWebSocketAgentConnector(websocketAddr, endpointId); err != nil {
+		printFatal(err, "Starting WebSocketAgentConnector errored")
+	}
+
+	if ex.watcher, err = fsnotify.NewWatcher(); err != nil {
+		printFatal(err, "Starting file watcher errored")
+	}
+	if err = ex.watcher.Add(directory); err != nil {
+		printFatal(err, "Adding directory to file watcher errored")
+	}
+
+	go ex.handleBundleRead()
+	ex.handler()
+}
+
+func (ex *exchange) handler() {
+	defer func() {
+		_ = ex.watcher.Close()
+		ex.websocketConn.Close()
+	}()
+
+	for {
+		select {
+		case <-ex.closeChan:
+			log.Info("Received interrupt signal")
+			return
+
+		case e, ok := <-ex.watcher.Events:
+			if !ok {
+				log.Warn("fsnotify's Event channel was closed")
+				return
+			}
+
+			if _, ok := ex.knownFiles.Load(e.Name); ok {
+				log.WithField("file", e.Name).Debug("Skipping file; already known")
+				continue
+			}
+
+			if e.Op&fsnotify.Create == 0 {
+				log.WithFields(log.Fields{
+					"file":      e.Name,
+					"operation": e.Op.String(),
+				}).Debug("Ignoring fsnotify event")
+				continue
+			}
+
+			var b bundle.Bundle
+			if f, err := os.Open(e.Name); err != nil {
+				log.WithError(err).WithField("file", e.Name).Warn("Opening file errored")
+			} else if err := b.UnmarshalCbor(f); err != nil {
+				log.WithError(err).WithField("file", e.Name).Warn("Unmarshalling Bundle errored")
+			} else if err := f.Close(); err != nil {
+				log.WithError(err).WithField("file", e.Name).Warn("Closing file errored")
+			} else if err := ex.websocketConn.WriteBundle(b); err != nil {
+				log.WithError(err).WithFields(log.Fields{
+					"file":   e.Name,
+					"bundle": b.ID().String(),
+				}).Warn("Sending Bundle errored")
+			} else {
+				log.WithError(err).WithFields(log.Fields{
+					"file":   e.Name,
+					"bundle": b.ID().String(),
+				}).Info("Sent Bundle")
+			}
+
+		case err, ok := <-ex.watcher.Errors:
+			if !ok {
+				log.Warn("fsnotify's Errors channel was closed")
+				return
+			}
+
+			log.WithError(err).Error("fsnotify errored")
+			return
+
+		case b, ok := <-ex.bundleReadChan:
+			if !ok {
+				log.Warn("Bundle reader channel was closed")
+				return
+			}
+
+			filepath := path.Join(ex.directory, hex.EncodeToString([]byte(b.ID().String())))
+			logger := log.WithFields(log.Fields{
+				"bundle": b.ID(),
+				"file":   filepath,
+			})
+
+			if f, err := os.Create(filepath); err != nil {
+				logger.WithError(err).Error("Creating file errored")
+				return
+			} else if err := b.MarshalCbor(f); err != nil {
+				logger.WithError(err).Error("Marshalling Bundle errored")
+			} else if err := f.Close(); err != nil {
+				logger.WithError(err).Error("Closing file errored")
+			}
+
+			ex.knownFiles.Store(filepath, struct{}{})
+
+			logger.Info("Saved received Bundle")
+		}
+	}
+}
+
+func (ex *exchange) handleBundleRead() {
+	for {
+		if b, err := ex.websocketConn.ReadBundle(); err != nil {
+			log.WithError(err).Error("Reading Bundle errored")
+
+			close(ex.bundleReadChan)
+			return
+		} else {
+			ex.bundleReadChan <- b
+		}
+	}
+}

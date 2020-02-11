@@ -7,6 +7,7 @@ require (
 	github.com/dtn7/rf95modem-go v0.2.0
 	github.com/dvyukov/go-fuzz v0.0.0-20191206100749-a378175e205c // indirect
 	github.com/felixge/tcpkeepalive v0.0.0-20160804073959-5bb0b2dea91e
+	github.com/fsnotify/fsnotify v1.4.7
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/gorilla/websocket v1.4.1
 	github.com/hashicorp/go-multierror v1.0.0

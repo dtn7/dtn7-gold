@@ -7,7 +7,7 @@ import (
 
 // printUsage of dtn-tool and exit with an error code afterwards.
 func printUsage() {
-	_, _ = fmt.Fprintf(os.Stderr, "Usage of %s create|show|serve-dir:\n\n", os.Args[0])
+	_, _ = fmt.Fprintf(os.Stderr, "Usage of %s create|show|exchange:\n\n", os.Args[0])
 
 	_, _ = fmt.Fprintf(os.Stderr, "%s create sender receiver -|filename -|bundle-name\n", os.Args[0])
 	_, _ = fmt.Fprintf(os.Stderr, "  Creates a new Bundle, addressed from sender to receiver with the stdin (-)\n")
@@ -15,9 +15,9 @@ func printUsage() {
 	_, _ = fmt.Fprintf(os.Stderr, "  stdout (-) or saved as bundle-name.\n\n")
 
 	_, _ = fmt.Fprintf(os.Stderr, "%s show -|filename\n", os.Args[0])
-	_, _ = fmt.Fprintf(os.Stderr, "  Prints a JSON version of the a Bundle, read from stdin (-) or filename.\n\n")
+	_, _ = fmt.Fprintf(os.Stderr, "  Prints a JSON version of a Bundle, read from stdin (-) or filename.\n\n")
 
-	_, _ = fmt.Fprintf(os.Stderr, "%s serve-dir websocket endpoint-id directory\n", os.Args[0])
+	_, _ = fmt.Fprintf(os.Stderr, "%s exchange websocket endpoint-id directory\n", os.Args[0])
 	_, _ = fmt.Fprintf(os.Stderr, "  %s registeres itself as an agent on the given websocket and writes\n", os.Args[0])
 	_, _ = fmt.Fprintf(os.Stderr, "  incoming Bundles in the directory. If the user dropps a new Bundle in the\n")
 	_, _ = fmt.Fprintf(os.Stderr, "  directory, it will be sent to the server.\n\n")
@@ -43,24 +43,10 @@ func main() {
 	case "show":
 		showBundle(os.Args[2:])
 
-	case "serve-dir":
+	case "exchange":
+		startExchange(os.Args[2:])
 
 	default:
 		printUsage()
 	}
-	//
-	//api := "ws://localhost:8080/ws"
-	//eid := "dtn://foo/bar"
-	//
-	//wac, err := agent.NewWebSocketAgentConnector(api, eid)
-	//if err != nil {
-	//	log.WithError(err).Fatal("Creating WebSocket agent errored")
-	//}
-	//
-	//b := createBundle(eid, "dtn://uff/", []byte("hello world"))
-	//if err := wac.WriteBundle(b); err != nil {
-	//	log.WithError(err).Fatal("Sending Bundle errored")
-	//}
-	//
-	//wac.Close()
 }
