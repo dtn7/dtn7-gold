@@ -14,8 +14,8 @@ func printUsage() {
 	_, _ = fmt.Fprintf(os.Stderr, "  or the given file (filename) as payload. This Bundle will be written to the\n")
 	_, _ = fmt.Fprintf(os.Stderr, "  stdout (-) or saved as bundle-name.\n\n")
 
-	_, _ = fmt.Fprintf(os.Stderr, "%s show filename\n", os.Args[0])
-	_, _ = fmt.Fprintf(os.Stderr, "  Prints a human-readable version of the given Bundle.\n\n")
+	_, _ = fmt.Fprintf(os.Stderr, "%s show -|filename\n", os.Args[0])
+	_, _ = fmt.Fprintf(os.Stderr, "  Prints a JSON version of the a Bundle, read from stdin (-) or filename.\n\n")
 
 	_, _ = fmt.Fprintf(os.Stderr, "%s serve-dir websocket endpoint-id directory\n", os.Args[0])
 	_, _ = fmt.Fprintf(os.Stderr, "  %s registeres itself as an agent on the given websocket and writes\n", os.Args[0])
@@ -41,6 +41,7 @@ func main() {
 		createBundle(os.Args[2:])
 
 	case "show":
+		showBundle(os.Args[2:])
 
 	case "serve-dir":
 
