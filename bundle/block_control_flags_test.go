@@ -4,18 +4,6 @@ import (
 	"testing"
 )
 
-func TestBlockControlFlagsReserved(t *testing.T) {
-	var allFlags BlockControlFlags = 0
-	allFlags |= ReplicateBlock
-	allFlags |= StatusReportBlock
-	allFlags |= DeleteBundle
-	allFlags |= RemoveBlock
-
-	if resvFlags := ^allFlags; resvFlags != blckCFReservedFields {
-		t.Fatalf("Reverted flags %x differ from reserved flags %x", resvFlags, blckCFReservedFields)
-	}
-}
-
 func TestBlockControlFlagsHas(t *testing.T) {
 	var cf BlockControlFlags = ReplicateBlock | DeleteBundle
 
@@ -29,6 +17,8 @@ func TestBlockControlFlagsHas(t *testing.T) {
 }
 
 func TestBlockControlFlagsCheckValid(t *testing.T) {
+	// Since dtn-bpbpis-24 _all_ bit masks are valid Block Processing Control Flags.
+	// The `valid` check might become useful again.
 	tests := []struct {
 		cf    BlockControlFlags
 		valid bool
@@ -36,8 +26,8 @@ func TestBlockControlFlagsCheckValid(t *testing.T) {
 		{0, true},
 		{ReplicateBlock, true},
 		{ReplicateBlock | DeleteBundle, true},
-		{ReplicateBlock | 0x80, false},
-		{0x40 | 0x20, false},
+		{ReplicateBlock | 0x80, true},
+		{0x40 | 0x20, true},
 	}
 
 	for _, test := range tests {

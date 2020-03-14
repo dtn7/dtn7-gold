@@ -39,9 +39,6 @@ const (
 
 	// StatusRequestDeletion requests a bundle deletion status report.
 	StatusRequestDeletion BundleControlFlags = 0x040000
-
-	// bndlCFReservedFields are both reserved and unassigned flags.
-	bndlCFReservedFields BundleControlFlags = 0xFFFFFFFFFFF8BF98
 )
 
 // Has returns true if a given flag or mask of flags is set.
@@ -50,11 +47,6 @@ func (bcf BundleControlFlags) Has(flag BundleControlFlags) bool {
 }
 
 func (bcf BundleControlFlags) CheckValid() (errs error) {
-	if bcf.Has(bndlCFReservedFields) {
-		errs = multierror.Append(
-			errs, fmt.Errorf("BundleControlFlags: Given flag contains reserved bits"))
-	}
-
 	if bcf.Has(IsFragment) && bcf.Has(MustNotFragmented) {
 		errs = multierror.Append(errs,
 			fmt.Errorf("BundleControlFlags: both 'bundle is a fragment' and "+

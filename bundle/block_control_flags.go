@@ -2,7 +2,6 @@ package bundle
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 )
 
@@ -22,9 +21,6 @@ const (
 
 	// RemoveBlock requires the block to be removed from the bundle if it cannot be processed.
 	RemoveBlock BlockControlFlags = 0x10
-
-	// blckCFReservedFields are both reserved and unassigned flags.
-	blckCFReservedFields BlockControlFlags = 0xFFFFFFFFFFFFFFE8
 )
 
 // Has returns true if a given flag or mask of flags is set.
@@ -33,10 +29,8 @@ func (bcf BlockControlFlags) Has(flag BlockControlFlags) bool {
 }
 
 func (bcf BlockControlFlags) CheckValid() error {
-	if bcf.Has(blckCFReservedFields) {
-		return fmt.Errorf("BlockControlFlags: Given flag %x contains reserved bits", bcf)
-	}
-
+	// There is currently nothing to check here.
+	// Especially since dtn-bpbpis-24 no longer defines unknown bits as faults.
 	return nil
 }
 

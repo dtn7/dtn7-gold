@@ -28,7 +28,7 @@ func TestCanonicalBlockCheckValid(t *testing.T) {
 		{CanonicalBlock{1, 0, CRCNo, nil, NewPayloadBlock(nil)}, true},
 
 		// Reserved bits in block control flags
-		{CanonicalBlock{1, 0x80, CRCNo, nil, NewPayloadBlock(nil)}, false},
+		{CanonicalBlock{1, 0x80, CRCNo, nil, NewPayloadBlock(nil)}, true},
 
 		// Illegal EndpointID in Previous Node Block
 		{CanonicalBlock{2, 0, CRCNo, nil, NewPreviousNodeBlock(DtnNone())}, true},
