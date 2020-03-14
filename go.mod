@@ -1,6 +1,7 @@
 module github.com/dtn7/dtn7-go
 
 require (
+	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/RyanCarrier/dijkstra v0.0.0-20190613134106-3f5a38e7002e
 	github.com/dtn7/cboring v0.1.5
