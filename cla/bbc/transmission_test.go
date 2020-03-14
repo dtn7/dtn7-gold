@@ -32,7 +32,7 @@ func TestSuccessfulIncomingTransmission(t *testing.T) {
 	}
 
 	expected := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18}
-	if bytes.Compare(tr.Payload, expected) != 0 {
+	if !bytes.Equal(tr.Payload, expected) {
 		t.Fatalf("Expected payload of %x, got %x", expected, tr.Payload)
 	}
 }
@@ -65,7 +65,7 @@ func TestSuccessfulOutgoingTransmission(t *testing.T) {
 	for _, f := range fs {
 		outputData = append(outputData, f.Payload...)
 	}
-	if bytes.Compare(payload, outputData) != 0 {
+	if !bytes.Equal(payload, outputData) {
 		t.Fatalf("Sent payload of %x, got %x", payload, outputData)
 	}
 }
@@ -98,7 +98,7 @@ func TestDummyTransmission(t *testing.T) {
 		t.Fatal("IncomingTransmission is not finished")
 	}
 
-	if bytes.Compare(payload, in.Payload) != 0 {
+	if !bytes.Equal(payload, in.Payload) {
 		t.Fatalf("Sent payload of %x, got %x", payload, in.Payload)
 	}
 }

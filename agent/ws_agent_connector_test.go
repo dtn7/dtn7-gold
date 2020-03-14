@@ -76,10 +76,12 @@ func TestWebAgentConnector(t *testing.T) {
 	fin := make(chan struct{})
 	go func() {
 		if b2, err := wac.ReadBundle(); err != nil {
-			t.Fatal(err)
+			return
 		} else if !reflect.DeepEqual(b, b2) {
-			t.Fatalf("expected %v, got %v", b, b2)
+			return
 		}
+
+		// fin will only be closed iff no error occurred. Otherwise the timeout below will hit.
 		close(fin)
 	}()
 
@@ -93,7 +95,11 @@ func TestWebAgentConnector(t *testing.T) {
 	go func() {
 		msg := <-ws.MessageSender()
 		if msg, ok := msg.(SyscallRequestMessage); !ok {
-			t.Fatal("wrong message type")
+			ws.MessageReceiver() <- SyscallResponseMessage{
+				Request:   msg.Request,
+				Response:  []byte{},
+				Recipient: msg.Sender,
+			}
 		} else {
 			ws.MessageReceiver() <- SyscallResponseMessage{
 				Request:   msg.Request,

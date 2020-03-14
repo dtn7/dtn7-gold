@@ -90,9 +90,9 @@ func (ebm *ExtensionBlockManager) createBlock(typeCode uint64) ExtensionBlock {
 // WriteBlock writes an ExtensionBlock in its correct binary format into the io.Writer.
 // Unknown block types are treated as GenericExtensionBlock.
 func (ebm *ExtensionBlockManager) WriteBlock(b ExtensionBlock, w io.Writer) error {
-	switch b.(type) {
+	switch b := b.(type) {
 	case encoding.BinaryMarshaler:
-		if data, err := b.(encoding.BinaryMarshaler).MarshalBinary(); err != nil {
+		if data, err := b.MarshalBinary(); err != nil {
 			return fmt.Errorf("marshalling binary for Block errored: %v", err)
 		} else {
 			return cboring.WriteByteString(data, w)
@@ -100,7 +100,7 @@ func (ebm *ExtensionBlockManager) WriteBlock(b ExtensionBlock, w io.Writer) erro
 
 	case cboring.CborMarshaler:
 		var buff bytes.Buffer
-		if err := cboring.Marshal(b.(cboring.CborMarshaler), &buff); err != nil {
+		if err := cboring.Marshal(b, &buff); err != nil {
 			return fmt.Errorf("marshalling CBOR for Block errored: %v", err)
 		}
 		return cboring.WriteByteString(buff.Bytes(), w)
@@ -115,12 +115,12 @@ func (ebm *ExtensionBlockManager) WriteBlock(b ExtensionBlock, w io.Writer) erro
 func (ebm *ExtensionBlockManager) ReadBlock(typeCode uint64, r io.Reader) (b ExtensionBlock, err error) {
 	b = ebm.createBlock(typeCode)
 
-	switch b.(type) {
+	switch b := b.(type) {
 	case encoding.BinaryUnmarshaler:
 		if data, dataErr := cboring.ReadByteString(r); dataErr != nil {
 			err = dataErr
 		} else {
-			err = b.(encoding.BinaryUnmarshaler).UnmarshalBinary(data)
+			err = b.UnmarshalBinary(data)
 		}
 
 	case cboring.CborMarshaler:
@@ -128,7 +128,7 @@ func (ebm *ExtensionBlockManager) ReadBlock(typeCode uint64, r io.Reader) (b Ext
 			err = dataErr
 		} else {
 			var buff = bytes.NewBuffer(data)
-			err = cboring.Unmarshal(b.(cboring.CborMarshaler), buff)
+			err = cboring.Unmarshal(b, buff)
 		}
 
 	default:

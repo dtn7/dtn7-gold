@@ -16,7 +16,7 @@ func TestDummyModemFragments(t *testing.T) {
 	msg := []byte("hello world")
 	_ = modems[0].Send(NewFragment(0, 0, false, false, false, msg))
 	for i := 0; i < len(modems); i++ {
-		if f, _ := modems[i].Receive(); bytes.Compare(f.Payload, msg) != 0 {
+		if f, _ := modems[i].Receive(); !bytes.Equal(f.Payload, msg) {
 			t.Fatalf("Wrong payload: expected %x, got %x", msg, f.Payload)
 		}
 	}

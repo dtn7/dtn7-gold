@@ -1,0 +1,4 @@
+linters:
+  # In adition to the default
+  enable:
+    # nOnE

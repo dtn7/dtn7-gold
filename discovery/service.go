@@ -151,7 +151,21 @@ func NewDiscoveryService(dms []DiscoveryMessage, c *core.Core, interval uint, ip
 			Notify:           set.notify,
 		}
 
-		go peerdiscovery.Discover(set)
+		discoverErrChan := make(chan error)
+		go func() {
+			_, discoverErr := peerdiscovery.Discover(set)
+			discoverErrChan <- discoverErr
+		}()
+
+		select {
+		case discoverErr := <-discoverErrChan:
+			if discoverErr != nil {
+				return nil, discoverErr
+			}
+
+		case <-time.After(time.Second):
+			return nil, fmt.Errorf("did not received an error value from Discovery goroutine")
+		}
 	}
 
 	return ds, nil

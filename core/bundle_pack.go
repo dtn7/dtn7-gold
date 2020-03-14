@@ -55,7 +55,7 @@ func NewBundlePackFromBundle(b bundle.Bundle, store *storage.Store) BundlePack {
 
 	bp.bndl = &b
 
-	bp.Sync()
+	_ = bp.Sync()
 	return bp
 }
 
@@ -170,7 +170,7 @@ func (bp *BundlePack) UpdateBundleAge() (uint64, error) {
 	}
 
 	age := ageBlock.Value.(*bundle.BundleAgeBlock)
-	return age.Increment(uint64(time.Now().Sub(bp.Timestamp)) / 1000), nil
+	return age.Increment(uint64(time.Since(bp.Timestamp)) / 1000), nil
 }
 
 func (bp BundlePack) String() string {

@@ -95,11 +95,11 @@ func (bldr *BundleBuilder) Build() (bndl Bundle, err error) {
 // bldrParseEndpoint returns an EndpointID for a given EndpointID or a string,
 // representing an endpoint identifier as an URI.
 func bldrParseEndpoint(eid interface{}) (e EndpointID, err error) {
-	switch eid.(type) {
+	switch eid := eid.(type) {
 	case EndpointID:
-		e = eid.(EndpointID)
+		e = eid
 	case string:
-		e, err = NewEndpointID(eid.(string))
+		e, err = NewEndpointID(eid)
 	default:
 		err = fmt.Errorf("%T is neither an EndpointID nor a string", eid)
 	}
@@ -109,17 +109,17 @@ func bldrParseEndpoint(eid interface{}) (e EndpointID, err error) {
 // bldrParseLifetime returns a microsecond as an uint for a given microsecond
 // or a duration string, which will be parsed.
 func bldrParseLifetime(duration interface{}) (us uint64, err error) {
-	switch duration.(type) {
+	switch duration := duration.(type) {
 	case uint64:
-		us = duration.(uint64)
+		us = duration
 	case int:
-		if duration.(int) < 0 {
-			err = fmt.Errorf("Lifetime's duratoin %d <= 0", duration.(int))
+		if duration < 0 {
+			err = fmt.Errorf("Lifetime's duratoin %d <= 0", duration)
 		} else {
-			us = uint64(duration.(int))
+			us = uint64(duration)
 		}
 	case string:
-		dur, durErr := time.ParseDuration(duration.(string))
+		dur, durErr := time.ParseDuration(duration)
 		if durErr != nil {
 			err = durErr
 		} else if dur <= 0 {
@@ -230,7 +230,7 @@ func (bldr *BundleBuilder) Lifetime(duration interface{}) *BundleBuilder {
 	return bldr
 }
 
-// BundleBuilder sets the bundle processing control flags in the primary block.
+// BundleCtrlFlags sets the bundle processing control flags in the primary block.
 func (bldr *BundleBuilder) BundleCtrlFlags(bcf BundleControlFlags) *BundleBuilder {
 	if bldr.err == nil {
 		bldr.primary.BundleControlFlags = bcf
@@ -255,24 +255,25 @@ func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 		return bldr
 	}
 
-	var (
-		blockNumber    uint64
-		data           ExtensionBlock
-		blockCtrlFlags BlockControlFlags
-
-		chk0, chk1 bool = true, true
-	)
-
 	if len(args) == 0 {
 		bldr.err = fmt.Errorf("Canonical was called with no parameters")
 		return bldr
 	}
 
+	var (
+		blockNumber    uint64
+		data           ExtensionBlock
+		blockCtrlFlags BlockControlFlags
+	)
+
 	switch args[0].(type) {
 	case ExtensionBlock:
+		var chk0, chk1 bool
+
 		switch l := len(args); l {
 		case 1:
 			data, chk0 = args[0].(ExtensionBlock)
+			chk1 = true // Only one check here, so the other one is always true.
 		case 2:
 			data, chk0 = args[0].(ExtensionBlock)
 			blockCtrlFlags, chk1 = args[1].(BlockControlFlags)

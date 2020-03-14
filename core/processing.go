@@ -28,7 +28,7 @@ func (c *Core) transmit(bp BundlePack) {
 	c.idKeeper.update(bp.MustBundle())
 
 	bp.AddConstraint(DispatchPending)
-	bp.Sync()
+	_ = bp.Sync()
 
 	src := bp.MustBundle().PrimaryBlock.SourceNode
 	if src != bundle.DtnNone() && !c.HasEndpoint(src) {
@@ -65,7 +65,7 @@ func (c *Core) receive(bp BundlePack) {
 	}).Info("Processing new received bundle")
 
 	bp.AddConstraint(DispatchPending)
-	bp.Sync()
+	_ = bp.Sync()
 
 	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestReception) {
 		c.SendStatusReport(bp, arecord.ReceivedBundle, arecord.NoInformation)
@@ -161,7 +161,7 @@ func (c *Core) forward(bp BundlePack) {
 
 	bp.AddConstraint(ForwardPending)
 	bp.RemoveConstraint(DispatchPending)
-	bp.Sync()
+	_ = bp.Sync()
 
 	if hcBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeHopCountBlock); err == nil {
 		hc := hcBlock.Value.(*bundle.HopCountBlock)
@@ -275,7 +275,7 @@ func (c *Core) forward(bp BundlePack) {
 		log.WithFields(log.Fields{
 			"bundle":    bp.ID(),
 			"hop_count": hc,
-		}).Debug("Bundle's hop count block was resetted")
+		}).Debug("Bundle's hop count block was reset")
 	}
 
 	if bundleSent {
@@ -285,7 +285,7 @@ func (c *Core) forward(bp BundlePack) {
 
 		if deleteAfterwards {
 			bp.PurgeConstraints()
-			bp.Sync()
+			_ = bp.Sync()
 		} else if c.InspectAllBundles && bp.MustBundle().IsAdministrativeRecord() {
 			c.bundleContraindicated(bp)
 			c.checkAdministrativeRecord(bp)
@@ -392,13 +392,17 @@ func (c *Core) inspectStatusReport(bp BundlePack, ar arecord.AdministrativeRecor
 			// Nothing to do
 
 		case arecord.DeliveredBundle:
-			log.WithFields(log.Fields{
+			logger := log.WithFields(log.Fields{
 				"bundle":        bp.ID(),
 				"status_rep":    status,
 				"status_bundle": bpStore.Id,
-			}).Info("Status report indicates delivered bundle, deleting bundle")
+			})
 
-			c.store.Delete(bpStore.BId)
+			if err := c.store.Delete(bpStore.BId); err != nil {
+				logger.WithError(err).Warn("Failed to delete delivered bundle")
+			} else {
+				logger.Info("Status report indicates delivered bundle, deleting bundle")
+			}
 
 		default:
 			log.WithFields(log.Fields{
@@ -426,7 +430,7 @@ func (c *Core) localDelivery(bp BundlePack) {
 	}
 
 	bp.AddConstraint(LocalEndpoint)
-	bp.Sync()
+	_ = bp.Sync()
 
 	if err := c.agentManager.Deliver(bp); err != nil {
 		log.WithField("bundle", bp.ID()).WithError(err).Warn("Delivering local bundle errored")
@@ -437,7 +441,7 @@ func (c *Core) localDelivery(bp BundlePack) {
 	}
 
 	bp.PurgeConstraints()
-	bp.Sync()
+	_ = bp.Sync()
 }
 
 func (c *Core) bundleContraindicated(bp BundlePack) {
@@ -446,7 +450,7 @@ func (c *Core) bundleContraindicated(bp BundlePack) {
 	}).Info("Bundle was marked for contraindication")
 
 	bp.AddConstraint(Contraindicated)
-	bp.Sync()
+	_ = bp.Sync()
 }
 
 func (c *Core) bundleDeletion(bp BundlePack, reason arecord.StatusReportReason) {
@@ -455,7 +459,7 @@ func (c *Core) bundleDeletion(bp BundlePack, reason arecord.StatusReportReason) 
 	}
 
 	bp.PurgeConstraints()
-	bp.Sync()
+	_ = bp.Sync()
 
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),

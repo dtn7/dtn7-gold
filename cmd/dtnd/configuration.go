@@ -159,8 +159,8 @@ func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error)
 			agents = append(agents, ws)
 		}
 
+		// nolint  // TODO...
 		if conf.Webserver.Rest {
-			// TODO
 		}
 
 		httpServer := &http.Server{

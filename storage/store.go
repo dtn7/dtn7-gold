@@ -156,17 +156,17 @@ func (s *Store) Delete(bid bundle.BundleID) error {
 func (s *Store) DeleteExpired() {
 	var bis []BundleItem
 	if err := s.bh.Find(&bis, badgerhold.Where("Expires").Lt(time.Now())); err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Warn("Failed to get expired Bundles")
+		log.WithError(err).Warn("Failed to get expired Bundles")
 		return
 	}
 
 	for _, bi := range bis {
-		log.WithFields(log.Fields{
-			"bundle": bi.Id,
-		}).Info("Bundle is expired")
-		s.Delete(bi.BId)
+		logger := log.WithField("bundle", bi.Id)
+		if err := s.Delete(bi.BId); err != nil {
+			logger.WithError(err).Warn("Failed to delete expired Bundle")
+		} else {
+			logger.Info("Deleted expired Bundle")
+		}
 	}
 }
 

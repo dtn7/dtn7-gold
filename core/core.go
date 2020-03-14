@@ -82,8 +82,12 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 	c.stopSyn = make(chan struct{})
 	c.stopAck = make(chan struct{})
 
-	c.cron.Register("pending_bundles", c.checkPendingBundles, 10*time.Second)
-	c.cron.Register("clean_store", c.store.DeleteExpired, 10*time.Minute)
+	if err := c.cron.Register("pending_bundles", c.checkPendingBundles, 10*time.Second); err != nil {
+		log.WithError(err).Warn("Failed to register pending_bundles at cron")
+	}
+	if err := c.cron.Register("clean_store", c.store.DeleteExpired, 10*time.Minute); err != nil {
+		log.WithError(err).Warn("Failed to register clean_store at cron")
+	}
 
 	go c.handler()
 
@@ -141,7 +145,7 @@ func (c *Core) handler() {
 
 				bp := NewBundlePackFromBundle(*crb.Bundle, c.store)
 				bp.Receiver = crb.Endpoint
-				bp.Sync()
+				_ = bp.Sync()
 
 				c.receive(bp)
 
