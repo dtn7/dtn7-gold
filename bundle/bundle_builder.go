@@ -68,11 +68,11 @@ func (bldr *BundleBuilder) Build() (bndl Bundle, err error) {
 
 	// Source and Destination are necessary
 	if bldr.primary.SourceNode == (EndpointID{}) || bldr.primary.Destination == (EndpointID{}) {
-		err = fmt.Errorf("Both Source and Destination must be set")
+		err = fmt.Errorf("both Source and Destination must be set")
 		return
 	}
 
-	// Calcualte mandatory CRC for the PrimaryBlock.
+	// Calculate mandatory CRC for the PrimaryBlock.
 	// Do NOT alter the PrimaryBlock after setting its CRC.
 	if bldr.crcType == CRCNo {
 		bldr.primary.SetCRCType(CRC32)
@@ -114,7 +114,7 @@ func bldrParseLifetime(duration interface{}) (us uint64, err error) {
 		us = duration
 	case int:
 		if duration < 0 {
-			err = fmt.Errorf("Lifetime's duratoin %d <= 0", duration)
+			err = fmt.Errorf("lifetime's duration %d <= 0", duration)
 		} else {
 			us = uint64(duration)
 		}
@@ -123,7 +123,7 @@ func bldrParseLifetime(duration interface{}) (us uint64, err error) {
 		if durErr != nil {
 			err = durErr
 		} else if dur <= 0 {
-			err = fmt.Errorf("Lifetime's duration %d <= 0", dur)
+			err = fmt.Errorf("lifetime's duration %d <= 0", dur)
 		} else {
 			us = uint64(dur.Nanoseconds() / 1000)
 		}

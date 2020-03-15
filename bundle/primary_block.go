@@ -90,6 +90,7 @@ func (pb *PrimaryBlock) calculateCRC() error {
 	return pb.MarshalCbor(new(bytes.Buffer))
 }
 
+// MarshalCbor writes the CBOR representation of a PrimaryBlock.
 func (pb *PrimaryBlock) MarshalCbor(w io.Writer) error {
 	var blockLen uint64 = 9
 	if pb.HasFragmentation() {
@@ -145,6 +146,7 @@ func (pb *PrimaryBlock) MarshalCbor(w io.Writer) error {
 	return nil
 }
 
+// UnmarshalCbor reads the CBOR representation of a PrimaryBlock.
 func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 	// Pipe incoming bytes into a separate CRC buffer
 	crcBuff := new(bytes.Buffer)
@@ -154,7 +156,7 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 	if bl, err := cboring.ReadArrayLength(r); err != nil {
 		return err
 	} else if bl != 9 && bl != 11 {
-		return fmt.Errorf("Expected array with length 9 or 11, got %d", bl)
+		return fmt.Errorf("expected array with length 9 or 11, got %d", bl)
 	} else {
 		blockLen = bl
 	}
@@ -162,7 +164,7 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 	if version, err := cboring.ReadUInt(r); err != nil {
 		return err
 	} else if version != 7 {
-		return fmt.Errorf("Expected version 7, got %d", version)
+		return fmt.Errorf("expected version 7, got %d", version)
 	} else {
 		pb.Version = 7
 	}
@@ -212,7 +214,7 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 	} else if crcVal, err := cboring.ReadByteString(r); err != nil {
 		return err
 	} else if !bytes.Equal(crcCalc, crcVal) {
-		return fmt.Errorf("Invalid CRC value: %x instead of expected %x", crcVal, crcCalc)
+		return fmt.Errorf("invalid CRC value: %x instead of expected %x", crcVal, crcCalc)
 	} else {
 		pb.CRC = crcVal
 	}
@@ -220,6 +222,7 @@ func (pb *PrimaryBlock) UnmarshalCbor(r io.Reader) error {
 	return nil
 }
 
+// MarshalJSON writes a JSON object representing this PrimaryBlock.
 func (pb PrimaryBlock) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		ControlFlags      BundleControlFlags `json:"bundleControlFlags"`
@@ -238,6 +241,7 @@ func (pb PrimaryBlock) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// CheckValid returns an array of errors for incorrect data.
 func (pb PrimaryBlock) CheckValid() (errs error) {
 	if pb.Version != dtnVersion {
 		errs = multierror.Append(errs,
@@ -296,7 +300,7 @@ func (pb PrimaryBlock) CheckValid() (errs error) {
 // This method only compares the tuple of the CreationTimestamp and Lifetime
 // against the current time.
 //
-// If the creatoin timestamp's time value is zero, this method will always
+// If the creation timestamp's time value is zero, this method will always
 // return false.
 func (pb PrimaryBlock) IsLifetimeExceeded() bool {
 	if pb.CreationTimestamp.IsZeroTime() {
@@ -313,22 +317,22 @@ func (pb PrimaryBlock) IsLifetimeExceeded() bool {
 func (pb PrimaryBlock) String() string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "version: %d, ", pb.Version)
-	fmt.Fprintf(&b, "bundle processing control flags: %b, ", pb.BundleControlFlags)
-	fmt.Fprintf(&b, "crc type: %v, ", pb.CRCType)
-	fmt.Fprintf(&b, "destination: %v, ", pb.Destination)
-	fmt.Fprintf(&b, "source node: %v, ", pb.SourceNode)
-	fmt.Fprintf(&b, "report to: %v, ", pb.ReportTo)
-	fmt.Fprintf(&b, "creation timestamp: %v, ", pb.CreationTimestamp)
-	fmt.Fprintf(&b, "lifetime: %d", pb.Lifetime)
+	_, _ = fmt.Fprintf(&b, "version: %d, ", pb.Version)
+	_, _ = fmt.Fprintf(&b, "bundle processing control flags: %b, ", pb.BundleControlFlags)
+	_, _ = fmt.Fprintf(&b, "crc type: %v, ", pb.CRCType)
+	_, _ = fmt.Fprintf(&b, "destination: %v, ", pb.Destination)
+	_, _ = fmt.Fprintf(&b, "source node: %v, ", pb.SourceNode)
+	_, _ = fmt.Fprintf(&b, "report to: %v, ", pb.ReportTo)
+	_, _ = fmt.Fprintf(&b, "creation timestamp: %v, ", pb.CreationTimestamp)
+	_, _ = fmt.Fprintf(&b, "lifetime: %d", pb.Lifetime)
 
 	if pb.HasFragmentation() {
-		fmt.Fprintf(&b, " , ")
-		fmt.Fprintf(&b, "fragment offset: %d, ", pb.FragmentOffset)
-		fmt.Fprintf(&b, "total data length: %d", pb.TotalDataLength)
+		_, _ = fmt.Fprintf(&b, " , ")
+		_, _ = fmt.Fprintf(&b, "fragment offset: %d, ", pb.FragmentOffset)
+		_, _ = fmt.Fprintf(&b, "total data length: %d", pb.TotalDataLength)
 	}
 
-	fmt.Fprintf(&b, ", crc: %x", pb.CRC)
+	_, _ = fmt.Fprintf(&b, ", crc: %x", pb.CRC)
 
 	return b.String()
 }

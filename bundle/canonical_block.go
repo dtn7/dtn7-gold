@@ -20,6 +20,7 @@ type CanonicalBlock struct {
 	Value             ExtensionBlock
 }
 
+// NewCanonicalBlock based on its number, some control flags and an Extension Block.
 func NewCanonicalBlock(no uint64, bcf BlockControlFlags, value ExtensionBlock) CanonicalBlock {
 	return CanonicalBlock{
 		BlockNumber:       no,
@@ -50,6 +51,7 @@ func (cb *CanonicalBlock) SetCRCType(crcType CRCType) {
 	cb.CRCType = crcType
 }
 
+// MarshalCbor writes this Canonical Block's CBOR representation.
 func (cb *CanonicalBlock) MarshalCbor(w io.Writer) error {
 	var blockLen uint64 = 5
 	if cb.HasCRC() {
@@ -90,12 +92,13 @@ func (cb *CanonicalBlock) MarshalCbor(w io.Writer) error {
 	return nil
 }
 
+// UnmarshalCbor creates this Canonical Block based on a CBOR representation.
 func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 	var blockLen uint64
 	if bl, err := cboring.ReadArrayLength(r); err != nil {
 		return err
 	} else if bl != 5 && bl != 6 {
-		return fmt.Errorf("Expected array with length 5 or 6, got %d", bl)
+		return fmt.Errorf("expected array with length 5 or 6, got %d", bl)
 	} else {
 		blockLen = bl
 	}
@@ -147,7 +150,7 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 		} else if crcVal, err := cboring.ReadByteString(r); err != nil {
 			return err
 		} else if !bytes.Equal(crcCalc, crcVal) {
-			return fmt.Errorf("Invalid CRC value: %x instead of expected %x", crcVal, crcCalc)
+			return fmt.Errorf("invalid CRC value: %x instead of expected %x", crcVal, crcCalc)
 		} else {
 			cb.CRC = crcVal
 		}
@@ -156,6 +159,7 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 	return nil
 }
 
+// MarshalJSON writes a JSON object for this Canonical Block.
 func (cb CanonicalBlock) MarshalJSON() ([]byte, error) {
 	var buff bytes.Buffer
 	if err := GetExtensionBlockManager().WriteBlock(cb.Value, &buff); err != nil {
@@ -175,6 +179,7 @@ func (cb CanonicalBlock) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// CheckValid returns an array of errors for incorrect data.
 func (cb CanonicalBlock) CheckValid() (errs error) {
 	if bcfErr := cb.BlockControlFlags.CheckValid(); bcfErr != nil {
 		errs = multierror.Append(errs, bcfErr)
@@ -195,14 +200,14 @@ func (cb CanonicalBlock) CheckValid() (errs error) {
 func (cb CanonicalBlock) String() string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "block type code: %d, ", cb.Value.BlockTypeCode())
-	fmt.Fprintf(&b, "block number: %d, ", cb.BlockNumber)
-	fmt.Fprintf(&b, "block processing control flags: %b, ", cb.BlockControlFlags)
-	fmt.Fprintf(&b, "crc type: %v, ", cb.CRCType)
-	fmt.Fprintf(&b, "data: %v", cb.Value)
+	_, _ = fmt.Fprintf(&b, "block type code: %d, ", cb.Value.BlockTypeCode())
+	_, _ = fmt.Fprintf(&b, "block number: %d, ", cb.BlockNumber)
+	_, _ = fmt.Fprintf(&b, "block processing control flags: %b, ", cb.BlockControlFlags)
+	_, _ = fmt.Fprintf(&b, "crc type: %v, ", cb.CRCType)
+	_, _ = fmt.Fprintf(&b, "data: %v", cb.Value)
 
 	if cb.HasCRC() {
-		fmt.Fprintf(&b, ", crc: %x", cb.CRC)
+		_, _ = fmt.Fprintf(&b, ", crc: %x", cb.CRC)
 	}
 
 	return b.String()

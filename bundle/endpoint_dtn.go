@@ -33,22 +33,26 @@ func NewDtnEndpoint(uri string) (e EndpointType, err error) {
 	return
 }
 
+// SchemeName is "dtn" for DtnEndpoints.
 func (_ DtnEndpoint) SchemeName() string {
 	return dtnEndpointSchemeName
 }
 
+// SchemeNo is 1 for DtnEndpoints.
 func (_ DtnEndpoint) SchemeNo() uint64 {
 	return dtnEndpointSchemeNo
 }
 
 func (e DtnEndpoint) parseUri() (authority, path string) {
 	// net.url.URL requires two leading slashes.
-	// Thus, we are going to add them temporary - temporary, because this is a value receiver.
+	var tmpEndpoint string
 	if !strings.HasPrefix(e.Ssp, "//") {
-		e = DtnEndpoint{"//" + e.Ssp}
+		tmpEndpoint = DtnEndpoint{"//" + e.Ssp}.String()
+	} else {
+		tmpEndpoint = e.String()
 	}
 
-	u, err := url.Parse(e.String())
+	u, err := url.Parse(tmpEndpoint)
 	if err != nil {
 		return
 	}
@@ -58,16 +62,19 @@ func (e DtnEndpoint) parseUri() (authority, path string) {
 	return
 }
 
+// Authority is the authority part of the Endpoint URI, e.g., "foo" for "dtn://foo/bar".
 func (e DtnEndpoint) Authority() string {
 	authority, _ := e.parseUri()
 	return authority
 }
 
+// Path is the path part of the Endpoint URI, e.g., "/bar" for "dtn://foo/bar".
 func (e DtnEndpoint) Path() string {
 	_, path := e.parseUri()
 	return path
 }
 
+// CheckValid returns an array of errors for incorrect data.
 func (_ DtnEndpoint) CheckValid() error {
 	return nil
 }
@@ -76,6 +83,7 @@ func (e DtnEndpoint) String() string {
 	return fmt.Sprintf("%s:%s", dtnEndpointSchemeName, e.Ssp)
 }
 
+// MarshalCbor writes this DtnEndpoint's CBOR representation.
 func (e DtnEndpoint) MarshalCbor(w io.Writer) error {
 	var isDtnNone = e.Ssp == dtnEndpointDtnNoneSsp
 	if isDtnNone {
@@ -85,6 +93,7 @@ func (e DtnEndpoint) MarshalCbor(w io.Writer) error {
 	}
 }
 
+// UnmarshalCbor reads a CBOR representation.
 func (e *DtnEndpoint) UnmarshalCbor(r io.Reader) error {
 	if m, n, err := cboring.ReadMajors(r); err != nil {
 		return err

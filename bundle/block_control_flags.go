@@ -28,6 +28,7 @@ func (bcf BlockControlFlags) Has(flag BlockControlFlags) bool {
 	return (bcf & flag) != 0
 }
 
+// CheckValid returns an array of errors for incorrect data.
 func (bcf BlockControlFlags) CheckValid() error {
 	// There is currently nothing to check here.
 	// Especially since dtn-bpbpis-24 no longer defines unknown bits as faults.
@@ -55,6 +56,7 @@ func (bcf BlockControlFlags) Strings() (fields []string) {
 	return
 }
 
+// MarshalJSON returns a JSON array of control flags.
 func (bcf BlockControlFlags) MarshalJSON() ([]byte, error) {
 	return json.Marshal(bcf.Strings())
 }

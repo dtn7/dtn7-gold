@@ -8,8 +8,7 @@ import (
 )
 
 func TestBundleControlFlagsHas(t *testing.T) {
-	var cf BundleControlFlags = IsFragment |
-		RequestStatusTime
+	var cf = IsFragment | RequestStatusTime
 
 	if !cf.Has(IsFragment) {
 		t.Error("cf has no IsFragment-flag even when it was set")
@@ -24,7 +23,7 @@ func TestBundleControlFlagsImplications(t *testing.T) {
 	var (
 		cf BundleControlFlags = 0
 
-		reportReqs []BundleControlFlags = []BundleControlFlags{
+		reportReqs = []BundleControlFlags{
 			StatusRequestReception,
 			StatusRequestForward,
 			StatusRequestDelivery,

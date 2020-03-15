@@ -48,22 +48,27 @@ func NewIpnEndpoint(uri string) (e EndpointType, err error) {
 	return
 }
 
+// SchemeName is "ipn" for IpnEndpoints.
 func (e IpnEndpoint) SchemeName() string {
 	return ipnEndpointSchemeName
 }
 
+// SchemeNo is 2 for IpnEndpoints.
 func (e IpnEndpoint) SchemeNo() uint64 {
 	return ipnEndpointSchemeNo
 }
 
+// Authority is the authority part of the Endpoint URI, e.g., "23" for "ipn:23.42".
 func (e IpnEndpoint) Authority() string {
 	return fmt.Sprintf("%d", e.Node)
 }
 
+// Path is the path part of the Endpoint URI, e.g., "42" for "ipn:23.42".
 func (e IpnEndpoint) Path() string {
 	return fmt.Sprintf("%d", e.Service)
 }
 
+// CheckValid returns an array of errors for incorrect data.
 func (e IpnEndpoint) CheckValid() error {
 	if e.Node < 1 || e.Service < 1 {
 		return fmt.Errorf("ipn's node and Service number must be >= 1")
@@ -76,6 +81,7 @@ func (e IpnEndpoint) String() string {
 	return fmt.Sprintf("%s:%d.%d", ipnEndpointSchemeName, e.Node, e.Service)
 }
 
+// MarshalCbor writes this IpnEndpoint's CBOR representation.
 func (e IpnEndpoint) MarshalCbor(w io.Writer) error {
 	if err := cboring.WriteArrayLength(2, w); err != nil {
 		return err
@@ -90,6 +96,7 @@ func (e IpnEndpoint) MarshalCbor(w io.Writer) error {
 	return nil
 }
 
+// UnmarshalCbor reads a CBOR representation for an IpnEndpoint.
 func (e *IpnEndpoint) UnmarshalCbor(r io.Reader) error {
 	if n, err := cboring.ReadArrayLength(r); err != nil {
 		return err

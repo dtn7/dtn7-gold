@@ -14,21 +14,25 @@ func NewGenericExtensionBlock(data []byte, typeCode uint64) *GenericExtensionBlo
 	}
 }
 
+// MarshalBinary writes a binary representation of this block.
 func (geb *GenericExtensionBlock) MarshalBinary() ([]byte, error) {
 	return geb.data, nil
 }
 
+// UnmarshalBinary reads a binary representation of a generic block.
 func (geb *GenericExtensionBlock) UnmarshalBinary(data []byte) error {
 	geb.data = data
 	return nil
 }
 
+// CheckValid returns an array of errors for incorrect data.
 func (geb *GenericExtensionBlock) CheckValid() error {
 	// We have zero knowledge about this block.
 	// Thus, who are we to judge someone else's block?
 	return nil
 }
 
+// BlockTypeCode must return a constant integer, indicating the block type code.
 func (geb *GenericExtensionBlock) BlockTypeCode() uint64 {
 	return geb.typeCode
 }

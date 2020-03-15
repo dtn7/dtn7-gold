@@ -111,6 +111,7 @@ func MustNewEndpointID(uri string) EndpointID {
 	}
 }
 
+// MarshalCbor writes the CBOR representation of this Endpoint ID.
 func (eid *EndpointID) MarshalCbor(w io.Writer) error {
 	if err := cboring.WriteArrayLength(2, w); err != nil {
 		return err
@@ -129,6 +130,7 @@ func (eid *EndpointID) MarshalCbor(w io.Writer) error {
 	return nil
 }
 
+// UnmarshalCbor creates this Endpoint ID based on a CBOR representation.
 func (eid *EndpointID) UnmarshalCbor(r io.Reader) error {
 	if l, err := cboring.ReadArrayLength(r); err != nil {
 		return err
@@ -164,10 +166,12 @@ func (eid EndpointID) Authority() string {
 	return eid.EndpointType.Authority()
 }
 
+// Path is the path part of the Endpoint URI, e.g., "/bar" for "dtn://foo/bar".
 func (eid EndpointID) Path() string {
 	return eid.EndpointType.Path()
 }
 
+// CheckValid returns an array of errors for incorrect data.
 func (eid EndpointID) CheckValid() error {
 	return eid.EndpointType.CheckValid()
 }

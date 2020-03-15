@@ -64,7 +64,7 @@ func (b *Bundle) ExtensionBlock(blockType uint64) (*CanonicalBlock, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("No CanonicalBlock with block type %d was found in Bundle", blockType)
+	return nil, fmt.Errorf("no CanonicalBlock with block type %d was found in Bundle", blockType)
 }
 
 // PayloadBlock returns this Bundle's payload block or an error, if it does
@@ -126,6 +126,7 @@ func (b Bundle) String() string {
 	return b.ID().String()
 }
 
+// CheckValid returns an array of errors for incorrect data.
 func (b Bundle) CheckValid() (errs error) {
 	// Check blocks for errors
 	b.forEachBlock(func(blck block) {
@@ -194,6 +195,7 @@ func (b Bundle) IsAdministrativeRecord() bool {
 	return b.PrimaryBlock.BundleControlFlags.Has(AdministrativeRecordPayload)
 }
 
+// MarshalCbor writes this Bundle's CBOR representation.
 func (b *Bundle) MarshalCbor(w io.Writer) error {
 	if _, err := w.Write([]byte{cboring.IndefiniteArray}); err != nil {
 		return err
@@ -216,6 +218,7 @@ func (b *Bundle) MarshalCbor(w io.Writer) error {
 	return nil
 }
 
+// UnmarshalCbor creates this Bundle based on a CBOR representation.
 func (b *Bundle) UnmarshalCbor(r io.Reader) error {
 	if err := cboring.ReadExpect(cboring.IndefiniteArray, r); err != nil {
 		return err
@@ -239,6 +242,7 @@ func (b *Bundle) UnmarshalCbor(r io.Reader) error {
 	return b.CheckValid()
 }
 
+// MarshalJSON creates a JSON object for this Bundle.
 func (b Bundle) MarshalJSON() ([]byte, error) {
 	canonicals := make([]json.Marshaler, len(b.CanonicalBlocks))
 	for i := range b.CanonicalBlocks {

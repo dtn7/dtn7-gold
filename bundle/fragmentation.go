@@ -17,7 +17,7 @@ func (b Bundle) Fragment(mtu int) (bs []Bundle, err error) {
 	}
 
 	var (
-		cborOverhead     int = 2
+		cborOverhead     = 2
 		extFirstOverhead int
 		extOtherOverhead int
 

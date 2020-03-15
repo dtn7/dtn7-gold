@@ -28,11 +28,9 @@ type BundleID struct {
 func (bid BundleID) String() string {
 	var bldr strings.Builder
 
-	fmt.Fprintf(&bldr, "%v-%d-%d",
-		bid.SourceNode, bid.Timestamp[0], bid.Timestamp[1])
-
+	_, _ = fmt.Fprintf(&bldr, "%v-%d-%d", bid.SourceNode, bid.Timestamp[0], bid.Timestamp[1])
 	if bid.IsFragment {
-		fmt.Fprintf(&bldr, "-%d-%d", bid.FragmentOffset, bid.TotalDataLength)
+		_, _ = fmt.Fprintf(&bldr, "-%d-%d", bid.FragmentOffset, bid.TotalDataLength)
 	}
 
 	return bldr.String()
@@ -59,13 +57,14 @@ func (bid BundleID) Scrub() BundleID {
 	}
 }
 
+// MarshalCbor writes the Bundle ID's CBOR representation.
 func (bid *BundleID) MarshalCbor(w io.Writer) error {
 	if err := cboring.Marshal(&bid.SourceNode, w); err != nil {
-		return fmt.Errorf("Marshalling source node failed: %v", err)
+		return fmt.Errorf("marshalling source node failed: %v", err)
 	}
 
 	if err := cboring.Marshal(&bid.Timestamp, w); err != nil {
-		return fmt.Errorf("Marshalling timestamp failed: %v", err)
+		return fmt.Errorf("marshalling timestamp failed: %v", err)
 	}
 
 	if bid.IsFragment {
@@ -80,13 +79,14 @@ func (bid *BundleID) MarshalCbor(w io.Writer) error {
 	return nil
 }
 
+// UnmarshalCbor creates this Bundle ID based on a CBOR representation.
 func (bid *BundleID) UnmarshalCbor(r io.Reader) error {
 	if err := cboring.Unmarshal(&bid.SourceNode, r); err != nil {
-		return fmt.Errorf("Unmarshalling source node failed: %v", err)
+		return fmt.Errorf("unmarshalling source node failed: %v", err)
 	}
 
 	if err := cboring.Unmarshal(&bid.Timestamp, r); err != nil {
-		return fmt.Errorf("Unmarshalling timestamp failed: %v", err)
+		return fmt.Errorf("unmarshalling timestamp failed: %v", err)
 	}
 
 	// MUST be set beforehand

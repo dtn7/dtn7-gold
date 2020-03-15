@@ -77,6 +77,7 @@ func (ct CreationTimestamp) String() string {
 	return fmt.Sprintf("(%v, %d)", DtnTime(ct[0]), ct[1])
 }
 
+// MarshalCbor writes a CBOR representation for this CreationTimestamp.
 func (ct *CreationTimestamp) MarshalCbor(w io.Writer) error {
 	if err := cboring.WriteArrayLength(2, w); err != nil {
 		return err
@@ -91,11 +92,12 @@ func (ct *CreationTimestamp) MarshalCbor(w io.Writer) error {
 	return nil
 }
 
+// UnmarshalCbor reads a CBOR representation of a CreationTimestamp.
 func (ct *CreationTimestamp) UnmarshalCbor(r io.Reader) error {
 	if l, err := cboring.ReadArrayLength(r); err != nil {
 		return err
 	} else if l != 2 {
-		return fmt.Errorf("Expected array with length 2, got %d", l)
+		return fmt.Errorf("expected array with length 2, got %d", l)
 	}
 
 	for i := 0; i < 2; i++ {
@@ -109,6 +111,7 @@ func (ct *CreationTimestamp) UnmarshalCbor(r io.Reader) error {
 	return nil
 }
 
+// MarshalJSON creates a JSON object representing this CreationTimestamp.
 func (ct CreationTimestamp) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Date string `json:"date"`

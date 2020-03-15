@@ -15,8 +15,13 @@ import (
 type CRCType uint64
 
 const (
+	// CRCNo means no CRC to be present at all.
 	CRCNo CRCType = 0
+
+	// CRC16 represents "a standard X-25 CRC-16".
 	CRC16 CRCType = 1
+
+	// CRC32 represents "a standard CRC32C (Castagnoli) CRC-32".
 	CRC32 CRCType = 2
 )
 
@@ -61,7 +66,7 @@ func calculateCRCBuff(buff *bytes.Buffer, crcType CRCType) ([]byte, error) {
 		binary.BigEndian.PutUint32(data, crc32.Checksum(buff.Bytes(), crc32table))
 
 	default:
-		return nil, fmt.Errorf("Unknown CRCType %d", crcType)
+		return nil, fmt.Errorf("unknown CRCType %d", crcType)
 	}
 
 	return data, nil
@@ -80,7 +85,7 @@ func emptyCRC(crcType CRCType) (arr []byte, err error) {
 		arr = make([]byte, 4)
 
 	default:
-		err = fmt.Errorf("Unknown CRCType %d", crcType)
+		err = fmt.Errorf("unknown CRCType %d", crcType)
 	}
 
 	return

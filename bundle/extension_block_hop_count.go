@@ -7,6 +7,7 @@ import (
 	"github.com/dtn7/cboring"
 )
 
+// ExtBlockTypeHopCountBlock is the block type code for a Hop Count Block.
 const ExtBlockTypeHopCountBlock uint64 = 10
 
 // HopCountBlock implements the Bundle Protocol's Hop Count Block.
@@ -15,6 +16,7 @@ type HopCountBlock struct {
 	Count uint8
 }
 
+// BlockTypeCode must return a constant integer, indicating the block type code.
 func (hcb *HopCountBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypeHopCountBlock
 }
@@ -44,6 +46,7 @@ func (hcb *HopCountBlock) Decrement() {
 	hcb.Count--
 }
 
+// MarshalCbor writes a CBOR representation of this Hop Count Block.
 func (hcb *HopCountBlock) MarshalCbor(w io.Writer) error {
 	if err := cboring.WriteArrayLength(2, w); err != nil {
 		return err
@@ -59,11 +62,12 @@ func (hcb *HopCountBlock) MarshalCbor(w io.Writer) error {
 	return nil
 }
 
+// UnmarshalCbor reads a CBOR representation of a Hop Count Block.
 func (hcb *HopCountBlock) UnmarshalCbor(r io.Reader) error {
 	if l, err := cboring.ReadArrayLength(r); err != nil {
 		return err
 	} else if l != 2 {
-		return fmt.Errorf("Expected array with length 2, got %d", l)
+		return fmt.Errorf("expected array with length 2, got %d", l)
 	}
 
 	fields := []*uint8{&hcb.Limit, &hcb.Count}
@@ -80,8 +84,9 @@ func (hcb *HopCountBlock) UnmarshalCbor(r io.Reader) error {
 	return nil
 }
 
-func (pb *HopCountBlock) CheckValid() error {
-	if pb.IsExceeded() {
+// CheckValid returns an array of errors for incorrect data.
+func (hcb *HopCountBlock) CheckValid() error {
+	if hcb.IsExceeded() {
 		return fmt.Errorf("HopCountBlock is exceeded")
 	}
 	return nil

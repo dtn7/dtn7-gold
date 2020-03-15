@@ -5,7 +5,7 @@ import (
 )
 
 func TestBlockControlFlagsHas(t *testing.T) {
-	var cf BlockControlFlags = ReplicateBlock | DeleteBundle
+	var cf = ReplicateBlock | DeleteBundle
 
 	if !cf.Has(ReplicateBlock) {
 		t.Error("cf has no ReplicateBlock-flag even when it was set")

@@ -6,11 +6,13 @@ import (
 	"github.com/dtn7/cboring"
 )
 
+// ExtBlockTypeBundleAgeBlock is the block type code for a Bundle Age Block.
 const ExtBlockTypeBundleAgeBlock uint64 = 7
 
 // BundleAgeBlock implements the Bundle Protocol's Bundle Age Block.
 type BundleAgeBlock uint64
 
+// BlockTypeCode must return a constant integer, indicating the block type code.
 func (bab *BundleAgeBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypeBundleAgeBlock
 }
@@ -33,10 +35,12 @@ func (bab *BundleAgeBlock) Increment(offset uint64) uint64 {
 	return newBabVal
 }
 
+// MarshalCbor writes a CBOR representation for a Bundle Age Block.
 func (bab *BundleAgeBlock) MarshalCbor(w io.Writer) error {
 	return cboring.WriteUInt(uint64(*bab), w)
 }
 
+// UnmarshalCbor reads the CBOR representation for a Bundle Age Block.
 func (bab *BundleAgeBlock) UnmarshalCbor(r io.Reader) error {
 	if us, err := cboring.ReadUInt(r); err != nil {
 		return err
@@ -46,6 +50,7 @@ func (bab *BundleAgeBlock) UnmarshalCbor(r io.Reader) error {
 	}
 }
 
-func (pb *BundleAgeBlock) CheckValid() error {
+// CheckValid returns an array of errors for incorrect data.
+func (bab *BundleAgeBlock) CheckValid() error {
 	return nil
 }

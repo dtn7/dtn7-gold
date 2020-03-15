@@ -46,6 +46,7 @@ func (bcf BundleControlFlags) Has(flag BundleControlFlags) bool {
 	return (bcf & flag) != 0
 }
 
+// CheckValid returns an array of errors for incorrect data.
 func (bcf BundleControlFlags) CheckValid() (errs error) {
 	if bcf.Has(IsFragment) && bcf.Has(MustNotFragmented) {
 		errs = multierror.Append(errs,
@@ -94,6 +95,7 @@ func (bcf BundleControlFlags) Strings() (fields []string) {
 	return
 }
 
+// MarshalJSON creates a JSON array of control flags.
 func (bcf BundleControlFlags) MarshalJSON() ([]byte, error) {
 	return json.Marshal(bcf.Strings())
 }

@@ -6,11 +6,13 @@ import (
 	"github.com/dtn7/cboring"
 )
 
+// ExtBlockTypePreviousNodeBlock is the block type code for a Previous Node Block.
 const ExtBlockTypePreviousNodeBlock uint64 = 6
 
 // PreviousNodeBlock implements the Bundle Protocol's Previous Node Block.
 type PreviousNodeBlock EndpointID
 
+// BlockTypeCode must return a constant integer, indicating the block type code.
 func (pnb *PreviousNodeBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypePreviousNodeBlock
 }
@@ -26,11 +28,13 @@ func (pnb *PreviousNodeBlock) Endpoint() EndpointID {
 	return EndpointID(*pnb)
 }
 
+// MarshalCbor writes the CBOR representation of a PreviousNodeBlock.
 func (pnb *PreviousNodeBlock) MarshalCbor(w io.Writer) error {
 	endpoint := EndpointID(*pnb)
 	return cboring.Marshal(&endpoint, w)
 }
 
+// UnmarshalCbor reads a CBOR representation of a PreviousNodeBlock.
 func (pnb *PreviousNodeBlock) UnmarshalCbor(r io.Reader) error {
 	endpoint := EndpointID{}
 	if err := cboring.Unmarshal(&endpoint, r); err != nil {
@@ -41,6 +45,7 @@ func (pnb *PreviousNodeBlock) UnmarshalCbor(r io.Reader) error {
 	}
 }
 
-func (pb *PreviousNodeBlock) CheckValid() error {
-	return EndpointID(*pb).CheckValid()
+// CheckValid returns an array of errors for incorrect data.
+func (pnb *PreviousNodeBlock) CheckValid() error {
+	return EndpointID(*pnb).CheckValid()
 }
