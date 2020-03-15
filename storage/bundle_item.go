@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path"
@@ -67,7 +67,7 @@ func calcExpirationDate(b bundle.Bundle) time.Time {
 
 // bundlePartPath returns a path for a Bundle.
 func bundlePartPath(id bundle.BundleID, storagePath string) string {
-	f := fmt.Sprintf("%x", sha1.Sum([]byte(id.String())))
+	f := fmt.Sprintf("%x", sha256.Sum256([]byte(id.String())))
 	return path.Join(storagePath, f)
 }
 

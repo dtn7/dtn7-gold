@@ -3,8 +3,9 @@ package tcpcl
 import (
 	"bytes"
 	"fmt"
-	"github.com/dtn7/dtn7-go/bundle"
 	"io"
+
+	"github.com/dtn7/dtn7-go/bundle"
 )
 
 // IncomingTransfer represents an incoming Bundle Transfer for the TCPCL.

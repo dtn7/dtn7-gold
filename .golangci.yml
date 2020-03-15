@@ -1,4 +1,21 @@
+issues:
+  exclude-rules:
+    # Exclude completly for tests
+    - path: _test\.go
+      linters:
+        - gocyclo
+    # Some deterministic "pseudo random" data is generated in tests
+    - path: _test\.go
+      text: "Use of weak random number generator"
+      linters:
+        - gosec
+
 linters:
   # In adition to the default
   enable:
-    # nOnE
+    - gocyclo
+    - gofmt
+    - goimports
+    - gosec
+    - prealloc
+    - unconvert

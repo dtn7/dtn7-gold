@@ -61,7 +61,7 @@ func TestSuccessfulOutgoingTransmission(t *testing.T) {
 		}
 	}
 
-	var outputData []byte
+	outputData := make([]byte, 0, len(fs))
 	for _, f := range fs {
 		outputData = append(outputData, f.Payload...)
 	}

@@ -2,15 +2,16 @@ package core
 
 import (
 	"fmt"
-	"github.com/RyanCarrier/dijkstra"
-	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/dtn7/dtn7-go/cla"
 	"io"
 	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/RyanCarrier/dijkstra"
+	"github.com/dtn7/cboring"
+	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 const BroadcastAddress = "dtn:broadcast"

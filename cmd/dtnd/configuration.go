@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/dtn7/dtn7-go/agent"
-	"github.com/dtn7/dtn7-go/cla/bbc"
 	"net"
 	"net/http"
 	"strconv"
@@ -12,8 +10,10 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
+	"github.com/dtn7/dtn7-go/agent"
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
+	"github.com/dtn7/dtn7-go/cla/bbc"
 	"github.com/dtn7/dtn7-go/cla/mtcp"
 	"github.com/dtn7/dtn7-go/cla/tcpcl"
 	"github.com/dtn7/dtn7-go/core"

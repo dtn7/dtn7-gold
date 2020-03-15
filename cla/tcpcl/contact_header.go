@@ -66,8 +66,8 @@ func (ch *ContactHeader) Unmarshal(r io.Reader) error {
 		return fmt.Errorf("ContactHeader's magic does not match: %x != 'dtn!'", data[:4])
 	}
 
-	if uint8(data[4]) != 4 {
-		return fmt.Errorf("ContactHeader's version is wrong: %d instead of 4", uint8(data[4]))
+	if data[4] != 4 {
+		return fmt.Errorf("ContactHeader's version is wrong: %d instead of 4", data[4])
 	}
 
 	ch.Flags = ContactFlags(data[5])

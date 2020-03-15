@@ -1,14 +1,15 @@
 package core
 
 import (
-	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/dtn7/dtn7-go/cla"
 	"io"
 	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/cboring"
+	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 type ProphetConfig struct {

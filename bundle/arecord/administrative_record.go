@@ -50,7 +50,7 @@ func NewAdministrativeRecordFromCbor(data []byte) (ar AdministrativeRecord, err 
 	}
 }
 
-// ToCanonicalBlock creates a canonical block, containing this administrative
+// AdministrativeRecordToCbor creates a canonical block, containing this administrative
 // record. The surrounding bundle _must_ have a set AdministrativeRecordPayload
 // bundle processing control flag.
 func AdministrativeRecordToCbor(ar AdministrativeRecord) (blk bundle.CanonicalBlock, err error) {
@@ -60,7 +60,7 @@ func AdministrativeRecordToCbor(ar AdministrativeRecord) (blk bundle.CanonicalBl
 		return
 	}
 
-	if err = cboring.WriteUInt(uint64(ar.TypeCode()), buff); err != nil {
+	if err = cboring.WriteUInt(ar.TypeCode(), buff); err != nil {
 		return
 	}
 
