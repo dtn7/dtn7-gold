@@ -164,7 +164,7 @@ func NewDiscoveryService(dms []DiscoveryMessage, c *core.Core, interval uint, ip
 			}
 
 		case <-time.After(time.Second):
-			return nil, fmt.Errorf("did not received an error value from Discovery goroutine")
+			break
 		}
 	}
 
