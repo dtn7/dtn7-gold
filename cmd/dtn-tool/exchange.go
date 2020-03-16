@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/hex"
+	"math"
 	"os"
 	"os/signal"
 	"path"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -76,7 +78,7 @@ func (ex *exchange) handler() {
 
 		case e, ok := <-ex.watcher.Events:
 			if !ok {
-				log.Warn("fsnotify's Event channel was closed")
+				log.Error("fsnotify's Event channel was closed")
 				return
 			}
 
@@ -93,28 +95,11 @@ func (ex *exchange) handler() {
 				continue
 			}
 
-			var b bundle.Bundle
-			if f, err := os.Open(e.Name); err != nil {
-				log.WithError(err).WithField("file", e.Name).Warn("Opening file errored")
-			} else if err := b.UnmarshalCbor(f); err != nil {
-				log.WithError(err).WithField("file", e.Name).Warn("Unmarshalling Bundle errored")
-			} else if err := f.Close(); err != nil {
-				log.WithError(err).WithField("file", e.Name).Warn("Closing file errored")
-			} else if err := ex.websocketConn.WriteBundle(b); err != nil {
-				log.WithError(err).WithFields(log.Fields{
-					"file":   e.Name,
-					"bundle": b.ID().String(),
-				}).Warn("Sending Bundle errored")
-			} else {
-				log.WithError(err).WithFields(log.Fields{
-					"file":   e.Name,
-					"bundle": b.ID().String(),
-				}).Info("Sent Bundle")
-			}
+			ex.readNewFile(e)
 
 		case err, ok := <-ex.watcher.Errors:
 			if !ok {
-				log.Warn("fsnotify's Errors channel was closed")
+				log.Error("fsnotify's Errors channel was closed")
 				return
 			}
 
@@ -123,7 +108,7 @@ func (ex *exchange) handler() {
 
 		case b, ok := <-ex.bundleReadChan:
 			if !ok {
-				log.Warn("Bundle reader channel was closed")
+				log.Error("Bundle reader channel was closed")
 				return
 			}
 
@@ -147,6 +132,36 @@ func (ex *exchange) handler() {
 			logger.Info("Saved received Bundle")
 		}
 	}
+}
+
+func (ex *exchange) readNewFile(e fsnotify.Event) {
+	for i := 0; i < 5; i++ {
+		var b bundle.Bundle
+
+		if f, err := os.Open(e.Name); err != nil {
+			log.WithError(err).WithField("file", e.Name).Warn("Opening file errored, retrying..")
+		} else if err := b.UnmarshalCbor(f); err != nil {
+			log.WithError(err).WithField("file", e.Name).Warn("Unmarshalling Bundle errored, retrying..")
+		} else if err := f.Close(); err != nil {
+			log.WithError(err).WithField("file", e.Name).Warn("Closing file errored, retrying..")
+		} else if err := ex.websocketConn.WriteBundle(b); err != nil {
+			log.WithError(err).WithFields(log.Fields{
+				"file":   e.Name,
+				"bundle": b.ID().String(),
+			}).Error("Sending Bundle errored")
+			return
+		} else {
+			log.WithError(err).WithFields(log.Fields{
+				"file":   e.Name,
+				"bundle": b.ID().String(),
+			}).Info("Sent Bundle")
+			return
+		}
+
+		time.Sleep(time.Duration(math.Pow(2, float64(i))) * 100 * time.Millisecond)
+	}
+
+	log.WithField("file", e.Name).Error("Failed to process file, giving up.")
 }
 
 func (ex *exchange) handleBundleRead() {
