@@ -120,7 +120,7 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergabl
 		return listener, msg, nil
 
 	default:
-		return nil, discovery.DiscoveryMessage{}, fmt.Errorf("Unknown listen.protocol \"%s\"", conv.Protocol)
+		return nil, discovery.DiscoveryMessage{}, fmt.Errorf("unknown listen.protocol \"%s\"", conv.Protocol)
 	}
 }
 
@@ -138,7 +138,7 @@ func parsePeer(conv convergenceConf, nodeId bundle.EndpointID) (cla.ConvergenceS
 		return tcpcl.DialClient(conv.Endpoint, nodeId, true), nil
 
 	default:
-		return nil, fmt.Errorf("Unknown peer.protocol \"%s\"", conv.Protocol)
+		return nil, fmt.Errorf("unknown peer.protocol \"%s\"", conv.Protocol)
 	}
 }
 
@@ -146,7 +146,7 @@ func parsePeer(conv convergenceConf, nodeId bundle.EndpointID) (cla.ConvergenceS
 func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error) {
 	if (conf.Webserver != agentsWebserverConfig{}) {
 		if !conf.Webserver.Websocket && !conf.Webserver.Rest {
-			err = fmt.Errorf("Webserver agent needs at least one of Websocket or Rest")
+			err = fmt.Errorf("webserver agent needs at least one of Websocket or REST")
 			return
 		}
 
@@ -159,8 +159,10 @@ func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error)
 			agents = append(agents, ws)
 		}
 
-		// nolint  // TODO...
+		// nolint  // TODO: later, i'd guess
 		if conf.Webserver.Rest {
+			err = fmt.Errorf("REST is not implemented")
+			return
 		}
 
 		httpServer := &http.Server{

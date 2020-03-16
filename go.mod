@@ -6,7 +6,6 @@ require (
 	github.com/RyanCarrier/dijkstra v0.0.0-20190613134106-3f5a38e7002e
 	github.com/dtn7/cboring v0.1.5
 	github.com/dtn7/rf95modem-go v0.2.0
-	github.com/dvyukov/go-fuzz v0.0.0-20191206100749-a378175e205c // indirect
 	github.com/felixge/tcpkeepalive v0.0.0-20160804073959-5bb0b2dea91e
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/golang/protobuf v1.3.2 // indirect
@@ -17,7 +16,6 @@ require (
 	github.com/schollz/peerdiscovery v1.4.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/timshannon/badgerhold v0.0.0-20190415130923-192650dd187a
-	github.com/ugorji/go/codec v1.1.7
 	github.com/ulikunitz/xz v0.5.6
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
 	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect

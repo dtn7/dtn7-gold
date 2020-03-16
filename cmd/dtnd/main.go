@@ -9,17 +9,10 @@ import (
 
 // waitSigint blocks the current thread until a SIGINT appears.
 func waitSigint() {
-	signalSyn := make(chan os.Signal)
-	signalAck := make(chan struct{})
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt)
 
-	signal.Notify(signalSyn, os.Interrupt)
-
-	go func() {
-		<-signalSyn
-		close(signalAck)
-	}()
-
-	<-signalAck
+	<-sig
 }
 
 func main() {
