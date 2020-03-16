@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"io"
 	"io/ioutil"
 	"os"
@@ -10,7 +11,7 @@ import (
 
 // createBundle for the "create" CLI option.
 func createBundle(args []string) {
-	if len(args) != 4 {
+	if len(args) != 3 && len(args) != 4 {
 		printUsage()
 	}
 
@@ -18,7 +19,7 @@ func createBundle(args []string) {
 		sender    = args[0]
 		receiver  = args[1]
 		dataInput = args[2]
-		outName   = args[3]
+		outName   = ""
 
 		err  error
 		data []byte
@@ -46,6 +47,12 @@ func createBundle(args []string) {
 		Build()
 	if err != nil {
 		printFatal(err, "Building Bundle errored")
+	}
+
+	if len(args) == 4 {
+		outName = args[3]
+	} else if outName == "" {
+		outName = hex.EncodeToString([]byte(b.ID().String()))
 	}
 
 	if outName == "-" {

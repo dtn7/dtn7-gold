@@ -9,10 +9,12 @@ import (
 func printUsage() {
 	_, _ = fmt.Fprintf(os.Stderr, "Usage of %s create|show|exchange:\n\n", os.Args[0])
 
-	_, _ = fmt.Fprintf(os.Stderr, "%s create sender receiver -|filename -|bundle-name\n", os.Args[0])
+	_, _ = fmt.Fprintf(os.Stderr, "%s create sender receiver -|filename [-|filename]\n", os.Args[0])
 	_, _ = fmt.Fprintf(os.Stderr, "  Creates a new Bundle, addressed from sender to receiver with the stdin (-)\n")
-	_, _ = fmt.Fprintf(os.Stderr, "  or the given file (filename) as payload. This Bundle will be written to the\n")
-	_, _ = fmt.Fprintf(os.Stderr, "  stdout (-) or saved as bundle-name.\n\n")
+	_, _ = fmt.Fprintf(os.Stderr, "  or the given file (filename) as payload. If no further specified, the\n")
+	_, _ = fmt.Fprintf(os.Stderr, "  Bundle is stored locally named after the hex representation of its ID.\n")
+	_, _ = fmt.Fprintf(os.Stderr, "  Otherwise, the Bundle can be written to the stdout (-) or saved\n")
+	_, _ = fmt.Fprintf(os.Stderr, "  according to a freely selectable filename.\n\n")
 
 	_, _ = fmt.Fprintf(os.Stderr, "%s show -|filename\n", os.Args[0])
 	_, _ = fmt.Fprintf(os.Stderr, "  Prints a JSON version of a Bundle, read from stdin (-) or filename.\n\n")
