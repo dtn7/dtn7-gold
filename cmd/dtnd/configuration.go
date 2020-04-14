@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
@@ -150,24 +151,25 @@ func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error)
 			return
 		}
 
-		httpMux := http.NewServeMux()
+		r := mux.NewRouter()
 
 		if conf.Webserver.Websocket {
 			ws := agent.NewWebSocketAgent()
-			httpMux.HandleFunc("/ws", ws.ServeHTTP)
+			r.HandleFunc("/ws", ws.ServeHTTP)
 
 			agents = append(agents, ws)
 		}
 
-		// nolint  // TODO: later, i'd guess
 		if conf.Webserver.Rest {
-			err = fmt.Errorf("REST is not implemented")
-			return
+			restRouter := r.PathPrefix("/rest").Subrouter()
+			ra := agent.NewRestAgent(restRouter)
+
+			agents = append(agents, ra)
 		}
 
 		httpServer := &http.Server{
 			Addr:    conf.Webserver.Address,
-			Handler: httpMux,
+			Handler: r,
 		}
 
 		errChan := make(chan error)

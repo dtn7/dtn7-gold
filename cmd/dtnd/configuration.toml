@@ -30,13 +30,14 @@ interval = 30
 
 # Agents are applications or interfaces for applications. Those may send or receive Bundles.
 [agents]
-# A webserver based agent starts a local HTTP webserver and allows third party tools to interact over specified
-# interfaces, e.g., WebSockets or REST. The address field specifies the TCP address of the server. The service endpoints
-# are based on this, e.g., an address of "localhost:8080" creates a WebSocket endpoint of "ws://localhost:8080/ws".
+# A webserver based agent starts a local HTTP server and allows third party tools to interact over specified interfaces,
+# e.g., WebSockets or REST. The address field specifies the TCP address of the server. The service endpoints are based
+# on this, e.g., an address of "localhost:8080" creates a WebSocket endpoint of "ws://localhost:8080/ws" and some
+# RESTful endpoints under "http://localhost:8080/rest/" as "http://localhost:8080/rest/register".
 [agents.webserver]
 address = "localhost:8080"
 websocket = true
-rest = false # TODO: not yet implemented!
+rest = true
 
 # Each listen is another convergence layer adapter (CLA). Multiple [[listen]]
 # blocks are usable.
