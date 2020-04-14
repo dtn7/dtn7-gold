@@ -13,7 +13,58 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// RestAgent is a RESTful Application Agent for an easier bundle dispatching.
+// RestAgent is a RESTful Application Agent for simple bundle dispatching.
+//
+// A client must register itself for some endpoint ID at first. After that, bundles sent to this endpoint can be
+// retrieved or new bundles can be sent. For sending, bundles can be created by calling the BundleBuilder. Finally,
+// a client should unregister itself.
+//
+// This is all done by HTTP POSTing JSON objects. Their structure is described in `rest_agent_messages.go` by the types
+// with the `Rest` prefix in their names.
+//
+// A possible conversation follows as an example.
+//
+//   // 1. Registration of our client, POST to /register
+//   // -> {"endpoint_id":"dtn://foo/bar"}
+//   // <- {"error":"","uuid":"75be76e2-23fc-da0e-eeb8-4773f84a9d2f"}
+//
+//   // 2. Fetching bundles for our client, POST to /fetch
+//   //    There will be to answers, one with new bundles and one without
+//   // -> {"uuid":"75be76e2-23fc-da0e-eeb8-4773f84a9d2f"}
+//   // <- {"error":"","bundles":[
+//   //      {
+//   //        "primaryBlock": {
+//   //          "bundleControlFlags":null,
+//   //          "destination":"dtn://foo/bar",
+//   //          "source":"dtn://sender/",
+//   //          "reportTo":"dtn://sender/",
+//   //          "creationTimestamp":{"date":"2020-04-14 14:32:06","sequenceNo":0},
+//   //          "lifetime":86400000000
+//   //        },
+//   //        "canonicalBlocks": [
+//   //          {"blockNumber":1,"blockTypeCode":1,"blockControlFlags":null,"data":"S2hlbGxvIHdvcmxk"}
+//   //        ]
+//   //      }
+//   //    ]}
+//   // <- {"error":"No data","bundles":null}
+//
+//   // 3. Create and dispatch a new bundle, POST to /build
+//   // -> {
+//   //      "uuid": "75be76e2-23fc-da0e-eeb8-4773f84a9d2f",
+//   //      "arguments": {
+//   //        "destination": "dtn://dst/",
+//   //        "source": "dtn://foo/bar",
+//   //        "creation_timestamp_now": 1,
+//   //        "lifetime": "24h",
+//   //        "payload_block": "hello world"
+//   //      }
+//   //    }
+//   // <- {"error":""}
+//
+//   // 4. Unregister the client, POST to /unregister
+//   // -> {"uuid":"75be76e2-23fc-da0e-eeb8-4773f84a9d2f"}
+//   // <- {}
+//
 type RestAgent struct {
 	router *mux.Router
 
@@ -54,11 +105,11 @@ func (ra *RestAgent) handler() {
 			ra.receiveBundleMessage(msg)
 
 		case ShutdownMessage:
-			// TODO
+			log.Debug("REST Agent is shutting down")
 			return
 
 		default:
-			// TODO
+			log.WithField("message", msg).Info("REST Agent received unknown / unsupported message")
 		}
 	}
 }
@@ -123,6 +174,7 @@ func (ra *RestAgent) handleRegister(w http.ResponseWriter, r *http.Request) {
 		"response": registerResponse,
 	}).Info("Processing REST registration")
 
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(registerResponse); err != nil {
 		log.WithError(err).Warn("Failed to write REST registration response")
 	}
@@ -143,6 +195,7 @@ func (ra *RestAgent) handleUnregister(w http.ResponseWriter, r *http.Request) {
 		ra.mailbox.Delete(unregisterRequest.UUID)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(unregisterResponse); err != nil {
 		log.WithError(err).Warn("Failed to write REST unregistration response")
 	}
@@ -168,6 +221,7 @@ func (ra *RestAgent) handleFetch(w http.ResponseWriter, r *http.Request) {
 		fetchResponse.Error = "No data"
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(fetchResponse); err != nil {
 		log.WithError(err).Warn("Failed to write REST fetch response")
 	}
@@ -205,6 +259,7 @@ func (ra *RestAgent) handleBuild(w http.ResponseWriter, r *http.Request) {
 		ra.sender <- BundleMessage{Bundle: b}
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(buildResponse); err != nil {
 		log.WithError(err).Warn("Failed to write REST build response")
 	}
