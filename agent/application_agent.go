@@ -19,20 +19,30 @@ type ApplicationAgent interface {
 	MessageSender() chan Message
 }
 
-// AppAgentContainsEndpoint checks if an ApplicationAgent listens to at least one of the requested endpoints.
-func AppAgentContainsEndpoint(app ApplicationAgent, eids []bundle.EndpointID) bool {
+// BagContainsEndpoint checks if some bag/array/slice of endpoints contains another collection of endpoints.
+func BagContainsEndpoint(bag []bundle.EndpointID, eids []bundle.EndpointID) bool {
 	matches := map[bundle.EndpointID]struct{}{}
 
 	for _, eid := range eids {
 		matches[eid] = struct{}{}
 	}
 
-	for _, eid := range app.Endpoints() {
+	for _, eid := range bag {
 		if _, ok := matches[eid]; ok {
 			return true
 		}
 	}
 	return false
+}
+
+// BagHasEndpoint checks if some bag/array/slice of endpoints contains another endpoint.
+func BagHasEndpoint(bag []bundle.EndpointID, eid bundle.EndpointID) bool {
+	return BagContainsEndpoint(bag, []bundle.EndpointID{eid})
+}
+
+// AppAgentContainsEndpoint checks if an ApplicationAgent listens to at least one of the requested endpoints.
+func AppAgentContainsEndpoint(app ApplicationAgent, eids []bundle.EndpointID) bool {
+	return BagContainsEndpoint(app.Endpoints(), eids)
 }
 
 // AppAgentHasEndpoint checks if an ApplicationAgent listens to this endpoint.

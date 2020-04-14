@@ -7,11 +7,15 @@ import (
 	"net/http"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/gorilla/mux"
 )
 
-func TestRestAgentRegistrationCycle(t *testing.T) {
+func TestRestAgentCycle(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+
 	// Start REST server
 	addr := fmt.Sprintf("localhost:%d", randomPort(t))
 
@@ -55,6 +59,52 @@ func TestRestAgentRegistrationCycle(t *testing.T) {
 	// Check registration
 	if !AppAgentHasEndpoint(restAgent, registerEid) {
 		t.Fatal("endpoint was not registered")
+	}
+
+	// Send bundle to client
+	b := createBundle("dtn://sender/", registerEid.String(), t)
+	restAgent.MessageReceiver() <- BundleMessage{Bundle: b}
+
+	// Fetch bundle
+	fetchUrl := fmt.Sprintf("http://%s/rest/fetch", addr)
+	fetchRequestBuf := new(bytes.Buffer)
+	fetchRequest := RestFetchRequest{UUID: registerResponse.UUID}
+	if err := json.NewEncoder(fetchRequestBuf).Encode(fetchRequest); err != nil {
+		t.Fatal(err)
+	}
+	var fetchResponse interface{}
+
+	if resp, err := http.Post(fetchUrl, "application/json", fetchRequestBuf); err != nil {
+		t.Fatal(err)
+	} else if err := json.NewDecoder(resp.Body).Decode(&fetchResponse); err != nil {
+		t.Fatal(err)
+	} else if m, ok := fetchResponse.(map[string]interface{}); !ok {
+		t.Fatal("failed to read response as a map")
+	} else if errorMsg, ok := m["error"]; !ok {
+		t.Fatal("error field is missing")
+	} else if errorMsg != "" {
+		t.Fatal(errorMsg)
+	} else if bArr, ok := m["bundles"]; !ok {
+		t.Fatal("bundles field is missing")
+	} else if l := len(bArr.([]interface{})); l != 1 {
+		t.Fatalf("bundles arrays has %d elements, not 1", l)
+	}
+
+	// Fetch again; must error
+	if err := json.NewEncoder(fetchRequestBuf).Encode(fetchRequest); err != nil {
+		t.Fatal(err)
+	}
+
+	if resp, err := http.Post(fetchUrl, "application/json", fetchRequestBuf); err != nil {
+		t.Fatal(err)
+	} else if err := json.NewDecoder(resp.Body).Decode(&fetchResponse); err != nil {
+		t.Fatal(err)
+	} else if m, ok := fetchResponse.(map[string]interface{}); !ok {
+		t.Fatal("failed to read response as a map")
+	} else if errorMsg, ok := m["error"]; !ok {
+		t.Fatal("error field is missing")
+	} else if errorMsg == "" {
+		t.Fatal("error field is empty")
 	}
 
 	// Unregister client

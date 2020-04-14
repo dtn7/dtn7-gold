@@ -17,6 +17,9 @@ import (
 type RestAgent struct {
 	router *mux.Router
 
+	receiver chan Message
+	sender   chan Message
+
 	// map UUIDs to EIDs and received bundles
 	clients sync.Map // uuid[string] -> bundle.EndpointID
 	mailbox sync.Map // uuid[string] -> []bundle.Bundle
@@ -26,17 +29,64 @@ type RestAgent struct {
 func NewRestAgent(router *mux.Router) (ra *RestAgent) {
 	ra = &RestAgent{
 		router: router,
+
+		receiver: make(chan Message),
+		sender:   make(chan Message),
 	}
 
 	ra.router.HandleFunc("/register", ra.handleRegister).Methods(http.MethodPost)
 	ra.router.HandleFunc("/unregister", ra.handleUnregister).Methods(http.MethodPost)
+	ra.router.HandleFunc("/fetch", ra.handleFetch).Methods(http.MethodPost)
+
+	go ra.handler()
 
 	return ra
 }
 
-// ServeHTTP is a http.Handler to be bound to a HTTP endpoint, e.g., /rest.
-func (ra *RestAgent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ra.router.ServeHTTP(w, r)
+// handler checks the receiver channel and deals with inbounding messages.
+func (ra *RestAgent) handler() {
+	defer close(ra.sender)
+
+	for msg := range ra.receiver {
+		switch msg := msg.(type) {
+		case BundleMessage:
+			ra.receiveBundleMessage(msg)
+
+		case ShutdownMessage:
+			// TODO
+			return
+
+		default:
+			// TODO
+		}
+	}
+}
+
+// receiveBundleMessage checks incoming BundleMessages and puts them inbox.
+func (ra *RestAgent) receiveBundleMessage(msg BundleMessage) {
+	var uuids []string
+	ra.clients.Range(func(k, v interface{}) bool {
+		if BagHasEndpoint(msg.Recipients(), v.(bundle.EndpointID)) {
+			uuids = append(uuids, k.(string))
+		}
+		return false // multiple clients might be registered for some endpoint
+	})
+
+	for _, uuid := range uuids {
+		var bundles []bundle.Bundle
+		if val, ok := ra.mailbox.Load(uuid); !ok {
+			bundles = []bundle.Bundle{msg.Bundle}
+		} else {
+			bundles = append(val.([]bundle.Bundle), msg.Bundle)
+		}
+
+		ra.mailbox.Store(uuid, bundles)
+
+		log.WithFields(log.Fields{
+			"bundle": msg.Bundle.ID().String(),
+			"uuid":   uuid,
+		}).Info("REST Application Agent delivering message to a client's inbox")
+	}
 }
 
 // randomUuid to be used for authentication. UUID does not complain RFC 4122.
@@ -91,8 +141,33 @@ func (ra *RestAgent) handleUnregister(w http.ResponseWriter, r *http.Request) {
 		ra.clients.Delete(unregisterRequest.UUID)
 		ra.mailbox.Delete(unregisterRequest.UUID)
 	}
+
 	if err := json.NewEncoder(w).Encode(unregisterResponse); err != nil {
 		log.WithError(err).Warn("Failed to write REST unregistration response")
+	}
+}
+
+func (ra *RestAgent) handleFetch(w http.ResponseWriter, r *http.Request) {
+	var (
+		fetchRequest  RestFetchRequest
+		fetchResponse RestFetchResponse
+	)
+
+	if jsonErr := json.NewDecoder(r.Body).Decode(&fetchRequest); jsonErr != nil {
+		log.WithError(jsonErr).Warn("Failed to parse REST fetch request")
+		fetchResponse.Error = jsonErr.Error()
+	} else if val, ok := ra.mailbox.Load(fetchRequest.UUID); ok {
+		log.WithField("uuid", fetchRequest.UUID).Info("REST client fetches bundles")
+		fetchResponse.Bundles = val.([]bundle.Bundle)
+
+		ra.mailbox.Delete(fetchRequest.UUID)
+	} else if !ok {
+		log.WithField("uuid", fetchRequest.UUID).Debug("REST client has no new bundles to fetch")
+		fetchResponse.Error = "No data"
+	}
+
+	if err := json.NewEncoder(w).Encode(fetchResponse); err != nil {
+		log.WithError(err).Warn("Failed to write REST fetch response")
 	}
 }
 
@@ -105,9 +180,9 @@ func (ra *RestAgent) Endpoints() (eids []bundle.EndpointID) {
 }
 
 func (ra *RestAgent) MessageReceiver() chan Message {
-	panic("implement me")
+	return ra.receiver
 }
 
 func (ra *RestAgent) MessageSender() chan Message {
-	panic("implement me")
+	return ra.sender
 }
