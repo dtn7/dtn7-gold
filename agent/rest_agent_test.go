@@ -5,7 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -56,6 +60,8 @@ func TestRestAgentCycle(t *testing.T) {
 		t.Fatal(registerResponse.Error)
 	}
 
+	time.Sleep(250 * time.Millisecond)
+
 	// Check registration
 	if !AppAgentHasEndpoint(restAgent, registerEid) {
 		t.Fatal("endpoint was not registered")
@@ -64,6 +70,8 @@ func TestRestAgentCycle(t *testing.T) {
 	// Send bundle to client
 	b := createBundle("dtn://sender/", registerEid.String(), t)
 	restAgent.MessageReceiver() <- BundleMessage{Bundle: b}
+
+	time.Sleep(250 * time.Millisecond)
 
 	// Fetch bundle
 	fetchUrl := fmt.Sprintf("http://%s/rest/fetch", addr)
@@ -105,6 +113,67 @@ func TestRestAgentCycle(t *testing.T) {
 		t.Fatal("error field is missing")
 	} else if errorMsg == "" {
 		t.Fatal("error field is empty")
+	}
+
+	// Build bundle
+	buildUrl := fmt.Sprintf("http://%s/rest/build", addr)
+	buildR := strings.NewReader(fmt.Sprintf(`{
+		"uuid": "%s",
+		"arguments": {
+			"destination":            "dtn://dst/",
+			"source":                 "%s",
+			"creation_timestamp_now": 1,
+			"lifetime":               "24h",
+			"payload_block":          "hello world"
+		}
+	}`, registerResponse.UUID, registerEid.String()))
+	buildResponse := RestBuildResponse{}
+
+	buildBndl, buildBndlErr := bundle.Builder().
+		Destination("dtn://dst/").
+		Source(registerEid).
+		CreationTimestampNow().
+		Lifetime("24h").
+		PayloadBlock([]byte("hello world")).
+		Build()
+	if buildBndlErr != nil {
+		t.Fatal(buildBndlErr)
+	}
+
+	var (
+		buildResponseBundle    bundle.Bundle
+		buildResponseWaitGroup sync.WaitGroup
+	)
+	buildResponseWaitGroup.Add(1)
+
+	go func() {
+		defer buildResponseWaitGroup.Done()
+
+		select {
+		case msg := <-restAgent.MessageSender():
+			if bMsg, ok := msg.(BundleMessage); ok {
+				buildResponseBundle = bMsg.Bundle
+			}
+			return
+
+		case <-time.After(250 * time.Millisecond):
+			return
+		}
+	}()
+
+	if resp, err := http.Post(buildUrl, "application/json", buildR); err != nil {
+		t.Fatal(err)
+	} else if err := json.NewDecoder(resp.Body).Decode(&buildResponse); err != nil {
+		t.Fatal(err)
+	}
+
+	// sync bundle reception from channel and json response
+	buildResponseWaitGroup.Wait()
+
+	if buildResponse.Error != "" {
+		t.Fatal(buildResponse.Error)
+	} else if !reflect.DeepEqual(buildResponseBundle, buildBndl) {
+		t.Fatalf("%v != %v", buildResponseBundle, buildBndl)
 	}
 
 	// Unregister client

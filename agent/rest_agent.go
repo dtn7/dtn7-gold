@@ -37,6 +37,7 @@ func NewRestAgent(router *mux.Router) (ra *RestAgent) {
 	ra.router.HandleFunc("/register", ra.handleRegister).Methods(http.MethodPost)
 	ra.router.HandleFunc("/unregister", ra.handleUnregister).Methods(http.MethodPost)
 	ra.router.HandleFunc("/fetch", ra.handleFetch).Methods(http.MethodPost)
+	ra.router.HandleFunc("/build", ra.handleBuild).Methods(http.MethodPost)
 
 	go ra.handler()
 
@@ -147,6 +148,7 @@ func (ra *RestAgent) handleUnregister(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleFetch returns the bundles from some client's inbox, called by /fetch.
 func (ra *RestAgent) handleFetch(w http.ResponseWriter, r *http.Request) {
 	var (
 		fetchRequest  RestFetchRequest
@@ -168,6 +170,43 @@ func (ra *RestAgent) handleFetch(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewEncoder(w).Encode(fetchResponse); err != nil {
 		log.WithError(err).Warn("Failed to write REST fetch response")
+	}
+}
+
+// handleBuild creates and dispatches a new bundle, called by /build.
+func (ra *RestAgent) handleBuild(w http.ResponseWriter, r *http.Request) {
+	var (
+		buildRequest  RestBuildRequest
+		buildResponse RestBuildResponse
+	)
+
+	if jsonErr := json.NewDecoder(r.Body).Decode(&buildRequest); jsonErr != nil {
+		log.WithError(jsonErr).Warn("Failed to parse REST build request")
+		buildResponse.Error = jsonErr.Error()
+	} else if eid, ok := ra.clients.Load(buildRequest.UUID); !ok {
+		log.WithField("uuid", buildRequest.UUID).Debug("REST client cannot build for unknown UUID")
+		buildResponse.Error = "Invalid UUID"
+	} else if b, bErr := bundle.BuildFromMap(buildRequest.Args); bErr != nil {
+		log.WithError(bErr).WithField("uuid", buildRequest.UUID).Warn("REST client failed to build a bundle")
+		buildResponse.Error = bErr.Error()
+	} else if pb := b.PrimaryBlock; pb.SourceNode != eid && pb.ReportTo != eid {
+		msg := "REST client's endpoint is neither the source nor the report_to field"
+		log.WithFields(log.Fields{
+			"uuid":     buildRequest.UUID,
+			"endpoint": eid,
+			"bundle":   b.ID().String(),
+		}).Warn(msg)
+		buildResponse.Error = msg
+	} else {
+		log.WithFields(log.Fields{
+			"uuid":   buildRequest.UUID,
+			"bundle": b.ID().String(),
+		}).Info("REST client sent bundle")
+		ra.sender <- BundleMessage{Bundle: b}
+	}
+
+	if err := json.NewEncoder(w).Encode(buildResponse); err != nil {
+		log.WithError(err).Warn("Failed to write REST build response")
 	}
 }
 

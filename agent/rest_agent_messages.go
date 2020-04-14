@@ -31,3 +31,14 @@ type RestFetchResponse struct {
 	Error   string          `json:"error"`
 	Bundles []bundle.Bundle `json:"bundles"`
 }
+
+// RestBuildRequest describes a JSON to be POSTed to /build.
+type RestBuildRequest struct {
+	UUID string                 `json:"uuid"`
+	Args map[string]interface{} `json:"arguments"`
+}
+
+// RestBuildResponse describes a JSON response for /build.
+type RestBuildResponse struct {
+	Error string `json:"error"`
+}
