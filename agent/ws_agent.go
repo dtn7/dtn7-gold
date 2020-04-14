@@ -18,7 +18,7 @@ type WebSocketAgent struct {
 	upgrader websocket.Upgrader
 }
 
-// NewWebSocketAgent will be started with its handler. The WebsocketHandler function must be bound to the HTTP server.
+// NewWebSocketAgent will be started with its handler. The ServeHTTP function must be bound to the HTTP server.
 func NewWebSocketAgent() (wa *WebSocketAgent) {
 	wa = &WebSocketAgent{
 		receiver:  make(chan Message),
@@ -44,8 +44,8 @@ func (w *WebSocketAgent) handler() {
 	}
 }
 
-// WebsocketHandler must be bound to a HTTP endpoint, e.g., to /ws by a http.ServeMux.
-func (w *WebSocketAgent) WebsocketHandler(rw http.ResponseWriter, r *http.Request) {
+// ServeHTTP must be bound to a HTTP endpoint, e.g., to /ws by a http.ServeMux.
+func (w *WebSocketAgent) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	conn, connErr := w.upgrader.Upgrade(rw, r, nil)
 	if connErr != nil {
 		log.WithError(connErr).Warn("Upgrading HTTP request to WebSocket errored")

@@ -20,7 +20,7 @@ func TestWebAgentConnector(t *testing.T) {
 	ws := NewWebSocketAgent()
 
 	httpMux := http.NewServeMux()
-	httpMux.HandleFunc("/ws", ws.WebsocketHandler)
+	httpMux.HandleFunc("/ws", ws.ServeHTTP)
 	httpServer := &http.Server{
 		Addr:    addr,
 		Handler: httpMux,

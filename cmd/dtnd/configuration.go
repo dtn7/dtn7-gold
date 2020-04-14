@@ -154,7 +154,7 @@ func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error)
 
 		if conf.Webserver.Websocket {
 			ws := agent.NewWebSocketAgent()
-			httpMux.HandleFunc("/ws", ws.WebsocketHandler)
+			httpMux.HandleFunc("/ws", ws.ServeHTTP)
 
 			agents = append(agents, ws)
 		}

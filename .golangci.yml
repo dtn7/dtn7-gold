@@ -1,17 +1,21 @@
 issues:
   exclude-rules:
-    # Exclude completly for tests
+    # Don't calculate the cyclomatic complexity for tests
     - path: _test\.go
       linters:
         - gocyclo
-    # Some deterministic "pseudo random" data is generated in tests
+    # Some deterministic "pseudo random" data is needed in tests
     - path: _test\.go
-      text: "Use of weak random number generator"
+      text: "G404:"
       linters:
         - gosec
+    # Allow dynamic URLs
+    - linters:
+        - gosec
+      text: "G107:"
 
 linters:
-  # In adition to the default
+  # In addition to the default
   enable:
     - gocyclo
     - gofmt
