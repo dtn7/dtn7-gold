@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"bytes"
+	"encoding/json"
 	"reflect"
 	"testing"
 )
@@ -111,5 +112,112 @@ func TestBldrParseLifetime(t *testing.T) {
 		if test.us != us {
 			t.Fatalf("Value for %v was unexpected: %v != %v", test.val, test.us, us)
 		}
+	}
+}
+
+func TestBuildFromMap(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     map[string]interface{}
+		wantBndl Bundle
+		wantErr  bool
+	}{
+		{
+			name: "simple",
+			args: map[string]interface{}{
+				"destination":            "dtn://dst/",
+				"source":                 "dtn://src/",
+				"creation_timestamp_now": true,
+				"lifetime":               "24h",
+				"payload_block":          []byte("hello world"),
+			},
+			wantBndl: Builder().
+				Destination("dtn://dst/").
+				Source("dtn://src/").
+				CreationTimestampNow().
+				Lifetime("24h").
+				PayloadBlock([]byte("hello world")).
+				mustBuild(),
+			wantErr: false,
+		},
+		{
+			name: "payload as string",
+			args: map[string]interface{}{
+				"destination":            "dtn://dst/",
+				"source":                 "dtn://src/",
+				"creation_timestamp_now": true,
+				"lifetime":               "24h",
+				"payload_block":          "hello world",
+			},
+			wantBndl: Builder().
+				Destination("dtn://dst/").
+				Source("dtn://src/").
+				CreationTimestampNow().
+				Lifetime("24h").
+				PayloadBlock([]byte("hello world")).
+				mustBuild(),
+			wantErr: false,
+		},
+		{
+			name: "illegal method",
+			args: map[string]interface{}{
+				"nope": "nope",
+			},
+			wantBndl: Bundle{},
+			wantErr:  true,
+		},
+		{
+			name: "no source",
+			args: map[string]interface{}{
+				"destination":            "dtn://dst/",
+				"creation_timestamp_now": true,
+				"lifetime":               "24h",
+				"payload_block":          []byte("hello world"),
+			},
+			wantBndl: Bundle{},
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotBndl, err := BuildFromMap(tt.args)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BuildFromMap() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotBndl, tt.wantBndl) {
+				t.Errorf("BuildFromMap() gotBndl = %v, want %v", gotBndl, tt.wantBndl)
+			}
+		})
+	}
+}
+
+func TestBuildFromMapJSON(t *testing.T) {
+	var args map[string]interface{}
+	data := []byte(`{
+		"destination":            "dtn://dst/",
+		"source":                 "dtn://src/",
+		"creation_timestamp_now": 1,
+		"lifetime":               "24h",
+		"payload_block":          "hello world"
+	}`)
+
+	if err := json.Unmarshal(data, &args); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedBndl := Builder().
+		Destination("dtn://dst/").
+		Source("dtn://src/").
+		CreationTimestampNow().
+		Lifetime("24h").
+		PayloadBlock([]byte("hello world")).
+		mustBuild()
+
+	if bndl, err := BuildFromMap(args); err != nil {
+		t.Fatal(err)
+	} else if !reflect.DeepEqual(expectedBndl, bndl) {
+		t.Fatalf("%v != %v", expectedBndl, bndl)
 	}
 }

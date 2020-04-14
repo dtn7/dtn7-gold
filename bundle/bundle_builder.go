@@ -90,6 +90,15 @@ func (bldr *BundleBuilder) Build() (bndl Bundle, err error) {
 	return
 }
 
+// mustBuild is like Build, but panics on an error. This method is only intended for internal testing.
+func (bldr *BundleBuilder) mustBuild() Bundle {
+	if b, err := bldr.Build(); err != nil {
+		panic(err)
+	} else {
+		return b
+	}
+}
+
 // Helper functions
 
 // bldrParseEndpoint returns an EndpointID for a given EndpointID or a string,
@@ -401,4 +410,98 @@ func (bldr *BundleBuilder) PreviousNodeBlock(args ...interface{}) *BundleBuilder
 
 	return bldr.Canonical(
 		append([]interface{}{NewPreviousNodeBlock(eid)}, args[1:]...)...)
+}
+
+// BuildFromMap creates a Bundle from a map which "calls" the BundleBuilder's methods.
+//
+// This function does not use reflection or other dark magic. So it is safe to be called by unchecked data.
+//
+//   args := map[string]interface{}{
+//     "destination":            "dtn://dst/",
+//     "source":                 "dtn://src/",
+//     "creation_timestamp_now": true,
+//     "lifetime":               "24h",
+//     "payload_block":          "hello world",
+//   }
+//   b, err := BuildFromMap(args)
+//
+func BuildFromMap(m map[string]interface{}) (bndl Bundle, err error) {
+	bldr := Builder()
+
+	for method, args := range m {
+		switch method {
+		// func (bldr *BundleBuilder) Destination(eid interface{}) *BundleBuilder
+		case "destination":
+			bldr.Destination(args)
+
+		// func (bldr *BundleBuilder) Source(eid interface{}) *BundleBuilder
+		case "source":
+			bldr.Source(args)
+
+		// func (bldr *BundleBuilder) ReportTo(eid interface{}) *BundleBuilder
+		case "report_to":
+			bldr.ReportTo(args)
+
+		// func (bldr *BundleBuilder) CreationTimestampEpoch() *BundleBuilder
+		case "creation_timestamp_epoch":
+			bldr.CreationTimestampEpoch()
+
+		// func (bldr *BundleBuilder) CreationTimestampNow() *BundleBuilder
+		case "creation_timestamp_now":
+			bldr.CreationTimestampNow()
+
+		// func (bldr *BundleBuilder) CreationTimestampTime(t time.Time) *BundleBuilder
+		case "creation_timestamp_time":
+			if argsT, ok := args.(time.Time); ok {
+				bldr.CreationTimestampTime(argsT)
+			} else {
+				err = fmt.Errorf("creation_timestamp_time needs a time.Time, not %T", args)
+			}
+
+		// func (bldr *BundleBuilder) Lifetime(duration interface{}) *BundleBuilder
+		case "lifetime":
+			bldr.Lifetime(args)
+
+		// func (bldr *BundleBuilder) BundleCtrlFlags(bcf BundleControlFlags) *BundleBuilder
+		case "bundle_ctrl_flags":
+			// TODO: implement
+			err = fmt.Errorf("bundle_ctrl_flags is not yet implemented")
+
+		// func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder
+		case "canonical":
+			err = fmt.Errorf("canonical is not impelemtend")
+
+		// func (bldr *BundleBuilder) BundleAgeBlock(args ...interface{}) *BundleBuilder
+		case "bundle_age_block":
+			bldr.BundleAgeBlock(args)
+
+		// func (bldr *BundleBuilder) HopCountBlock(args ...interface{}) *BundleBuilder
+		case "hop_count_block":
+			bldr.HopCountBlock(args)
+
+		// func (bldr *BundleBuilder) PayloadBlock(args ...interface{}) *BundleBuilder
+		case "payload_block":
+			if sArgs, ok := args.(string); ok {
+				bldr.PayloadBlock([]byte(sArgs))
+			} else {
+				bldr.PayloadBlock(args)
+			}
+
+		// func (bldr *BundleBuilder) PreviousNodeBlock(args ...interface{}) *BundleBuilder
+		case "previous_node_block":
+			bldr.PreviousNodeBlock(args)
+
+		default:
+			err = fmt.Errorf("method %s is either not implemented or not existing", method)
+		}
+
+		if err == nil {
+			err = bldr.Error()
+		}
+		if err != nil {
+			return
+		}
+	}
+
+	return bldr.Build()
 }
