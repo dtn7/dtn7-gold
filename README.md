@@ -53,7 +53,7 @@ go build ./cmd/dtnd
 
 
 ### dtnd
-dtnd is a delay-tolerant networking daemon. It represents a node inside the
+`dtnd` is a delay-tolerant networking daemon. It represents a node inside the
 network and is able to transmit, receive and forward bundles to other nodes. A
 node's neighbors may be specified in the configuration or detected within the
 local network through a peer discovery. Bundles might be sent and received
@@ -61,20 +61,41 @@ through a REST-like web interface. The features and their configuration is
 described inside the provided example
 [`configuration.toml`][dtnd-configuration].
 
-#### REST-API / WebSocekt-API
-This is ongoing work. Will be finalized in version 0.6.0
+#### REST API / WebSocket API
+Different interfaces are provided to allow communication from external
+programs with `dtnd`. More precisely: a REST API and a WebSocket API.
 
+The simpler REST API allows a client to register itself with an address,
+receive bundles and create / dispatch new ones. This is made by POSTing
+JSON objects to `dtnd`'s RESTful HTTP server. The endpoints and structure
+of the JSON objects are described in the [documentation][godoc] for the
+`github.com/dtn7/dtn7-go/agent.RestAgent` type.
+
+However, a bidirectional communication is possible via the WebSocket API. This
+API sends CBOR-encoded messages. The details can be found in the
+`ws_agent`-files of the `agent` package. But one can also simply use it with
+the `github.com/dtn7/dtn7-go/agent.WebSocketAgentConnector`, which implements
+a client.
 
 ### dtn-tool
-This is ongoing work. Will be finalized in version 0.6.0
+A ready-to-use program that utilizes the WebSocket API mentioned above is
+`dtn-tool`, a _swiss army knife_ for bundles.
+
+It allows the simple creation of new bundles, written to a file or the stdout.
+Furthermore, one can print out bundles as a human / script readable JSON object.
+To exchange bundles, `dtn-tool` might _watch_ a directory and send all new
+bundle files to the corresponding `dtnd` instance. In the same way, incoming
+bundles from `dtnd` are stored in this directory.
 
 ```
 Usage of ./dtn-tool create|show|exchange:
 
-./dtn-tool create sender receiver -|filename -|bundle-name
+./dtn-tool create sender receiver -|filename [-|filename]
   Creates a new Bundle, addressed from sender to receiver with the stdin (-)
-  or the given file (filename) as payload. This Bundle will be written to the
-  stdout (-) or saved as bundle-name.
+  or the given file (filename) as payload. If no further specified, the
+  Bundle is stored locally named after the hex representation of its ID.
+  Otherwise, the Bundle can be written to the stdout (-) or saved
+  according to a freely selectable filename.
 
 ./dtn-tool show -|filename
   Prints a JSON version of a Bundle, read from stdin (-) or filename.

@@ -118,7 +118,7 @@ func (ra *RestAgent) handler() {
 func (ra *RestAgent) receiveBundleMessage(msg BundleMessage) {
 	var uuids []string
 	ra.clients.Range(func(k, v interface{}) bool {
-		if BagHasEndpoint(msg.Recipients(), v.(bundle.EndpointID)) {
+		if bagHasEndpoint(msg.Recipients(), v.(bundle.EndpointID)) {
 			uuids = append(uuids, k.(string))
 		}
 		return false // multiple clients might be registered for some endpoint
