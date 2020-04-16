@@ -111,8 +111,12 @@ func TestRestAgentCycle(t *testing.T) {
 		t.Fatal("failed to read response as a map")
 	} else if errorMsg, ok := m["error"]; !ok {
 		t.Fatal("error field is missing")
-	} else if errorMsg == "" {
-		t.Fatal("error field is empty")
+	} else if errorMsg != "" {
+		t.Fatal(errorMsg)
+	} else if bArr, ok := m["bundles"]; !ok {
+		t.Fatal("bundles field is missing")
+	} else if len(bArr.([]interface{})) != 0 {
+		t.Fatalf("bundles arrays is not empty: %v", bArr.([]interface{}))
 	}
 
 	// Build bundle

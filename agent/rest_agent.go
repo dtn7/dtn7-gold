@@ -46,7 +46,7 @@ import (
 //   //        ]
 //   //      }
 //   //    ]}
-//   // <- {"error":"No data","bundles":null}
+//   // <- {"error":"","bundles":[]}
 //
 //   // 3. Create and dispatch a new bundle, POST to /build
 //   // -> {
@@ -218,7 +218,7 @@ func (ra *RestAgent) handleFetch(w http.ResponseWriter, r *http.Request) {
 		ra.mailbox.Delete(fetchRequest.UUID)
 	} else if !ok {
 		log.WithField("uuid", fetchRequest.UUID).Debug("REST client has no new bundles to fetch")
-		fetchResponse.Error = "No data"
+		fetchResponse.Bundles = make([]bundle.Bundle, 0)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
