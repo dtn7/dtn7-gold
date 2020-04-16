@@ -184,7 +184,12 @@ func (client *Client) Start() (err error, retry bool) {
 
 func (client *Client) Close() {
 	client.handleMetaStop <- struct{}{}
-	<-client.handleMetaStopAck
+
+	// TODO: there are currently some synchronization issues..
+	select {
+	case <-time.After(500 * time.Millisecond):
+	case <-client.handleMetaStopAck:
+	}
 }
 
 func (client *Client) Channel() chan cla.ConvergenceStatus {
