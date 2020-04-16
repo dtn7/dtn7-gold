@@ -1,11 +1,10 @@
-package arecord
+package bundle
 
 import (
 	"bytes"
 	"fmt"
 
 	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
 )
 
 // AdministrativeRecord describes a possible administrative record, like a
@@ -53,7 +52,7 @@ func NewAdministrativeRecordFromCbor(data []byte) (ar AdministrativeRecord, err 
 // AdministrativeRecordToCbor creates a canonical block, containing this administrative
 // record. The surrounding bundle _must_ have a set AdministrativeRecordPayload
 // bundle processing control flag.
-func AdministrativeRecordToCbor(ar AdministrativeRecord) (blk bundle.CanonicalBlock, err error) {
+func AdministrativeRecordToCbor(ar AdministrativeRecord) (blk CanonicalBlock, err error) {
 	buff := new(bytes.Buffer)
 
 	if err = cboring.WriteArrayLength(2, buff); err != nil {
@@ -69,6 +68,6 @@ func AdministrativeRecordToCbor(ar AdministrativeRecord) (blk bundle.CanonicalBl
 		return
 	}
 
-	blk = bundle.NewCanonicalBlock(1, 0, bundle.NewPayloadBlock(buff.Bytes()))
+	blk = NewCanonicalBlock(1, 0, NewPayloadBlock(buff.Bytes()))
 	return
 }

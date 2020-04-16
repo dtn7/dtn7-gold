@@ -8,7 +8,6 @@ import (
 
 	"github.com/dtn7/dtn7-go/agent"
 	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/dtn7/dtn7-go/bundle/arecord"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/storage"
 )
@@ -213,9 +212,8 @@ func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
 
 // SendStatusReport creates a new status report in response to the given
 // BundlePack and transmits it.
-func (c *Core) SendStatusReport(bp BundlePack,
-	status arecord.StatusInformationPos, reason arecord.StatusReportReason) {
-	// Don't repond to other administrative records
+func (c *Core) SendStatusReport(bp BundlePack, status bundle.StatusInformationPos, reason bundle.StatusReportReason) {
+	// Don't respond to other administrative records
 	bndl, _ := bp.Bundle()
 	if bndl.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
 		return
@@ -232,8 +230,8 @@ func (c *Core) SendStatusReport(bp BundlePack,
 		"reason": reason,
 	}).Info("Sending a status report for a bundle")
 
-	var sr = arecord.NewStatusReport(*bndl, status, reason, bundle.DtnTimeNow())
-	var ar, arErr = arecord.AdministrativeRecordToCbor(&sr)
+	var sr = bundle.NewStatusReport(*bndl, status, reason, bundle.DtnTimeNow())
+	var ar, arErr = bundle.AdministrativeRecordToCbor(&sr)
 	if arErr != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),

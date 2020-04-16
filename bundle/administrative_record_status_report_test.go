@@ -1,4 +1,4 @@
-package arecord
+package bundle
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
 )
 
 func TestBundleStatusItemCbor(t *testing.T) {
@@ -14,8 +13,8 @@ func TestBundleStatusItemCbor(t *testing.T) {
 		bsi BundleStatusItem
 		len int
 	}{
-		{NewTimeReportingBundleStatusItem(bundle.DtnTimeNow()), 2},
-		{NewTimeReportingBundleStatusItem(bundle.DtnTimeEpoch), 2},
+		{NewTimeReportingBundleStatusItem(DtnTimeNow()), 2},
+		{NewTimeReportingBundleStatusItem(DtnTimeEpoch), 2},
 		{NewBundleStatusItem(true), 1},
 		{NewBundleStatusItem(false), 1},
 	}
@@ -41,19 +40,19 @@ func TestBundleStatusItemCbor(t *testing.T) {
 }
 
 func TestStatusReportCreation(t *testing.T) {
-	var bndl, err = bundle.Builder().
+	var bndl, err = Builder().
 		Source("dtn:src").
 		Destination("dtn:dest").
 		CreationTimestampNow().
 		Lifetime("60s").
-		BundleCtrlFlags(bundle.MustNotFragmented | bundle.RequestStatusTime).
+		BundleCtrlFlags(MustNotFragmented | RequestStatusTime).
 		PayloadBlock([]byte("hello world!")).
 		Build()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var initTime = bundle.DtnTimeNow()
+	var initTime = DtnTimeNow()
 	var statusRep = NewStatusReport(
 		bndl, ReceivedBundle, NoInformation, initTime)
 
@@ -89,42 +88,41 @@ func TestStatusReportCreation(t *testing.T) {
 }
 
 func TestStatusReportCreationNoTime(t *testing.T) {
-	var bndl, err = bundle.Builder().
+	var bndl, err = Builder().
 		Source("dtn:src").
 		Destination("dtn:dest").
 		CreationTimestampNow().
 		Lifetime("60s").
-		BundleCtrlFlags(bundle.MustNotFragmented).
+		BundleCtrlFlags(MustNotFragmented).
 		PayloadBlock([]byte("hello world!")).
 		Build()
 	if err != nil {
 		panic(err)
 	}
 
-	var statusRep = NewStatusReport(
-		bndl, ReceivedBundle, NoInformation, bundle.DtnTimeNow())
+	var statusRep = NewStatusReport(bndl, ReceivedBundle, NoInformation, DtnTimeNow())
 
 	// Test no time is present.
 	bsi := statusRep.StatusInformation[ReceivedBundle]
-	if !bsi.Asserted || bsi.Time != bundle.DtnTimeEpoch {
+	if !bsi.Asserted || bsi.Time != DtnTimeEpoch {
 		t.Fatalf("ReceivedBundle's status item is incorrect: %v", bsi)
 	}
 }
 
 func TestStatusReportApplicationRecord(t *testing.T) {
-	bndl, err := bundle.Builder().
+	bndl, err := Builder().
 		Source("dtn:src").
 		Destination("dtn:dest").
 		CreationTimestampNow().
 		Lifetime("60s").
-		BundleCtrlFlags(bundle.MustNotFragmented | bundle.RequestStatusTime).
+		BundleCtrlFlags(MustNotFragmented | RequestStatusTime).
 		PayloadBlock([]byte("hello world!")).
 		Build()
 	if err != nil {
 		t.Fatalf("Creating bundle failed: %v", err)
 	}
 
-	initTime := bundle.DtnTimeNow()
+	initTime := DtnTimeNow()
 	statusRep := NewStatusReport(
 		bndl, ReceivedBundle, NoInformation, initTime)
 
@@ -133,12 +131,12 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 		t.Fatal(adminRecErr)
 	}
 
-	outBndl, err := bundle.Builder().
+	outBndl, err := Builder().
 		Source("dtn:foo").
 		Destination(bndl.PrimaryBlock.ReportTo).
 		CreationTimestampNow().
 		Lifetime("60m").
-		BundleCtrlFlags(bundle.AdministrativeRecordPayload).
+		BundleCtrlFlags(AdministrativeRecordPayload).
 		Canonical(adminRec).
 		Build()
 	if err != nil {
@@ -150,7 +148,7 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	inBndl, inBndlErr := bundle.ParseBundle(buff)
+	inBndl, inBndlErr := ParseBundle(buff)
 	if inBndlErr != nil {
 		t.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-package arecord
+package bundle
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
 )
 
 const ARTypeStatusReport uint64 = 1
@@ -15,7 +14,7 @@ const ARTypeStatusReport uint64 = 1
 // in the bundle status information array of each Bundle Status Report.
 type BundleStatusItem struct {
 	Asserted        bool
-	Time            bundle.DtnTime
+	Time            DtnTime
 	StatusRequested bool
 }
 
@@ -62,7 +61,7 @@ func (bsi *BundleStatusItem) UnmarshalCbor(r io.Reader) error {
 		if n, err := cboring.ReadUInt(r); err != nil {
 			return err
 		} else {
-			bsi.Time = bundle.DtnTime(n)
+			bsi.Time = DtnTime(n)
 		}
 
 		bsi.StatusRequested = true
@@ -86,14 +85,14 @@ func (bsi BundleStatusItem) String() string {
 func NewBundleStatusItem(asserted bool) BundleStatusItem {
 	return BundleStatusItem{
 		Asserted:        asserted,
-		Time:            bundle.DtnTimeEpoch,
+		Time:            DtnTimeEpoch,
 		StatusRequested: false,
 	}
 }
 
 // NewTimeReportingBundleStatusItem returns a new BundleStatusItem, indicating
 // both a positive assertion and a requested status time report.
-func NewTimeReportingBundleStatusItem(time bundle.DtnTime) BundleStatusItem {
+func NewTimeReportingBundleStatusItem(time DtnTime) BundleStatusItem {
 	return BundleStatusItem{
 		Asserted:        true,
 		Time:            time,
@@ -231,15 +230,15 @@ func (sip StatusInformationPos) String() string {
 type StatusReport struct {
 	StatusInformation []BundleStatusItem
 	ReportReason      StatusReportReason
-	RefBundle         bundle.BundleID
+	RefBundle         BundleID
 }
 
 // NewStatusReport creates a bundle status report for the given bundle and
 // StatusInformationPos, which creates the right bundle status item. The
 // bundle status report reason code will be used and the bundle status item
 // gets the given timestamp.
-func NewStatusReport(bndl bundle.Bundle, statusItem StatusInformationPos,
-	reason StatusReportReason, time bundle.DtnTime) StatusReport {
+func NewStatusReport(bndl Bundle, statusItem StatusInformationPos,
+	reason StatusReportReason, time DtnTime) StatusReport {
 	var sr = StatusReport{
 		StatusInformation: make([]BundleStatusItem, maxStatusInformationPos),
 		ReportReason:      reason,
@@ -250,7 +249,7 @@ func NewStatusReport(bndl bundle.Bundle, statusItem StatusInformationPos,
 		sip := StatusInformationPos(i)
 
 		switch {
-		case sip == statusItem && bndl.PrimaryBlock.BundleControlFlags.Has(bundle.RequestStatusTime):
+		case sip == statusItem && bndl.PrimaryBlock.BundleControlFlags.Has(RequestStatusTime):
 			sr.StatusInformation[i] = NewTimeReportingBundleStatusItem(time)
 
 		case sip == statusItem:
@@ -354,7 +353,7 @@ func (sr StatusReport) String() string {
 			continue
 		}
 
-		if si.Time == bundle.DtnTimeEpoch {
+		if si.Time == DtnTimeEpoch {
 			fmt.Fprintf(&b, "%v,", sip)
 		} else {
 			fmt.Fprintf(&b, "%v %v,", sip, si.Time)
