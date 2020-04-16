@@ -63,7 +63,7 @@ import (
 //
 //   // 4. Unregister the client, POST to /unregister
 //   // -> {"uuid":"75be76e2-23fc-da0e-eeb8-4773f84a9d2f"}
-//   // <- {}
+//   // <- {"error":""}
 //
 type RestAgent struct {
 	router *mux.Router

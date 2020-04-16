@@ -189,6 +189,8 @@ func TestRestAgentCycle(t *testing.T) {
 		t.Fatal(err)
 	} else if err := json.NewDecoder(resp.Body).Decode(&unregisterResponse); err != nil {
 		t.Fatal(err)
+	} else if unregisterResponse.Error != "" {
+		t.Fatalf("unregistration errored: %s", unregisterResponse.Error)
 	}
 
 	if AppAgentHasEndpoint(restAgent, registerEid) {

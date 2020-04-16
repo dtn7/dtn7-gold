@@ -19,7 +19,9 @@ type RestUnregisterRequest struct {
 }
 
 // RestUnregisterResponse describes a JSON response for /unregister.
-type RestUnregisterResponse struct{}
+type RestUnregisterResponse struct {
+	Error string `json:"error"`
+}
 
 // RestFetchRequest describes a JSON to be POSTed to /fetch.
 type RestFetchRequest struct {
