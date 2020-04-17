@@ -343,10 +343,10 @@ func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
 }
 
 func (c *Core) inspectStatusReport(bp BundlePack, ar bundle.AdministrativeRecord) {
-	if ar.TypeCode() != bundle.ARTypeStatusReport {
+	if ar.RecordTypeCode() != bundle.ARTypeStatusReport {
 		log.WithFields(log.Fields{
 			"bundle":    bp.ID(),
-			"type_code": ar.TypeCode(),
+			"type_code": ar.RecordTypeCode(),
 		}).Warn("Administrative record is not a status report")
 
 		return

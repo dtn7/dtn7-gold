@@ -337,7 +337,7 @@ func (sr *StatusReport) UnmarshalCbor(r io.Reader) error {
 	return nil
 }
 
-func (sr *StatusReport) TypeCode() uint64 {
+func (sr *StatusReport) RecordTypeCode() uint64 {
 	return ARTypeStatusReport
 }
 
