@@ -81,7 +81,7 @@ type EndpointID struct {
 	EndpointType EndpointType
 }
 
-// NewEndpointID based on an URI, e.g., "dtn:seven".
+// NewEndpointID based on an URI, e.g., "dtn://seven/".
 func NewEndpointID(uri string) (e EndpointID, err error) {
 	re := regexp.MustCompile("^([[:alnum:]]+):.+$")
 	matches := re.FindStringSubmatch(uri)

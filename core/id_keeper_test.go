@@ -8,8 +8,8 @@ import (
 
 func TestIdKeeper(t *testing.T) {
 	bndl0, err := bundle.Builder().
-		Source("dtn:src").
-		Destination("dtn:dest").
+		Source("dtn://src/").
+		Destination("dtn://dest/").
 		CreationTimestampEpoch().
 		Lifetime("60s").
 		BundleCtrlFlags(bundle.MustNotFragmented|bundle.RequestStatusTime).
@@ -21,8 +21,8 @@ func TestIdKeeper(t *testing.T) {
 	}
 
 	bndl1, err := bundle.Builder().
-		Source("dtn:src").
-		Destination("dtn:dest").
+		Source("dtn://src/").
+		Destination("dtn://dest/").
 		CreationTimestampEpoch().
 		Lifetime("60s").
 		BundleCtrlFlags(bundle.MustNotFragmented|bundle.RequestStatusTime).

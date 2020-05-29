@@ -38,8 +38,8 @@ func TestMTCPServerClient(t *testing.T) {
 	)
 
 	bndl, err := bundle.Builder().
-		Source("dtn:src").
-		Destination("dtn:dest").
+		Source("dtn://src/").
+		Destination("dtn://dest/").
 		CreationTimestampEpoch().
 		Lifetime("60s").
 		BundleCtrlFlags(bundle.MustNotFragmented).
@@ -52,7 +52,7 @@ func TestMTCPServerClient(t *testing.T) {
 
 	// Server
 	serv := NewMTCPServer(
-		fmt.Sprintf(":%d", port), bundle.MustNewEndpointID("dtn:mtcpcla"), false)
+		fmt.Sprintf(":%d", port), bundle.MustNewEndpointID("dtn://mtcpcla/"), false)
 	if err, _ := serv.Start(); err != nil {
 		t.Fatal(err)
 	}

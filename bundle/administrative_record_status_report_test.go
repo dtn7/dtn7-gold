@@ -41,8 +41,8 @@ func TestBundleStatusItemCbor(t *testing.T) {
 
 func TestStatusReportCreation(t *testing.T) {
 	var bndl, err = Builder().
-		Source("dtn:src").
-		Destination("dtn:dest").
+		Source("dtn://src/").
+		Destination("dtn://dest/").
 		CreationTimestampNow().
 		Lifetime("60s").
 		BundleCtrlFlags(MustNotFragmented | RequestStatusTime).
@@ -89,8 +89,8 @@ func TestStatusReportCreation(t *testing.T) {
 
 func TestStatusReportCreationNoTime(t *testing.T) {
 	var bndl, err = Builder().
-		Source("dtn:src").
-		Destination("dtn:dest").
+		Source("dtn://src/").
+		Destination("dtn://dest/").
 		CreationTimestampNow().
 		Lifetime("60s").
 		BundleCtrlFlags(MustNotFragmented).
@@ -111,8 +111,8 @@ func TestStatusReportCreationNoTime(t *testing.T) {
 
 func TestStatusReportApplicationRecord(t *testing.T) {
 	bndl, err := Builder().
-		Source("dtn:src").
-		Destination("dtn:dest").
+		Source("dtn://src/").
+		Destination("dtn://dest/").
 		CreationTimestampNow().
 		Lifetime("60s").
 		BundleCtrlFlags(MustNotFragmented | RequestStatusTime).
@@ -132,7 +132,7 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 	}
 
 	outBndl, err := Builder().
-		Source("dtn:foo").
+		Source("dtn://foo/").
 		Destination(bndl.PrimaryBlock.ReportTo).
 		CreationTimestampNow().
 		Lifetime("60m").

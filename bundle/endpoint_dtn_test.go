@@ -13,20 +13,23 @@ func TestNewDtnEndpoint(t *testing.T) {
 		valid bool
 	}{
 		{"dtn:none", dtnEndpointDtnNoneSsp, true},
-		{"dtn:foo", "foo", true},
 		{"dtn://foo/", "//foo/", true},
-		{"dtn:", "", false},
-		{"dtn", "", false},
-		{"DTN:UFF", "", false},
-		{"uff:uff", "", false},
-		{"", "", false},
+		{"dtn://foo/bar", "//foo/bar", true},
+		{"dtn://foo/bar/buz", "//foo/bar/buz", true},
+		{"dtn:foo", "foo", false},     // missing slashes
+		{"dtn:/foo/", "/foo/", false}, // only one leading slash
+		{"dtn://foo", "//foo", false}, // missing trailing slash
+		{"dtn:", "", false},           // missing SSP
+		{"dtn", "", false},            // missing SSP and ":"
+		{"uff:uff", "uff", false},     // just no
+		{"", "", false},               // nothing
 	}
 
 	for _, test := range tests {
 		ep, err := NewDtnEndpoint(test.uri)
 
 		if err == nil != test.valid {
-			t.Fatalf("Expected valid = %t, got err: %v", test.valid, err)
+			t.Fatalf("%s: expected valid = %t, got err: %v", test.uri, test.valid, err)
 		} else if err == nil {
 			if ep.(DtnEndpoint).Ssp != test.ssp {
 				t.Fatalf("Expected SSP %v, got %v", test.ssp, ep.(DtnEndpoint).Ssp)
@@ -76,10 +79,7 @@ func TestDtnEndpointUri(t *testing.T) {
 		path      string
 	}{
 		{DtnEndpoint{dtnEndpointDtnNoneSsp}, "none", "/"},
-		{DtnEndpoint{"foobar"}, "foobar", "/"},
-		{DtnEndpoint{"//foobar"}, "foobar", "/"},
 		{DtnEndpoint{"//foobar/"}, "foobar", "/"},
-		{DtnEndpoint{"foo/bar"}, "foo", "/bar"},
 		{DtnEndpoint{"//foo/bar"}, "foo", "/bar"},
 		{DtnEndpoint{"//foo/bar/"}, "foo", "/bar/"},
 	}

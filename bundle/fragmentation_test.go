@@ -29,8 +29,8 @@ func TestBundleFragment(t *testing.T) {
 
 func testBundleFragment(t *testing.T, payloadLen, mtu int) {
 	bndl, err := Builder().
-		Source("dtn://src").
-		Destination("dtn://dst").
+		Source("dtn://src/").
+		Destination("dtn://dst/").
 		CreationTimestampNow().
 		Lifetime("5m").
 		PayloadBlock(make([]byte, payloadLen)).
@@ -74,8 +74,8 @@ func testBundleFragment(t *testing.T, payloadLen, mtu int) {
 
 func TestBundleFragmentMustNotFragment(t *testing.T) {
 	bndl, err := Builder().
-		Source("dtn://src").
-		Destination("dtn://dst").
+		Source("dtn://src/").
+		Destination("dtn://dst/").
 		BundleCtrlFlags(MustNotFragmented).
 		CreationTimestampNow().
 		Lifetime("5m").
@@ -92,8 +92,8 @@ func TestBundleFragmentMustNotFragment(t *testing.T) {
 
 func TestBundleFragmentHugeMtu(t *testing.T) {
 	bndl, err := Builder().
-		Source("dtn://src").
-		Destination("dtn://dst").
+		Source("dtn://src/").
+		Destination("dtn://dst/").
 		CreationTimestampNow().
 		Lifetime("5m").
 		PayloadBlock(make([]byte, 1024)).
@@ -117,8 +117,8 @@ func TestBundleFragmentHugeMtu(t *testing.T) {
 
 func TestIsBundleReassemblable(t *testing.T) {
 	bndl, err := Builder().
-		Source("dtn://src").
-		Destination("dtn://dst").
+		Source("dtn://src/").
+		Destination("dtn://dst/").
 		CreationTimestampNow().
 		Lifetime("5m").
 		PayloadBlock(make([]byte, 1024)).
@@ -156,8 +156,8 @@ func TestReassembleFragments(t *testing.T) {
 	_, _ = rand.Read(payloadData)
 
 	bndl, err := Builder().
-		Source("dtn://src").
-		Destination("dtn://dst").
+		Source("dtn://src/").
+		Destination("dtn://dst/").
 		CreationTimestampNow().
 		Lifetime("5m").
 		PayloadBlock(payloadData).
@@ -196,8 +196,8 @@ func TestReassembleFragments(t *testing.T) {
 
 func TestReassembleFragmentsMissing(t *testing.T) {
 	bndl, err := Builder().
-		Source("dtn://src").
-		Destination("dtn://dst").
+		Source("dtn://src/").
+		Destination("dtn://dst/").
 		CreationTimestampNow().
 		Lifetime("5m").
 		PayloadBlock(make([]byte, 1024)).

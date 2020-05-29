@@ -11,7 +11,7 @@ import (
 )
 
 func TestBundleApplyCRC(t *testing.T) {
-	var epPrim, _ = NewEndpointID("dtn:foo/bar")
+	var epPrim, _ = NewEndpointID("dtn://foo/bar/")
 	var creationTs = NewCreationTimestamp(42000000000, 23)
 
 	var primary = NewPrimaryBlock(
@@ -55,8 +55,8 @@ func TestBundleApplyCRC(t *testing.T) {
 }
 
 func TestBundleCbor(t *testing.T) {
-	var epDest, _ = NewEndpointID("dtn:desty")
-	var epSource, _ = NewEndpointID("dtn:gumo")
+	var epDest, _ = NewEndpointID("dtn://desty/")
+	var epSource, _ = NewEndpointID("dtn://gumo/")
 	var creationTs = NewCreationTimestamp(42000000000, 23)
 
 	var primary = NewPrimaryBlock(
@@ -108,7 +108,7 @@ func TestBundleExtensionBlock(t *testing.T) {
 	var bndl, err = NewBundle(
 		NewPrimaryBlock(
 			MustNotFragmented,
-			MustNewEndpointID("dtn:some"), DtnNone(),
+			MustNewEndpointID("dtn://some/"), DtnNone(),
 			NewCreationTimestamp(DtnTimeEpoch, 0), 3600),
 		[]CanonicalBlock{
 			NewCanonicalBlock(2, 0, NewBundleAgeBlock(420)),
@@ -220,14 +220,14 @@ func BenchmarkBundleSerializationCboring(b *testing.B) {
 
 			primary := NewPrimaryBlock(
 				0,
-				MustNewEndpointID("dtn:dest"),
-				MustNewEndpointID("dtn:src"),
+				MustNewEndpointID("dtn://dest/"),
+				MustNewEndpointID("dtn://src/"),
 				NewCreationTimestamp(DtnTimeEpoch, 0),
 				60*60*1000000)
 
 			canonicals := []CanonicalBlock{
 				NewCanonicalBlock(2, 0, NewBundleAgeBlock(0)),
-				NewCanonicalBlock(3, 0, NewPreviousNodeBlock(MustNewEndpointID("dtn:prev"))),
+				NewCanonicalBlock(3, 0, NewPreviousNodeBlock(MustNewEndpointID("dtn://prev/"))),
 				NewCanonicalBlock(1, 0, NewPayloadBlock(payload)),
 			}
 
@@ -258,14 +258,14 @@ func BenchmarkBundleDeserializationCboring(b *testing.B) {
 
 			primary := NewPrimaryBlock(
 				0,
-				MustNewEndpointID("dtn:dest"),
-				MustNewEndpointID("dtn:src"),
+				MustNewEndpointID("dtn://dest/"),
+				MustNewEndpointID("dtn://src/"),
 				NewCreationTimestamp(DtnTimeEpoch, 0),
 				60*60*1000000)
 
 			canonicals := []CanonicalBlock{
 				NewCanonicalBlock(2, 0, NewBundleAgeBlock(0)),
-				NewCanonicalBlock(3, 0, NewPreviousNodeBlock(MustNewEndpointID("dtn:prev"))),
+				NewCanonicalBlock(3, 0, NewPreviousNodeBlock(MustNewEndpointID("dtn://prev/"))),
 				NewCanonicalBlock(1, 0, NewPayloadBlock(payload)),
 			}
 

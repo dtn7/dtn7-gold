@@ -11,12 +11,12 @@ func TestDiscoveryMessageCbor(t *testing.T) {
 	var tests = []DiscoveryMessage{
 		{
 			Type:     MTCP,
-			Endpoint: bundle.MustNewEndpointID("dtn:foobar"),
+			Endpoint: bundle.MustNewEndpointID("dtn://foobar/"),
 			Port:     8000,
 		},
 		{
 			Type:     TCPCL,
-			Endpoint: bundle.MustNewEndpointID("dtn:foobar"),
+			Endpoint: bundle.MustNewEndpointID("dtn://foobar/"),
 			Port:     8000,
 		},
 		{

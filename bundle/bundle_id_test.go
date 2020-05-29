@@ -62,26 +62,26 @@ func TestBundleIDScrub(t *testing.T) {
 	}{
 		{
 			from: BundleID{
-				SourceNode: MustNewEndpointID("dtn://foo"),
+				SourceNode: MustNewEndpointID("dtn://foo/"),
 				Timestamp:  NewCreationTimestamp(23, 42),
 				IsFragment: false,
 			},
 			to: BundleID{
-				SourceNode: MustNewEndpointID("dtn://foo"),
+				SourceNode: MustNewEndpointID("dtn://foo/"),
 				Timestamp:  NewCreationTimestamp(23, 42),
 				IsFragment: false,
 			},
 		},
 		{
 			from: BundleID{
-				SourceNode:      MustNewEndpointID("dtn://foo"),
+				SourceNode:      MustNewEndpointID("dtn://foo/"),
 				Timestamp:       NewCreationTimestamp(23, 42),
 				IsFragment:      true,
 				FragmentOffset:  23,
 				TotalDataLength: 42,
 			},
 			to: BundleID{
-				SourceNode: MustNewEndpointID("dtn://foo"),
+				SourceNode: MustNewEndpointID("dtn://foo/"),
 				Timestamp:  NewCreationTimestamp(23, 42),
 				IsFragment: false,
 			},

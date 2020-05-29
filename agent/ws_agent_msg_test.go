@@ -26,7 +26,7 @@ func TestWebsocketAgentMessageEnDecode(t *testing.T) {
 	msgs := []webAgentMessage{
 		newStatusMessage(nil),
 		newStatusMessage(fmt.Errorf("oof")),
-		newRegisterMessage("dtn:foobar"),
+		newRegisterMessage("dtn://foobar/"),
 		newBundleMessage(b),
 		newSyscallRequestMessage("test"),
 		newSyscallResponseMessage("foobar", []byte{0x23, 0x42, 0xAC, 0xAB}),

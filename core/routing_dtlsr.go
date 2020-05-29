@@ -14,7 +14,7 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 )
 
-const BroadcastAddress = "dtn:broadcast"
+const dtlsrBroadcastAddress = "dtn://routing/dtlsr/broadcast/"
 
 type DTLSRConfig struct {
 	// RecomputeTime is the interval (in seconds) until the routing table is recomputed.
@@ -76,10 +76,10 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 		"config": config,
 	}).Debug("Initialising DTLSR")
 
-	bAddress, err := bundle.NewEndpointID(BroadcastAddress)
+	bAddress, err := bundle.NewEndpointID(dtlsrBroadcastAddress)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"BroadcastAddress": BroadcastAddress,
+			"dtlsrBroadcastAddress": dtlsrBroadcastAddress,
 		}).Fatal("Unable to parse broadcast address")
 	}
 

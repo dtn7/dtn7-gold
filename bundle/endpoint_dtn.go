@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/url"
 	"regexp"
-	"strings"
 
 	"github.com/dtn7/cboring"
 )
@@ -23,13 +22,32 @@ type DtnEndpoint struct {
 
 // NewDtnEndpoint from an URI with the dtn scheme.
 func NewDtnEndpoint(uri string) (e EndpointType, err error) {
-	re := regexp.MustCompile("^" + dtnEndpointSchemeName + ":(.+)$")
+	// As defined in dtn-bpbis, a "dtn" URI might be the null endpoint "dtn:none" or something URI/IRI like.
+	// Thus, at first we are going after the null endpoint and inspect a more generic URI afterwards.
+
+	if uri == DtnNone().String() {
+		return DtnNone().EndpointType, nil
+	}
+
+	re := regexp.MustCompile("^" + dtnEndpointSchemeName + "://(.+)/(.*)$")
 	if !re.MatchString(uri) {
 		err = fmt.Errorf("uri does not match a dtn endpoint")
 		return
 	}
 
-	e = DtnEndpoint{Ssp: re.FindStringSubmatch(uri)[1]}
+	switch submatches := re.FindStringSubmatch(uri); len(submatches) {
+	case 2:
+		e = DtnEndpoint{Ssp: fmt.Sprintf("//%s", submatches[1])}
+
+	case 3:
+		e = DtnEndpoint{Ssp: fmt.Sprintf("//%s/%s", submatches[1], submatches[2])}
+
+	default:
+		err = fmt.Errorf("invalid amount of submatches: %d", len(submatches))
+		return
+	}
+
+	err = e.CheckValid()
 	return
 }
 
@@ -44,15 +62,12 @@ func (_ DtnEndpoint) SchemeNo() uint64 {
 }
 
 func (e DtnEndpoint) parseUri() (authority, path string) {
-	// net.url.URL requires two leading slashes.
-	var tmpEndpoint string
-	if !strings.HasPrefix(e.Ssp, "//") {
-		tmpEndpoint = DtnEndpoint{"//" + e.Ssp}.String()
-	} else {
-		tmpEndpoint = e.String()
+	// The null endpoint requires some specific behaviour because it does not comply with the URI schema.
+	if e.Ssp == dtnEndpointDtnNoneSsp {
+		return "none", "/"
 	}
 
-	u, err := url.Parse(tmpEndpoint)
+	u, err := url.Parse(e.String())
 	if err != nil {
 		return
 	}
@@ -75,8 +90,12 @@ func (e DtnEndpoint) Path() string {
 }
 
 // CheckValid returns an array of errors for incorrect data.
-func (_ DtnEndpoint) CheckValid() error {
-	return nil
+func (e DtnEndpoint) CheckValid() (err error) {
+	re := regexp.MustCompile("^" + dtnEndpointSchemeName + ":(none|//(.+)/(.*))$")
+	if !re.MatchString(e.String()) {
+		err = fmt.Errorf("dtn URI does not match regexp")
+	}
+	return
 }
 
 func (e DtnEndpoint) String() string {
@@ -104,7 +123,7 @@ func (e *DtnEndpoint) UnmarshalCbor(r io.Reader) error {
 			e.Ssp = dtnEndpointDtnNoneSsp
 
 		case cboring.TextString:
-			// dtn:whatever
+			// dtn://whatever/
 			if tmp, err := cboring.ReadRawBytes(n, r); err != nil {
 				return err
 			} else {
