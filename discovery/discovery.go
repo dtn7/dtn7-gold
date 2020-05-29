@@ -76,7 +76,8 @@ func DiscoveryMessagesToCbor(dms []DiscoveryMessage) (data []byte, err error) {
 	}
 
 	for i, dm := range dms {
-		if cErr := cboring.Marshal(&dm, buff); cErr != nil {
+		discoveryMessage := dm
+		if cErr := cboring.Marshal(&discoveryMessage, buff); cErr != nil {
 			err = fmt.Errorf("Marshalling DiscoveryMessage %d failed: %v", i, cErr)
 			return
 		}

@@ -286,7 +286,8 @@ func (sr *StatusReport) MarshalCbor(w io.Writer) error {
 		return err
 	}
 	for _, si := range sr.StatusInformation {
-		if err := cboring.Marshal(&si, w); err != nil {
+		statusInformation := si
+		if err := cboring.Marshal(&statusInformation, w); err != nil {
 			return fmt.Errorf("Marshalling BundleStatusItem failed: %v", err)
 		}
 	}
