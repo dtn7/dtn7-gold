@@ -17,6 +17,7 @@ import (
 type Core struct {
 	InspectAllBundles bool
 	NodeId            bundle.EndpointID
+	CLAdapters        map[CLAType][]bundle.EndpointID
 
 	agentManager *AgentManager
 	cron         *Cron
@@ -39,6 +40,7 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 
 	gob.Register([]bundle.EndpointID{})
 	gob.Register(bundle.EndpointID{})
+	gob.Register(map[CLAType][]bundle.EndpointID{})
 	gob.Register(bundle.DtnEndpoint{})
 	gob.Register(bundle.IpnEndpoint{})
 	gob.Register(map[Constraint]bool{})
@@ -48,6 +50,11 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 
 	c.InspectAllBundles = inspectAllBundles
 	c.NodeId = nodeId
+
+	c.CLAdapters = make(map[CLAType][]bundle.EndpointID)
+	c.CLAdapters[TCPCL] = make([]bundle.EndpointID, 0)
+	c.CLAdapters[MTCP] = make([]bundle.EndpointID, 0)
+	c.CLAdapters[BBC] = make([]bundle.EndpointID, 0)
 
 	if store, err := storage.NewStore(storePath); err != nil {
 		return nil, err
@@ -201,6 +208,14 @@ func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
 		return true
 	}
 
+	for _, clas := range c.CLAdapters {
+		for _, adapter := range clas {
+			if adapter.Authority() == endpoint.Authority() {
+				return true
+			}
+		}
+	}
+
 	for _, cr := range c.claManager.Receiver() {
 		if cr.GetEndpointID() == endpoint {
 			return true
@@ -279,4 +294,9 @@ func (c *Core) SendStatusReport(bp BundlePack, status bundle.StatusInformationPo
 // RegisterConvergable is the exposed Register method from the CLA Manager.
 func (c *Core) RegisterConvergable(conv cla.Convergable) {
 	c.claManager.Register(conv)
+}
+
+func (c *Core) RegisterCLA(conv cla.Convergable, claType CLAType, eid bundle.EndpointID) {
+	c.CLAdapters[claType] = append(c.CLAdapters[claType], eid)
+	c.RegisterConvergable(conv)
 }

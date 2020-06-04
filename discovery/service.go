@@ -52,23 +52,26 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		"message":   dm,
 	}).Debug("Peer discovery received a message")
 
-	if dm.Endpoint == ds.c.NodeId {
+	if ds.c.HasEndpoint(dm.Endpoint) {
 		log.WithFields(log.Fields{
 			"discovery": ds,
 			"peer":      addr,
 			"message":   dm,
-		}).Debug("Peer discovery is from this node, dropping")
-
+		}).Debug("Discovery message for one of our own ids, dropping")
 		return
 	}
 
 	var client cla.Convergence
 	switch dm.Type {
-	case MTCP:
+	case core.MTCP:
 		client = mtcp.NewMTCPClient(fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint, false)
+		ds.c.RegisterConvergable(client)
 
-	case TCPCL:
-		client = tcpcl.DialClient(fmt.Sprintf("%s:%d", addr, dm.Port), ds.c.NodeId, false)
+	case core.TCPCL:
+		for _, eid := range ds.c.CLAdapters[core.TCPCL] {
+			client = tcpcl.DialClient(fmt.Sprintf("%s:%d", addr, dm.Port), eid, false)
+			ds.c.RegisterConvergable(client)
+		}
 
 	default:
 		log.WithFields(log.Fields{
@@ -78,8 +81,6 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		}).Warn("DiscoveryMessage's Type is unknown or unsupported")
 		return
 	}
-
-	ds.c.RegisterConvergable(client)
 }
 
 // Close shuts the DiscoveryService down.
