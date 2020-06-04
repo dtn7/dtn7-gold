@@ -95,10 +95,7 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergabl
 	if conv.Node != "" {
 		parsedId, err := bundle.NewEndpointID(conv.Node)
 		if err != nil {
-			log.WithFields(log.Fields{
-				"listener ID": conv.Node,
-				"core ID":     nodeId,
-			}).Error("Invalid endpoint configuration, falling back to core default id")
+			return nil, nodeId, 0, discovery.DiscoveryMessage{}, err
 		} else {
 			log.WithFields(log.Fields{
 				"listener ID": conv.Node,
