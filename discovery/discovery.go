@@ -5,6 +5,7 @@ package discovery
 import (
 	"bytes"
 	"fmt"
+	"github.com/dtn7/dtn7-go/core"
 	"io"
 	"strings"
 
@@ -23,22 +24,9 @@ const (
 	DiscoveryPort = 35039
 )
 
-// CLAType is the first field of a DiscoveryMessage, specifying a CLA.
-type CLAType uint
-
-const (
-	// TCPCL is the "Delay-Tolerant Networking TCP Convergence Layer Protocol
-	// Version 4" as specified in draft-ietf-dtn-tcpclv4-14 or newer.
-	TCPCL CLAType = 0
-
-	// MTCP is the "Minimal TCP Convergence-Layer Protocol" as specified in
-	// draft-ietf-dtn-mtcpcl-01 or newer documents.
-	MTCP CLAType = 1
-)
-
 // DiscoveryMessage is the kind of message used by this peer/neighbor discovery.
 type DiscoveryMessage struct {
-	Type     CLAType
+	Type     core.CLAType
 	Endpoint bundle.EndpointID
 	Port     uint
 }
@@ -115,7 +103,7 @@ func (dm *DiscoveryMessage) UnmarshalCbor(r io.Reader) error {
 	if n, err := cboring.ReadUInt(r); err != nil {
 		return err
 	} else {
-		dm.Type = CLAType(n)
+		dm.Type = core.CLAType(n)
 	}
 	if err := cboring.Unmarshal(&dm.Endpoint, r); err != nil {
 		return fmt.Errorf("Unmarshalling endpoint failed: %v", err)
@@ -135,9 +123,9 @@ func (dm DiscoveryMessage) String() string {
 	fmt.Fprintf(&builder, "DiscoveryMessage(")
 
 	switch dm.Type {
-	case TCPCL:
+	case core.TCPCL:
 		fmt.Fprintf(&builder, "TCPCL")
-	case MTCP:
+	case core.MTCP:
 		fmt.Fprintf(&builder, "MTCP")
 	default:
 		fmt.Fprintf(&builder, "Unknown CLA")
