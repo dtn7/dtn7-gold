@@ -85,6 +85,28 @@ func parseListenPort(endpoint string) (port int, err error) {
 
 // parseListen inspects a "listen" convergenceConf and returns a Convergable.
 func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergable, discovery.DiscoveryMessage, error) {
+	log.WithFields(log.Fields{
+		"EndpointID": conv.Node,
+		"Endpoint":   conv.Endpoint,
+		"Protocol":   conv.Protocol,
+	}).Debug("Initialising convergence adaptor")
+
+	// if the user has configured an EndpointID for this convergence adaptor
+	if conv.Node != "" {
+		parsedId, err := bundle.NewEndpointID(conv.Node)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"listener ID": conv.Node,
+				"core ID":     nodeId,
+			}).Error("Invalid endpoint configuration, falling back to core default id")
+		} else {
+			log.WithFields(log.Fields{
+				"listener ID": conv.Node,
+			}).Debug("Using alternative configured endpoint if for listener")
+			nodeId = parsedId
+		}
+	}
+
 	switch conv.Protocol {
 	case "bbc":
 		conn, err := bbc.NewBundleBroadcastingConnector(conv.Endpoint, true)
