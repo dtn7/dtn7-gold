@@ -5,12 +5,12 @@ package discovery
 import (
 	"bytes"
 	"fmt"
+	"github.com/dtn7/dtn7-go/cla"
 	"io"
 	"strings"
 
 	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/dtn7/dtn7-go/core"
 )
 
 const (
@@ -26,7 +26,7 @@ const (
 
 // DiscoveryMessage is the kind of message used by this peer/neighbor discovery.
 type DiscoveryMessage struct {
-	Type     core.CLAType
+	Type     cla.CLAType
 	Endpoint bundle.EndpointID
 	Port     uint
 }
@@ -103,7 +103,7 @@ func (dm *DiscoveryMessage) UnmarshalCbor(r io.Reader) error {
 	if n, err := cboring.ReadUInt(r); err != nil {
 		return err
 	} else {
-		dm.Type = core.CLAType(n)
+		dm.Type = cla.CLAType(n)
 	}
 	if err := cboring.Unmarshal(&dm.Endpoint, r); err != nil {
 		return fmt.Errorf("Unmarshalling endpoint failed: %v", err)
@@ -123,9 +123,9 @@ func (dm DiscoveryMessage) String() string {
 	fmt.Fprintf(&builder, "DiscoveryMessage(")
 
 	switch dm.Type {
-	case core.TCPCL:
+	case cla.TCPCL:
 		fmt.Fprintf(&builder, "TCPCL")
-	case core.MTCP:
+	case cla.MTCP:
 		fmt.Fprintf(&builder, "MTCP")
 	default:
 		fmt.Fprintf(&builder, "Unknown CLA")
