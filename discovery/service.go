@@ -63,16 +63,17 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 
 	var client cla.Convergence
 	switch dm.Type {
-	case core.MTCP:
-		if _, ok := ds.c.CLAdapters[core.MTCP]; ok {
+	case cla.MTCP:
+		if len(ds.c.RegisteredCLAs(cla.MTCP)) > 0 {
 			client = mtcp.NewMTCPClient(fmt.Sprintf("%s:%d", addr, dm.Port), dm.Endpoint, false)
 			ds.c.RegisterConvergable(client)
 		} else {
 			log.Debug("Peer requested MTCP, but we don't run any such CLA")
 		}
 
-	case core.TCPCL:
-		if clas, ok := ds.c.CLAdapters[core.TCPCL]; ok {
+	case cla.TCPCL:
+		clas := ds.c.RegisteredCLAs(cla.TCPCL)
+		if len(clas) > 0 {
 			for _, eid := range clas {
 				client = tcpcl.DialClient(fmt.Sprintf("%s:%d", addr, dm.Port), eid, false)
 				ds.c.RegisterConvergable(client)

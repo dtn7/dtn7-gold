@@ -17,7 +17,6 @@ import (
 type Core struct {
 	InspectAllBundles bool
 	NodeId            bundle.EndpointID
-	CLAdapters        map[CLAType][]bundle.EndpointID
 
 	agentManager *AgentManager
 	cron         *Cron
@@ -40,7 +39,7 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 
 	gob.Register([]bundle.EndpointID{})
 	gob.Register(bundle.EndpointID{})
-	gob.Register(map[CLAType][]bundle.EndpointID{})
+	gob.Register(map[cla.CLAType][]bundle.EndpointID{})
 	gob.Register(bundle.DtnEndpoint{})
 	gob.Register(bundle.IpnEndpoint{})
 	gob.Register(map[Constraint]bool{})
@@ -50,11 +49,6 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 
 	c.InspectAllBundles = inspectAllBundles
 	c.NodeId = nodeId
-
-	c.CLAdapters = make(map[CLAType][]bundle.EndpointID)
-	c.CLAdapters[TCPCL] = make([]bundle.EndpointID, 0)
-	c.CLAdapters[MTCP] = make([]bundle.EndpointID, 0)
-	c.CLAdapters[BBC] = make([]bundle.EndpointID, 0)
 
 	if store, err := storage.NewStore(storePath); err != nil {
 		return nil, err
@@ -208,12 +202,8 @@ func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
 		return true
 	}
 
-	for _, clas := range c.CLAdapters {
-		for _, adapter := range clas {
-			if adapter.Authority() == endpoint.Authority() {
-				return true
-			}
-		}
+	if c.claManager.HasEndpoint(endpoint) {
+		return true
 	}
 
 	for _, cr := range c.claManager.Receiver() {
@@ -296,7 +286,15 @@ func (c *Core) RegisterConvergable(conv cla.Convergable) {
 	c.claManager.Register(conv)
 }
 
-func (c *Core) RegisterCLA(conv cla.Convergable, claType CLAType, eid bundle.EndpointID) {
-	c.CLAdapters[claType] = append(c.CLAdapters[claType], eid)
-	c.RegisterConvergable(conv)
+// RegisterCLA registers a CLA with the clamanager (just as the RegisterConvergable-method)
+// but also adds the CLAs endpoint id to the set of registered IDs for its type.
+func (c *Core) RegisterCLA(conv cla.Convergable, claType cla.CLAType, eid bundle.EndpointID) {
+	c.claManager.RegisterEndpointID(claType, eid)
+	c.claManager.Register(conv)
+}
+
+// RegisteredCLAs returns the EndpointIDs of all registered CLAs of the specified type.
+// Returns an empty slice if no CLAs of the tye exist.
+func (c *Core) RegisteredCLAs(claType cla.CLAType) []bundle.EndpointID {
+	return c.claManager.EndpointIDs(claType)
 }

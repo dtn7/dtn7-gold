@@ -84,7 +84,7 @@ func parseListenPort(endpoint string) (port int, err error) {
 }
 
 // parseListen inspects a "listen" convergenceConf and returns a Convergable.
-func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergable, bundle.EndpointID, core.CLAType, discovery.DiscoveryMessage, error) {
+func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergable, bundle.EndpointID, cla.CLAType, discovery.DiscoveryMessage, error) {
 	log.WithFields(log.Fields{
 		"EndpointID": conv.Node,
 		"Endpoint":   conv.Endpoint,
@@ -107,37 +107,37 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergabl
 	switch conv.Protocol {
 	case "bbc":
 		conn, err := bbc.NewBundleBroadcastingConnector(conv.Endpoint, true)
-		return conn, nodeId, core.BBC, discovery.DiscoveryMessage{}, err
+		return conn, nodeId, cla.BBC, discovery.DiscoveryMessage{}, err
 
 	case "mtcp":
 		portInt, err := parseListenPort(conv.Endpoint)
 		if err != nil {
-			return nil, nodeId, core.MTCP, discovery.DiscoveryMessage{}, err
+			return nil, nodeId, cla.MTCP, discovery.DiscoveryMessage{}, err
 		}
 
 		msg := discovery.DiscoveryMessage{
-			Type:     core.MTCP,
+			Type:     cla.MTCP,
 			Endpoint: nodeId,
 			Port:     uint(portInt),
 		}
 
-		return mtcp.NewMTCPServer(conv.Endpoint, nodeId, true), nodeId, core.MTCP, msg, nil
+		return mtcp.NewMTCPServer(conv.Endpoint, nodeId, true), nodeId, cla.MTCP, msg, nil
 
 	case "tcpcl":
 		portInt, err := parseListenPort(conv.Endpoint)
 		if err != nil {
-			return nil, nodeId, core.TCPCL, discovery.DiscoveryMessage{}, err
+			return nil, nodeId, cla.TCPCL, discovery.DiscoveryMessage{}, err
 		}
 
 		listener := tcpcl.NewListener(conv.Endpoint, nodeId)
 
 		msg := discovery.DiscoveryMessage{
-			Type:     core.TCPCL,
+			Type:     cla.TCPCL,
 			Endpoint: nodeId,
 			Port:     uint(portInt),
 		}
 
-		return listener, nodeId, core.TCPCL, msg, nil
+		return listener, nodeId, cla.TCPCL, msg, nil
 
 	default:
 		return nil, nodeId, 0, discovery.DiscoveryMessage{}, fmt.Errorf("unknown listen.protocol \"%s\"", conv.Protocol)

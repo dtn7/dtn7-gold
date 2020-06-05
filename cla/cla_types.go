@@ -1,4 +1,4 @@
-package core
+package cla
 
 // CLAType is one of the supported Convergence Layer Adaptors
 type CLAType uint

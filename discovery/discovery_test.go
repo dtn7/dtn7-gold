@@ -1,32 +1,32 @@
 package discovery
 
 import (
+	"github.com/dtn7/dtn7-go/cla"
 	"reflect"
 	"testing"
 
 	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/dtn7/dtn7-go/core"
 )
 
 func TestDiscoveryMessageCbor(t *testing.T) {
 	var tests = []DiscoveryMessage{
 		{
-			Type:     core.MTCP,
+			Type:     cla.MTCP,
 			Endpoint: bundle.MustNewEndpointID("dtn://foobar/"),
 			Port:     8000,
 		},
 		{
-			Type:     core.TCPCL,
+			Type:     cla.TCPCL,
 			Endpoint: bundle.MustNewEndpointID("dtn://foobar/"),
 			Port:     8000,
 		},
 		{
-			Type:     core.MTCP,
+			Type:     cla.MTCP,
 			Endpoint: bundle.MustNewEndpointID("ipn:1337.23"),
 			Port:     12345,
 		},
 		{
-			Type:     core.TCPCL,
+			Type:     cla.TCPCL,
 			Endpoint: bundle.MustNewEndpointID("ipn:1337.23"),
 			Port:     12345,
 		},
