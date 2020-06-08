@@ -5,9 +5,10 @@ package discovery
 import (
 	"bytes"
 	"fmt"
-	"github.com/dtn7/dtn7-go/cla"
 	"io"
 	"strings"
+
+	"github.com/dtn7/dtn7-go/cla"
 
 	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-go/bundle"

@@ -1,9 +1,10 @@
 package discovery
 
 import (
-	"github.com/dtn7/dtn7-go/cla"
 	"reflect"
 	"testing"
+
+	"github.com/dtn7/dtn7-go/cla"
 
 	"github.com/dtn7/dtn7-go/bundle"
 )

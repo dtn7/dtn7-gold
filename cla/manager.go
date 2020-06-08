@@ -314,8 +314,9 @@ func (manager *Manager) Receiver() (crs []ConvergenceReceiver) {
 }
 
 func (manager *Manager) RegisterEndpointID(claType CLAType, eid bundle.EndpointID) {
-	var clas []bundle.EndpointID
-	if clas, ok := manager.listenerIDs[claType]; ok {
+	clas, ok := manager.listenerIDs[claType]
+
+	if ok {
 		clas = append(clas, eid)
 	} else {
 		clas = []bundle.EndpointID{eid}
