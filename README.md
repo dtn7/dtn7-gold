@@ -34,9 +34,9 @@ One of the following routing protocols might be used.
 
 #### Package Manager
 
-- Arch Linux: [*dtn7* (AUR)][aur-dtn7]
-- macOS: [*jonashoechst/hoechst/dtn7*][brew-dtn7] via [brew][brew]
-- Nix / NixOS: [*dtn7/nur-packages*][nur-dtn7] as a [NUR][nur]
+- Arch Linux: [_dtn7_ (AUR)][aur-dtn7]
+- macOS: [_jonashoechst/hoechst/dtn7_][brew-dtn7] via [brew][brew]
+- Nix / NixOS: [_dtn7/nur-packages_][nur-dtn7] as a [NUR][nur]
 
 
 #### From Source
@@ -116,15 +116,38 @@ interested in working with this code, check out the
 [documentation][godoc].
 
 
+## Contributing
+Contributions will receive warmhearted welcome.
+
+[Gofmt][gofmt] _MUST_ be used for formatting the source. Further inspection
+of the code via [golangci-lint][golangci-lint] is highly recommended.
+
+As a development environment you may, of course, use whatever you personally
+like best. However, we have had good experience with [GoLand][goland],
+especially because of the size of the project.
+
+Assuming you have a supported version of the [Go programming language][golang]
+installed, just clone the repository and install the dependencies as documented
+in the _Installation, From Source_ section above.
+
+### OS-specific
+#### macOS
+Installing the [Go programming language][golang] via [brew][brew], should solve
+permission errors while trying to fetch the dependencies.
+
+
 [aur-dtn7]: https://aur.archlinux.org/packages/dtn7/
+[brew-dtn7]: https://github.com/jonashoechst/homebrew-hoechst/blob/master/dtn7.rb
+[brew]: https://brew.sh
 [dtn-bpbis-25]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-25
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
 [dtn-tcpcl-14]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-14
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
 [godoc]: https://godoc.org/github.com/dtn7/dtn7-go
+[gofmt]: https://blog.golang.org/gofmt
+[goland]: https://www.jetbrains.com/go/
 [golang]: https://golang.org/
+[golangci-lint]: https://github.com/golangci/golangci-lint
 [nur-dtn7]: https://github.com/dtn7/nur-packages
 [nur]: https://github.com/nix-community/NUR
 [rf95modem]: https://github.com/gh0st42/rf95modem
-[brew-dtn7]: https://github.com/jonashoechst/homebrew-hoechst/blob/master/dtn7.rb
-[brew]: https://brew.sh
