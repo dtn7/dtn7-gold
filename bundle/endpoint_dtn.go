@@ -118,6 +118,14 @@ func (e DtnEndpoint) Path() string {
 	}
 }
 
+// IsSingleton checks if this Endpoint represents a singleton.
+//
+// - If a "dtn" URI's demux start with "~", this Endpoint is not a singleton.
+// - "dtn:none" cannot be a singleton.
+func (e DtnEndpoint) IsSingleton() bool {
+	return !strings.HasPrefix(e.Demux, "~") && !e.IsDtnNone
+}
+
 // CheckValid returns an error for incorrect data.
 func (e DtnEndpoint) CheckValid() (err error) {
 	re := regexp.MustCompile("^" + dtnEndpointSchemeName + ":(none|//(.+)/(.*))$")

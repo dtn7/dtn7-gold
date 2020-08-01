@@ -101,3 +101,24 @@ func TestDtnEndpointUri(t *testing.T) {
 		}
 	}
 }
+
+func TestDtnEndpointIsSingleton(t *testing.T) {
+	tests := []struct {
+		ep        DtnEndpoint
+		singleton bool
+	}{
+		{DtnEndpoint{IsDtnNone: true}, false},
+		{DtnEndpoint{NodeName: "foobar"}, true},
+		{DtnEndpoint{NodeName: "foo", Demux: "bar"}, true},
+		{DtnEndpoint{NodeName: "foo", Demux: "bar/"}, true},
+		{DtnEndpoint{NodeName: "foo", Demux: "~"}, false},
+		{DtnEndpoint{NodeName: "foo", Demux: "~bar"}, false},
+		{DtnEndpoint{NodeName: "foo", Demux: "~bar/"}, false},
+	}
+
+	for _, test := range tests {
+		if singleton := test.ep.IsSingleton(); test.singleton != singleton {
+			t.Fatalf("%s: expected singleton %t, got %t", test.ep, test.singleton, singleton)
+		}
+	}
+}

@@ -28,6 +28,9 @@ type EndpointType interface {
 	// Path is the path part of the Endpoint URI, e.g., "/bar" for "dtn://foo/bar".
 	Path() string
 
+	// IsSingleton checks if this Endpoint represents a singleton.
+	IsSingleton() bool
+
 	// MarshalCbor is the marshalling CBOR function from the cboring library.
 	MarshalCbor(io.Writer) error
 
@@ -169,6 +172,11 @@ func (eid EndpointID) Authority() string {
 // Path is the path part of the Endpoint URI, e.g., "/bar" for "dtn://foo/bar".
 func (eid EndpointID) Path() string {
 	return eid.EndpointType.Path()
+}
+
+// IsSingleton checks if this Endpoint represents a singleton.
+func (eid EndpointID) IsSingleton() bool {
+	return eid.EndpointType.IsSingleton()
 }
 
 // CheckValid returns an array of errors for incorrect data.

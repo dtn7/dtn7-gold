@@ -68,6 +68,13 @@ func (e IpnEndpoint) Path() string {
 	return fmt.Sprintf("%d", e.Service)
 }
 
+// IsSingleton checks if this Endpoint represents a singleton.
+//
+// All IPN Endpoints are singletons by definition.
+func (_ IpnEndpoint) IsSingleton() bool {
+	return true
+}
+
 // CheckValid returns an array of errors for incorrect data.
 func (e IpnEndpoint) CheckValid() error {
 	if e.Node < 1 || e.Service < 1 {

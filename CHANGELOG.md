@@ -20,6 +20,7 @@ Types of changes:
 - Enhance ease of use for new contributors by introducing a GitHub Issue
   template and a `CHANGELOG.md` file.
 - `AdministrativeRecordManager` to allow more dynamic Administrative Records.
+- `EndpointID` gets a singleton property, _ietf-dtn-bpbis-26_.
 
 ### Changed
 - Enforce strict `dtn` URI scheme based on the ABNF, like this
@@ -195,4 +196,4 @@ First, unstable release
 [Unreleased]: https://github.com/dtn7/dtn7-go/compare/v0.6.1...master
 
 
-<!-- vim: set tw=80 ts=2 ft=markdown: -->
+<!-- vim: set tw=80 ts=2 ft=markdown spell: -->

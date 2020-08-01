@@ -113,3 +113,31 @@ func TestEndpointUri(t *testing.T) {
 		}
 	}
 }
+
+func TestEndpointSingleton(t *testing.T) {
+	tests := []struct {
+		eid       string
+		singleton bool
+	}{
+		{"dtn:none", false},
+		{"dtn://foobar/", true},
+		{"dtn://foo/bar", true},
+		{"dtn://foo/bar/", true},
+		{"dtn://foobar/~", false},
+		{"dtn://foo/~bar", false},
+		{"dtn://foo/~bar/", false},
+		{"ipn:1.1", true},
+		{"ipn:23.42", true},
+	}
+
+	for _, test := range tests {
+		ep, err := NewEndpointID(test.eid)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if singleton := ep.IsSingleton(); test.singleton != singleton {
+			t.Fatalf("%s: expected singleton %t, got %t", test.eid, test.singleton, singleton)
+		}
+	}
+}

@@ -157,4 +157,4 @@ permission errors while trying to fetch the dependencies.
 [rf95modem]: https://github.com/gh0st42/rf95modem
 
 
-<!-- vim: set tw=80 ts=2 ft=markdown: -->
+<!-- vim: set tw=80 ts=2 ft=markdown spell: -->
