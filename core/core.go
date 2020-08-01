@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/gob"
+	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -45,10 +46,13 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 	gob.Register(map[Constraint]bool{})
 	gob.Register(time.Time{})
 
-	c.cron = NewCron()
-
+	if !nodeId.IsSingleton() {
+		return nil, fmt.Errorf("passed Node ID MUST be a singleton; %s is not", nodeId)
+	}
 	c.InspectAllBundles = inspectAllBundles
 	c.NodeId = nodeId
+
+	c.cron = NewCron()
 
 	if store, err := storage.NewStore(storePath); err != nil {
 		return nil, err
@@ -74,9 +78,7 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 	case "prophet":
 		c.routing = NewProphet(c, routingConf.ProphetConf)
 	default:
-		log.WithFields(log.Fields{
-			"routing_string": routingConf.Algorithm,
-		}).Fatal("Unknown routing algorithm")
+		return nil, fmt.Errorf("unknown routing algorithm %s", routingConf.Algorithm)
 	}
 
 	c.stopSyn = make(chan struct{})
