@@ -8,21 +8,23 @@ import (
 
 func TestNewDtnEndpoint(t *testing.T) {
 	tests := []struct {
-		uri   string
-		ssp   string
-		valid bool
+		uri       string
+		nodeName  string
+		demux     string
+		isDtnNone bool
+		valid     bool
 	}{
-		{"dtn:none", dtnEndpointDtnNoneSsp, true},
-		{"dtn://foo/", "//foo/", true},
-		{"dtn://foo/bar", "//foo/bar", true},
-		{"dtn://foo/bar/buz", "//foo/bar/buz", true},
-		{"dtn:foo", "foo", false},     // missing slashes
-		{"dtn:/foo/", "/foo/", false}, // only one leading slash
-		{"dtn://foo", "//foo", false}, // missing trailing slash
-		{"dtn:", "", false},           // missing SSP
-		{"dtn", "", false},            // missing SSP and ":"
-		{"uff:uff", "uff", false},     // just no
-		{"", "", false},               // nothing
+		{"dtn:none", "", "", true, true},
+		{"dtn://foo/", "foo", "", false, true},
+		{"dtn://foo/bar", "foo", "bar", false, true},
+		{"dtn://foo/bar/buz", "foo", "bar/buz", false, true},
+		{"dtn:foo", "", "", false, false},   // missing slashes
+		{"dtn:/foo/", "", "", false, false}, // only one leading slash
+		{"dtn://foo", "", "", false, false}, // missing trailing slash
+		{"dtn:", "", "", false, false},      // missing SSP
+		{"dtn", "", "", false, false},       // missing SSP and ":"
+		{"uff:uff", "", "", false, false},   // just no
+		{"", "", "", false, false},          // nothing
 	}
 
 	for _, test := range tests {
@@ -31,8 +33,14 @@ func TestNewDtnEndpoint(t *testing.T) {
 		if err == nil != test.valid {
 			t.Fatalf("%s: expected valid = %t, got err: %v", test.uri, test.valid, err)
 		} else if err == nil {
-			if ep.(DtnEndpoint).Ssp != test.ssp {
-				t.Fatalf("Expected SSP %v, got %v", test.ssp, ep.(DtnEndpoint).Ssp)
+			ep := ep.(DtnEndpoint)
+
+			chk := ep.NodeName == test.nodeName &&
+				ep.Demux == test.demux &&
+				ep.IsDtnNone == test.isDtnNone
+			if !chk {
+				t.Fatalf("%s: expected (%s, %s, %t), got (%s, %s, %t)", test.uri,
+					test.nodeName, test.demux, test.isDtnNone, ep.NodeName, ep.Demux, ep.IsDtnNone)
 			}
 		}
 	}
@@ -43,9 +51,9 @@ func TestDtnEndpointCbor(t *testing.T) {
 		ep   DtnEndpoint
 		data []byte
 	}{
-		{DtnEndpoint{dtnEndpointDtnNoneSsp}, []byte{0x00}},
-		{DtnEndpoint{"foo"}, []byte{0x63, 0x66, 0x6F, 0x6F}},
-		{DtnEndpoint{"//foo/"}, []byte{0x66, 0x2F, 0x2F, 0x66, 0x6F, 0x6F, 0x2F}},
+		{DtnEndpoint{IsDtnNone: true}, []byte{0x00}},
+		{DtnEndpoint{NodeName: "foo"}, []byte{0x66, 0x2F, 0x2F, 0x66, 0x6F, 0x6F, 0x2F}},
+		{DtnEndpoint{NodeName: "foo", Demux: "bar"}, []byte{0x69, 0x2F, 0x2F, 0x66, 0x6F, 0x6F, 0x2F, 0x62, 0x61, 0x72}},
 	}
 
 	for _, test := range tests {
@@ -78,10 +86,10 @@ func TestDtnEndpointUri(t *testing.T) {
 		authority string
 		path      string
 	}{
-		{DtnEndpoint{dtnEndpointDtnNoneSsp}, "none", "/"},
-		{DtnEndpoint{"//foobar/"}, "foobar", "/"},
-		{DtnEndpoint{"//foo/bar"}, "foo", "/bar"},
-		{DtnEndpoint{"//foo/bar/"}, "foo", "/bar/"},
+		{DtnEndpoint{IsDtnNone: true}, "none", "/"},
+		{DtnEndpoint{NodeName: "foobar"}, "foobar", "/"},
+		{DtnEndpoint{NodeName: "foo", Demux: "bar"}, "foo", "/bar"},
+		{DtnEndpoint{NodeName: "foo", Demux: "bar/"}, "foo", "/bar/"},
 	}
 
 	for _, test := range tests {

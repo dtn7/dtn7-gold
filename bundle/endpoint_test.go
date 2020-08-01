@@ -30,7 +30,7 @@ func TestEndpointCheckValid(t *testing.T) {
 		ep    EndpointID
 		valid bool
 	}{
-		{EndpointID{&DtnEndpoint{dtnEndpointDtnNoneSsp}}, true},
+		{EndpointID{&DtnEndpoint{IsDtnNone: true}}, true},
 		{EndpointID{&IpnEndpoint{0, 0}}, false},
 		{EndpointID{&IpnEndpoint{0, 1}}, false},
 		{EndpointID{&IpnEndpoint{1, 0}}, false},

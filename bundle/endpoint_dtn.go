@@ -3,8 +3,8 @@ package bundle
 import (
 	"fmt"
 	"io"
-	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/dtn7/cboring"
 )
@@ -12,39 +12,78 @@ import (
 const (
 	dtnEndpointSchemeName string = "dtn"
 	dtnEndpointSchemeNo   uint64 = 1
+	dtnEndpointDtnNone    string = "dtn:none"
 	dtnEndpointDtnNoneSsp string = "none"
 )
 
 // DtnEndpoint describes the dtn URI for EndpointIDs, as defined in ietf-dtn-bpbis.
+//
+//   Format of a "normal" dtn URI:
+//   "dtn:" "//" NodeName "/" Demux
+//               ^------^ 1*VCHAR
+//                             ^---^ VCHAR
+//
+//   Format of the null endpoint:
+//   "dtn:none"
+//
 type DtnEndpoint struct {
-	Ssp string
+	NodeName string
+	Demux    string
+
+	IsDtnNone bool
 }
 
-// NewDtnEndpoint from an URI with the dtn scheme.
-func NewDtnEndpoint(uri string) (e EndpointType, err error) {
+// parseDtnSsp tries to parse a "dtn" URI's scheme specific part (SSP) and return the URI's parts.
+func parseDtnSsp(ssp string) (nodeName, demux string, isDtnNone bool, err error) {
 	// As defined in dtn-bpbis, a "dtn" URI might be the null endpoint "dtn:none" or something URI/IRI like.
 	// Thus, at first we are going after the null endpoint and inspect a more generic URI afterwards.
 
-	if uri == DtnNone().String() {
-		return DtnNone().EndpointType, nil
-	}
-
-	re := regexp.MustCompile("^" + dtnEndpointSchemeName + "://(.+)/(.*)$")
-	if !re.MatchString(uri) {
-		err = fmt.Errorf("uri does not match a dtn endpoint")
+	if ssp == dtnEndpointDtnNoneSsp {
+		isDtnNone = true
 		return
 	}
 
-	switch submatches := re.FindStringSubmatch(uri); len(submatches) {
+	re := regexp.MustCompile("^//([^/]+)/(.*)$")
+	if !re.MatchString(ssp) {
+		err = fmt.Errorf("ssp does not match a dtn endpoint")
+		return
+	}
+
+	switch submatches := re.FindStringSubmatch(ssp); len(submatches) {
 	case 2:
-		e = DtnEndpoint{Ssp: fmt.Sprintf("//%s", submatches[1])}
+		nodeName = submatches[1]
+		demux = ""
+		return
 
 	case 3:
-		e = DtnEndpoint{Ssp: fmt.Sprintf("//%s/%s", submatches[1], submatches[2])}
+		nodeName = submatches[1]
+		demux = submatches[2]
+		return
 
 	default:
 		err = fmt.Errorf("invalid amount of submatches: %d", len(submatches))
 		return
+	}
+}
+
+// NewDtnEndpoint from an URI with the dtn scheme.
+func NewDtnEndpoint(uri string) (e EndpointType, err error) {
+	if !strings.HasPrefix(uri, dtnEndpointSchemeName+":") {
+		err = fmt.Errorf("URI does not start with the \"dtn\" URI prefix (\"dtn:\")")
+		return
+	}
+
+	if nodeName, demux, isDtnNode, parseErr := parseDtnSsp(uri[len(dtnEndpointSchemeName)+1:]); parseErr != nil {
+		err = parseErr
+		return
+	} else if isDtnNode {
+		e = DtnEndpoint{IsDtnNone: true}
+	} else {
+		e = DtnEndpoint{
+			NodeName:  nodeName,
+			Demux:     demux,
+			IsDtnNone: false,
+		}
 	}
 
 	err = e.CheckValid()
@@ -61,35 +100,25 @@ func (_ DtnEndpoint) SchemeNo() uint64 {
 	return dtnEndpointSchemeNo
 }
 
-func (e DtnEndpoint) parseUri() (authority, path string) {
-	// The null endpoint requires some specific behaviour because it does not comply with the URI schema.
-	if e.Ssp == dtnEndpointDtnNoneSsp {
-		return "none", "/"
-	}
-
-	u, err := url.Parse(e.String())
-	if err != nil {
-		return
-	}
-
-	authority = u.Hostname()
-	path = u.RequestURI()
-	return
-}
-
-// Authority is the authority part of the Endpoint URI, e.g., "foo" for "dtn://foo/bar".
+// Authority is the authority part of the Endpoint URI, e.g., "foo" for "dtn://foo/bar" or "none" for "dtn:none".
 func (e DtnEndpoint) Authority() string {
-	authority, _ := e.parseUri()
-	return authority
+	if e.IsDtnNone {
+		return dtnEndpointDtnNoneSsp
+	} else {
+		return e.NodeName
+	}
 }
 
-// Path is the path part of the Endpoint URI, e.g., "/bar" for "dtn://foo/bar".
+// Path is the path part of the Endpoint URI, e.g., "/bar" for "dtn://foo/bar" or "/" for "dtn:none".
 func (e DtnEndpoint) Path() string {
-	_, path := e.parseUri()
-	return path
+	if e.IsDtnNone {
+		return "/"
+	} else {
+		return "/" + e.Demux
+	}
 }
 
-// CheckValid returns an array of errors for incorrect data.
+// CheckValid returns an error for incorrect data.
 func (e DtnEndpoint) CheckValid() (err error) {
 	re := regexp.MustCompile("^" + dtnEndpointSchemeName + ":(none|//(.+)/(.*))$")
 	if !re.MatchString(e.String()) {
@@ -99,16 +128,20 @@ func (e DtnEndpoint) CheckValid() (err error) {
 }
 
 func (e DtnEndpoint) String() string {
-	return fmt.Sprintf("%s:%s", dtnEndpointSchemeName, e.Ssp)
+	if e.IsDtnNone {
+		return dtnEndpointDtnNone
+	} else {
+		return fmt.Sprintf("%s://%s/%s", dtnEndpointSchemeName, e.NodeName, e.Demux)
+	}
 }
 
 // MarshalCbor writes this DtnEndpoint's CBOR representation.
 func (e DtnEndpoint) MarshalCbor(w io.Writer) error {
-	var isDtnNone = e.Ssp == dtnEndpointDtnNoneSsp
-	if isDtnNone {
+	if e.IsDtnNone {
 		return cboring.WriteUInt(0, w)
 	} else {
-		return cboring.WriteTextString(e.Ssp, w)
+		ssp := fmt.Sprintf("//%s/%s", e.NodeName, e.Demux)
+		return cboring.WriteTextString(ssp, w)
 	}
 }
 
@@ -120,14 +153,20 @@ func (e *DtnEndpoint) UnmarshalCbor(r io.Reader) error {
 		switch m {
 		case cboring.UInt:
 			// dtn:none
-			e.Ssp = dtnEndpointDtnNoneSsp
+			e.IsDtnNone = true
 
 		case cboring.TextString:
-			// dtn://whatever/
-			if tmp, err := cboring.ReadRawBytes(n, r); err != nil {
+			// dtn://node-name/[demux]
+			if ssp, err := cboring.ReadRawBytes(n, r); err != nil {
 				return err
+			} else if nodeName, demux, isDtnNode, parseErr := parseDtnSsp(string(ssp)); parseErr != nil {
+				return parseErr
+			} else if isDtnNode {
+				return fmt.Errorf("DtnEndpoint: byte based SSP represents \"dtn:none\"")
 			} else {
-				e.Ssp = string(tmp)
+				e.NodeName = nodeName
+				e.Demux = demux
+				e.IsDtnNone = false
 			}
 
 		default:
@@ -138,7 +177,7 @@ func (e *DtnEndpoint) UnmarshalCbor(r io.Reader) error {
 	return nil
 }
 
-// DtnNone returns the null endpoint "dtn:none".
+// DtnNone returns a new instance of the null endpoint "dtn:none".
 func DtnNone() EndpointID {
-	return EndpointID{DtnEndpoint{Ssp: dtnEndpointDtnNoneSsp}}
+	return EndpointID{DtnEndpoint{IsDtnNone: true}}
 }
