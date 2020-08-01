@@ -130,12 +130,16 @@ Assuming you have a supported version of the [Go programming language][golang]
 installed, just clone the repository and install the dependencies as documented
 in the _Installation, From Source_ section above.
 
+Please document your changes both in good commit messages and within the
+[CHANGELOG.md][CHANGELOG.md] file.
+
 ### OS-specific
 #### macOS
 Installing the [Go programming language][golang] via [brew][brew], should solve
 permission errors while trying to fetch the dependencies.
 
 
+[CHANGELOG.md]: CHANGELOG.md
 [aur-dtn7]: https://aur.archlinux.org/packages/dtn7/
 [brew-dtn7]: https://github.com/jonashoechst/homebrew-hoechst/blob/master/dtn7.rb
 [brew]: https://brew.sh
@@ -151,3 +155,6 @@ permission errors while trying to fetch the dependencies.
 [nur-dtn7]: https://github.com/dtn7/nur-packages
 [nur]: https://github.com/nix-community/NUR
 [rf95modem]: https://github.com/gh0st42/rf95modem
+
+
+<!-- vim: set tw=80 ts=2 ft=markdown: -->

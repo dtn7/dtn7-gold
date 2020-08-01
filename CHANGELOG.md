@@ -1,0 +1,198 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog][keep-a-changelog], and this project
+adheres to [Semantic Versioning][semantic-versioning].
+
+<!--
+Types of changes:
+
+- Added       for new features.
+- Changed     for changes in existing functionality.
+- Deprecated  for soon-to-be removed features.
+- Removed     for now removed features.
+- Fixed       for any bug fixes.
+- Security    in case of vulnerabilities
+-->
+
+## [Unreleased]
+### Added
+- Enhance ease of use for new contributors by introducing a GitHub Issue
+  template and a `CHANGELOG.md` file.
+- `AdministrativeRecordManager` to allow more dynamic Administrative Records.
+
+### Changed
+- Enforce strict `dtn` URI scheme based on the ABNF, like this
+  `dtn://NODE-NAME/OPTIONAL-VARIOUS-CHARS`.
+- Bump draft-ietf-dtn-bpbis version from 24 to 25.
+- Configurable Endpoint IDs for dtnd.
+- Allow peer discovery to work with multiple Endpoint IDs.
+- CLA management is performed by the CLA Manager.
+
+
+## [0.6.1] - 2020-04-16
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+Normalize RestAgent's error response field
+
+Previously, the _error_ reporting in the JSON objects were differerent for
+different methods. This makes a programming library unnecessarily complicated.
+
+Furthermore, the bundle/arecord package was moved into bundle. This was actually
+only supposed to happen in the next main release.
+
+
+## [0.6.0] - 2020-04-16
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+New agent package for different clients in dtnd
+
+Some changes have built up for this release. The biggest change is the new agent
+package, which replaces the old REST interface.
+
+Further changes in headwords:
+- agent: MuxAgent to multiplex "child" agents
+- agent: PingAgent to respond to pings
+
+
+## [0.5.4] - 2020-01-04
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+Different bug-fixes for bundle package and store
+
+The memory footprint of the store has been reduced so it runs smoothly on
+smaller platforms. Additionally the deserialization of bundles was examined via
+fuzzing. As a result, two critical bugs were fixed.
+
+
+## [0.5.3] - 2019-12-17
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+Optimize BBC for rf95modem
+
+- Recipients can report failed transmissions. This leads to cancellation with
+  later retransmission.
+- xz compress Bundles
+- Fix other bugs..
+
+
+## [0.5.2] - 2019-12-06
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+Bundle Fragmentation
+
+The bundle package now supports Bundle fragmentation and reassembly regarding a
+given MTU.
+
+
+## [0.5.1] - 2019-12-03
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+TCPCL bugfixes, wider ExtensionBlock serialization
+
+This small release fixes several critical bugs in the TCP Convergence Layer that
+caused crashes when reconnecting. More work on this CLA is still neccessary.
+
+Furthermore, the ExtensionBlock interface has been extended. Thus it is now
+possible to serialize the block-type specific data of a CanonicalBlock not only
+to CBOR, but to generic binary data. Instead of
+
+
+## [0.5.0] - 2019-11-08
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+LoRa-based CLA and update BP to dtn-bpbis-17
+
+
+## [0.4.0] - 2019-10-11
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+TCPCL and PRoPHET
+
+This release implements the Delay-Tolerant Networking TCP Convergence Layer
+Protocol Version 4 for a bidirectional Bundle exchange.  Furthermore, the
+PRoPHET routing protocol was added.
+
+
+## [0.3.0] - 2019-09-06
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+DTLSR, MTCP Keep Alive
+
+The Delay Tolerant Link State Routing protocol was implemented.  Furthermore, a
+TCP keep alive was added to MTCP against link failure.
+
+
+## [0.2.1] - 2019-08-08
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+Update Bundle Protocol Version 7 to draft 14
+
+The most significant change is the establishment of a mandatory CRC value for
+the Primary Block. Furthermore, the Manifest Block that was previously marked as
+reserved is now removed.
+
+
+## [0.2.0] - 2019-08-02
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+New release
+
+- Cron Service
+- Manage Bundle IDs
+- New CLA/Convergence Management
+- New routing algorithms: Spray and Wait, Binary Spray and Wait
+- Redesigned Store for meta data and with lazy Bundle loading
+
+
+## [0.1.1] - 2019-07-09
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+Refactored bundle package.
+
+Mostly replacing codec library with new cboring library for CBOR serialization,
+resulting in a major speedup.
+
+
+## [0.1.0] - 2019-06-06
+> _This release was created before adapting the
+> [Keep a Changelog][keep-a-changelog] format._
+
+> _The date of this release may be incorrect because the tag was added after
+> switching to Semantic Versioning._
+
+First, unstable release
+
+
+[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
+[semantic-versioning]: https://semver.org/spec/v2.0.0.html
+
+[0.1.0]: https://github.com/dtn7/dtn7-go/releases/tag/v0.1.0
+[0.1.1]: https://github.com/dtn7/dtn7-go/compare/v0.1.0...v0.1.1
+[0.2.0]: https://github.com/dtn7/dtn7-go/compare/v0.1.1...v0.2.0
+[0.2.1]: https://github.com/dtn7/dtn7-go/compare/v0.2.0...v0.2.1
+[0.3.0]: https://github.com/dtn7/dtn7-go/compare/v0.2.1...v0.3.0
+[0.4.0]: https://github.com/dtn7/dtn7-go/compare/v0.3.0...v0.4.0
+[0.5.0]: https://github.com/dtn7/dtn7-go/compare/v0.4.0...v0.5.0
+[0.5.1]: https://github.com/dtn7/dtn7-go/compare/v0.5.0...v0.5.1
+[0.5.2]: https://github.com/dtn7/dtn7-go/compare/v0.5.1...v0.5.2
+[0.5.3]: https://github.com/dtn7/dtn7-go/compare/v0.5.2...v0.5.3
+[0.5.4]: https://github.com/dtn7/dtn7-go/compare/v0.5.3...v0.5.4
+[0.6.0]: https://github.com/dtn7/dtn7-go/compare/v0.5.4...v0.6.0
+[0.6.1]: https://github.com/dtn7/dtn7-go/compare/v0.6.0...v0.6.1
+[Unreleased]: https://github.com/dtn7/dtn7-go/compare/v0.6.1...master
+
+
+<!-- vim: set tw=80 ts=2 ft=markdown: -->
