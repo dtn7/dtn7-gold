@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -80,7 +81,7 @@ func (bldr *BundleBuilder) Build() (bndl Bundle, err error) {
 		bldr.primary.SetCRCType(bldr.crcType)
 	}
 
-	// TODO: sort canonicals
+	sort.Sort(canonicalBlockNumberSort(bldr.canonicals))
 
 	bndl, err = NewBundle(bldr.primary, bldr.canonicals)
 	if err == nil {

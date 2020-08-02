@@ -31,6 +31,9 @@ Types of changes:
 - CLA management is performed by the CLA Manager.
 - DTN Time now represents milliseconds instead of seconds, _ietf-dtn-bpbis-26_.
 
+### Fixed
+- `BundleBuilder` sorts CanonicalBlocks based on their block number.
+
 
 ## [0.6.1] - 2020-04-16
 > _This release was created before adapting the
