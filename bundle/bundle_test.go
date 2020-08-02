@@ -12,11 +12,11 @@ import (
 
 func TestBundleApplyCRC(t *testing.T) {
 	var epPrim, _ = NewEndpointID("dtn://foo/bar/")
-	var creationTs = NewCreationTimestamp(42000000000, 23)
+	var creationTs = NewCreationTimestamp(42000000000000, 23)
 
 	var primary = NewPrimaryBlock(
 		StatusRequestDelivery,
-		epPrim, epPrim, creationTs, 42000)
+		epPrim, epPrim, creationTs, 42000000)
 
 	var epPrev, _ = NewEndpointID("ipn:23.42")
 	var prevNode = NewCanonicalBlock(2, 0, NewPreviousNodeBlock(epPrev))
@@ -27,7 +27,7 @@ func TestBundleApplyCRC(t *testing.T) {
 		primary, []CanonicalBlock{prevNode, payload})
 
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	for _, crcTest := range []CRCType{CRCNo, CRC16, CRC32, CRCNo} {
@@ -38,8 +38,7 @@ func TestBundleApplyCRC(t *testing.T) {
 			crcExpect = CRC32
 		}
 		if ty := bndle.PrimaryBlock.GetCRCType(); ty != crcExpect {
-			t.Errorf("Bundle's primary block has wrong CRCType, %v instead of %v",
-				ty, crcTest)
+			t.Fatalf("Bundle's primary block has wrong CRCType, %v instead of %v", ty, crcTest)
 		}
 
 		buff := new(bytes.Buffer)
@@ -57,11 +56,11 @@ func TestBundleApplyCRC(t *testing.T) {
 func TestBundleCbor(t *testing.T) {
 	var epDest, _ = NewEndpointID("dtn://desty/")
 	var epSource, _ = NewEndpointID("dtn://gumo/")
-	var creationTs = NewCreationTimestamp(42000000000, 23)
+	var creationTs = NewCreationTimestamp(42000000000000, 23)
 
 	var primary = NewPrimaryBlock(
 		StatusRequestDelivery,
-		epDest, epSource, creationTs, 42000)
+		epDest, epSource, creationTs, 42000000)
 
 	var epPrev, _ = NewEndpointID("ipn:23.42")
 	var prevNode = NewCanonicalBlock(23, 0, NewPreviousNodeBlock(epPrev))
@@ -72,7 +71,7 @@ func TestBundleCbor(t *testing.T) {
 	bundle1, err := NewBundle(
 		primary, []CanonicalBlock{prevNode, payload})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	bundle1.SetCRCType(CRC32)
@@ -116,23 +115,23 @@ func TestBundleExtensionBlock(t *testing.T) {
 		})
 
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	if cb, err := bndl.ExtensionBlock(ExtBlockTypePreviousNodeBlock); err == nil {
-		t.Errorf("Bundle returned a non-existing Extension Block: %v", cb)
+		t.Fatalf("Bundle returned a non-existing Extension Block: %v", cb)
 	}
 
 	if _, err := bndl.ExtensionBlock(ExtBlockTypeBundleAgeBlock); err != nil {
-		t.Errorf("Bundle did not returned the existing Bundle Age block: %v", err)
+		t.Fatalf("Bundle did not returned the existing Bundle Age block: %v", err)
 	}
 
 	if _, err := bndl.ExtensionBlock(ExtBlockTypePayloadBlock); err != nil {
-		t.Errorf("Bundle did not returned the existing Payload block: %v", err)
+		t.Fatalf("Bundle did not returned the existing Payload block: %v", err)
 	}
 
 	if _, err := bndl.PayloadBlock(); err != nil {
-		t.Errorf("Bundle did not returned the existing Payload block: %v", err)
+		t.Fatalf("Bundle did not returned the existing Payload block: %v", err)
 	}
 }
 
@@ -153,21 +152,21 @@ func TestBundleCheckValid(t *testing.T) {
 		// Administrative record
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000, 0), 3600),
+				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 0), 3600),
 			[]CanonicalBlock{
 				NewCanonicalBlock(1, StatusReportBlock, NewPayloadBlock(nil))}),
 			false},
 
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000, 0), 3600),
+				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 0), 3600),
 			[]CanonicalBlock{NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
 			true},
 
 		// Block number (1) occurs twice
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000, 0), 3600),
+				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 0), 3600),
 			[]CanonicalBlock{
 				NewCanonicalBlock(1, 0, NewPayloadBlock(nil)),
 				NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
@@ -176,7 +175,7 @@ func TestBundleCheckValid(t *testing.T) {
 		// Two Hop Count blocks
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000, 0), 3600),
+				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 0), 3600),
 			[]CanonicalBlock{
 				NewCanonicalBlock(23, 0, NewHopCountBlock(23)),
 				NewCanonicalBlock(24, 0, NewHopCountBlock(23)),
@@ -201,7 +200,7 @@ func TestBundleCheckValid(t *testing.T) {
 
 	for _, test := range tests {
 		if err := test.b.CheckValid(); (err == nil) != test.valid {
-			t.Errorf("Block validation failed: %v resulted in %v",
+			t.Fatalf("Block validation failed: %v resulted in %v",
 				test.b, err)
 		}
 	}

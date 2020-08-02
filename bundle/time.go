@@ -9,36 +9,40 @@ import (
 	"github.com/dtn7/cboring"
 )
 
-// DtnTime is an integer indicating an interval of Unix epoch time that has
-// elapsed since the start of the year 2000 on the UTC scale. It is specified
-// in section 4.1.6.
+// DtnTime is an integer representation of milliseconds since the start of the year 2000 (UTC).
 type DtnTime uint64
 
 const (
-	seconds1970To2k = 946684800
+	milliseconds1970To2k = 946684800000
+
+	milliToSec  int64 = 1000
+	nanoToMilli int64 = 1000000
 
 	// DtnTimeEpoch represents the zero timestamp/epoch.
 	DtnTimeEpoch DtnTime = 0
 )
 
-// Unix returns the Unix timestamp for this DtnTime.
-func (t DtnTime) Unix() int64 {
-	return int64(t) + seconds1970To2k
+// unixMilliseconds returns the DntTime's milliseconds since Unix epoch.
+func (t DtnTime) unixMilliseconds() int64 {
+	return int64(t) + milliseconds1970To2k
 }
 
 // Time returns a UTC-based time.Time for this DtnTime.
 func (t DtnTime) Time() time.Time {
-	return time.Unix(t.Unix(), 0).UTC()
+	unixSec := t.unixMilliseconds() / milliToSec
+	unixNano := (t.unixMilliseconds() - (unixSec * milliToSec)) * nanoToMilli
+
+	return time.Unix(int64(unixSec), int64(unixNano)).UTC()
 }
 
 // String returns this DtnTime's string representation.
 func (t DtnTime) String() string {
-	return t.Time().Format("2006-01-02 15:04:05")
+	return t.Time().Format("2006-01-02 15:04:05.000")
 }
 
 // DtnTimeFromTime returns the DtnTime for the time.Time.
 func DtnTimeFromTime(t time.Time) DtnTime {
-	return (DtnTime)(t.UTC().Unix() - seconds1970To2k)
+	return (DtnTime)((t.UTC().UnixNano() / nanoToMilli) - milliseconds1970To2k)
 }
 
 // DtnTimeNow returns the current (UTC) time as DtnTime.

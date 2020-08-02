@@ -29,6 +29,7 @@ Types of changes:
 - Configurable Endpoint IDs for dtnd.
 - Allow peer discovery to work with multiple Endpoint IDs.
 - CLA management is performed by the CLA Manager.
+- DTN Time now represents milliseconds instead of seconds, _ietf-dtn-bpbis-26_.
 
 
 ## [0.6.1] - 2020-04-16

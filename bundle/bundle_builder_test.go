@@ -125,17 +125,19 @@ func TestBuildFromMap(t *testing.T) {
 		{
 			name: "simple",
 			args: map[string]interface{}{
-				"destination":            "dtn://dst/",
-				"source":                 "dtn://src/",
-				"creation_timestamp_now": true,
-				"lifetime":               "24h",
-				"payload_block":          []byte("hello world"),
+				"destination":              "dtn://dst/",
+				"source":                   "dtn://src/",
+				"creation_timestamp_epoch": true,
+				"lifetime":                 "24h",
+				"bundle_age_block":         23,
+				"payload_block":            []byte("hello world"),
 			},
 			wantBndl: Builder().
 				Destination("dtn://dst/").
 				Source("dtn://src/").
-				CreationTimestampNow().
+				CreationTimestampEpoch().
 				Lifetime("24h").
+				BundleAgeBlock(23).
 				PayloadBlock([]byte("hello world")).
 				mustBuild(),
 			wantErr: false,
@@ -143,17 +145,19 @@ func TestBuildFromMap(t *testing.T) {
 		{
 			name: "payload as string",
 			args: map[string]interface{}{
-				"destination":            "dtn://dst/",
-				"source":                 "dtn://src/",
-				"creation_timestamp_now": true,
-				"lifetime":               "24h",
-				"payload_block":          "hello world",
+				"destination":              "dtn://dst/",
+				"source":                   "dtn://src/",
+				"creation_timestamp_epoch": true,
+				"lifetime":                 "24h",
+				"bundle_age_block":         23,
+				"payload_block":            "hello world",
 			},
 			wantBndl: Builder().
 				Destination("dtn://dst/").
 				Source("dtn://src/").
-				CreationTimestampNow().
+				CreationTimestampEpoch().
 				Lifetime("24h").
+				BundleAgeBlock(23).
 				PayloadBlock([]byte("hello world")).
 				mustBuild(),
 			wantErr: false,
@@ -169,10 +173,10 @@ func TestBuildFromMap(t *testing.T) {
 		{
 			name: "no source",
 			args: map[string]interface{}{
-				"destination":            "dtn://dst/",
-				"creation_timestamp_now": true,
-				"lifetime":               "24h",
-				"payload_block":          []byte("hello world"),
+				"destination":              "dtn://dst/",
+				"creation_timestamp_epoch": true,
+				"lifetime":                 "24h",
+				"payload_block":            []byte("hello world"),
 			},
 			wantBndl: Bundle{},
 			wantErr:  true,
@@ -183,11 +187,11 @@ func TestBuildFromMap(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotBndl, err := BuildFromMap(tt.args)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("BuildFromMap() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("BuildFromMap() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(gotBndl, tt.wantBndl) {
-				t.Errorf("BuildFromMap() gotBndl = %v, want %v", gotBndl, tt.wantBndl)
+				t.Fatalf("BuildFromMap() gotBndl = %v, want %v", gotBndl, tt.wantBndl)
 			}
 		})
 	}
@@ -198,8 +202,9 @@ func TestBuildFromMapJSON(t *testing.T) {
 	data := []byte(`{
 		"destination":            "dtn://dst/",
 		"source":                 "dtn://src/",
-		"creation_timestamp_now": 1,
+		"creation_timestamp_epoch": 1,
 		"lifetime":               "24h",
+		"bundle_age_block":        23,
 		"payload_block":          "hello world"
 	}`)
 
@@ -210,8 +215,9 @@ func TestBuildFromMapJSON(t *testing.T) {
 	expectedBndl := Builder().
 		Destination("dtn://dst/").
 		Source("dtn://src/").
-		CreationTimestampNow().
+		CreationTimestampEpoch().
 		Lifetime("24h").
+		BundleAgeBlock(23).
 		PayloadBlock([]byte("hello world")).
 		mustBuild()
 

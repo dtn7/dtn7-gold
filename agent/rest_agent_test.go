@@ -124,11 +124,12 @@ func TestRestAgentCycle(t *testing.T) {
 	buildR := strings.NewReader(fmt.Sprintf(`{
 		"uuid": "%s",
 		"arguments": {
-			"destination":            "dtn://dst/",
-			"source":                 "%s",
-			"creation_timestamp_now": 1,
-			"lifetime":               "24h",
-			"payload_block":          "hello world"
+			"destination":              "dtn://dst/",
+			"source":                   "%s",
+			"creation_timestamp_epoch": 1,
+			"bundle_age_block":         42000000,
+			"lifetime":                 "24h",
+			"payload_block":            "hello world"
 		}
 	}`, registerResponse.UUID, registerEid.String()))
 	buildResponse := RestBuildResponse{}
@@ -136,8 +137,9 @@ func TestRestAgentCycle(t *testing.T) {
 	buildBndl, buildBndlErr := bundle.Builder().
 		Destination("dtn://dst/").
 		Source(registerEid).
-		CreationTimestampNow().
+		CreationTimestampEpoch().
 		Lifetime("24h").
+		BundleAgeBlock(42000000).
 		PayloadBlock([]byte("hello world")).
 		Build()
 	if buildBndlErr != nil {

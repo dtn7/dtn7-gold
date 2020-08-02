@@ -98,7 +98,7 @@ func TestPrimaryBlockJson(t *testing.T) {
 			ReportTo:           MustNewEndpointID("dtn://rprt/"),
 			CreationTimestamp:  NewCreationTimestamp(0, 42),
 			Lifetime:           3600,
-		}, []byte(`{"bundleControlFlags":null,"destination":"dtn://dst/","source":"dtn://src/","reportTo":"dtn://rprt/","creationTimestamp":{"date":"2000-01-01 00:00:00","sequenceNo":42},"lifetime":3600}`)},
+		}, []byte(`{"bundleControlFlags":null,"destination":"dtn://dst/","source":"dtn://src/","reportTo":"dtn://rprt/","creationTimestamp":{"date":"2000-01-01 00:00:00.000","sequenceNo":42},"lifetime":3600}`)},
 		{PrimaryBlock{
 			BundleControlFlags: MustNotFragmented,
 			CRCType:            CRCNo,
@@ -107,7 +107,7 @@ func TestPrimaryBlockJson(t *testing.T) {
 			ReportTo:           MustNewEndpointID("dtn://bar/"),
 			CreationTimestamp:  NewCreationTimestamp(0, 0),
 			Lifetime:           10,
-		}, []byte(`{"bundleControlFlags":["MUST_NOT_BE_FRAGMENTED"],"destination":"ipn:23.42","source":"dtn://foo/","reportTo":"dtn://bar/","creationTimestamp":{"date":"2000-01-01 00:00:00","sequenceNo":0},"lifetime":10}`)},
+		}, []byte(`{"bundleControlFlags":["MUST_NOT_BE_FRAGMENTED"],"destination":"ipn:23.42","source":"dtn://foo/","reportTo":"dtn://bar/","creationTimestamp":{"date":"2000-01-01 00:00:00.000","sequenceNo":0},"lifetime":10}`)},
 	}
 
 	for _, test := range tests {

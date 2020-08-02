@@ -127,6 +127,12 @@ func bldrParseLifetime(duration interface{}) (us uint64, err error) {
 		} else {
 			us = uint64(duration)
 		}
+	case float64:
+		if duration < 0 {
+			err = fmt.Errorf("lifetime's duration %f <= 0", duration)
+		} else {
+			us = uint64(duration)
+		}
 	case string:
 		dur, durErr := time.ParseDuration(duration)
 		if durErr != nil {
@@ -138,7 +144,7 @@ func bldrParseLifetime(duration interface{}) (us uint64, err error) {
 		}
 	default:
 		err = fmt.Errorf(
-			"%T is neither an uin nor a string for a Duration", duration)
+			"%T is neither an uint nor a string for a Duration", duration)
 	}
 	return
 }
