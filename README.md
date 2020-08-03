@@ -7,7 +7,7 @@ Protocol Version 7.
 ## Protocols
 This software implements the current draft of the Bundle Protocol Version 7.
 
-- Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-25.txt][dtn-bpbis-25])
+- Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-26.txt][dtn-bpbis-26])
 
 ### Convergence Layer
 Bundles might be exchanged between nodes by the following protocols.
@@ -143,7 +143,7 @@ permission errors while trying to fetch the dependencies.
 [aur-dtn7]: https://aur.archlinux.org/packages/dtn7/
 [brew-dtn7]: https://github.com/jonashoechst/homebrew-hoechst/blob/master/dtn7.rb
 [brew]: https://brew.sh
-[dtn-bpbis-25]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-25
+[dtn-bpbis-26]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-26
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
 [dtn-tcpcl-14]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-14
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
