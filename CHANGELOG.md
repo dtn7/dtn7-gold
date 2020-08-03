@@ -16,12 +16,17 @@ Types of changes:
 -->
 
 ## [Unreleased]
+
+
+## [0.7.0] - 2020-08-03
 ### Added
-- Enhance ease of use for new contributors by introducing a GitHub Issue
-  template and a `CHANGELOG.md` file.
 - `AdministrativeRecordManager` to allow more dynamic Administrative
   Records.
 - `EndpointID` gets a singleton property, _ietf-dtn-bpbis-26_.
+- Make repository more friendly for new contributors by
+    - GitHub Issue template,
+    - `CHANGELOG.md` file, and
+    - Contributing section in `README.md`.
 
 ### Changed
 - Enforce strict `dtn` URI scheme based on the ABNF, like this
@@ -204,7 +209,8 @@ First, unstable release
 [0.5.4]: https://github.com/dtn7/dtn7-go/compare/v0.5.3...v0.5.4
 [0.6.0]: https://github.com/dtn7/dtn7-go/compare/v0.5.4...v0.6.0
 [0.6.1]: https://github.com/dtn7/dtn7-go/compare/v0.6.0...v0.6.1
-[Unreleased]: https://github.com/dtn7/dtn7-go/compare/v0.6.1...master
+[0.7.0]: https://github.com/dtn7/dtn7-go/compare/v0.6.1...v0.7.0
+[Unreleased]: https://github.com/dtn7/dtn7-go/compare/v0.7.0...master
 
 
 <!-- vim: set tw=72 colorcolumn=72 ts=2 ft=markdown spell: -->
