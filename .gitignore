@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2018, 2019, 2020 Alvar Penning
+# SPDX-FileCopyrightText: 2019 Markus Sommer
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Created by https://www.gitignore.io/api/go,vim,jetbrains+all
 # Edit at https://www.gitignore.io/?templates=go,vim,jetbrains+all

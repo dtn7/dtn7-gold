@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2020 Markus Sommer
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Package discovery contains code for peer/neighbor discovery of other DTN
 // nodes through UDP multicast packages.
 package discovery

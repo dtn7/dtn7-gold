@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Package mtcp provides a library for the Minimal TCP Convergence-Layer
 // Protocol as defined in draft-ietf-dtn-mtcpcl-01
 //

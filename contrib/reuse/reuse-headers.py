@@ -1,16 +1,27 @@
 #!/usr/bin/env python
 
+# SPDX-FileCopyrightText: 2020 Alvar Penning
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 import subprocess
 
 from datetime import datetime
 from typing import List, Tuple
 
 
+# License to be applied.
+DEFAULT_LICENSE = "GPL-3.0-or-later"
+
 # Rename authors, the following happened due to using GitHub's Web UI.
 AUTHOR_REWRITE = {"Alvar": "Alvar Penning"}
 
-# Exclude unsupported files; there is currently a PR on the way.
-FILE_IGNORE = ["go.mod", "go.sum"]
+# Exclude unsupported files.
+FILE_IGNORE = [
+        "go.mod", "go.sum",  # https://github.com/fsfe/reuse-tool/pull/234
+        ".reuse/dep5",
+        "LICENSES/CC0-1.0.txt", "LICENSES/GPL-3.0-or-later.txt"
+        ]
 
 
 # Ownership is a triple of (Filename, Author, Years)
@@ -66,4 +77,4 @@ if __name__ == "__main__":
         owners = owners + file_authors(f)
 
     for f, author, years in owners:
-        reuse_addheader(f, author, years, "GPL-3.0-or-later")
+        reuse_addheader(f, author, years, DEFAULT_LICENSE)

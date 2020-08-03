@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Package tcpcl provides a library for the Delay-Tolerant Networking TCP Convergence Layer Protocol Version 4,
 // draft-ietf-dtn-tcpclv4-14.
 //

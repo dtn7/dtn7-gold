@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 package bbc
 
 // Modem is the interface for possible broadcasting modems. Every Modem must be able to broadcast and

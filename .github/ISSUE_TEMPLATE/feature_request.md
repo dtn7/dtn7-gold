@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2020 Alvar Penning
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 ---
 name: Feature request
 about: Suggest an idea for this project

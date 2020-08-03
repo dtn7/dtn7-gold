@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 package core
 
 // coreError is a simple error-struct.

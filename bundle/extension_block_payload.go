@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 package bundle
 
 // ExtBlockTypePayloadBlock is the block type code for a Payload Block.

@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2019 Markus Sommer
+// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 package mtcp
 
 import (

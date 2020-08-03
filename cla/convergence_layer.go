@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Package cla defines two interfaces for Convergence Layer Adapters.
 //
 // The ConvergenceReceiver specifies a type which receives bundles and forwards

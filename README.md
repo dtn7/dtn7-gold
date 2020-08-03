@@ -1,4 +1,15 @@
-# dtn7-go [![Build Status](https://travis-ci.org/dtn7/dtn7-go.svg?branch=master)](https://travis-ci.org/dtn7/dtn7-go) [![PkgGoDev](https://pkg.go.dev/badge/github.com/dtn7/dtn7-go)](https://pkg.go.dev/github.com/dtn7/dtn7-go)
+<!--
+SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+SPDX-FileCopyrightText: 2020 Jonas Höchst
+SPDX-FileCopyrightText: 2020 Matthias Axel Kröll
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+# dtn7-go
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/dtn7/dtn7-go)](https://pkg.go.dev/github.com/dtn7/dtn7-go)
+[![Build Status](https://travis-ci.org/dtn7/dtn7-go.svg?branch=master)](https://travis-ci.org/dtn7/dtn7-go)
+[![REUSE status](https://api.reuse.software/badge/github.com/dtn7/dtn7-go)](https://api.reuse.software/info/github.com/dtn7/dtn7-go)
 
 Delay-Tolerant Networking software suite and library based on the Bundle Protocol Version 7.
 
@@ -116,6 +127,9 @@ Assuming you have a supported version of the [Go programming language][golang] i
 
 Please document your changes both in good commit messages and within the [CHANGELOG.md][CHANGELOG.md] file.
 
+Also, an attempt is made to be [REUSE][reuse] compliant.
+For automatic copyright header generation, the `contrib/reuse/reuse-headers.py` script exists.
+
 ### OS-specific
 #### macOS
 Installing the [Go programming language][golang] via [brew][brew], should solve permission errors while trying to fetch the dependencies.
@@ -139,6 +153,7 @@ Installing the [Go programming language][golang] via [brew][brew], should solve 
 [nur-dtn7]: https://github.com/dtn7/nur-packages
 [rf95modem-go]: https://github.com/dtn7/rf95modem-go
 [rf95modem]: https://github.com/gh0st42/rf95modem
+[reuse]: https://reuse.software/
 
 
 <!-- vim: set ts=2 ft=markdown spell: -->

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Package agent describes an interface for modules to receive and send bundles.
 //
 // The main interface is the ApplicationAgent, which only requires two channels for incoming and outgoing Messages.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 package core
 
 // Constraint is a retention constraint as defined in the subsections of the fifth chapter of dtn-bpbis.

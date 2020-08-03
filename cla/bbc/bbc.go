@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Package bbc describes a simple Bundle Broadcasting Connector to receive and transmit Bundles over a shared
 // broadcasting medium, e.g., LoRa.
 package bbc

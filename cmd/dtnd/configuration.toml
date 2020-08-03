@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2019 Markus Sommer
+# SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # The core is the main module of the delay-tolerant networking daemon.
 [core]
 # Path to the bundle storage. Bundles will be saved in this directory to be

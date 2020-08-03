@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 package bbc
 
 // This test depends on your system's hardware, e.g., it needs two connected rf95modems.

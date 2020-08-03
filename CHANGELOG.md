@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2020 Alvar Penning
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
@@ -16,6 +22,8 @@ Types of changes:
 -->
 
 ## [Unreleased]
+### Added
+- REUSE compliance and a new copyright header generation script.
 
 
 ## [0.7.1] - 2020-08-03
