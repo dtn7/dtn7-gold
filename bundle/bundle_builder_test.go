@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestBundleBuilderSimple(t *testing.T) {
@@ -44,7 +45,7 @@ func TestBundleBuilderSimple(t *testing.T) {
 			MustNewEndpointID("dtn://dest/"),
 			MustNewEndpointID("dtn://myself/"),
 			NewCreationTimestamp(DtnTimeEpoch, 0),
-			1000000*60*10),
+			1000*60*10),
 		[]CanonicalBlock{
 			NewCanonicalBlock(2, 0, NewHopCountBlock(64)),
 			NewCanonicalBlock(3, 0, NewBundleAgeBlock(0)),
@@ -89,28 +90,35 @@ func TestBldrParseEndpoint(t *testing.T) {
 func TestBldrParseLifetime(t *testing.T) {
 	tests := []struct {
 		val interface{}
-		us  uint64
+		ms  uint64
 		err bool
 	}{
 		{1000, 1000, false},
 		{uint64(1000), 1000, false},
-		{"1000µs", 1000, false},
-		{"1000us", 1000, false},
+		{"1000ms", 1000, false},
+		{"1000us", 1, false},
+		{"1000s", 1000000, false},
+		{"1s", 1000, false},
+		{"1m", 60000, false},
+		{time.Millisecond, 1, false},
+		{time.Second, 1000, false},
+		{time.Minute, 60000, false},
+		{10 * time.Minute, 600000, false},
 		{-23, 0, true},
 		{"-10m", 0, true},
 		{true, 0, true},
 	}
 
 	for _, test := range tests {
-		us, err := bldrParseLifetime(test.val)
+		ms, err := bldrParseLifetime(test.val)
 
 		if test.err == (err == nil) {
 			t.Fatalf("Error value for %v was unexpected: %v != %v",
 				test.val, test.err, err)
 		}
 
-		if test.us != us {
-			t.Fatalf("Value for %v was unexpected: %v != %v", test.val, test.us, us)
+		if test.ms != ms {
+			t.Fatalf("Value for %v was unexpected: %v != %v", test.val, test.ms, ms)
 		}
 	}
 }

@@ -26,10 +26,12 @@ Types of changes:
 - Enforce strict `dtn` URI scheme based on the ABNF, like this
   `dtn://NODE-NAME/OPTIONAL-VARIOUS-CHARS`.
 - Bump draft-ietf-dtn-bpbis version from 24 to 25.
-- Configurable Endpoint IDs for dtnd.
 - Allow peer discovery to work with multiple Endpoint IDs.
 - CLA management is performed by the CLA Manager.
-- DTN Time now represents milliseconds instead of seconds, _ietf-dtn-bpbis-26_.
+- Time is normed to milliseconds, _ietf-dtn-bpbis-26_:
+    - DTN Time: milliseconds instead of seconds
+    - Primary Block's lifetime: milliseconds instead of microseconds
+    - Bundle Age Block: milliseconds instead of microseconds
 
 ### Fixed
 - `BundleBuilder` sorts CanonicalBlocks based on their block number.

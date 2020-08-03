@@ -62,7 +62,7 @@ func (bp BundlePart) Load() (b bundle.Bundle, err error) {
 func calcExpirationDate(b bundle.Bundle) time.Time {
 	// TODO: check Bundle Age Block
 	return b.PrimaryBlock.CreationTimestamp.DtnTime().Time().Add(
-		time.Duration(b.PrimaryBlock.Lifetime) * time.Microsecond)
+		time.Duration(b.PrimaryBlock.Lifetime) * time.Millisecond)
 }
 
 // bundlePartPath returns a path for a Bundle.

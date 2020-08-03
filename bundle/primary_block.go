@@ -31,11 +31,8 @@ type PrimaryBlock struct {
 }
 
 // NewPrimaryBlock creates a new primary block with the given parameters. All
-// other fields are set to default values. The lifetime is taken in
-// microseconds.
-func NewPrimaryBlock(bundleControlFlags BundleControlFlags,
-	destination EndpointID, sourceNode EndpointID,
-	creationTimestamp CreationTimestamp, lifetime uint64) PrimaryBlock {
+// other fields are set to default values. The lifetime is passed in milliseconds.
+func NewPrimaryBlock(bundleControlFlags BundleControlFlags, destination EndpointID, sourceNode EndpointID, creationTimestamp CreationTimestamp, lifetime uint64) PrimaryBlock {
 	pb := PrimaryBlock{
 		Version:            dtnVersion,
 		BundleControlFlags: bundleControlFlags,
@@ -308,8 +305,7 @@ func (pb PrimaryBlock) IsLifetimeExceeded() bool {
 	}
 
 	currentTs := time.Now()
-	supremumTs := pb.CreationTimestamp.DtnTime().Time().Add(
-		time.Duration(pb.Lifetime) * time.Microsecond)
+	supremumTs := pb.CreationTimestamp.DtnTime().Time().Add(time.Duration(pb.Lifetime) * time.Millisecond)
 
 	return currentTs.After(supremumTs)
 }

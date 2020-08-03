@@ -17,18 +17,18 @@ func (bab *BundleAgeBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypeBundleAgeBlock
 }
 
-// NewBundleAgeBlock creates a new BundleAgeBlock with the given microseconds.
-func NewBundleAgeBlock(us uint64) *BundleAgeBlock {
-	bab := BundleAgeBlock(us)
+// NewBundleAgeBlock creates a new BundleAgeBlock for the given milliseconds.
+func NewBundleAgeBlock(ms uint64) *BundleAgeBlock {
+	bab := BundleAgeBlock(ms)
 	return &bab
 }
 
-// Age returns the age in microseconds.
+// Age returns the age in milliseconds.
 func (bab *BundleAgeBlock) Age() uint64 {
 	return uint64(*bab)
 }
 
-// Increment with an offset in microseconds and return the new time.
+// Increment with an offset in milliseconds and return the new time.
 func (bab *BundleAgeBlock) Increment(offset uint64) uint64 {
 	newBabVal := uint64(*bab) + offset
 	*bab = BundleAgeBlock(newBabVal)
