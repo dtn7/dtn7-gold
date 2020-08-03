@@ -18,6 +18,16 @@ Types of changes:
 ## [Unreleased]
 
 
+## [0.7.1] - 2020-08-03
+### Fixed
+- Restoring compatibility with Go 1.11.
+
+### Deprecated
+- Compatibility with Go 1.11 will soon be dropped. Expect the 0.7.x
+  releases the last ones to support this now almost two year old Go
+  version. Sorry.
+
+
 ## [0.7.0] - 2020-08-03
 ### Added
 - `AdministrativeRecordManager` to allow more dynamic Administrative
@@ -210,7 +220,8 @@ First, unstable release
 [0.6.0]: https://github.com/dtn7/dtn7-go/compare/v0.5.4...v0.6.0
 [0.6.1]: https://github.com/dtn7/dtn7-go/compare/v0.6.0...v0.6.1
 [0.7.0]: https://github.com/dtn7/dtn7-go/compare/v0.6.1...v0.7.0
-[Unreleased]: https://github.com/dtn7/dtn7-go/compare/v0.7.0...master
+[0.7.1]: https://github.com/dtn7/dtn7-go/compare/v0.7.0...v0.7.1
+[Unreleased]: https://github.com/dtn7/dtn7-go/compare/v0.7.1...master
 
 
 <!-- vim: set tw=72 colorcolumn=72 ts=2 ft=markdown spell: -->

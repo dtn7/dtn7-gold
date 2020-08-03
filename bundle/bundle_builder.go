@@ -140,10 +140,10 @@ func bldrParseLifetime(duration interface{}) (ms uint64, err error) {
 		} else if dur <= 0 {
 			err = fmt.Errorf("lifetime's duration %d <= 0", dur)
 		} else {
-			ms = uint64(dur.Milliseconds())
+			ms = uint64(dur.Nanoseconds() / 1000000)
 		}
 	case time.Duration:
-		ms = uint64(duration.Milliseconds())
+		ms = uint64(duration.Nanoseconds() / 1000000)
 	default:
 		err = fmt.Errorf("%T is an unsupported type to parse a Duration from", duration)
 	}
