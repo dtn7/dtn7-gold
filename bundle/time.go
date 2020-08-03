@@ -32,7 +32,7 @@ func (t DtnTime) Time() time.Time {
 	unixSec := t.unixMilliseconds() / milliToSec
 	unixNano := (t.unixMilliseconds() - (unixSec * milliToSec)) * nanoToMilli
 
-	return time.Unix(int64(unixSec), int64(unixNano)).UTC()
+	return time.Unix(unixSec, unixNano).UTC()
 }
 
 // String returns this DtnTime's string representation.
