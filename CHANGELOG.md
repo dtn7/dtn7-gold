@@ -24,6 +24,7 @@ Types of changes:
 ## [Unreleased]
 ### Added
 - REUSE compliance and a new copyright header generation script.
+- Sort Bundle's CanonicalBlocks on creation and block modification.
 
 ### Changed
 - Replaced TravisCI with GitHub Actions.
