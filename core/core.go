@@ -6,6 +6,7 @@
 package core
 
 import (
+	"crypto/ed25519"
 	"encoding/gob"
 	"fmt"
 	"time"
@@ -29,6 +30,7 @@ type Core struct {
 	claManager   *cla.Manager
 	idKeeper     IdKeeper
 	routing      RoutingAlgorithm
+	signPriv     ed25519.PrivateKey
 
 	store *storage.Store
 
@@ -36,11 +38,14 @@ type Core struct {
 	stopAck chan struct{}
 }
 
-// NewCore creates and returns a new Core. A SimpleStore will be created or used
-// at the given path. The inspectAllBundles flag indicates if all
-// administrative records - next to the bundles addressed to this node - should
-// be inspected. This allows bundle deletion for forwarding bundles.
-func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool, routingConf RoutingConf) (*Core, error) {
+// NewCore will be created according to the parameters.
+//
+// 	storePath: path for the bundle and metadata storage
+// 	nodeId: singleton Endpoint ID/Node ID
+// 	inspectAllBundles: inspect all administrative records, not only those addressed to this node
+// 	routingConf: selected routing algorithm and its configuration
+// 	signPriv: optional ed25519 private key (64 bytes long) to sign all outgoing bundles; or nil to not use this feature
+func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool, routingConf RoutingConf, signPriv ed25519.PrivateKey) (*Core, error) {
 	var c = new(Core)
 
 	gob.Register([]bundle.EndpointID{})
@@ -84,6 +89,17 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 		c.routing = NewProphet(c, routingConf.ProphetConf)
 	default:
 		return nil, fmt.Errorf("unknown routing algorithm %s", routingConf.Algorithm)
+	}
+
+	if signPriv != nil {
+		if l := len(signPriv); l != ed25519.PrivateKeySize {
+			return nil, fmt.Errorf("ed25519 private key's length is %d, not %d", l, ed25519.PrivateKeySize)
+		}
+		c.signPriv = signPriv
+
+		if err := bundle.GetExtensionBlockManager().Register(&bundle.SignatureBlock{}); err != nil {
+			return nil, fmt.Errorf("SignatureBlock registration errored: %v", err)
+		}
 	}
 
 	c.stopSyn = make(chan struct{})

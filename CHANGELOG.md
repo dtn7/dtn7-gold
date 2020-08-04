@@ -26,6 +26,7 @@ Types of changes:
 - REUSE compliance and a new copyright header generation script.
 - Sort Bundle's CanonicalBlocks on creation and block modification.
 - Custom SignatureBlock for cryptographic ed25519 Bundle signatures.
+- dtnd supports attaching a SignatureBlock for outgoing Bundles.
 
 ### Changed
 - Replaced TravisCI with GitHub Actions.

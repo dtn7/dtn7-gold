@@ -16,10 +16,29 @@ import (
 
 // SendBundle transmits an outbounding bundle.
 func (c *Core) SendBundle(bndl *bundle.Bundle) {
+	if c.signPriv != nil {
+		c.sendBundleAttachSignature(bndl)
+	}
 	bp := NewBundlePackFromBundle(*bndl, c.store)
 
 	c.routing.NotifyIncoming(bp)
 	c.transmit(bp)
+}
+
+// sendBundleAttachSignature attaches a SignatureBlock to outgoing Bundles, if the Core is configured accordingly.
+func (c *Core) sendBundleAttachSignature(bndl *bundle.Bundle) {
+	sb, sbErr := bundle.NewSignatureBlock(*bndl, c.signPriv)
+	if sbErr != nil {
+		log.WithField("bundle", bndl.ID()).WithError(sbErr).Error("Creating signature errored, proceeding without")
+		return
+	}
+
+	cb := bundle.NewCanonicalBlock(0, bundle.ReplicateBlock|bundle.DeleteBundle, sb)
+	cb.SetCRCType(bundle.CRC32)
+
+	bndl.AddExtensionBlock(cb)
+
+	log.WithField("bundle", bndl.ID()).Info("Attached signature to outgoing bundle")
 }
 
 // transmit starts the transmission of an outbounding bundle pack. Therefore

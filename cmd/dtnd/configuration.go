@@ -6,6 +6,8 @@
 package main
 
 import (
+	"crypto/ed25519"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"net/http"
@@ -42,6 +44,7 @@ type coreConf struct {
 	Store             string
 	InspectAllBundles bool   `toml:"inspect-all-bundles"`
 	NodeId            string `toml:"node-id"`
+	SignPriv          string `toml:"signature-private"`
 }
 
 // logConf describes the Logging-configuration block.
@@ -267,8 +270,14 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		return
 	}
 
-	c, err = core.NewCore(conf.Core.Store, nodeId, conf.Core.InspectAllBundles, conf.Routing)
-	if err != nil {
+	var signPriv ed25519.PrivateKey = nil
+	if conf.Core.SignPriv != "" {
+		if signPriv, err = hex.DecodeString(conf.Core.SignPriv); err != nil {
+			return
+		}
+	}
+
+	if c, err = core.NewCore(conf.Core.Store, nodeId, conf.Core.InspectAllBundles, conf.Routing, signPriv); err != nil {
 		return
 	}
 

@@ -14,6 +14,11 @@ inspect-all-bundles = true
 # The node's ID, which should be a dtn-URI. Each node's endpoint ID should be
 # an URI based on the given node-id.
 node-id = "dtn://alpha/"
+# If a signature-private entry exists, all outgoing bundles created at this
+# node will be signed with the following key. Such a key can be created by:
+#   $ xxd -l 64 -p -c 64 /dev/urandom
+# Please DO NOT use the following key or a variation of it. I am serious.
+signature-private = "2d5b59df9e860636ee392fc7833d957543cd7e47e95b8a2800224408840242a8edff1aafc10af23ae32a6868e2c31cbbcf3157a706accae2eb7faa7a1d7ee84e"
 
 # Configure the format and verbosity of dtnd's logging.
 [logging]
