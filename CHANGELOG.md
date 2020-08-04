@@ -25,6 +25,9 @@ Types of changes:
 ### Added
 - REUSE compliance and a new copyright header generation script.
 
+### Changed
+- Replaced TravisCI with GitHub Actions.
+
 
 ## [0.7.1] - 2020-08-03
 ### Fixed
