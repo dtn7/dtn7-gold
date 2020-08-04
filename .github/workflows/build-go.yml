@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2020 Alvar Penning
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: Build Go
+
+on: [push, pull_request]
+
+jobs:
+  build_go:
+    name: Build dtn7-go
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go: [ '1.11', '1.14' ]
+
+    steps:
+    - name: Set up Go ${{ matrix.go }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Build on Go ${{ matrix.go }}
+      run: go build -v ./...
+
+    - name: Test
+      run: go test -v -race ./...
