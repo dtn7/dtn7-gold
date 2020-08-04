@@ -136,6 +136,12 @@ For automatic copyright header generation, the `contrib/reuse/reuse-headers.py` 
 Installing the [Go programming language][golang] via [brew][brew], should solve permission errors while trying to fetch the dependencies.
 
 
+## License
+
+This project's code is licensed under the [GNU General Public License version 3 (_GPL-3.0-or-later_)][license-gpl3].
+To simplify the copyright stuff, the [REUSE][reuse] tool is used.
+
+
 [CHANGELOG.md]: CHANGELOG.md
 [arch-aur]: https://wiki.archlinux.org/index.php/Arch_User_Repository
 [aur-dtn7]: https://aur.archlinux.org/packages/dtn7/
@@ -150,11 +156,12 @@ Installing the [Go programming language][golang] via [brew][brew], should solve 
 [goland]: https://www.jetbrains.com/go/
 [golang]: https://golang.org/
 [golangci-lint]: https://github.com/golangci/golangci-lint
+[license-gpl3]: LICENSES/GPL-3.0-or-later.txt
 [nixos-nur]: https://github.com/nix-community/NUR
 [nur-dtn7]: https://github.com/dtn7/nur-packages
+[reuse]: https://reuse.software/
 [rf95modem-go]: https://github.com/dtn7/rf95modem-go
 [rf95modem]: https://github.com/gh0st42/rf95modem
-[reuse]: https://reuse.software/
 
 
 <!-- vim: set ts=2 ft=markdown spell: -->
