@@ -25,6 +25,7 @@ Types of changes:
 ### Added
 - REUSE compliance and a new copyright header generation script.
 - Sort Bundle's CanonicalBlocks on creation and block modification.
+- Custom SignatureBlock for cryptographic ed25519 Bundle signatures.
 
 ### Changed
 - Replaced TravisCI with GitHub Actions.

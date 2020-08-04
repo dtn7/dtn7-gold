@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"fmt"
+	"io"
 
 	"github.com/dtn7/cboring"
 	"github.com/hashicorp/go-multierror"
@@ -15,8 +16,19 @@ import (
 
 // SignatureBlock is a custom block to sign a Bundle's Payload Block via ed25519.
 //
-// Although this block is present in the bundle package, it is not specified in ietf-dtn-bpbis. It will probably be
+// Although this block is present in the bundle package, it is NOT specified in ietf-dtn-bpbis. It will probably be
 // removed once ietf-dtn-bpsec is implemented.
+//
+// To create a SignatureBlock, a Bundle with a PayloadBlock needs to exist first. Afterwards, one needs to create a
+// SignatureBlock for this Bundle and attach it to the Bundle.
+//
+// 	sb, sbErr := NewSignatureBlock(b, priv)
+// 	if sbErr != nil { ... }
+// 	b.AddExtensionBlock(NewCanonicalBlock(0, ReplicateBlock|DeleteBundle, sb))
+//
+// The block-type-specific data in a SignatureBlock MUST be represented as a CBOR array comprising two elements. These
+// two elements are firstly the PublicKey and secondly the Signature, both represented as a CBOR byte string. Both the
+// array and the byte strings MUST be of a defined length, NOT indefinite-length items.
 type SignatureBlock struct {
 	PublicKey []byte
 	Signature []byte
@@ -103,4 +115,38 @@ func (s *SignatureBlock) Verify(b Bundle) (valid bool) {
 	return ed25519.Verify(s.PublicKey, pbData.Bytes(), s.Signature)
 }
 
-// TODO: cboring.CborMarshaler
+// MarshalCbor writes the CBOR representation of a SignatureBlock.
+func (s *SignatureBlock) MarshalCbor(w io.Writer) error {
+	if err := cboring.WriteArrayLength(2, w); err != nil {
+		return err
+	}
+
+	fields := []*[]byte{&s.PublicKey, &s.Signature}
+	for _, field := range fields {
+		if err := cboring.WriteByteString(*field, w); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// UnmarshalCbor reads a CBOR representation of a SignatureBlock.
+func (s *SignatureBlock) UnmarshalCbor(r io.Reader) error {
+	if n, err := cboring.ReadArrayLength(r); err != nil {
+		return err
+	} else if n != 2 {
+		return fmt.Errorf("SignatureBlock: array has %d instead of 2 elements", n)
+	}
+
+	fields := []*[]byte{&s.PublicKey, &s.Signature}
+	for _, field := range fields {
+		if data, err := cboring.ReadByteString(r); err != nil {
+			return err
+		} else {
+			*field = data
+		}
+	}
+
+	return nil
+}
