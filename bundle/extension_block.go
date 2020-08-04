@@ -37,6 +37,9 @@ const (
 
 	// ExtBlockTypeProphetBlock is the custom block type code for a ProphetBlock, core/routing_prophet.go
 	ExtBlockTypeProphetBlock uint64 = 194
+
+	// ExtBlockTypeSignatureBlock is the custom block type code for a SignatureBlock, bundle/extension_block_signature.go
+	ExtBlockTypeSignatureBlock uint64 = 195
 )
 
 // ExtensionBlock describes the block-type specific data of any Canonical Block. Such an ExtensionBlock
