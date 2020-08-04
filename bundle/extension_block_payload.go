@@ -4,9 +4,6 @@
 
 package bundle
 
-// ExtBlockTypePayloadBlock is the block type code for a Payload Block.
-const ExtBlockTypePayloadBlock uint64 = 1
-
 // PayloadBlock implements the Bundle Protocol's Payload Block.
 type PayloadBlock []byte
 

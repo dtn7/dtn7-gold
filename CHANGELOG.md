@@ -28,6 +28,7 @@ Types of changes:
 
 ### Changed
 - Replaced TravisCI with GitHub Actions.
+- List all Extension Block type codes in `bundle/extension_block.go`.
 
 
 ## [0.7.1] - 2020-08-03

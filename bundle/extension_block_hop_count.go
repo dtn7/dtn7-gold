@@ -11,9 +11,6 @@ import (
 	"github.com/dtn7/cboring"
 )
 
-// ExtBlockTypeHopCountBlock is the block type code for a Hop Count Block.
-const ExtBlockTypeHopCountBlock uint64 = 10
-
 // HopCountBlock implements the Bundle Protocol's Hop Count Block.
 type HopCountBlock struct {
 	Limit uint8

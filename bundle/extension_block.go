@@ -15,6 +15,30 @@ import (
 	"github.com/dtn7/cboring"
 )
 
+// Sorted list of all known block type codes to prevent double usage.
+const (
+	// ExtBlockTypePayloadBlock is the block type code for a Payload Block, bundle/extension_block_payload.go
+	ExtBlockTypePayloadBlock uint64 = 1
+
+	// ExtBlockTypePreviousNodeBlock is the block type code for a Previous Node Block, bundle/extension_block_previous_node.go
+	ExtBlockTypePreviousNodeBlock uint64 = 6
+
+	// ExtBlockTypeBundleAgeBlock is the block type code for a Bundle Age Block, bundle/extension_block_bundle_age.go
+	ExtBlockTypeBundleAgeBlock uint64 = 7
+
+	// ExtBlockTypeHopCountBlock is the block type code for a Hop Count Block, bundle/extension_block_hop_count.go
+	ExtBlockTypeHopCountBlock uint64 = 10
+
+	// ExtBlockTypeBinarySprayBlock is the custom block type code for a BinarySprayBlock, core/routing_spray.go
+	ExtBlockTypeBinarySprayBlock uint64 = 192
+
+	// ExtBlockTypeDTLSRBlock is the custom block type code for a DTLSRBlock, core/routing_dtlsr.go
+	ExtBlockTypeDTLSRBlock uint64 = 193
+
+	// ExtBlockTypeProphetBlock is the custom block type code for a ProphetBlock, core/routing_prophet.go
+	ExtBlockTypeProphetBlock uint64 = 194
+)
+
 // ExtensionBlock describes the block-type specific data of any Canonical Block. Such an ExtensionBlock
 // must implement either the cboring.CborMarshaler interface, if its serializable to / from CBOR, or both
 // encoding.BinaryMarshaler and encoding.BinaryUnmarshaler. The latter allows any kind of serialization,

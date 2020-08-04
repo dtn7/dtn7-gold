@@ -10,9 +10,6 @@ import (
 	"github.com/dtn7/cboring"
 )
 
-// ExtBlockTypeBundleAgeBlock is the block type code for a Bundle Age Block.
-const ExtBlockTypeBundleAgeBlock uint64 = 7
-
 // BundleAgeBlock implements the Bundle Protocol's Bundle Age Block.
 type BundleAgeBlock uint64
 

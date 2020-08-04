@@ -235,7 +235,7 @@ func NewBinarySpray(c *Core, config SprayConfig) *BinarySpray {
 
 	// register our custom metadata-block
 	extensionBlockManager := bundle.GetExtensionBlockManager()
-	if !extensionBlockManager.IsKnown(ExtBlockTypeBinarySprayBlock) {
+	if !extensionBlockManager.IsKnown(bundle.ExtBlockTypeBinarySprayBlock) {
 		// since we already checked if the block type exists, this really shouldn't ever fail...
 		_ = extensionBlockManager.Register(NewBinarySprayBlock(0))
 	}
@@ -268,7 +268,7 @@ func (bs *BinarySpray) GarbageCollect() {
 // If yes, then we initialise the remaining Copies to Multiplicity
 // If not we attempt to ready the routing-metadata-block end get the remaining copies
 func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
-	if metadataBlock, err := bp.MustBundle().ExtensionBlock(ExtBlockTypeBinarySprayBlock); err == nil {
+	if metadataBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeBinarySprayBlock); err == nil {
 		binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 		metadata := sprayMetaData{
 			sent:            make([]bundle.EndpointID, 0),
@@ -349,7 +349,7 @@ func (bs *BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSend
 			metadata.remainingCopies = metadata.remainingCopies - sendCopies
 
 			// if the bundle already has a metadata-block
-			if metadataBlock, err := bp.MustBundle().ExtensionBlock(ExtBlockTypeBinarySprayBlock); err == nil {
+			if metadataBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeBinarySprayBlock); err == nil {
 				binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 				binarySprayBlock.SetCopies(sendCopies)
 			} else {
@@ -384,7 +384,7 @@ func (bs *BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender
 		"bad_cla": sender,
 	}).Debug("Transmission failure")
 
-	metadataBlock, err := bp.MustBundle().ExtensionBlock(ExtBlockTypeBinarySprayBlock)
+	metadataBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeBinarySprayBlock)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -422,8 +422,6 @@ func (_ *BinarySpray) ReportPeerAppeared(_ cla.Convergence) {}
 
 func (_ *BinarySpray) ReportPeerDisappeared(_ cla.Convergence) {}
 
-const ExtBlockTypeBinarySprayBlock uint64 = 192
-
 // BinarySprayBlock contains metadata to let the next forwarder know their remaining copies
 type BinarySprayBlock uint64
 
@@ -433,7 +431,7 @@ func NewBinarySprayBlock(copies uint64) *BinarySprayBlock {
 }
 
 func (bsb *BinarySprayBlock) BlockTypeCode() uint64 {
-	return ExtBlockTypeBinarySprayBlock
+	return bundle.ExtBlockTypeBinarySprayBlock
 }
 
 func (bsb *BinarySprayBlock) CheckValid() error {
