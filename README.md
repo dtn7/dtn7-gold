@@ -49,7 +49,7 @@ One of the following routing protocols might be used.
 
 #### From Source
 
-Install the [Go programming language][golang], version 1.11 or later.
+Install the [Go programming language][golang], version 1.13 or later.
 
 ```bash
 git clone https://github.com/dtn7/dtn7-go.git

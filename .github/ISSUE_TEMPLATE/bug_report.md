@@ -31,7 +31,7 @@ If applicable, add screenshots or logs to help explain your problem.
 
 **System (please complete the following information):**
  - OS: [e.g. GNU/Linux]
- - Golang Version: [e.g. 1.11]
+ - Golang Version: [e.g. 1.14]
 
 **Additional context**
 Add any other context about the problem here.
