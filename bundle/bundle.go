@@ -97,6 +97,10 @@ func (b *Bundle) AddExtensionBlock(block CanonicalBlock) {
 	}
 
 	var blockNumber uint64 = 1
+	if block.Value.BlockTypeCode() != ExtBlockTypePayloadBlock {
+		blockNumber = 2
+	}
+
 	for {
 		flag := true
 		for _, no := range blockNumbers {

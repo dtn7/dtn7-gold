@@ -33,6 +33,10 @@ Types of changes:
 - List all Extension Block type codes in `bundle/extension_block.go`.
 - Drop compatibility with Go versions below 1.13.
 
+### Fix
+- Ensure only Payload Blocks are allowed to get Block Number 1 when
+  adding Extension Blocks to an empty Bundle.
+
 
 ## [0.7.1] - 2020-08-03
 ### Fixed
