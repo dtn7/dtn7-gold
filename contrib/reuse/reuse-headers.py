@@ -48,13 +48,15 @@ def file_authors(f: str) -> List[Ownership]:
 
     owner_grp = dict()
     for author, year in set(owners_year):
+        author = AUTHOR_REWRITE.get(author, author)
+
         if not author in owner_grp:
             owner_grp[author] = [year]
-        else:
+        elif year not in owner_grp[author]:
             owner_grp[author].append(year)
             owner_grp[author].sort()
 
-    owners = [(f, AUTHOR_REWRITE.get(author, author), ", ".join(years))
+    owners = [(f, author, ", ".join(years))
             for (author, years) in owner_grp.items()]
     sorted(owners, key=lambda owner: owner[1], reverse=True)
 
