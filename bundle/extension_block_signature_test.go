@@ -142,7 +142,7 @@ func TestSignatureBlockIntegration(t *testing.T) {
 		Source("dtn://src/").
 		Destination("dtn://dst/").
 		CreationTimestampNow().
-		Lifetime(30 * time.Minute).
+		Lifetime(30000).
 		PayloadBlock([]byte("hello world")).
 		Build()
 	if bErr != nil {
@@ -187,13 +187,34 @@ func TestSignatureBlockIntegration(t *testing.T) {
 		t.Fatal("SignatureBlock cannot be verified")
 	}
 
+	// Alter the Primary Block
+	prim := &b2.PrimaryBlock
+	primTmp := prim.Lifetime
+
+	prim.Lifetime = 0
+	if sbCan.Value.(*SignatureBlock).Verify(b2) {
+		t.Fatal("SignatureBlock with invalid PrimaryBlock succeeded")
+	}
+
+	prim.Lifetime = primTmp
+	if !sbCan.Value.(*SignatureBlock).Verify(b2) {
+		t.Fatal("SignatureBlock with fixed PrimaryBlock failed")
+	}
+
+	// Alter the Payload Block
 	if pb, pbErr := b2.PayloadBlock(); pbErr != nil {
 		t.Fatal(pbErr)
 	} else {
-		pb.Value.(*PayloadBlock).Data()[0] = 0
-	}
+		tmp := pb.Value.(*PayloadBlock).Data()[0]
 
-	if sbCan.Value.(*SignatureBlock).Verify(b2) {
-		t.Fatal("SignatureBlock with invalid PayloadBlock succeeded")
+		pb.Value.(*PayloadBlock).Data()[0] = 0
+		if sbCan.Value.(*SignatureBlock).Verify(b2) {
+			t.Fatal("SignatureBlock with invalid PayloadBlock succeeded")
+		}
+
+		pb.Value.(*PayloadBlock).Data()[0] = tmp
+		if !sbCan.Value.(*SignatureBlock).Verify(b2) {
+			t.Fatal("SignatureBlock with fixed PayloadBlock failed")
+		}
 	}
 }

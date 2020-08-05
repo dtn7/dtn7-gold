@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-// SignatureBlock is a custom block to sign a Bundle's Payload Block via ed25519.
+// SignatureBlock is a custom block to sign a Bundle's Primary and Payload Block via ed25519.
 //
 // Although this block is present in the bundle package, it is NOT specified in ietf-dtn-bpbis. It will probably be
 // removed once ietf-dtn-bpsec is implemented.
@@ -25,6 +25,9 @@ import (
 // 	sb, sbErr := NewSignatureBlock(b, priv)
 // 	if sbErr != nil { ... }
 // 	b.AddExtensionBlock(NewCanonicalBlock(0, ReplicateBlock|DeleteBundle, sb))
+//
+// The ed25519 signature will be created for the concatenated CBOR representation of the Bundle's Primary Block and
+// Payload Block.
 //
 // The block-type-specific data in a SignatureBlock MUST be represented as a CBOR array comprising two elements. These
 // two elements are firstly the PublicKey and secondly the Signature, both represented as a CBOR byte string. Both the
@@ -39,21 +42,26 @@ func (s *SignatureBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypeSignatureBlock
 }
 
-// signaturePayloadData creates a Buffer of a Bundle's Payload Block data, used as the message to be signed.
-func signaturePayloadData(b Bundle) (pbData bytes.Buffer, err error) {
+// signatureBundleData creates a Buffer of the Primary Block and Payload Block data, used as the message to be signed.
+func signatureBundleData(b Bundle) (pbData bytes.Buffer, err error) {
+	if err = cboring.Marshal(&b.PrimaryBlock, &pbData); err != nil {
+		return
+	}
+
 	if pb, pbErr := b.ExtensionBlock(ExtBlockTypePayloadBlock); pbErr != nil {
 		err = pbErr
 	} else {
 		err = cboring.Marshal(pb, &pbData)
 	}
+
 	return
 }
 
-// NewSignatureBlock for a Bundle's PayloadBlock with a private key.
+// NewSignatureBlock for a Bundle from a private key.
 func NewSignatureBlock(b Bundle, priv ed25519.PrivateKey) (s *SignatureBlock, err error) {
-	pbData, pbDataErr := signaturePayloadData(b)
-	if pbDataErr != nil {
-		err = pbDataErr
+	data, dataErr := signatureBundleData(b)
+	if dataErr != nil {
+		err = dataErr
 		return
 	}
 
@@ -72,7 +80,7 @@ func NewSignatureBlock(b Bundle, priv ed25519.PrivateKey) (s *SignatureBlock, er
 
 	s = &SignatureBlock{
 		PublicKey: pub,
-		Signature: ed25519.Sign(priv, pbData.Bytes()),
+		Signature: ed25519.Sign(priv, data.Bytes()),
 	}
 	return
 }
@@ -94,14 +102,14 @@ func (s *SignatureBlock) CheckValid() (err error) {
 	return
 }
 
-// Verify the signature against a Bundle's Payload Block.
+// Verify the signature against a Bundle.
 func (s *SignatureBlock) Verify(b Bundle) (valid bool) {
 	if validErr := s.CheckValid(); validErr != nil {
 		return false
 	}
 
-	pbData, pbDataErr := signaturePayloadData(b)
-	if pbDataErr != nil {
+	data, dataErr := signatureBundleData(b)
+	if dataErr != nil {
 		return false
 	}
 
@@ -112,7 +120,7 @@ func (s *SignatureBlock) Verify(b Bundle) (valid bool) {
 		}
 	}()
 
-	return ed25519.Verify(s.PublicKey, pbData.Bytes(), s.Signature)
+	return ed25519.Verify(s.PublicKey, data.Bytes(), s.Signature)
 }
 
 // MarshalCbor writes the CBOR representation of a SignatureBlock.
