@@ -20,7 +20,7 @@ AUTHOR_REWRITE = {"Alvar": "Alvar Penning"}
 FILE_IGNORE = [
         "go.mod", "go.sum",  # https://github.com/fsfe/reuse-tool/pull/234
         ".reuse/dep5",
-        "LICENSES/CC0-1.0.txt", "LICENSES/GPL-3.0-or-later.txt"
+        "LICENSE", "LICENSES/CC0-1.0.txt", "LICENSES/GPL-3.0-or-later.txt"
         ]
 
 
