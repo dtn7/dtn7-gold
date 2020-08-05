@@ -26,14 +26,16 @@ Types of changes:
 - REUSE compliance and a new copyright header generation script.
 - Sort Bundle's CanonicalBlocks on creation and block modification.
 - Custom SignatureBlock for cryptographic ed25519 Bundle signatures.
-- dtnd supports attaching a SignatureBlock for outgoing Bundles.
+- dtnd supports attaching a SignatureBlock for Administrative Records.
 
 ### Changed
 - Replaced TravisCI with GitHub Actions.
 - List all Extension Block type codes in `bundle/extension_block.go`.
 - Fragmentation tries to copy the original CRC type.
-- BundleBuilder: Add replicate block flag for Bundle Age, Hop Count, and
-  Previous Node Blocks to ease Bundle fragmentation.
+- BundleBuilder sets flags by default:
+    - Request delivery status bundle control flag.
+    - Replicate block control flag for Bundle Age Block, Hop Count
+      Block, and Previous Node Block to ease Bundle fragmentation.
 
 ### Removed
 - Drop compatibility with Go versions below 1.13.

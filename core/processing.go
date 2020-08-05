@@ -16,7 +16,7 @@ import (
 
 // SendBundle transmits an outbounding bundle.
 func (c *Core) SendBundle(bndl *bundle.Bundle) {
-	if c.signPriv != nil {
+	if c.signPriv != nil && bndl.IsAdministrativeRecord() {
 		c.sendBundleAttachSignature(bndl)
 	}
 	bp := NewBundlePackFromBundle(*bndl, c.store)
@@ -25,8 +25,12 @@ func (c *Core) SendBundle(bndl *bundle.Bundle) {
 	c.transmit(bp)
 }
 
-// sendBundleAttachSignature attaches a SignatureBlock to outgoing Bundles, if the Core is configured accordingly.
+// sendBundleAttachSignature attaches a SignatureBlock to outgoing Administrative Records, if configured.
 func (c *Core) sendBundleAttachSignature(bndl *bundle.Bundle) {
+	if c.signPriv == nil || !bndl.IsAdministrativeRecord() {
+		return
+	}
+
 	sb, sbErr := bundle.NewSignatureBlock(*bndl, c.signPriv)
 	if sbErr != nil {
 		log.WithField("bundle", bndl.ID()).WithError(sbErr).Error("Creating signature errored, proceeding without")

@@ -45,7 +45,7 @@ func TestBundleBuilderSimple(t *testing.T) {
 
 	bndl3, err := NewBundle(
 		NewPrimaryBlock(
-			0,
+			StatusRequestDelivery,
 			MustNewEndpointID("dtn://dest/"),
 			MustNewEndpointID("dtn://myself/"),
 			NewCreationTimestamp(DtnTimeEpoch, 0),

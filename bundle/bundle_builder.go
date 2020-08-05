@@ -37,7 +37,7 @@ func Builder() *BundleBuilder {
 	return &BundleBuilder{
 		err: nil,
 
-		primary:          PrimaryBlock{Version: dtnVersion},
+		primary:          PrimaryBlock{Version: dtnVersion, BundleControlFlags: StatusRequestDelivery},
 		canonicals:       []CanonicalBlock{},
 		canonicalCounter: 2,
 		crcType:          CRCNo,
