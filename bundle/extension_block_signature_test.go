@@ -15,6 +15,18 @@ import (
 	"github.com/dtn7/cboring"
 )
 
+// testSignatureBlockRandBytes is a util function to create len pseudo random bytes.
+func testSignatureBlockRandBytes(seed int64, len int, t *testing.T) []byte {
+	random := rand.New(rand.NewSource(seed))
+	b := make([]byte, len)
+	if n, err := random.Read(b); err != nil {
+		t.Fatal(err)
+	} else if n != len {
+		t.Fatalf("generated %d instead of %d bytes", n, len)
+	}
+	return b
+}
+
 func TestSignatureBlockCheckValid(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -96,17 +108,6 @@ func TestSignatureBlockVerifySimple(t *testing.T) {
 	if !sb.Verify(b) {
 		t.Fatal("SignatureBlock cannot be verified")
 	}
-}
-
-func testSignatureBlockRandBytes(seed int64, len int, t *testing.T) []byte {
-	random := rand.New(rand.NewSource(seed))
-	b := make([]byte, len)
-	if n, err := random.Read(b); err != nil {
-		t.Fatal(err)
-	} else if n != len {
-		t.Fatalf("generated %d instead of %d bytes", n, len)
-	}
-	return b
 }
 
 func TestSignatureBlockCborSimple(t *testing.T) {
@@ -216,5 +217,67 @@ func TestSignatureBlockIntegration(t *testing.T) {
 		if !sbCan.Value.(*SignatureBlock).Verify(b2) {
 			t.Fatal("SignatureBlock with fixed PayloadBlock failed")
 		}
+	}
+}
+
+func TestSignatureBlockFragmentSimple(t *testing.T) {
+	b1, b1Err := Builder().
+		CRC(CRC32).
+		Source("dtn://src/").
+		Destination("dtn://dst/").
+		CreationTimestampTime(time.Unix(4000000000, 0)).
+		Lifetime(30 * time.Minute).
+		PayloadBlock(testSignatureBlockRandBytes(23, 1024, t)).
+		Build()
+	if b1Err != nil {
+		t.Fatal(b1Err)
+	}
+
+	_, priv, ed25519KeyErr := ed25519.GenerateKey(nil)
+	if ed25519KeyErr != nil {
+		t.Fatal(ed25519KeyErr)
+	}
+
+	sb, sbErr := NewSignatureBlock(b1, priv)
+	if sbErr != nil {
+		t.Fatal(sbErr)
+	}
+
+	cb := NewCanonicalBlock(0, ReplicateBlock|DeleteBundle, sb)
+	cb.SetCRCType(CRC32)
+	b1.AddExtensionBlock(cb)
+
+	bs, bsErr := b1.Fragment(256)
+	if bsErr != nil {
+		t.Fatal(bsErr)
+	}
+
+	for _, frag := range bs {
+		if fragCb, fragErr := frag.ExtensionBlock(ExtBlockTypeSignatureBlock); fragErr != nil {
+			t.Fatal(fragErr)
+		} else if !reflect.DeepEqual(cb.Value, fragCb.Value) {
+			t.Fatalf("Signature Block in fragment differs: %v != %v", sb, fragCb.Value)
+		} else if fragCb.Value.(*SignatureBlock).Verify(frag) {
+			t.Fatal("Positive verification on fragment")
+		}
+	}
+
+	b2, b2Err := ReassembleFragments(bs)
+	if b2Err != nil {
+		t.Fatal(b2Err)
+	}
+
+	// Marshal both Bundles to ensure the presence of a CRC value
+	if err := cboring.Marshal(&b1, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := cboring.Marshal(&b2, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+
+	if b2Sb, b2SbErr := b2.ExtensionBlock(ExtBlockTypeSignatureBlock); b2SbErr != nil {
+		t.Fatal(b2SbErr)
+	} else if !b2Sb.Value.(*SignatureBlock).Verify(b2) {
+		t.Fatal("Verification failed")
 	}
 }

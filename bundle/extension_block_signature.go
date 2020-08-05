@@ -14,24 +14,26 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-// SignatureBlock is a custom block to sign a Bundle's Primary and Payload Block via ed25519.
+// SignatureBlock is a custom block to sign a Bundle's Primary Block and Payload Block via ed25519.
 //
-// Although this block is present in the bundle package, it is NOT specified in ietf-dtn-bpbis. It will probably be
-// removed once ietf-dtn-bpsec is implemented.
+// The signature will be created for the concatenated CBOR representation of the Bundle's Primary Block and Payload
+// Block using ed25519. Other blocks, like the Hop Count or Previous Node Block, might be altered on the way to the
+// Bundle's destination. Therefore this signature is limited to these two blocks. It also follows that fragmented
+// Bundles can neither be signed nor verified because the fragmentation offset is altered.
 //
 // To create a SignatureBlock, a Bundle with a PayloadBlock needs to exist first. Afterwards, one needs to create a
 // SignatureBlock for this Bundle and attach it to the Bundle.
 //
-// 	sb, sbErr := NewSignatureBlock(b, priv)
-// 	if sbErr != nil { ... }
-// 	b.AddExtensionBlock(NewCanonicalBlock(0, ReplicateBlock|DeleteBundle, sb))
-//
-// The ed25519 signature will be created for the concatenated CBOR representation of the Bundle's Primary Block and
-// Payload Block.
+// 	b, bErr := bundle.Builder()./* ... */.Build()
+// 	sb, sbErr := bundle.NewSignatureBlock(b, priv)
+// 	b.AddExtensionBlock(bundle.NewCanonicalBlock(0, bundle.ReplicateBlock|bundle.DeleteBundle, sb))
 //
 // The block-type-specific data in a SignatureBlock MUST be represented as a CBOR array comprising two elements. These
-// two elements are firstly the PublicKey and secondly the Signature, both represented as a CBOR byte string. Both the
-// array and the byte strings MUST be of a defined length, NOT indefinite-length items.
+// elements are firstly the PublicKey and secondly the Signature, both represented as a CBOR byte string. Both the array
+// and the byte strings MUST be of a defined length, NOT indefinite-length items.
+//
+// Although this block is present in the bundle package, it is NOT specified in ietf-dtn-bpbis. It might be removed once
+// ietf-dtn-bpsec is implemented.
 type SignatureBlock struct {
 	PublicKey []byte
 	Signature []byte
@@ -59,6 +61,11 @@ func signatureBundleData(b Bundle) (pbData bytes.Buffer, err error) {
 
 // NewSignatureBlock for a Bundle from a private key.
 func NewSignatureBlock(b Bundle, priv ed25519.PrivateKey) (s *SignatureBlock, err error) {
+	if b.PrimaryBlock.BundleControlFlags.Has(IsFragment) {
+		err = fmt.Errorf("fragmented Bundles cannot be signed")
+		return
+	}
+
 	data, dataErr := signatureBundleData(b)
 	if dataErr != nil {
 		err = dataErr
@@ -105,6 +112,10 @@ func (s *SignatureBlock) CheckValid() (err error) {
 // Verify the signature against a Bundle.
 func (s *SignatureBlock) Verify(b Bundle) (valid bool) {
 	if validErr := s.CheckValid(); validErr != nil {
+		return false
+	}
+
+	if b.PrimaryBlock.BundleControlFlags.Has(IsFragment) {
 		return false
 	}
 
