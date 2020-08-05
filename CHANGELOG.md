@@ -36,6 +36,7 @@ Types of changes:
 ### Fix
 - Ensure only Payload Blocks are allowed to get Block Number 1 when
   adding Extension Blocks to an empty Bundle.
+- PrimaryBlock: always overwrite CRC, don't rely on cached values
 
 
 ## [0.7.1] - 2020-08-03

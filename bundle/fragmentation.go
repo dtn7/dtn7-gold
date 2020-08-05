@@ -233,6 +233,7 @@ func ReassembleFragments(bs []Bundle) (b Bundle, err error) {
 	b.PrimaryBlock.BundleControlFlags &^= IsFragment
 	b.PrimaryBlock.FragmentOffset = 0
 	b.PrimaryBlock.TotalDataLength = 0
+	b.PrimaryBlock.CRC = nil
 
 	for _, cb := range bs[0].CanonicalBlocks {
 		if cb.TypeCode() == ExtBlockTypePayloadBlock {

@@ -140,7 +140,7 @@ func (pb *PrimaryBlock) MarshalCbor(w io.Writer) error {
 		return crcErr
 	} else if err := cboring.WriteByteString(crcVal, w); err != nil {
 		return err
-	} else if pb.CRC == nil {
+	} else {
 		pb.CRC = crcVal
 	}
 
