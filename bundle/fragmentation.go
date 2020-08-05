@@ -78,7 +78,7 @@ func (b Bundle) Fragment(mtu int) (bs []Bundle, err error) {
 		offset := int(math.Min(float64(i+fragPayloadBlockLen), float64(len(payloadBlock.Value.(*PayloadBlock).Data()))))
 		fragBundle.AddExtensionBlock(CanonicalBlock{
 			BlockControlFlags: payloadBlock.BlockControlFlags,
-			CRCType:           CRC32,
+			CRCType:           payloadBlock.CRCType,
 			Value:             NewPayloadBlock(payloadBlock.Value.(*PayloadBlock).Data()[i:offset]),
 		})
 
@@ -247,7 +247,16 @@ func ReassembleFragments(bs []Bundle) (b Bundle, err error) {
 		err = payloadErr
 		return
 	} else {
-		b.AddExtensionBlock(NewCanonicalBlock(1, 0, NewPayloadBlock(payload)))
+		pb0, pb0Err := bs[0].PayloadBlock()
+		if pb0Err != nil {
+			err = pb0Err
+			return
+		}
+
+		cb := NewCanonicalBlock(1, pb0.BlockControlFlags, NewPayloadBlock(payload))
+		cb.SetCRCType(pb0.CRCType)
+
+		b.AddExtensionBlock(cb)
 	}
 
 	err = b.CheckValid()

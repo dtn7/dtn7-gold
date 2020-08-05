@@ -31,6 +31,9 @@ Types of changes:
 ### Changed
 - Replaced TravisCI with GitHub Actions.
 - List all Extension Block type codes in `bundle/extension_block.go`.
+- Fragmentation tries to copy the original CRC type.
+
+### Removed
 - Drop compatibility with Go versions below 1.13.
 
 ### Fix
