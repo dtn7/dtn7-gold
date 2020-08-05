@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: 2020 Alvar Penning
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  golang:
+    name: Build and test dtn7-go
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go: [ '1.13', '1.14' ]
+
+    steps:
+    - name: Set up Go ${{ matrix.go }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Build on Go ${{ matrix.go }}
+      run: go build -v ./...
+
+    - name: Test
+      run: go test -v -race ./...
+
+
+  golangci:
+    name: Check golangci-lint
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@6317259e28065ecd33bf7e7e6c67c77db091d8a4  # v2.2.0
+      with:
+        version: v1.30
+        args: --config contrib/golangci-lint/.golangci.yml
+
+
+  reuse:
+    name: Check REUSE compliance
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: REUSE Compliance Check
+      uses: fsfe/reuse-action@43bd643263f2a557a37e023e538ab9f83dce92a6  # v1.1

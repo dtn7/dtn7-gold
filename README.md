@@ -9,7 +9,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # dtn7-go
 [![Release](https://img.shields.io/github/v/tag/dtn7/dtn7-go?label=version)](https://github.com/dtn7/dtn7-go/releases)
 [![GoDoc](https://godoc.org/github.com/dtn7/dtn7-go?status.svg)](https://godoc.org/github.com/dtn7/dtn7-go)
-[![Build Go](https://github.com/dtn7/dtn7-go/workflows/Build%20Go/badge.svg)](https://github.com/dtn7/dtn7-go/actions)
+[![CI](https://github.com/dtn7/dtn7-go/workflows/CI/badge.svg)](https://github.com/dtn7/dtn7-go/actions)
 [![REUSE status](https://api.reuse.software/badge/github.com/dtn7/dtn7-go)](https://api.reuse.software/info/github.com/dtn7/dtn7-go)
 
 Delay-Tolerant Networking software suite and library based on the Bundle Protocol Version 7.
