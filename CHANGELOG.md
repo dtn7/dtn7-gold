@@ -42,6 +42,7 @@ Types of changes:
 - Ensure only Payload Blocks are allowed to get Block Number 1 when
   adding Extension Blocks to an empty Bundle.
 - PrimaryBlock: always overwrite CRC, don't rely on cached values
+- dtn-tool exchange: do not resend received Bundles
 
 
 ## [0.7.1] - 2020-08-03

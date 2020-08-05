@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -29,6 +30,16 @@ type exchange struct {
 
 	closeChan      chan os.Signal
 	bundleReadChan chan bundle.Bundle
+}
+
+func cleanFilepath(f string) string {
+	const basepath = "."
+	if rel, err := filepath.Rel(basepath, f); err != nil {
+		log.WithField("path", f).WithError(err).Fatal("Failed to clean file path")
+		return ""
+	} else {
+		return rel
+	}
 }
 
 // startExchange to exchange Bundles between client and a dtnd.
@@ -86,7 +97,7 @@ func (ex *exchange) handler() {
 				return
 			}
 
-			if _, ok := ex.knownFiles.Load(e.Name); ok {
+			if _, ok := ex.knownFiles.Load(cleanFilepath(e.Name)); ok {
 				log.WithField("file", e.Name).Debug("Skipping file; already known")
 				continue
 			}
@@ -131,7 +142,7 @@ func (ex *exchange) handler() {
 				logger.WithError(err).Error("Closing file errored")
 			}
 
-			ex.knownFiles.Store(filepath, struct{}{})
+			ex.knownFiles.Store(cleanFilepath(filepath), struct{}{})
 
 			logger.Info("Saved received Bundle")
 		}
