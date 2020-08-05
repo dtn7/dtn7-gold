@@ -32,6 +32,8 @@ Types of changes:
 - Replaced TravisCI with GitHub Actions.
 - List all Extension Block type codes in `bundle/extension_block.go`.
 - Fragmentation tries to copy the original CRC type.
+- BundleBuilder: Add replicate block flag for Bundle Age, Hop Count, and
+  Previous Node Blocks to ease Bundle fragmentation.
 
 ### Removed
 - Drop compatibility with Go versions below 1.13.

@@ -335,6 +335,19 @@ func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 	return bldr
 }
 
+// canonicalParseFlags is a helper function for the following specific Canonical / Extension Blocks to get the flags.
+func (bldr *BundleBuilder) canonicalParseFlags(args ...interface{}) (flags BlockControlFlags) {
+	if len(args) == 2 {
+		if passedFlags, ok := args[1].(BlockControlFlags); !ok {
+			bldr.err = fmt.Errorf("second parameter are no BlockControlFlags")
+		} else {
+			flags = passedFlags
+		}
+	}
+
+	return
+}
+
 // BundleAgeBlock adds a bundle age block to this bundle. The parameters are:
 //
 //   Age[, BlockControlFlags]
@@ -352,11 +365,9 @@ func (bldr *BundleBuilder) BundleAgeBlock(args ...interface{}) *BundleBuilder {
 		bldr.err = msErr
 	}
 
-	// Call Canonical as a variadic function with:
-	// - ExtensionBlock: BundleAgeBlock with parsed milliseconds
-	// - BlockControlFlags: BlockControlFlags, if given
-	return bldr.Canonical(
-		append([]interface{}{NewBundleAgeBlock(ms)}, args[1:]...)...)
+	flags := bldr.canonicalParseFlags(args) | ReplicateBlock
+
+	return bldr.Canonical(NewBundleAgeBlock(ms), flags)
 }
 
 // HopCountBlock adds a hop count block to this bundle. The parameters are:
@@ -376,9 +387,9 @@ func (bldr *BundleBuilder) HopCountBlock(args ...interface{}) *BundleBuilder {
 		bldr.err = fmt.Errorf("HopCountBlock received wrong parameter type")
 	}
 
-	// Read the comment in BundleAgeBlock to grasp the following madness
-	return bldr.Canonical(append(
-		[]interface{}{NewHopCountBlock(uint8(limit))}, args[1:]...)...)
+	flags := bldr.canonicalParseFlags(args) | ReplicateBlock
+
+	return bldr.Canonical(NewHopCountBlock(uint8(limit)), flags)
 }
 
 // PayloadBlock adds a payload block to this bundle. The parameters are:
@@ -417,8 +428,9 @@ func (bldr *BundleBuilder) PreviousNodeBlock(args ...interface{}) *BundleBuilder
 		bldr.err = eidErr
 	}
 
-	return bldr.Canonical(
-		append([]interface{}{NewPreviousNodeBlock(eid)}, args[1:]...)...)
+	flags := bldr.canonicalParseFlags(args) | ReplicateBlock
+
+	return bldr.Canonical(NewPreviousNodeBlock(eid), flags)
 }
 
 // BuildFromMap creates a Bundle from a map which "calls" the BundleBuilder's methods.

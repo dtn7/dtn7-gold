@@ -51,8 +51,8 @@ func TestBundleBuilderSimple(t *testing.T) {
 			NewCreationTimestamp(DtnTimeEpoch, 0),
 			1000*60*10),
 		[]CanonicalBlock{
-			NewCanonicalBlock(2, 0, NewHopCountBlock(64)),
-			NewCanonicalBlock(3, 0, NewBundleAgeBlock(0)),
+			NewCanonicalBlock(2, ReplicateBlock, NewHopCountBlock(64)),
+			NewCanonicalBlock(3, ReplicateBlock, NewBundleAgeBlock(0)),
 			NewCanonicalBlock(1, 0, NewPayloadBlock([]byte("hello world!")))})
 	if err != nil {
 		t.Fatal(err)
