@@ -22,6 +22,9 @@ Types of changes:
 -->
 
 ## [Unreleased]
+
+
+## [0.8.0] - 2020-08-05
 ### Added
 - REUSE compliance and a new copyright header generation script.
 - Sort Bundle's CanonicalBlocks on creation and block modification.
@@ -250,7 +253,8 @@ First, unstable release
 [0.6.1]: https://github.com/dtn7/dtn7-go/compare/v0.6.0...v0.6.1
 [0.7.0]: https://github.com/dtn7/dtn7-go/compare/v0.6.1...v0.7.0
 [0.7.1]: https://github.com/dtn7/dtn7-go/compare/v0.7.0...v0.7.1
-[Unreleased]: https://github.com/dtn7/dtn7-go/compare/v0.7.1...master
+[0.8.0]: https://github.com/dtn7/dtn7-go/compare/v0.7.1...v0.8.0
+[Unreleased]: https://github.com/dtn7/dtn7-go/compare/v0.8.0...master
 
 
 <!-- vim: set tw=72 colorcolumn=72 ts=2 ft=markdown spell: -->
