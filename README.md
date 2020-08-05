@@ -8,7 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # dtn7-go
 [![Release](https://img.shields.io/github/v/tag/dtn7/dtn7-go?label=version)](https://github.com/dtn7/dtn7-go/releases)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/dtn7/dtn7-go)](https://pkg.go.dev/github.com/dtn7/dtn7-go)
+[![GoDoc](https://godoc.org/github.com/dtn7/dtn7-go?status.svg)](https://godoc.org/github.com/dtn7/dtn7-go)
 [![Build Go](https://github.com/dtn7/dtn7-go/workflows/Build%20Go/badge.svg)](https://github.com/dtn7/dtn7-go/actions)
 [![REUSE status](https://api.reuse.software/badge/github.com/dtn7/dtn7-go)](https://api.reuse.software/info/github.com/dtn7/dtn7-go)
 
@@ -151,7 +151,7 @@ To simplify the copyright stuff, the [REUSE][reuse] tool is used.
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
 [dtn-tcpcl-14]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-14
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
-[godoc]: https://pkg.go.dev/github.com/dtn7/dtn7-go
+[godoc]: https://godoc.org/github.com/dtn7/dtn7-go
 [gofmt]: https://blog.golang.org/gofmt
 [goland]: https://www.jetbrains.com/go/
 [golang]: https://golang.org/
