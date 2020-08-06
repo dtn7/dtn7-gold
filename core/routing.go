@@ -28,7 +28,7 @@ type RoutingAlgorithm interface {
 	DispatchingAllowed(bp BundlePack) bool
 
 	// SenderForBundle returns an array of ConvergenceSender for a requested
-	// bundle. Furthermore the finished flags indicates if this BundlePack should
+	// bundle. Furthermore the delete flags indicates if this BundlePack should
 	// be deleted afterwards.
 	// The CLA selection is based on the algorithm's design.
 	SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool)
@@ -45,16 +45,20 @@ type RoutingAlgorithm interface {
 	ReportPeerDisappeared(peer cla.Convergence)
 }
 
-// RoutingConfig contains necessary configuration data to initialise a routing algorithm
+// RoutingConf contains necessary configuration data to initialize a routing algorithm.
 type RoutingConf struct {
-	// Algorithm is one of the implemented routing-algorithms
-	// May be: "epidemic", "spray", "binary_spray", "dtlsr"
+	// Algorithm is one of the implemented routing algorithms.
+	//
+	// One of: "epidemic", "spray", "binary_spray", "dtlsr", "prophet"
 	Algorithm string
-	// SprayConf contains data to initialise spray & binary_spray
+
+	// SprayConf contains data to initialize "spray" or "binary_spray"
 	SprayConf SprayConfig
-	// DTLSRConf contains data to initialise dtlsr
+
+	// DTLSRConf contains data to initialize "dtlsr"
 	DTLSRConf DTLSRConfig
-	// ProphetConf contains data to initialise prophet
+
+	// ProphetConf contains data to initialize "prophet"
 	ProphetConf ProphetConfig
 }
 
@@ -87,7 +91,9 @@ func sendMetadataBundle(c *Core, source bundle.EndpointID, destination bundle.En
 	return nil
 }
 
-// filterCLAs filters the node's which already received a Bundle for a specific routing algorithm, e.g., "epidemic".
+// filterCLAs filters the nodes which already received a Bundle for a specific routing algorithm, e.g., "epidemic".
+// It returns a list of unused ConvergenceSenders and an updated list of all sent EndpointIDs. The second should be
+// stored as "routing/${algorithm}/sent" within the specific algorithm.
 func filterCLAs(bundleItem storage.BundleItem, clas []cla.ConvergenceSender, algorithm string) (filtered []cla.ConvergenceSender, sentEids []bundle.EndpointID) {
 	filtered = make([]cla.ConvergenceSender, 0)
 

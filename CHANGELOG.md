@@ -22,6 +22,8 @@ Types of changes:
 -->
 
 ## [Unreleased]
+### Added
+- Specific routing algorithm for data mules in sensor networks.
 
 
 ## [0.8.0] - 2020-08-05
