@@ -78,20 +78,20 @@ endpoint = "[fc23::2]:35037"
 
 # Specify routing algorithm
 [routing]
-# can be either "epidemic", "spray", "binary_sparay", "dtlsr", "prophet"
+# can be either "epidemic", "spray", "binary_sparay", "dtlsr", "prophet", "sensor-mule"
 algorithm = "epidemic"
 
-# config for spray routing
+# Config for spray routing
 [routing.sprayconf]
 multiplicity = 10
 
-# config for dtlsr
+# Config for dtlsr
 [routing.dtlsrconf]
 recomputetime = "30s"
 broadcasttime = "30s"
 purgetime = "10m"
 
-# config for prophet
+# Config for prophet
 [routing.prophetconf]
 # pinit ist the prophet initialisation constant (default value provided by the PROPHET-paper)
 pinit = 0.75
@@ -100,3 +100,12 @@ beta = 0.25
 # gamma is the prophet ageing factor (default value provided by the PROPHET-paper)
 gamma = 0.98
 ageinterval = "1m"
+
+# Config for sensor-mule
+[routing.sensor-mule-conf]
+# sensor-node-regex is a regular expression matching sensor node's node IDs.
+sensor-node-regex = "^dtn://[^/]+\\.sensor/.*$"
+# This routing structure defines the underlying routing algorithm; it's identical to the parent routing section.
+# In this example, the underlying algorithm is the simple epidemic routing.
+[routing.sensor-mule-conf.routing]
+algorithm = "epidemic"

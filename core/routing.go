@@ -6,9 +6,13 @@
 package core
 
 import (
+	"fmt"
+	"regexp"
+
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/storage"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -49,7 +53,7 @@ type RoutingAlgorithm interface {
 type RoutingConf struct {
 	// Algorithm is one of the implemented routing algorithms.
 	//
-	// One of: "epidemic", "spray", "binary_spray", "dtlsr", "prophet"
+	// One of: "epidemic", "spray", "binary_spray", "dtlsr", "prophet", "sensor-mule"
 	Algorithm string
 
 	// SprayConf contains data to initialize "spray" or "binary_spray"
@@ -60,6 +64,43 @@ type RoutingConf struct {
 
 	// ProphetConf contains data to initialize "prophet"
 	ProphetConf ProphetConfig
+
+	// SensorNetworkMuleConfig contains data to initialize "sensor-mule"
+	SensorMuleConf SensorNetworkMuleConfig `toml:"sensor-mule-conf"`
+}
+
+// RoutingAlgorithm from its configuration.
+func (routingConf RoutingConf) RoutingAlgorithm(c *Core) (ra RoutingAlgorithm, err error) {
+	switch routingConf.Algorithm {
+	case "epidemic":
+		ra = NewEpidemicRouting(c)
+
+	case "spray":
+		ra = NewSprayAndWait(c, routingConf.SprayConf)
+
+	case "binary_spray":
+		ra = NewBinarySpray(c, routingConf.SprayConf)
+
+	case "dtlsr":
+		ra = NewDTLSR(c, routingConf.DTLSRConf)
+
+	case "prophet":
+		ra = NewProphet(c, routingConf.ProphetConf)
+
+	case "sensor-mule":
+		if algo, algoErr := routingConf.SensorMuleConf.Algorithm.RoutingAlgorithm(c); algoErr != nil {
+			err = algoErr
+		} else if sensorNode, sensorNodeErr := regexp.Compile(routingConf.SensorMuleConf.SensorNodeRegex); sensorNodeErr != nil {
+			err = sensorNodeErr
+		} else {
+			ra = NewSensorNetworkMuleRouting(algo, sensorNode)
+		}
+
+	default:
+		err = fmt.Errorf("unknown routing algorithm %s", routingConf.Algorithm)
+	}
+
+	return
 }
 
 // sendMetadataBundle can be used by routing algorithm to send relevant metadata to peers

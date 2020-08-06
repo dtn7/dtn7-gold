@@ -76,19 +76,10 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 
 	c.idKeeper = NewIdKeeper()
 
-	switch routingConf.Algorithm {
-	case "epidemic":
-		c.routing = NewEpidemicRouting(c)
-	case "spray":
-		c.routing = NewSprayAndWait(c, routingConf.SprayConf)
-	case "binary_spray":
-		c.routing = NewBinarySpray(c, routingConf.SprayConf)
-	case "dtlsr":
-		c.routing = NewDTLSR(c, routingConf.DTLSRConf)
-	case "prophet":
-		c.routing = NewProphet(c, routingConf.ProphetConf)
-	default:
-		return nil, fmt.Errorf("unknown routing algorithm %s", routingConf.Algorithm)
+	if ra, raErr := routingConf.RoutingAlgorithm(c); raErr != nil {
+		return nil, raErr
+	} else {
+		c.routing = ra
 	}
 
 	if signPriv != nil {

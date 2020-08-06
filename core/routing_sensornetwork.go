@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2020 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -27,11 +27,17 @@ import (
 // bundles to sensors that are addressed to them, such as receipt confirmations as administrative records.
 type SensorNetworkMuleRouting struct {
 	algorithm  RoutingAlgorithm
-	sensorNode regexp.Regexp
+	sensorNode *regexp.Regexp
+}
+
+// SensorNetworkMuleConfig describes a SensorNetworkMuleRouting.
+type SensorNetworkMuleConfig struct {
+	Algorithm       *RoutingConf `toml:"routing"`
+	SensorNodeRegex string       `toml:"sensor-node-regex"`
 }
 
 // NewSensorNetworkMuleRouting based on an underlying algorithm and a regex to identify sensor nodes by their Node ID.
-func NewSensorNetworkMuleRouting(algorithm RoutingAlgorithm, sensorNode regexp.Regexp) *SensorNetworkMuleRouting {
+func NewSensorNetworkMuleRouting(algorithm RoutingAlgorithm, sensorNode *regexp.Regexp) *SensorNetworkMuleRouting {
 	return &SensorNetworkMuleRouting{
 		algorithm:  algorithm,
 		sensorNode: sensorNode,
