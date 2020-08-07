@@ -145,3 +145,61 @@ func TestEndpointSingleton(t *testing.T) {
 		}
 	}
 }
+
+func TestEndpointIDSameNode(t *testing.T) {
+	tests := []struct {
+		eid1  string
+		eid2  string
+		valid bool
+	}{
+		{
+			eid1:  "dtn://foo/",
+			eid2:  "dtn://foo/",
+			valid: true,
+		},
+		{
+			eid1:  "dtn://foo/",
+			eid2:  "dtn://foo/bar",
+			valid: true,
+		},
+		{
+			eid1:  "dtn://foo/bar",
+			eid2:  "dtn://foo/",
+			valid: true,
+		},
+		{
+			eid1:  "dtn://foo/bar",
+			eid2:  "dtn://foo/buz",
+			valid: true,
+		},
+		{
+			eid1:  "dtn://foo/bar",
+			eid2:  "dtn://bar/foo",
+			valid: false,
+		},
+		{
+			eid1:  "ipn:23.42",
+			eid2:  "dtn://23/42",
+			valid: false,
+		},
+	}
+
+	for _, test := range tests {
+		eid1, eid1Err := NewEndpointID(test.eid1)
+		if eid1Err != nil {
+			t.Fatal(eid1Err)
+		}
+
+		eid2, eid2Err := NewEndpointID(test.eid2)
+		if eid2Err != nil {
+			t.Fatal(eid2Err)
+		}
+
+		if res := eid1.SameNode(eid2); res != test.valid {
+			t.Fatalf("%v.IsSameNode(%v) := %t", eid1, eid2, res)
+		}
+		if res := eid2.SameNode(eid1); res != test.valid {
+			t.Fatalf("%v.IsSameNode(%v) := %t", eid2, eid1, res)
+		}
+	}
+}

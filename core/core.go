@@ -198,7 +198,7 @@ func (c *Core) RegisterApplicationAgent(app agent.ApplicationAgent) {
 // PrimaryBlock's destination to the assigned endpoint ID of each CLA.
 func (c *Core) senderForDestination(endpoint bundle.EndpointID) (css []cla.ConvergenceSender) {
 	for _, cs := range c.claManager.Sender() {
-		if cs.GetPeerEndpointID() == endpoint {
+		if cs.GetPeerEndpointID().SameNode(endpoint) {
 			css = append(css, cs)
 		}
 	}
@@ -208,7 +208,7 @@ func (c *Core) senderForDestination(endpoint bundle.EndpointID) (css []cla.Conve
 // HasEndpoint checks if the given endpoint ID is assigned either to an
 // application or a CLA governed by this Application Agent.
 func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
-	if c.NodeId.Authority() == endpoint.Authority() {
+	if c.NodeId.SameNode(endpoint) {
 		return true
 	}
 
@@ -221,7 +221,7 @@ func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
 	}
 
 	for _, cr := range c.claManager.Receiver() {
-		if cr.GetEndpointID() == endpoint {
+		if cr.GetEndpointID().SameNode(endpoint) {
 			return true
 		}
 	}

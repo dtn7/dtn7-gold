@@ -74,7 +74,7 @@ func (snm *SensorNetworkMuleRouting) SenderForBundle(bp BundlePack) (sender []cl
 		}
 
 		// Otherwise, check if this Bundle is not addressed to it.
-		if sender[i].GetPeerEndpointID() != bp.Receiver {
+		if !sender[i].GetPeerEndpointID().SameNode(bp.Receiver) {
 			logger.Info("Sensor Mule excludes Sensor-Convergence Sender for Bundle delivery")
 
 			snm.algorithm.ReportFailure(bp, sender[i])

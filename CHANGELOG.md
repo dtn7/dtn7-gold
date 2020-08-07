@@ -27,6 +27,7 @@ Types of changes:
 
 ### Changed
 - An invalid EndpointID struct is interpreted as dtn:none.
+- Compare EndpointIDs based on both scheme and authority part.
 
 
 ## [0.8.0] - 2020-08-05

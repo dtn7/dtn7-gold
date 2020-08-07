@@ -183,6 +183,12 @@ func (eid EndpointID) IsSingleton() bool {
 	return eid.EndpointType.IsSingleton()
 }
 
+// SameNode checks if two Endpoints contain to the same Node, based on the scheme and authority part.
+func (eid EndpointID) SameNode(other EndpointID) bool {
+	return eid.EndpointType.SchemeName() == other.EndpointType.SchemeName() &&
+		eid.EndpointType.Authority() == other.EndpointType.Authority()
+}
+
 // CheckValid returns an array of errors for incorrect data.
 func (eid EndpointID) CheckValid() error {
 	return eid.EndpointType.CheckValid()
