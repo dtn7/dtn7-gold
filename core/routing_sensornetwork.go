@@ -5,6 +5,7 @@
 package core
 
 import (
+	"fmt"
 	"regexp"
 
 	log "github.com/sirupsen/logrus"
@@ -107,4 +108,8 @@ func (snm *SensorNetworkMuleRouting) ReportPeerAppeared(peer cla.Convergence) {
 // ReportPeerDisappeared to the underlying algorithm.
 func (snm *SensorNetworkMuleRouting) ReportPeerDisappeared(peer cla.Convergence) {
 	snm.algorithm.ReportPeerDisappeared(peer)
+}
+
+func (snm *SensorNetworkMuleRouting) String() string {
+	return fmt.Sprintf("sensor mule overlaying %v", snm.algorithm)
 }

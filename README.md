@@ -34,6 +34,7 @@ One of the following routing protocols might be used.
 - Delay-Tolerant Link State Routing (DTLSR)
 - Epidemic Routing
 - Probabilistic Routing Protocol using History of Encounters and Transitivity (PRoPHET)
+- Sensor Network specific routing algorithm for data mules, [documentation](sensor-network-mule-documentation)
 - Spray and Wait, vanilla and binary
 
 
@@ -162,6 +163,7 @@ To simplify the copyright stuff, the [REUSE][reuse] tool is used.
 [reuse]: https://reuse.software/
 [rf95modem-go]: https://github.com/dtn7/rf95modem-go
 [rf95modem]: https://github.com/gh0st42/rf95modem
+[sensor-network-mule-documentation]: https://godoc.org/github.com/dtn7/dtn7-go/core#SensorNetworkMuleRouting
 
 
 <!-- vim: set ts=2 ft=markdown spell: -->
