@@ -34,7 +34,7 @@ One of the following routing protocols might be used.
 - Delay-Tolerant Link State Routing (DTLSR)
 - Epidemic Routing
 - Probabilistic Routing Protocol using History of Encounters and Transitivity (PRoPHET)
-- Sensor Network specific routing algorithm for data mules, [documentation](sensor-network-mule-documentation)
+- Sensor Network specific routing algorithm for Data Mules, [documentation][sensor-network-mule-documentation]
 - Spray and Wait, vanilla and binary
 
 
