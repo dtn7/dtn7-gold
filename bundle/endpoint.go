@@ -189,5 +189,9 @@ func (eid EndpointID) CheckValid() error {
 }
 
 func (eid EndpointID) String() string {
-	return eid.EndpointType.String()
+	if eid.EndpointType == nil {
+		return DtnNone().String()
+	} else {
+		return eid.EndpointType.String()
+	}
 }

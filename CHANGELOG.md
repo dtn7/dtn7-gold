@@ -25,6 +25,9 @@ Types of changes:
 ### Added
 - Specific routing algorithm for data mules in sensor networks.
 
+### Changed
+- An invalid EndpointID struct is interpreted as dtn:none.
+
 
 ## [0.8.0] - 2020-08-05
 ### Added
