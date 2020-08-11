@@ -9,16 +9,20 @@ import (
 )
 
 func (s *Session) handleOut() {
-	defer func() {
-		// TODO
-	}()
+	defer s.closeAction()
 
-	for message := range s.outChannel {
-		if err := cboring.Marshal(&message, s.Out); err != nil {
-			s.logger().WithError(err).WithField("message", message).Error("Sending outgoing message errored")
+	for {
+		select {
+		case message := <-s.outChannel:
+			if err := cboring.Marshal(&message, s.Out); err != nil {
+				s.logger().WithError(err).WithField("message", message).Error("Sending outgoing message errored")
+				return
+			}
+
+			s.logger().WithField("message", message).Info("Sent outgoing message")
+
+		case <-s.outStopChannel:
 			return
 		}
-
-		s.logger().WithField("message", message).Info("Sent outgoing message")
 	}
 }

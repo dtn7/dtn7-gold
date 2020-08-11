@@ -5,7 +5,9 @@
 package soclp
 
 import (
+	"fmt"
 	"io"
+	"strings"
 
 	"github.com/dtn7/cboring"
 )
@@ -49,7 +51,20 @@ func (sm *StatusMessage) IsHeartbeat() bool {
 }
 
 func (sm *StatusMessage) String() string {
-	return "StatusMessage"
+	var builder strings.Builder
+
+	_, _ = fmt.Fprint(&builder, "StatusMessage(")
+	switch sm.StatusCode {
+	case StatusShutdown:
+		_, _ = fmt.Fprint(&builder, "Shutdown")
+	case StatusHeartbeat:
+		_, _ = fmt.Fprint(&builder, "Heartbeat")
+	default:
+		_, _ = fmt.Fprint(&builder, "Invalid Status Code")
+	}
+	_, _ = fmt.Fprint(&builder, ")")
+
+	return builder.String()
 }
 
 // MarshalCbor serializes the status code.

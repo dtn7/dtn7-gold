@@ -6,6 +6,7 @@ package soclp
 
 import (
 	"fmt"
+	"io"
 
 	log "github.com/sirupsen/logrus"
 
@@ -16,14 +17,17 @@ import (
 )
 
 func (s *Session) handleIn() {
-	defer func() {
-		// TODO
-	}()
+	defer s.closeAction()
 
 	for {
 		var message Message
 		if err := cboring.Unmarshal(&message, s.In); err != nil {
-			s.logger().WithError(err).Error("Unmarshalling CBOR message errored")
+			if err == io.EOF || err == io.ErrClosedPipe {
+				s.logger().WithError(err).Debug("Input stream reached its end")
+			} else {
+				s.logger().WithError(err).Error("Unmarshalling CBOR message errored")
+			}
+
 			return
 		}
 
@@ -76,9 +80,12 @@ func (s *Session) receiveIdentity(im *IdentityMessage) (err error) {
 func (s *Session) receiveStatus(sm *StatusMessage) (err error) {
 	switch status := sm.StatusCode; status {
 	case StatusShutdown:
-		// TODO
+		s.logger().Info("Received shutdown status message")
+		go s.closeAction()
+
 	case StatusHeartbeat:
 		// TODO
+
 	default:
 		err = fmt.Errorf("unsupported status message code %d", status)
 	}

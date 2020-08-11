@@ -21,7 +21,10 @@ type Session struct {
 	In  io.Reader
 	Out io.Writer
 
-	// StartFunc represents additional startup code, e.g., to establish a TCP connection.
+	// Closer closes the underlying stream, might be nil.
+	Closer io.Closer
+
+	// StartFunc represents additional startup code, e.g., to establish a TCP connection. Might be nil.
 	StartFunc func() (error, bool)
 
 	// AddressFunc generates this Session's Address.
@@ -43,15 +46,40 @@ type Session struct {
 	// statusChannel is outgoing, see Channel().
 	statusChannel chan cla.ConvergenceStatus
 
-	// outChan as a queue for outgoing SoCLP messages, will be read from session_out.go
-	outChannel chan Message
+	// outChannel and outStopChannel are to communicate with the outgoing handler
+	outChannel     chan Message
+	outStopChannel chan struct{}
 
 	// transferAcks stores received ack identifiers, sync.Map[uint64]struct{}
 	transferAcks sync.Map
+
+	closeOnce sync.Once
 }
 
+// closeAction performs the closing within a sync.Once.
+//
+// This method is called from the exported Close method, which starts with sending a Shutdown StatusMessage.
+func (s *Session) closeAction() {
+	s.closeOnce.Do(func() {
+		s.logger().Info("Closing down")
+
+		close(s.outStopChannel)
+
+		if s.Closer != nil {
+			if err := s.Closer.Close(); err != nil {
+				s.logger().WithError(err).Warn("Closing down errored")
+			}
+		}
+	})
+}
+
+// Close down this session and try telling the peer to do the same.
 func (s *Session) Close() {
-	panic("implement me")
+	if s.outChannel != nil {
+		s.outChannel <- Message{NewShutdownStatusMessage()}
+	}
+
+	s.closeAction()
 }
 
 // Start this Session. In case of an error, retry indicates that another try should be made later.
@@ -60,7 +88,9 @@ func (s *Session) Start() (err error, retry bool) {
 	s.peerEndpointLock = sync.Mutex{}
 	s.statusChannel = make(chan cla.ConvergenceStatus)
 	s.outChannel = make(chan Message)
+	s.outStopChannel = make(chan struct{})
 	s.transferAcks = sync.Map{}
+	s.closeOnce = sync.Once{}
 
 	if s.StartFunc != nil {
 		if err, retry = s.StartFunc(); err != nil {
@@ -81,6 +111,7 @@ func (s *Session) Channel() chan cla.ConvergenceStatus {
 	return s.statusChannel
 }
 
+// Address for this Session's instance, should be kind of unique.
 func (s *Session) Address() string {
 	return s.AddressFunc()
 }
