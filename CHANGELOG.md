@@ -24,6 +24,8 @@ Types of changes:
 ## [Unreleased]
 ### Added
 - Specific routing algorithm for data mules in sensor networks.
+- Socket Convergence Layer Protocol (SoCLP) for bidirectional bundle
+  exchange over different socket-like protocols.
 
 ### Changed
 - An invalid EndpointID struct is interpreted as dtn:none.

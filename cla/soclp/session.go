@@ -16,6 +16,14 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 )
 
+// Session between two peers (this node and another) for the Socket Convergence Layer Protocol (SoCLP).
+//
+// A session requires some kind of stream protocol to operate on, e.g., TCP, QUIC, or Unix Domain Sockets. However, a
+// Session itself is "protocol agnostic".
+//
+// To create a SoCLP connection, a Session must be wrapped into its underlying protocol. Therefore a new Session
+// instance needs to created. The exported fields (upper case fields) needs to be configured accordingly. Other fields
+// will be instantiated correctly within the Start method.
 type Session struct {
 	// In and Out are the streams to operate on.
 	In  io.Reader
