@@ -7,6 +7,8 @@ package soclp
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/cboring"
 
 	"github.com/dtn7/dtn7-go/bundle"
@@ -20,10 +22,12 @@ func (s *Session) handleIn() {
 
 	for {
 		var message Message
-		if err := cboring.Unmarshal(&message, s.in); err != nil {
+		if err := cboring.Unmarshal(&message, s.In); err != nil {
 			s.logger().WithError(err).Error("Unmarshalling CBOR message errored")
 			return
 		}
+
+		s.logger().WithField("message", message).Debug("Received incoming message")
 
 		var msgErr error
 		switch msg := message.MessageType.(type) {
@@ -37,6 +41,7 @@ func (s *Session) handleIn() {
 			msgErr = s.receiveTransfer(msg)
 
 		case *TransferAckMessage:
+			msgErr = s.receiveTransferAck(msg)
 
 		default:
 			msgErr = fmt.Errorf("unsupported message type %T", msg)
@@ -51,11 +56,15 @@ func (s *Session) handleIn() {
 
 // receiveIdentity sets the peer's endpoint ID if not configured yet.
 func (s *Session) receiveIdentity(im *IdentityMessage) (err error) {
+	s.peerEndpointLock.Lock()
+
 	if s.peerEndpoint != (bundle.EndpointID{}) {
 		return fmt.Errorf("peer endpoint ID is already configured")
 	}
 
 	s.peerEndpoint = im.NodeID
+	s.peerEndpointLock.Unlock()
+
 	s.Channel() <- cla.NewConvergencePeerAppeared(s, im.NodeID)
 
 	s.logger().WithField("peer", im.NodeID).Info("Established handshake with peer")
@@ -77,16 +86,24 @@ func (s *Session) receiveStatus(sm *StatusMessage) (err error) {
 	return
 }
 
+// receiveTransfer handles with incoming transfers.
 func (s *Session) receiveTransfer(tm *TransferMessage) (err error) {
 	s.Channel() <- cla.NewConvergenceReceivedBundle(s, s.GetEndpointID(), &tm.Bundle)
-	// TODO: send ack
 
-	s.logger().WithField("bundle", tm.Bundle.String()).Info("Received bundle")
+	s.outChannel <- Message{MessageType: NewTransferAckMessage(tm.Identifier)}
+
+	s.logger().WithFields(log.Fields{
+		"bundle":      tm.Bundle.String(),
+		"transfer-id": tm.Identifier,
+	}).Info("Received bundle")
 
 	return
 }
 
+// receiveTransferAck inspects incoming transfer acknowledgements.
 func (s *Session) receiveTransferAck(am *TransferAckMessage) (err error) {
-	// TODO
+	s.transferAcks.Store(am.Identifier, struct{}{})
+
+	s.logger().WithField("transfer-id", am.Identifier).Info("Received reception acknowledge")
 	return
 }
