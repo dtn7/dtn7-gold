@@ -39,7 +39,7 @@ def git(cmds: List[str]) -> str:
 def file_authors(f: str) -> List[Ownership]:
     "List all ownerships of the requested file."
 
-    owners_raw = git(["log", "--pretty=format:%an%x00%at", f]).split("\n")
+    owners_raw = git(["log", "--follow", "--pretty=format:%an%x00%at", f]).split("\n")
     owners_tpl = [raw.split(chr(0)) for raw in owners_raw]
     owners_tpl.reverse()
 

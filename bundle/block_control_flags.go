@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2018, 2019, 2020 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
