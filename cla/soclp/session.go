@@ -84,8 +84,11 @@ func (s *Session) closeAction() {
 	s.closeOnce.Do(func() {
 		s.logger().Info("Closing down")
 
+		s.Channel() <- cla.NewConvergencePeerDisappeared(s, s.GetPeerEndpointID())
+
 		close(s.heartbeatStopChannel)
 		close(s.outStopChannel)
+		close(s.statusChannel)
 
 		if s.Closer != nil {
 			if err := s.Closer.Close(); err != nil {

@@ -128,4 +128,7 @@ func TestSessionSimple(t *testing.T) {
 	session1.Close()
 	time.Sleep(250 * time.Millisecond)
 	// Wait for the other session to shut itself down
+
+	testSessionChannelFind(session1Msgs, session1MsgsM, func(status cla.ConvergenceStatus) bool { return status.MessageType == cla.PeerDisappeared }, t)
+	testSessionChannelFind(session2Msgs, session2MsgsM, func(status cla.ConvergenceStatus) bool { return status.MessageType == cla.PeerDisappeared }, t)
 }
