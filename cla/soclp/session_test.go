@@ -59,25 +59,27 @@ func TestSessionSimple(t *testing.T) {
 	pipe2in, pipe2out := io.Pipe()
 
 	session1 := &Session{
-		In:          pipe1in,
-		Out:         pipe2out,
-		Closer:      pipe1in,
-		StartFunc:   nil,
-		AddressFunc: func() string { return "loopback/s1" },
-		Permanent:   false,
-		Endpoint:    bundle.MustNewEndpointID("dtn://s1/"),
-		SendTimeout: time.Second,
+		In:               pipe1in,
+		Out:              pipe2out,
+		Closer:           pipe1in,
+		StartFunc:        nil,
+		AddressFunc:      func() string { return "loopback/s1" },
+		Permanent:        false,
+		Endpoint:         bundle.MustNewEndpointID("dtn://s1/"),
+		SendTimeout:      time.Second,
+		HeartbeatTimeout: 250 * time.Millisecond,
 	}
 
 	session2 := &Session{
-		In:          pipe2in,
-		Out:         pipe1out,
-		Closer:      pipe2in,
-		StartFunc:   nil,
-		AddressFunc: func() string { return "loopback/s2" },
-		Permanent:   false,
-		Endpoint:    bundle.MustNewEndpointID("dtn://s2/"),
-		SendTimeout: time.Second,
+		In:               pipe2in,
+		Out:              pipe1out,
+		Closer:           pipe2in,
+		StartFunc:        nil,
+		AddressFunc:      func() string { return "loopback/s2" },
+		Permanent:        false,
+		Endpoint:         bundle.MustNewEndpointID("dtn://s2/"),
+		SendTimeout:      time.Second,
+		HeartbeatTimeout: 250 * time.Millisecond,
 	}
 
 	if err, _ := session1.Start(); err != nil {
@@ -119,6 +121,9 @@ func TestSessionSimple(t *testing.T) {
 		recBundle := status.Message.(cla.ConvergenceReceivedBundle).Bundle
 		return reflect.DeepEqual(*recBundle, b)
 	}, t)
+
+	// Let there be some heartbeats
+	time.Sleep(3 * time.Second)
 
 	session1.Close()
 	time.Sleep(250 * time.Millisecond)

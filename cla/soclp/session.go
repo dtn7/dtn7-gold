@@ -50,8 +50,14 @@ type Session struct {
 	outChannel     chan Message
 	outStopChannel chan struct{}
 
+	// heartbeatStopChannel is to communicate with the heartbeat handler.
+	heartbeatStopChannel chan struct{}
+
 	// transferAcks stores received ack identifiers, sync.Map[uint64]struct{}
 	transferAcks sync.Map
+
+	// HeartbeatTimeout defines the maximum idle duration. Heartbeat StatusMessage will be sent for prevention.
+	HeartbeatTimeout time.Duration
 
 	// lastReceive and lastSent are holding the time of the last incoming resp. outgoing Messages.
 	lastReceive     time.Time
@@ -70,6 +76,7 @@ func (s *Session) closeAction() {
 	s.closeOnce.Do(func() {
 		s.logger().Info("Closing down")
 
+		close(s.heartbeatStopChannel)
 		close(s.outStopChannel)
 
 		if s.Closer != nil {
@@ -96,6 +103,7 @@ func (s *Session) Start() (err error, retry bool) {
 	s.statusChannel = make(chan cla.ConvergenceStatus)
 	s.outChannel = make(chan Message)
 	s.outStopChannel = make(chan struct{})
+	s.heartbeatStopChannel = make(chan struct{})
 	s.transferAcks = sync.Map{}
 	s.lastReceive = time.Now()
 	s.lastSentLock = sync.RWMutex{}
@@ -111,6 +119,7 @@ func (s *Session) Start() (err error, retry bool) {
 
 	go s.handleIn()
 	go s.handleOut()
+	go s.handleHeartbeat()
 
 	s.outChannel <- Message{NewIdentityMessage(s.Endpoint)}
 

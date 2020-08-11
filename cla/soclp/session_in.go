@@ -87,7 +87,7 @@ func (s *Session) receiveStatus(sm *StatusMessage) (err error) {
 		go s.closeAction()
 
 	case StatusHeartbeat:
-		// TODO
+		s.logger().Debug("Received heartbeat status message")
 
 	default:
 		err = fmt.Errorf("unsupported status message code %d", status)
