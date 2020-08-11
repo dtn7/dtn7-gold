@@ -38,21 +38,28 @@ type Session struct {
 
 	// peerEndpoint is the Endpoint ID of the peer and has its mutex for read/write access.
 	peerEndpoint     bundle.EndpointID
-	peerEndpointLock sync.Mutex
+	peerEndpointLock sync.RWMutex
 
-	// SendTimeout is the maximum time for sending an outgoing Bundle.
+	// SendTimeout is the maximum waiting time for an ACK after sending an Bundle.
 	SendTimeout time.Duration
 
 	// statusChannel is outgoing, see Channel().
 	statusChannel chan cla.ConvergenceStatus
 
-	// outChannel and outStopChannel are to communicate with the outgoing handler
+	// outChannel and outStopChannel are to communicate with the outgoing handler.
 	outChannel     chan Message
 	outStopChannel chan struct{}
 
 	// transferAcks stores received ack identifiers, sync.Map[uint64]struct{}
 	transferAcks sync.Map
 
+	// lastReceive and lastSent are holding the time of the last incoming resp. outgoing Messages.
+	lastReceive     time.Time
+	lastReceiveLock sync.RWMutex
+	lastSent        time.Time
+	lastSentLock    sync.RWMutex
+
+	// closeOnce ensures that the code of closeAction is only executed once.
 	closeOnce sync.Once
 }
 
@@ -85,11 +92,15 @@ func (s *Session) Close() {
 // Start this Session. In case of an error, retry indicates that another try should be made later.
 func (s *Session) Start() (err error, retry bool) {
 	s.peerEndpoint = bundle.EndpointID{}
-	s.peerEndpointLock = sync.Mutex{}
+	s.peerEndpointLock = sync.RWMutex{}
 	s.statusChannel = make(chan cla.ConvergenceStatus)
 	s.outChannel = make(chan Message)
 	s.outStopChannel = make(chan struct{})
 	s.transferAcks = sync.Map{}
+	s.lastReceive = time.Now()
+	s.lastSentLock = sync.RWMutex{}
+	s.lastSent = time.Now()
+	s.lastSentLock = sync.RWMutex{}
 	s.closeOnce = sync.Once{}
 
 	if s.StartFunc != nil {
@@ -148,8 +159,8 @@ func (s *Session) GetEndpointID() bundle.EndpointID {
 
 // GetPeerEndpointID returns the peer's endpoint identifier, if known. Otherwise, dtn:none will be returned.
 func (s *Session) GetPeerEndpointID() bundle.EndpointID {
-	s.peerEndpointLock.Lock()
-	defer s.peerEndpointLock.Unlock()
+	s.peerEndpointLock.RLock()
+	defer s.peerEndpointLock.RUnlock()
 
 	if s.peerEndpoint == (bundle.EndpointID{}) {
 		return bundle.DtnNone()

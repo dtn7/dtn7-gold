@@ -7,6 +7,7 @@ package soclp
 import (
 	"fmt"
 	"io"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -32,6 +33,8 @@ func (s *Session) handleIn() {
 		}
 
 		s.logger().WithField("message", message).Debug("Received incoming message")
+
+		s.updateLastReceive()
 
 		var msgErr error
 		switch msg := message.MessageType.(type) {
@@ -113,4 +116,13 @@ func (s *Session) receiveTransferAck(am *TransferAckMessage) (err error) {
 
 	s.logger().WithField("transfer-id", am.Identifier).Info("Received reception acknowledge")
 	return
+}
+
+// updateLastReceive sets lastReceive to the current time.
+func (s *Session) updateLastReceive() {
+	s.lastReceiveLock.Lock()
+	defer s.lastReceiveLock.Unlock()
+
+	s.lastReceive = time.Now()
+	s.logger().WithField("last-receive", s.lastReceive).Debug("Updated last receive timestamp")
 }

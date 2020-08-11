@@ -5,6 +5,8 @@
 package soclp
 
 import (
+	"time"
+
 	"github.com/dtn7/cboring"
 )
 
@@ -21,8 +23,19 @@ func (s *Session) handleOut() {
 
 			s.logger().WithField("message", message).Info("Sent outgoing message")
 
+			s.updateLastSent()
+
 		case <-s.outStopChannel:
 			return
 		}
 	}
+}
+
+// updateLastSent sets lastSent to the current time.
+func (s *Session) updateLastSent() {
+	s.lastSentLock.Lock()
+	defer s.lastSentLock.Unlock()
+
+	s.lastSent = time.Now()
+	s.logger().WithField("last-sent", s.lastSent).Debug("Updated last sent timestamp")
 }
