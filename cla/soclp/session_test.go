@@ -66,7 +66,6 @@ func TestSessionSimple(t *testing.T) {
 		AddressFunc:      func() string { return "loopback/s1" },
 		Permanent:        false,
 		Endpoint:         bundle.MustNewEndpointID("dtn://s1/"),
-		SendTimeout:      time.Second,
 		HeartbeatTimeout: 250 * time.Millisecond,
 	}
 
@@ -78,7 +77,6 @@ func TestSessionSimple(t *testing.T) {
 		AddressFunc:      func() string { return "loopback/s2" },
 		Permanent:        false,
 		Endpoint:         bundle.MustNewEndpointID("dtn://s2/"),
-		SendTimeout:      time.Second,
 		HeartbeatTimeout: 250 * time.Millisecond,
 	}
 

@@ -48,9 +48,6 @@ type Session struct {
 	peerEndpoint     bundle.EndpointID
 	peerEndpointLock sync.RWMutex
 
-	// SendTimeout is the maximum waiting time for an ACK after sending an Bundle.
-	SendTimeout time.Duration
-
 	// statusChannel is outgoing, see Channel().
 	statusChannel chan cla.ConvergenceStatus
 
@@ -75,6 +72,10 @@ type Session struct {
 
 	// closeOnce ensures that the code of closeAction is only executed once.
 	closeOnce sync.Once
+
+	// isActive indicates if this very Session is active resp. not in a closed state.
+	isActive     bool
+	isActiveLock sync.RWMutex
 }
 
 // closeAction performs the closing within a sync.Once.
@@ -83,6 +84,10 @@ type Session struct {
 func (s *Session) closeAction() {
 	s.closeOnce.Do(func() {
 		s.logger().Info("Closing down")
+
+		s.isActiveLock.Lock()
+		s.isActive = false
+		s.isActiveLock.Unlock()
 
 		s.Channel() <- cla.NewConvergencePeerDisappeared(s, s.GetPeerEndpointID())
 
@@ -100,9 +105,11 @@ func (s *Session) closeAction() {
 
 // Close down this session and try telling the peer to do the same.
 func (s *Session) Close() {
-	if s.outChannel != nil {
+	s.isActiveLock.RLock()
+	if s.isActive && s.outChannel != nil {
 		s.outChannel <- Message{NewShutdownStatusMessage()}
 	}
+	s.isActiveLock.RUnlock()
 
 	s.closeAction()
 }
@@ -121,6 +128,8 @@ func (s *Session) Start() (err error, retry bool) {
 	s.lastSent = time.Now()
 	s.lastSentLock = sync.RWMutex{}
 	s.closeOnce = sync.Once{}
+	s.isActive = true
+	s.isActiveLock = sync.RWMutex{}
 
 	if s.StartFunc != nil {
 		if err, retry = s.StartFunc(); err != nil {
@@ -152,23 +161,27 @@ func (s *Session) IsPermanent() bool {
 	return s.Permanent
 }
 
-// Send a Bundle to the peer.
+// Send a Bundle to the peer and wait for a reception acknowledgement.
 func (s *Session) Send(b *bundle.Bundle) error {
 	if tm, tmErr := NewTransferMessage(*b); tmErr != nil {
 		return tmErr
 	} else {
 		s.outChannel <- Message{MessageType: tm}
 
-		for timeout := time.Now().Add(s.SendTimeout); time.Now().Before(timeout); {
-			if _, ack := s.transferAcks.Load(tm.Identifier); ack {
+		for {
+			s.isActiveLock.RLock()
+			active := s.isActive
+			s.isActiveLock.RUnlock()
+
+			if !active {
+				return fmt.Errorf("connection timed out before an acknowledgement was received")
+			} else if _, ack := s.transferAcks.Load(tm.Identifier); ack {
 				s.transferAcks.Delete(tm.Identifier)
 				return nil
+			} else {
+				time.Sleep(50 * time.Millisecond)
 			}
-
-			time.Sleep(50 * time.Millisecond)
 		}
-
-		return fmt.Errorf("waiting for acknowledgement timed out after %v", s.SendTimeout)
 	}
 }
 

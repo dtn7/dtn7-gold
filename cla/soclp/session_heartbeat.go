@@ -12,6 +12,9 @@ import (
 )
 
 // heartbeatTicker is like a time.Ticker, but for altering intervals.
+//
+// Note: Go 1.15, which was released just some days after writing this, now supports this feature in the Ticker. Thus,
+// this custom ticker can be removed once the minimum supported Go version is greater/equal 1.15.
 type heartbeatTicker struct {
 	C chan time.Time
 
@@ -59,6 +62,8 @@ func (s *Session) handleHeartbeat() {
 
 	defer receiveCheck.stop()
 	defer sentCheck.stop()
+
+	defer s.closeAction()
 
 	for {
 		select {
