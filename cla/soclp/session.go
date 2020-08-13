@@ -32,11 +32,18 @@ type Session struct {
 	// Closer closes the underlying stream, might be nil.
 	Closer io.Closer
 
-	// StartFunc represents additional startup code, e.g., to establish a TCP connection. Might be nil.
-	StartFunc func() (error, bool)
+	// Restartable is true iff this Session might be restarted, e.g., after connectivity issues.
+	Restartable bool
 
-	// AddressFunc generates this Session's Address.
-	AddressFunc func() string
+	// wasStartedOnce is a flag to be only raised, must be done in the Start method. Is used together with Restartable.
+	wasStartedOnce bool
+
+	// StartFunc represents additional startup code, e.g., to establish a TCP connection. The parameter will be this
+	// very session. Might be nil.
+	StartFunc func(*Session) (error, bool)
+
+	// AddressFunc generates this Session's Address. The parameter will be this very Session.
+	AddressFunc func(*Session) string
 
 	// Permanent is true iff this Session should be permanent resp. not be removed on connection issues.
 	Permanent bool
@@ -93,7 +100,7 @@ func (s *Session) closeAction() {
 
 		close(s.heartbeatStopChannel)
 		close(s.outStopChannel)
-		close(s.statusChannel)
+		// close(s.statusChannel)
 
 		if s.Closer != nil {
 			if err := s.Closer.Close(); err != nil {
@@ -116,6 +123,13 @@ func (s *Session) Close() {
 
 // Start this Session. In case of an error, retry indicates that another try should be made later.
 func (s *Session) Start() (err error, retry bool) {
+	if !s.Restartable && s.wasStartedOnce {
+		err = fmt.Errorf("session was already started once and is marked as not restartable")
+		retry = false
+		return
+	}
+
+	s.wasStartedOnce = true
 	s.peerEndpoint = bundle.EndpointID{}
 	s.peerEndpointLock = sync.RWMutex{}
 	s.statusChannel = make(chan cla.ConvergenceStatus)
@@ -131,8 +145,10 @@ func (s *Session) Start() (err error, retry bool) {
 	s.isActive = true
 	s.isActiveLock = sync.RWMutex{}
 
+	s.logger().Info("Starting new SoCLP session")
+
 	if s.StartFunc != nil {
-		if err, retry = s.StartFunc(); err != nil {
+		if err, retry = s.StartFunc(s); err != nil {
 			return
 		}
 	}
@@ -153,7 +169,7 @@ func (s *Session) Channel() chan cla.ConvergenceStatus {
 
 // Address for this Session's instance, should be kind of unique.
 func (s *Session) Address() string {
-	return s.AddressFunc()
+	return s.AddressFunc(s)
 }
 
 // IsPermanent returns true, if this CLA should not be removed after failures.
@@ -204,11 +220,15 @@ func (s *Session) GetPeerEndpointID() bundle.EndpointID {
 
 // logger returns a new logrus.Entry.
 func (s *Session) logger() (e *log.Entry) {
-	e = log.WithField("soclp-session", s.Address())
+	e = log.WithField("soclp-session", s)
 
 	if peer := s.GetPeerEndpointID(); peer != bundle.DtnNone() {
 		e = e.WithField("peer", peer)
 	}
 
 	return
+}
+
+func (s *Session) String() string {
+	return s.Address()
 }
