@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: 2019, 2020 Markus Sommer
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+#Type   Name    ID      GECOS                   Home directory Shell
+u       dtn7    -       "DTN7 Routing Daemon"   /var/lib/dtn7

@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2019, 2020 Markus Sommer
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[dtn7]
+title=DTN7 daemon
+description=Delay tolerant routing daemon
+ports=35039/udp|4556/tcp
