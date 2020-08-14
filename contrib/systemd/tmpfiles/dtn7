@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: 2019, 2020 Markus Sommer
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+#Type Path            Mode   User   Group   Age   Argument
+d     /var/lib/dtn7   0700   dtn7   dtn7

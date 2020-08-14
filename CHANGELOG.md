@@ -1,5 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2020 Alvar Penning
+SPDX-FileCopyrightText: 2020 Markus Sommer
 
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -26,6 +27,7 @@ Types of changes:
 - Specific routing algorithm for data mules in sensor networks.
 - Socket Convergence Layer Protocol (SoCLP) for bidirectional bundle
   exchange over different socket-like protocols.
+- Add all the necessary contrib files to run dtnd as a daemon. Packages can be built without having to rely on external sources.
 
 ### Changed
 - An invalid EndpointID struct is interpreted as dtn:none.
