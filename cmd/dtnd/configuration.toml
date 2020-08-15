@@ -8,104 +8,131 @@
 # Path to the bundle storage. Bundles will be saved in this directory to be
 # present after restarting dtnd.
 store = "store"
+
 # Allow inspection of forwarding bundles, containing an administrative record.
 # This allows deletion of stored bundles after being received.
 inspect-all-bundles = true
+
 # The node's ID, which should be a dtn-URI. Each node's endpoint ID should be
 # an URI based on the given node-id.
-node-id = "dtn://alpha/"
+node-id = "dtn://node-name/"
+
 # If a signature-private entry exists, all outgoing bundles created at this
 # node will be signed with the following key. Such a key can be created by:
 #   $ xxd -l 64 -p -c 64 /dev/urandom
 # Please DO NOT use the following key or a variation of it. I am serious.
-signature-private = "2d5b59df9e860636ee392fc7833d957543cd7e47e95b8a2800224408840242a8edff1aafc10af23ae32a6868e2c31cbbcf3157a706accae2eb7faa7a1d7ee84e"
+# signature-private = "2d5b59df9e860636ee392fc7833d957543cd7e47e95b8a2800224408840242a8edff1aafc10af23ae32a6868e2c31cbbcf3157a706accae2eb7faa7a1d7ee84e"
+
 
 # Configure the format and verbosity of dtnd's logging.
 [logging]
 # Should be one of, sorted from silence to verbose:
 # panic,fatal,error,warn,info,debug,trace
 level = "info"
+
 # Show the calling method and its file in the logs
-report-caller = false
+# report-caller = true
+
 # Could be "text" for human readable output or "json".
-format = "text"
+# format = "json"
+
 
 # The peer/neighbor discovery searches the (local) network for other dtnd nodes
 # and tries to establish a connection to the promoted CLAs.
 [discovery]
 ipv4 = true
 ipv6 = true
+
 # Interval between two messages in seconds, defaults to 10.
 interval = 30
 
-# Agents are applications or interfaces for applications. Those may send or receive Bundles.
+
+# Agents are applications or interfaces for sending or receiving bundles.
 [agents]
-# A webserver based agent starts a local HTTP server and allows third party tools to interact over specified interfaces,
-# e.g., WebSockets or REST. The address field specifies the TCP address of the server. The service endpoints are based
-# on this, e.g., an address of "localhost:8080" creates a WebSocket endpoint of "ws://localhost:8080/ws" and some
-# RESTful endpoints under "http://localhost:8080/rest/" as "http://localhost:8080/rest/register".
+# Web server based agent with an own HTTP server for third party tools.
 [agents.webserver]
+# Address to bind the server to.
 address = "localhost:8080"
+
+# Create a WebSocket endpoint at "ws://localhost:8080/ws"
 websocket = true
+
+# Create a RESTful endpoints at "http://localhost:8080/rest/"
 rest = true
+
 
 # Each listen is another convergence layer adapter (CLA). Multiple [[listen]]
 # blocks are usable.
 [[listen]]
 # Protocol to use, one of tcpcl, mtcp, bbc.
 protocol = "tcpcl"
+
 # Address to bind this CLA to.
 endpoint = ":4556"
 
-[[listen]]
-protocol = "bbc"
-endpoint = "bbc://rf95modem/dev/ttyUSB0"
+
+# Another example for a Bundle Broadcasting Connector with a rf95modem.
+# [[listen]]
+# protocol = "bbc"
+# endpoint = "bbc://rf95modem/dev/ttyUSB0"
+
 
 # Multiple [[peers]] might be configured.
-[[peer]]
-# The name/endpoint ID of this peer.
-node = "dtn://beta/"
-# Protocol to use, one of tcpcl, mtcp.
-protocol = "tcpcl"
-# Address to connect to this CLA.
-endpoint = "10.0.0.2:4556"
+# [[peer]]
+# # The name/endpoint ID of this peer.
+# node = "dtn://beta/"
+# # Protocol to use, one of tcpcl, mtcp.
+# protocol = "tcpcl"
+# # Address to connect to this CLA.
+# endpoint = "10.0.0.2:4556"
+
 
 # Another peer example..
-[[peer]]
-node = "dtn://gamma/"
-protocol = "mtcp"
-endpoint = "[fc23::2]:35037"
+# [[peer]]
+# node = "dtn://gamma/"
+# protocol = "mtcp"
+# endpoint = "[fc23::2]:35037"
+
 
 # Specify routing algorithm
 [routing]
-# can be either "epidemic", "spray", "binary_sparay", "dtlsr", "prophet", "sensor-mule"
+# One of  "epidemic", "spray", "binary_sparay", "dtlsr", "prophet", "sensor-mule"
 algorithm = "epidemic"
+
 
 # Config for spray routing
-[routing.sprayconf]
-multiplicity = 10
+# [routing.sprayconf]
+# multiplicity = 10
+
 
 # Config for dtlsr
-[routing.dtlsrconf]
-recomputetime = "30s"
-broadcasttime = "30s"
-purgetime = "10m"
+# [routing.dtlsrconf]
+# recomputetime = "30s"
+# broadcasttime = "30s"
+# purgetime = "10m"
+
 
 # Config for prophet
-[routing.prophetconf]
-# pinit ist the prophet initialisation constant (default value provided by the PROPHET-paper)
-pinit = 0.75
-# beta is the prophet scaling factor for transitive predictability (default value provided by the PROPHET-paper)
-beta = 0.25
-# gamma is the prophet ageing factor (default value provided by the PROPHET-paper)
-gamma = 0.98
-ageinterval = "1m"
+# [routing.prophetconf]
+# # pinit ist the prophet initialisation constant (default value provided by the PROPHET-paper)
+# pinit = 0.75
+#
+# # beta is the prophet scaling factor for transitive predictability (default value provided by the PROPHET-paper)
+# beta = 0.25
+#
+# # gamma is the prophet ageing factor (default value provided by the PROPHET-paper)
+# gamma = 0.98
+#
+# ageinterval = "1m"
+
 
 # Config for sensor-mule
-[routing.sensor-mule-conf]
-# sensor-node-regex is a regular expression matching sensor node's node IDs.
-sensor-node-regex = "^dtn://[^/]+\\.sensor/.*$"
-# This routing structure defines the underlying routing algorithm; it's identical to the parent routing section.
-# In this example, the underlying algorithm is the simple epidemic routing.
-[routing.sensor-mule-conf.routing]
-algorithm = "epidemic"
+# [routing.sensor-mule-conf]
+# # sensor-node-regex is a regular expression matching sensor node's node IDs.
+# sensor-node-regex = "^dtn://[^/]+\\.sensor/.*$"
+#
+# # This routing structure defines the underlying routing algorithm;
+# # it's identical to the parent routing section.
+# # In this example, the underlying algorithm is the simple epidemic routing.
+# [routing.sensor-mule-conf.routing]
+# algorithm = "epidemic"
