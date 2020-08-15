@@ -10,5 +10,5 @@ Comment: Markdown files with a YAML metadata block are tricky, https://github.co
 
 Files: go.mod go.sum
 Copyright: dtn7-go contributors, compare git log
-License: CC0-1.0
+License: GPL-3.0-or-later
 Comment: Awaiting Go module support, https://github.com/fsfe/reuse-tool/pull/234

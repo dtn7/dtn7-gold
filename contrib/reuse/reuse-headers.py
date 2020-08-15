@@ -38,7 +38,6 @@ FILE_IGNORE = [
         # reuse
         ".reuse/dep5",
         "LICENSE",
-        "LICENSES/CC0-1.0.txt",
         "LICENSES/GPL-3.0-or-later.txt"
         ]
 
