@@ -4,6 +4,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+"""
+This script modifies the SPDX header of all project files. Therefore, both git
+and the reuse-tool[0] needs to be present/installed.
+
+
+[0]: https://github.com/fsfe/reuse-tool
+"""
+
+
 import subprocess
 
 from datetime import datetime
@@ -18,9 +27,19 @@ AUTHOR_REWRITE = {"Alvar": "Alvar Penning"}
 
 # Exclude unsupported files.
 FILE_IGNORE = [
-        "go.mod", "go.sum",  # https://github.com/fsfe/reuse-tool/pull/234
+        # https://github.com/fsfe/reuse-tool/pull/234
+        "go.mod",
+        "go.sum",
+
+        # https://github.com/fsfe/reuse-tool/issues/230#issuecomment-629152611
+        ".github/ISSUE_TEMPLATE/bug_report.md",
+        ".github/ISSUE_TEMPLATE/feature_request.md",
+
+        # reuse
         ".reuse/dep5",
-        "LICENSE", "LICENSES/CC0-1.0.txt", "LICENSES/GPL-3.0-or-later.txt"
+        "LICENSE",
+        "LICENSES/CC0-1.0.txt",
+        "LICENSES/GPL-3.0-or-later.txt"
         ]
 
 

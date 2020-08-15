@@ -3,7 +3,12 @@ Upstream-Name: dtn7-go
 Upstream-Contact: Alvar Penning <post@0x21.biz>
 Source: https://github.com/dtn7/dtn7-go
 
+Files: .github/ISSUE_TEMPLATE/*
+Copyright: dtn7-go contributors, compare git log
+License: GPL-3.0-or-later
+Comment: Markdown files with a YAML metadata block are tricky, https://github.com/fsfe/reuse-tool/issues/230#issuecomment-629152611
+
 Files: go.mod go.sum
-Copyright: compare git log
+Copyright: dtn7-go contributors, compare git log
 License: CC0-1.0
 Comment: Awaiting Go module support, https://github.com/fsfe/reuse-tool/pull/234
