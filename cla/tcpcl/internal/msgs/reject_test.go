@@ -17,7 +17,7 @@ func TestMessageRejectionMessage(t *testing.T) {
 		mrm   MessageRejectionMessage
 	}{
 		{true, []byte{0x06, 0x01, 0x01}, NewMessageRejectionMessage(RejectionTypeUnknown, 0x01)},
-		{true, []byte{0x06, 0x03, 0x01}, NewMessageRejectionMessage(RejectionUnexptected, 0x01)},
+		{true, []byte{0x06, 0x03, 0x01}, NewMessageRejectionMessage(RejectionUnexpected, 0x01)},
 		{false, []byte{0x07, 0x00, 0x00}, MessageRejectionMessage{}},
 		{false, []byte{0x06, 0xF0, 0x00}, MessageRejectionMessage{}},
 	}

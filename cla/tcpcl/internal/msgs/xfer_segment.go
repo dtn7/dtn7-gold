@@ -39,6 +39,8 @@ func (sf SegmentFlags) String() string {
 const XFER_SEGMENT uint8 = 0x01
 
 // DataTransmissionMessage is the XFER_SEGMENT message for data transmission.
+//
+// Transfer Extension Items are not yet implemented.
 type DataTransmissionMessage struct {
 	Flags      SegmentFlags
 	TransferId uint64
@@ -57,9 +59,7 @@ func NewDataTransmissionMessage(flags SegmentFlags, tid uint64, data []byte) Dat
 }
 
 func (dtm DataTransmissionMessage) String() string {
-	return fmt.Sprintf(
-		"XFER_SEGMENT(Message Flags=%v, Transfer ID=%d, Data=%x)",
-		dtm.Flags, dtm.TransferId, dtm.Data)
+	return fmt.Sprintf("XFER_SEGMENT(Message Flags=%v, Transfer ID=%d, Data=%x)", dtm.Flags, dtm.TransferId, dtm.Data)
 }
 
 func (dtm DataTransmissionMessage) Marshal(w io.Writer) error {

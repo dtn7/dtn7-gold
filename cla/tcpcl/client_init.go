@@ -52,7 +52,7 @@ func (client *Client) handleSessInit() error {
 		}
 
 	case client.initSent && client.initRecv:
-		if eid, err := bundle.NewEndpointID(client.sessInitRecv.Eid); err != nil {
+		if eid, err := bundle.NewEndpointID(client.sessInitRecv.NodeId); err != nil {
 			return err
 		} else {
 			client.peerEndpointID = eid

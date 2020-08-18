@@ -17,46 +17,46 @@ const (
 	// RefusalUnknown indicates an unknown or not specified reason.
 	RefusalUnknown TransferRefusalCode = 0x00
 
-	// RefusalExtensionFailure indicates a failure processing the Transfer Extension Items.
-	RefusalExtensionFailure TransferRefusalCode = 0x01
-
 	// RefusalCompleted indicates that the receiver already has the complete bundle.
-	RefusalCompleted TransferRefusalCode = 0x02
+	RefusalCompleted TransferRefusalCode = 0x01
 
 	// RefusalNoResources indicate that the receiver's resources are exhausted.
-	RefusalNoResources TransferRefusalCode = 0x03
+	RefusalNoResources TransferRefusalCode = 0x02
 
-	// RefusalRetransmit indicates a problem on the receiver's side. This requires
-	// the complete bundle to be retransmitted.
-	RefusalRetransmit TransferRefusalCode = 0x04
+	// RefusalRetransmit indicates a problem on the receiver's side.
+	// This requires the complete bundle to be retransmitted.
+	RefusalRetransmit TransferRefusalCode = 0x03
+
+	// RefusalNotAcceptable indicates a problem regarding the bundle data or the transfer extension.
+	// The sender should not retry the same transfer.
+	RefusalNotAcceptable TransferRefusalCode = 0x04
+
+	// RefusalExtensionFailure indicates a failure processing the Transfer Extension Items.
+	RefusalExtensionFailure TransferRefusalCode = 0x05
 )
-
-// IsValid checks if this TransferRefusalCode represents a valid value.
-func (trc TransferRefusalCode) IsValid() bool {
-	switch trc {
-	case RefusalUnknown, RefusalExtensionFailure, RefusalCompleted,
-		RefusalNoResources, RefusalRetransmit:
-		return true
-	default:
-		return false
-	}
-}
 
 func (trc TransferRefusalCode) String() string {
 	switch trc {
 	case RefusalUnknown:
 		return "Unknown"
-	case RefusalExtensionFailure:
-		return "Extension Failure"
 	case RefusalCompleted:
 		return "Completed"
 	case RefusalNoResources:
 		return "No Resources"
 	case RefusalRetransmit:
 		return "Retransmit"
+	case RefusalNotAcceptable:
+		return "Not Acceptable"
+	case RefusalExtensionFailure:
+		return "Extension Failure"
 	default:
 		return "INVALID"
 	}
+}
+
+// IsValid checks if this TransferRefusalCode represents a valid value.
+func (trc TransferRefusalCode) IsValid() bool {
+	return trc.String() != "INVALID"
 }
 
 // XFER_REFUSE is the Message Header code for a Transfer Refusal Message.
@@ -77,9 +77,7 @@ func NewTransferRefusalMessage(reason TransferRefusalCode, tid uint64) TransferR
 }
 
 func (trm TransferRefusalMessage) String() string {
-	return fmt.Sprintf(
-		"XFER_REFUSE(Reason Code=%v, Transfer ID=%d)",
-		trm.ReasonCode, trm.TransferId)
+	return fmt.Sprintf("XFER_REFUSE(Reason Code=%v, Transfer ID=%d)", trm.ReasonCode, trm.TransferId)
 }
 
 func (trm TransferRefusalMessage) Marshal(w io.Writer) error {

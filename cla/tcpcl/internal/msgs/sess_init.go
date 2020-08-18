@@ -14,29 +14,30 @@ import (
 const SESS_INIT uint8 = 0x07
 
 // SessionInitMessage is the SESS_INIT message to negotiate session parameters.
+//
+// Session Extension Items are not yet implemented.
 type SessionInitMessage struct {
 	KeepaliveInterval uint16
 	SegmentMru        uint64
 	TransferMru       uint64
-	Eid               string
+	NodeId            string
 
 	// TODO: Session Extension Items
 }
 
 // NewSessionInitMessage creates a new SessionInitMessage with given fields.
-func NewSessionInitMessage(keepaliveInterval uint16, segmentMru, transferMru uint64, eid string) SessionInitMessage {
+func NewSessionInitMessage(keepaliveInterval uint16, segmentMru, transferMru uint64, nodeId string) SessionInitMessage {
 	return SessionInitMessage{
 		KeepaliveInterval: keepaliveInterval,
 		SegmentMru:        segmentMru,
 		TransferMru:       transferMru,
-		Eid:               eid,
+		NodeId:            nodeId,
 	}
 }
 
 func (si SessionInitMessage) String() string {
-	return fmt.Sprintf(
-		"SESS_INIT(Keepalive Interval=%d, Segment MRU=%d, Transfer MRU=%d, EID=%s)",
-		si.KeepaliveInterval, si.SegmentMru, si.TransferMru, si.Eid)
+	return fmt.Sprintf("SESS_INIT(Keepalive Interval=%d, Segment MRU=%d, Transfer MRU=%d, Node ID=%s)",
+		si.KeepaliveInterval, si.SegmentMru, si.TransferMru, si.NodeId)
 }
 
 func (si SessionInitMessage) Marshal(w io.Writer) error {
@@ -45,7 +46,7 @@ func (si SessionInitMessage) Marshal(w io.Writer) error {
 		si.KeepaliveInterval,
 		si.SegmentMru,
 		si.TransferMru,
-		uint16(len(si.Eid))}
+		uint16(len(si.NodeId))}
 
 	for _, field := range fields {
 		if err := binary.Write(w, binary.BigEndian, field); err != nil {
@@ -53,10 +54,10 @@ func (si SessionInitMessage) Marshal(w io.Writer) error {
 		}
 	}
 
-	if n, err := io.WriteString(w, si.Eid); err != nil {
+	if n, err := io.WriteString(w, si.NodeId); err != nil {
 		return err
-	} else if n != len(si.Eid) {
-		return fmt.Errorf("SESS_INIT EID's length is %d, but only wrote %d bytes", len(si.Eid), n)
+	} else if n != len(si.NodeId) {
+		return fmt.Errorf("SESS_INIT Node ID's length is %d, but only wrote %d bytes", len(si.NodeId), n)
 	}
 
 	// TODO: Session Extension Items
@@ -76,12 +77,12 @@ func (si *SessionInitMessage) Unmarshal(r io.Reader) error {
 		return fmt.Errorf("SESS_INIT's Message Header is wrong: %d instead of %d", messageHeader, SESS_INIT)
 	}
 
-	var eidLength uint16
+	var nodeIdLen uint16
 	var fields = []interface{}{
 		&si.KeepaliveInterval,
 		&si.SegmentMru,
 		&si.TransferMru,
-		&eidLength,
+		&nodeIdLen,
 	}
 
 	for _, field := range fields {
@@ -90,11 +91,11 @@ func (si *SessionInitMessage) Unmarshal(r io.Reader) error {
 		}
 	}
 
-	var eidBuff = make([]byte, eidLength)
-	if _, err := io.ReadFull(r, eidBuff); err != nil {
+	var nodeIdBuff = make([]byte, nodeIdLen)
+	if _, err := io.ReadFull(r, nodeIdBuff); err != nil {
 		return err
 	} else {
-		si.Eid = string(eidBuff)
+		si.NodeId = string(nodeIdBuff)
 	}
 
 	// TODO: Session Extension Items, see above

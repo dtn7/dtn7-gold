@@ -15,8 +15,7 @@ import (
 type SessionTerminationFlags uint8
 
 const (
-	// TerminationReply indicates that this message is an acknowledgement of an
-	// earlier SESS_TERM message.
+	// TerminationReply indicates that this message is an acknowledgement of an earlier SESS_TERM message.
 	TerminationReply SessionTerminationFlags = 0x01
 )
 
@@ -40,19 +39,16 @@ const (
 	// TerminationIdleTimeout indicates a session being closed due to idleness.
 	TerminationIdleTimeout SessionTerminationCode = 0x01
 
-	// TerminationVersionMismatch indicates that the node cannot conform to the
-	// specified TCPCL protocol version number.
+	// TerminationVersionMismatch indicates that the node cannot conform to the specified TCPCL protocol version number.
 	TerminationVersionMismatch SessionTerminationCode = 0x02
 
 	// TerminationBusy indicates a too busy node.
 	TerminationBusy SessionTerminationCode = 0x03
 
-	// TerminationContactFailure indicates that the node cannot interpret or
-	// negotiate contact header options.
+	// TerminationContactFailure indicates that the node cannot interpret or negotiate contact header options.
 	TerminationContactFailure SessionTerminationCode = 0x04
 
-	// TerminationResourceExhaustion indicates that the node has run into some
-	// resource limit.
+	// TerminationResourceExhaustion indicates that the node has run into some resource limit.
 	TerminationResourceExhaustion SessionTerminationCode = 0x05
 )
 
@@ -104,9 +100,7 @@ func NewSessionTerminationMessage(flags SessionTerminationFlags, reason SessionT
 }
 
 func (stm SessionTerminationMessage) String() string {
-	return fmt.Sprintf(
-		"SESS_TERM(Message Flags=%v, Reason Code=%v)",
-		stm.Flags, stm.ReasonCode)
+	return fmt.Sprintf("SESS_TERM(Message Flags=%v, Reason Code=%v)", stm.Flags, stm.ReasonCode)
 }
 
 func (stm SessionTerminationMessage) Marshal(w io.Writer) error {

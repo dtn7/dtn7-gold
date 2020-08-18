@@ -17,19 +17,18 @@ const (
 	// RejectionTypeUnknown indicates an unknown Message Type Code.
 	RejectionTypeUnknown MessageRejectionReason = 0x01
 
-	// RejectionUnsupported indicates that this TCPCL node cannot comply with
-	// the message content.
+	// RejectionUnsupported indicates that this TCPCL node cannot comply with the message content.
 	RejectionUnsupported MessageRejectionReason = 0x02
 
-	// RejectionUnexptected indicates that this TCPCL node received a message
-	// while the session is in a state in which the message is not expected.
-	RejectionUnexptected MessageRejectionReason = 0x03
+	// RejectionUnexpected indicates that this TCPCL node received a message while being in a state which does not
+	// expected this message.
+	RejectionUnexpected MessageRejectionReason = 0x03
 )
 
 // IsValid checks if this MessageRejectionReason represents a valid value.
 func (mrr MessageRejectionReason) IsValid() bool {
 	switch mrr {
-	case RejectionTypeUnknown, RejectionUnsupported, RejectionUnexptected:
+	case RejectionTypeUnknown, RejectionUnsupported, RejectionUnexpected:
 		return true
 	default:
 		return false
@@ -42,7 +41,7 @@ func (mrr MessageRejectionReason) String() string {
 		return "Message Type Unknown"
 	case RejectionUnsupported:
 		return "Message Unsupported"
-	case RejectionUnexptected:
+	case RejectionUnexpected:
 		return "Message Unexpected"
 	default:
 		return "INVALID"
@@ -67,9 +66,7 @@ func NewMessageRejectionMessage(reasonCode MessageRejectionReason, messageHeader
 }
 
 func (mrm MessageRejectionMessage) String() string {
-	return fmt.Sprintf(
-		"MSG_REJECT(Reason Code=%v, Rejected Message Header=%d)",
-		mrm.ReasonCode, mrm.MessageHeader)
+	return fmt.Sprintf("MSG_REJECT(Reason Code=%v, Rejected Message Header=%d)", mrm.ReasonCode, mrm.MessageHeader)
 }
 
 func (mrm MessageRejectionMessage) Marshal(w io.Writer) error {
@@ -89,9 +86,7 @@ func (mrm *MessageRejectionMessage) Unmarshal(r io.Reader) error {
 	if err := binary.Read(r, binary.BigEndian, &messageHeader); err != nil {
 		return err
 	} else if messageHeader != MSG_REJECT {
-		return fmt.Errorf(
-			"MSG_REJECT's Message Header is wrong: %d instead of %d",
-			messageHeader, MSG_REJECT)
+		return fmt.Errorf("MSG_REJECT's Message Header is wrong: %d instead of %d", messageHeader, MSG_REJECT)
 	}
 
 	if err := binary.Read(r, binary.BigEndian, mrm); err != nil {

@@ -21,17 +21,16 @@ type DataAcknowledgementMessage struct {
 }
 
 // NewDataAcknowledgementMessage creates a new DataAcknowledgementMessage with given fields.
-func NewDataAcknowledgementMessage(flags SegmentFlags, tid, acklen uint64) DataAcknowledgementMessage {
+func NewDataAcknowledgementMessage(flags SegmentFlags, tid, ackLen uint64) DataAcknowledgementMessage {
 	return DataAcknowledgementMessage{
 		Flags:      flags,
 		TransferId: tid,
-		AckLen:     acklen,
+		AckLen:     ackLen,
 	}
 }
 
 func (dam DataAcknowledgementMessage) String() string {
-	return fmt.Sprintf(
-		"XFER_ACK(Message Flags=%v, Transfer ID=%d, Acknowledged length=%d)",
+	return fmt.Sprintf("XFER_ACK(Message Flags=%v, Transfer ID=%d, Acknowledged length=%d)",
 		dam.Flags, dam.TransferId, dam.AckLen)
 }
 
