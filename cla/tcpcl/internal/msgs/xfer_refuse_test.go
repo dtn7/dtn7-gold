@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package tcpcl
+package msgs
 
 import (
 	"bytes"
@@ -10,53 +10,60 @@ import (
 	"testing"
 )
 
-func TestDataAcknowledgementMessage(t *testing.T) {
+func TestTransferRefusalMessage(t *testing.T) {
 	t1data := []byte{
 		// Message Header:
-		0x02,
-		// Message Flags:
 		0x03,
+		// Reason Code:
+		0x00,
 		// Transfer ID:
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-		// Acknowledgement Length:
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
 	}
-	t1message := NewDataAcknowledgementMessage(SegmentEnd|SegmentStart, 1, 255)
+	t1message := NewTransferRefusalMessage(RefusalUnknown, 1)
 
 	t2data := []byte{
 		// Message Header:
+		0x05,
+		// Reason Code:
+		0x00,
+		// Transfer ID:
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	}
+	t2message := TransferRefusalMessage{}
+
+	t3data := []byte{
+		// Message Header:
 		0x03,
-		// Message Flags:
-		0x03,
+		// Reason Code:
+		0xFF,
 		// Transfer ID:
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-		// Acknowledgement Length:
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
 	}
-	t2message := DataAcknowledgementMessage{}
+	t3message := NewTransferRefusalMessage(RefusalUnknown, 1)
 
 	tests := []struct {
 		valid bool
 		data  []byte
-		dam   DataAcknowledgementMessage
+		trm   TransferRefusalMessage
 	}{
 		{true, t1data, t1message},
 		{false, t2data, t2message},
+		{false, t3data, t3message},
 	}
 
 	for _, test := range tests {
-		var dam DataAcknowledgementMessage
+		var trm TransferRefusalMessage
 		var buf = bytes.NewBuffer(test.data)
 
-		if err := dam.Unmarshal(buf); (err == nil) != test.valid {
+		if err := trm.Unmarshal(buf); (err == nil) != test.valid {
 			t.Fatalf("Error state was not expected; valid := %t, got := %v", test.valid, err)
 		} else if !test.valid {
 			continue
-		} else if !reflect.DeepEqual(test.dam, dam) {
-			t.Fatalf("DataAcknowledgementMessage does not match, expected %v and got %v", test.dam, dam)
+		} else if !reflect.DeepEqual(test.trm, trm) {
+			t.Fatalf("TransferRefusalMessage does not match, expected %v and got %v", test.trm, trm)
 		}
 
-		if err := test.dam.Marshal(buf); err != nil {
+		if err := test.trm.Marshal(buf); err != nil {
 			t.Fatal(err)
 		} else if data := buf.Bytes(); !bytes.Equal(data, test.data) {
 			t.Fatalf("Data does not match, expected %x and got %x", test.data, data)

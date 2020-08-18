@@ -16,6 +16,7 @@ import (
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
 // sessTermErr will be returned from a state handler iff a SESS_TERM was received.
@@ -33,8 +34,8 @@ type Client struct {
 
 	conn net.Conn
 
-	msgsOut chan Message
-	msgsIn  chan Message
+	msgsOut chan msgs.Message
+	msgsIn  chan msgs.Message
 
 	handleMetaStop        chan struct{}
 	handleMetaStopAck     chan struct{}
@@ -51,14 +52,14 @@ type Client struct {
 	// Contact state fields:
 	contactSent bool
 	contactRecv bool
-	chSent      ContactHeader
-	chRecv      ContactHeader
+	chSent      msgs.ContactHeader
+	chRecv      msgs.ContactHeader
 
 	// Init state fields:
 	initSent     bool
 	initRecv     bool
-	sessInitSent SessionInitMessage
-	sessInitRecv SessionInitMessage
+	sessInitSent msgs.SessionInitMessage
+	sessInitRecv msgs.SessionInitMessage
 
 	keepalive   uint16
 	segmentMru  uint64
@@ -71,8 +72,8 @@ type Client struct {
 
 	transferOutMutex sync.Mutex
 	transferOutId    uint64
-	transferOutSend  chan Message
-	transferOutAck   chan Message
+	transferOutSend  chan msgs.Message
+	transferOutAck   chan msgs.Message
 
 	transferIn *IncomingTransfer
 
@@ -162,10 +163,10 @@ func (client *Client) Start() (err error, retry bool) {
 	client.transferOutId = 0
 	client.transferIn = nil
 
-	client.msgsOut = make(chan Message, 100)
-	client.msgsIn = make(chan Message, 100)
-	client.transferOutSend = make(chan Message)
-	client.transferOutAck = make(chan Message)
+	client.msgsOut = make(chan msgs.Message, 100)
+	client.msgsIn = make(chan msgs.Message, 100)
+	client.transferOutSend = make(chan msgs.Message)
+	client.transferOutAck = make(chan msgs.Message)
 
 	client.handleMetaStop = make(chan struct{}, 10)
 	client.handleMetaStopAck = make(chan struct{}, 2)

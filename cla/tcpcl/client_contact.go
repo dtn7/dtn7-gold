@@ -6,6 +6,8 @@ package tcpcl
 
 import (
 	"fmt"
+
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
 // This file contains code for the Client's contact state.
@@ -14,7 +16,7 @@ import (
 func (client *Client) handleContact() error {
 	switch {
 	case client.active && !client.contactSent, !client.active && !client.contactSent && client.contactRecv:
-		client.chSent = NewContactHeader(0)
+		client.chSent = msgs.NewContactHeader(0)
 		client.contactSent = true
 
 		client.msgsOut <- &client.chSent
@@ -23,7 +25,7 @@ func (client *Client) handleContact() error {
 	case !client.active && !client.contactRecv, client.active && client.contactSent && !client.contactRecv:
 		msg := <-client.msgsIn
 		switch msg := msg.(type) {
-		case *ContactHeader:
+		case *msgs.ContactHeader:
 			client.chRecv = *msg
 			client.contactRecv = true
 			client.log().WithField("msg", client.chRecv).Debug("Received Contact Header")

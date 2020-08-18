@@ -13,6 +13,7 @@ import (
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
 // This file contains code for the Client's established state.
@@ -34,7 +35,7 @@ func (client *Client) handleEstablished() (err error) {
 	select {
 	case <-client.keepaliveTicker.C:
 		// Send a keepalive
-		var keepaliveMsg = NewKeepaliveMessage()
+		var keepaliveMsg = msgs.NewKeepaliveMessage()
 		client.msgsOut <- &keepaliveMsg
 		client.log().WithField("msg", keepaliveMsg).Debug("Sent KEEPALIVE message")
 
@@ -54,26 +55,26 @@ func (client *Client) handleEstablished() (err error) {
 
 	case msg := <-client.msgsIn:
 		switch msg := msg.(type) {
-		case *KeepaliveMessage:
+		case *msgs.KeepaliveMessage:
 			keepaliveMsg := *msg
 			client.keepaliveLast = time.Now()
 			client.log().WithField("msg", keepaliveMsg).Debug("Received KEEPALIVE message")
 
-		case *DataTransmissionMessage:
+		case *msgs.DataTransmissionMessage:
 			dtm := *msg
 			client.log().WithField("msg", dtm).Debug("Received XFER_SEGMENT")
 
-			if client.transferIn != nil && dtm.Flags&SegmentStart != 0 {
+			if client.transferIn != nil && dtm.Flags&msgs.SegmentStart != 0 {
 				client.log().WithField("msg", dtm).Warn(
 					"Received XFER_SEGMENT with START flag, but has old transfer; resetting")
 
 				client.transferIn = NewIncomingTransfer(dtm.TransferId)
 			} else if client.transferIn == nil {
-				if dtm.Flags&SegmentStart == 0 {
+				if dtm.Flags&msgs.SegmentStart == 0 {
 					client.log().WithField("msg", dtm).Warn(
 						"Received XFER_SEGMENT without a START flag, but no transfer state")
 
-					ackMsg := NewTransferRefusalMessage(RefusalUnknown, dtm.TransferId)
+					ackMsg := msgs.NewTransferRefusalMessage(msgs.RefusalUnknown, dtm.TransferId)
 					client.msgsOut <- &ackMsg
 				} else {
 					client.log().WithField("msg", dtm).Debug("Create new incoming transfer")
@@ -87,7 +88,7 @@ func (client *Client) handleEstablished() (err error) {
 					client.log().WithError(err).WithField("msg", dtm).Warn(
 						"Parsing next incoming segment errored")
 
-					ackMsg := NewTransferRefusalMessage(RefusalUnknown, dtm.TransferId)
+					ackMsg := msgs.NewTransferRefusalMessage(msgs.RefusalUnknown, dtm.TransferId)
 					client.msgsOut <- &ackMsg
 				} else {
 					client.msgsOut <- &dam
@@ -115,10 +116,10 @@ func (client *Client) handleEstablished() (err error) {
 				}
 			}
 
-		case *DataAcknowledgementMessage, *TransferRefusalMessage:
+		case *msgs.DataAcknowledgementMessage, *msgs.TransferRefusalMessage:
 			client.transferOutAck <- msg
 
-		case *SessionTerminationMessage:
+		case *msgs.SessionTerminationMessage:
 			sesstermMsg := *msg
 			client.log().WithField("msg", sesstermMsg).Info("Received SESS_TERM")
 			return sessTermErr
@@ -128,7 +129,7 @@ func (client *Client) handleEstablished() (err error) {
 		}
 
 	case msg := <-client.transferOutSend:
-		if _, ok := msg.(*DataTransmissionMessage); !ok {
+		if _, ok := msg.(*msgs.DataTransmissionMessage); !ok {
 			client.log().WithField("msg", msg).Warn(
 				"Transfer Out received a non XFER_SEGMENT message")
 		} else {
@@ -177,7 +178,7 @@ func (client *Client) Send(bndl *bundle.Bundle) error {
 
 		ackMsg := <-client.transferOutAck
 		switch ackMsg := ackMsg.(type) {
-		case *DataAcknowledgementMessage:
+		case *msgs.DataAcknowledgementMessage:
 			tlog.WithField("msg", ackMsg).Debug("Received XFER_ACK")
 
 			if ackMsg.TransferId != dtm.TransferId || ackMsg.Flags != dtm.Flags {
@@ -185,7 +186,7 @@ func (client *Client) Send(bndl *bundle.Bundle) error {
 				return fmt.Errorf("XFER_ACK does not match XFER_SEGMENT")
 			}
 
-		case *TransferRefusalMessage:
+		case *msgs.TransferRefusalMessage:
 			tlog.WithField("msg", ackMsg).Warn("Received XFER_REFUSE, aborting transfer")
 			return fmt.Errorf("Received XFER_REFUSE, aborting transfer")
 

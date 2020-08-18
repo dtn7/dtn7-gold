@@ -10,6 +10,7 @@ import (
 	"io"
 
 	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
 // IncomingTransfer represents an incoming Bundle Transfer for the TCPCL.
@@ -38,7 +39,7 @@ func (t IncomingTransfer) IsFinished() bool {
 }
 
 // NextSegment reads data from a XFER_SEGMENT and retruns a XFER_ACK or an error.
-func (t *IncomingTransfer) NextSegment(dtm DataTransmissionMessage) (dam DataAcknowledgementMessage, err error) {
+func (t *IncomingTransfer) NextSegment(dtm msgs.DataTransmissionMessage) (dam msgs.DataAcknowledgementMessage, err error) {
 	if t.IsFinished() {
 		err = fmt.Errorf("Transfer has already received an end flag")
 		return
@@ -57,11 +58,11 @@ func (t *IncomingTransfer) NextSegment(dtm DataTransmissionMessage) (dam DataAck
 		return
 	}
 
-	if dtm.Flags&SegmentEnd != 0 {
+	if dtm.Flags&msgs.SegmentEnd != 0 {
 		t.endFlag = true
 	}
 
-	dam = NewDataAcknowledgementMessage(dtm.Flags, dtm.TransferId, uint64(t.buf.Len()))
+	dam = msgs.NewDataAcknowledgementMessage(dtm.Flags, dtm.TransferId, uint64(t.buf.Len()))
 	return
 }
 

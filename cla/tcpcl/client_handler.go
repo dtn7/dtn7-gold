@@ -12,6 +12,7 @@ import (
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
 // handleMeta supervises the other handlers and propagates shutdown signals.
@@ -56,7 +57,7 @@ func (client *Client) handleConnIn() {
 				return
 			}
 
-			if msg, err := ReadMessage(r); err == nil {
+			if msg, err := msgs.ReadMessage(r); err == nil {
 				client.log().WithField("msg", msg).Debug("Received message")
 				client.msgsIn <- msg
 			} else if err == io.EOF {
@@ -99,7 +100,7 @@ func (client *Client) handleConnOut() {
 				client.log().WithField("msg", msg).Debug("Sent message")
 			}
 
-			if _, ok := msg.(*SessionTerminationMessage); ok {
+			if _, ok := msg.(*msgs.SessionTerminationMessage); ok {
 				client.log().WithField("msg", msg).Debug("Closing connection after sending SESS_TERM")
 
 				if err := client.conn.Close(); err != nil {
@@ -160,7 +161,7 @@ func (client *Client) handleState() {
 			default:
 				client.log().Info("Entering Termination state")
 
-				var sessTerm = NewSessionTerminationMessage(0, TerminationUnknown)
+				var sessTerm = msgs.NewSessionTerminationMessage(0, msgs.TerminationUnknown)
 				client.msgsOut <- &sessTerm
 
 				emptyEndpoint := bundle.EndpointID{}

@@ -10,6 +10,7 @@ import (
 	"io"
 
 	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
 // OutgoingTransfer represents an outgoing Bundle Transfer for the TCPCL.
@@ -53,23 +54,23 @@ func NewBundleOutgoingTransfer(id uint64, b bundle.Bundle) *OutgoingTransfer {
 
 // NextSegment creates the next XFER_SEGMENT for the given MRU or an EOF in case
 // of a finished Writer.
-func (t *OutgoingTransfer) NextSegment(mru uint64) (dtm DataTransmissionMessage, err error) {
-	var segFlags SegmentFlags
+func (t *OutgoingTransfer) NextSegment(mru uint64) (dtm msgs.DataTransmissionMessage, err error) {
+	var segFlags msgs.SegmentFlags
 
 	if t.startFlag {
 		t.startFlag = false
-		segFlags |= SegmentStart
+		segFlags |= msgs.SegmentStart
 	}
 
 	var buf = make([]byte, mru)
 	if n, rErr := io.ReadFull(t.dataStream, buf); rErr == io.ErrUnexpectedEOF {
 		buf = buf[:n]
-		segFlags |= SegmentEnd
+		segFlags |= msgs.SegmentEnd
 	} else if rErr != nil {
 		err = rErr
 		return
 	}
 
-	dtm = NewDataTransmissionMessage(segFlags, t.Id, buf)
+	dtm = msgs.NewDataTransmissionMessage(segFlags, t.Id, buf)
 	return
 }

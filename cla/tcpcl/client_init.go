@@ -11,6 +11,7 @@ import (
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
 // This file contains code for the Client's contact state.
@@ -26,7 +27,7 @@ func (client *Client) handleSessInit() error {
 
 	switch {
 	case client.active && !client.initSent, !client.active && !client.initSent && client.initRecv:
-		client.sessInitSent = NewSessionInitMessage(keepalive, segmentMru, transferMru, client.endpointID.String())
+		client.sessInitSent = msgs.NewSessionInitMessage(keepalive, segmentMru, transferMru, client.endpointID.String())
 		client.initSent = true
 
 		client.msgsOut <- &client.sessInitSent
@@ -35,12 +36,12 @@ func (client *Client) handleSessInit() error {
 	case !client.active && !client.initRecv, client.active && client.initSent && !client.initRecv:
 		msg := <-client.msgsIn
 		switch msg := msg.(type) {
-		case *SessionInitMessage:
+		case *msgs.SessionInitMessage:
 			client.sessInitRecv = *msg
 			client.initRecv = true
 			client.log().WithField("msg", client.sessInitRecv).Debug("Received SESS_INIT message")
 
-		case *SessionTerminationMessage:
+		case *msgs.SessionTerminationMessage:
 			sesstermMsg := *msg
 			client.log().WithField("msg", sesstermMsg).Info("Received SESS_TERM")
 			return sessTermErr
