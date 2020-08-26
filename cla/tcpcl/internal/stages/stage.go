@@ -19,7 +19,7 @@ type Configuration struct {
 	// ContactFlags determine the Contact Header.
 	ContactFlags msgs.ContactFlags
 
-	// Keepalive in seconds.
+	// Keepalive in seconds. A zero value indicates a disabled keepalive.
 	Keepalive uint16
 
 	// SegmentMru is the largest allowed single-segment payload to be received in bytes.
@@ -48,8 +48,20 @@ type State struct {
 	StageError error
 
 	// CONTACT STAGE
+	// ContactFlags are the received ContactFlags.
 	ContactFlags msgs.ContactFlags
 	// CONTACT STAGE END
+
+	// SESS INIT STAGE
+	// Keepalive is the minimum of the own configured and the received keepalive. Zero indicates a disabled keepalive.
+	Keepalive uint16
+	// SegmentMtu is the peer's segment MTU.
+	SegmentMtu uint64
+	// TransferMtu is the peer's transfer MTU.
+	TransferMtu uint64
+	// PeerNodeId is the peer's node ID.
+	PeerNodeId bundle.EndpointID
+	// SESS INIT STAGE END
 }
 
 // Stage described by this interface. It should be started by the Start method, which gets a configuration.
