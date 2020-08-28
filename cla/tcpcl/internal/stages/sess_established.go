@@ -52,7 +52,7 @@ func (se *SessEstablishedStage) handle() {
 
 		select {
 		case <-se.closeChan:
-			return
+			err = StageClose
 
 		case <-se.keepalive.C:
 			err = se.handleKeepalive()

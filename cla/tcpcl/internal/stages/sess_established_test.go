@@ -112,7 +112,7 @@ func TestSessEstablishedStageKeepaliveTimeout(t *testing.T) {
 	// Close sessions
 	_ = sess.Close()
 
-	if state.StageError == nil {
+	if state.StageError == nil || state.StageError == StageClose {
 		t.Fatal("no error is stored")
 	}
 
