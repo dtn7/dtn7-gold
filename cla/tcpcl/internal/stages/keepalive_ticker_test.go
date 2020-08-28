@@ -10,14 +10,11 @@ import (
 )
 
 func TestKeepaliveTicker(t *testing.T) {
-	ticker := newKeepaliveTicker(50 * time.Millisecond)
+	ticker := newKeepaliveTicker()
 
 	intervals := []time.Duration{50 * time.Millisecond, 75 * time.Millisecond, 100 * time.Millisecond}
-	for i := 0; i < len(intervals); i++ {
-		interval := intervals[i]
-		if i > 0 {
-			ticker.Reschedule(interval)
-		}
+	for _, interval := range intervals {
+		ticker.Reschedule(interval)
 
 		// wait for tick
 		select {

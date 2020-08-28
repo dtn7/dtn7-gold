@@ -12,7 +12,7 @@ import (
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
-// SessInitStage modules the session initialization resp. SESS_INIT exchange.
+// SessInitStage models the session initialization resp. SESS_INIT exchange.
 type SessInitStage struct {
 	state *State
 

@@ -10,7 +10,7 @@ import (
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
-// ContactStage modules the initial ContactHeader exchange.
+// ContactStage models the initial ContactHeader exchange.
 type ContactStage struct {
 	state *State
 
