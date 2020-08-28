@@ -85,6 +85,6 @@ func (cs *ContactStage) Close() error {
 }
 
 // Finished closes this channel to indicate this Stage has finished. Afterwards the State should be inspected.
-func (cs *ContactStage) Finished() chan struct{} {
+func (cs *ContactStage) Finished() <-chan struct{} {
 	return cs.finChan
 }

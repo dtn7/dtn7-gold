@@ -132,6 +132,6 @@ func (se *SessEstablishedStage) Close() error {
 }
 
 // Finished closes this channel to indicate this Stage has finished. Afterwards the State should be inspected.
-func (se *SessEstablishedStage) Finished() chan struct{} {
+func (se *SessEstablishedStage) Finished() <-chan struct{} {
 	return se.finChan
 }

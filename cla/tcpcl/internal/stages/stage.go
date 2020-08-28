@@ -41,8 +41,8 @@ type State struct {
 	Configuration Configuration
 
 	// MsgIn and MsgOut are channels for incoming (receiving) and outgoing (sending) TCPCL Messages.
-	MsgIn  chan msgs.Message
-	MsgOut chan msgs.Message
+	MsgIn  <-chan msgs.Message
+	MsgOut chan<- msgs.Message
 
 	// StageError reports back the failure of a stage.
 	StageError error
@@ -73,5 +73,5 @@ type Stage interface {
 	Close() error
 
 	// Finished closes this channel to indicate this Stage has finished. Afterwards the State should be inspected.
-	Finished() chan struct{}
+	Finished() <-chan struct{}
 }

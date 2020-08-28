@@ -42,6 +42,6 @@ func (ds *dummyStage) Close() error {
 	return nil
 }
 
-func (ds *dummyStage) Finished() chan struct{} {
+func (ds *dummyStage) Finished() <-chan struct{} {
 	return ds.finChan
 }
