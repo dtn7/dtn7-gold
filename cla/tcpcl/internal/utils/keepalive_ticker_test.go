@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package stages
+package utils
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 )
 
 func TestKeepaliveTicker(t *testing.T) {
-	ticker := newKeepaliveTicker()
+	ticker := NewKeepaliveTicker()
 
 	intervals := []time.Duration{50 * time.Millisecond, 75 * time.Millisecond, 100 * time.Millisecond}
 	for _, interval := range intervals {

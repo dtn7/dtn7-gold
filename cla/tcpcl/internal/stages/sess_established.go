@@ -10,6 +10,7 @@ import (
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/utils"
 )
 
 // SessEstablishedStage models an established TCPCLv4 session after a successfully SESS_INIT.
@@ -25,7 +26,7 @@ type SessEstablishedStage struct {
 	lastReceive time.Time
 	lastSend    time.Time
 
-	keepalive *keepaliveTicker
+	keepalive *utils.KeepaliveTicker
 }
 
 // Start this Stage based on the previous Stage's State.
@@ -41,7 +42,7 @@ func (se *SessEstablishedStage) Start(state *State) {
 	se.lastReceive = time.Now()
 	se.lastSend = time.Now()
 
-	se.keepalive = newKeepaliveTicker()
+	se.keepalive = utils.NewKeepaliveTicker()
 
 	go se.handle()
 }

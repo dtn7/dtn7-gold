@@ -17,6 +17,7 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/utils"
 )
 
 // sessTermErr will be returned from a state handler iff a SESS_TERM was received.
@@ -75,7 +76,7 @@ type Client struct {
 	transferOutSend  chan msgs.Message
 	transferOutAck   chan msgs.Message
 
-	transferIn *IncomingTransfer
+	transferIn *utils.IncomingTransfer
 
 	reportChan chan cla.ConvergenceStatus
 }

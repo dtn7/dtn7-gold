@@ -2,18 +2,18 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package stages
+package utils
 
 import (
 	"sync/atomic"
 	"time"
 )
 
-// keepaliveTicker is a variant of the time.Ticker which works like a wind-up clock.
+// KeepaliveTicker is a variant of the time.Ticker which works like a wind-up clock.
 //
 // The next tick of its channel C can be programmed by calling Reschedule. Multiple ticks might be scheduled.
 // The internal channel C will NOT be closed to prevent reading the closing as an erroneous tick.
-type keepaliveTicker struct {
+type KeepaliveTicker struct {
 	// c is the internal channel. External calls should use C, which is the same just with directions.
 	c chan time.Time
 
@@ -24,10 +24,10 @@ type keepaliveTicker struct {
 	stopped uint32
 }
 
-// newKeepaliveTicker which needs to be scheduled by calling Reschedule.
-func newKeepaliveTicker() *keepaliveTicker {
+// NewKeepaliveTicker which needs to be scheduled by calling Reschedule.
+func NewKeepaliveTicker() *KeepaliveTicker {
 	c := make(chan time.Time)
-	return &keepaliveTicker{
+	return &KeepaliveTicker{
 		c:       c,
 		C:       c,
 		stopped: 0,
@@ -35,7 +35,7 @@ func newKeepaliveTicker() *keepaliveTicker {
 }
 
 // Reschedule a tick for this ticker's channel C.
-func (ticker *keepaliveTicker) Reschedule(delay time.Duration) {
+func (ticker *KeepaliveTicker) Reschedule(delay time.Duration) {
 	if atomic.LoadUint32(&ticker.stopped) != 0 {
 		return
 	}
@@ -52,6 +52,6 @@ func (ticker *keepaliveTicker) Reschedule(delay time.Duration) {
 // Stop this ticker.
 //
 // The internal channel C will NOT be closed to prevent reading the closing as an erroneous tick.
-func (ticker *keepaliveTicker) Stop() {
+func (ticker *KeepaliveTicker) Stop() {
 	atomic.StoreUint32(&ticker.stopped, 1)
 }

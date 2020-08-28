@@ -14,6 +14,7 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/utils"
 )
 
 // This file contains code for the Client's established state.
@@ -68,7 +69,7 @@ func (client *Client) handleEstablished() (err error) {
 				client.log().WithField("msg", dtm).Warn(
 					"Received XFER_SEGMENT with START flag, but has old transfer; resetting")
 
-				client.transferIn = NewIncomingTransfer(dtm.TransferId)
+				client.transferIn = utils.NewIncomingTransfer(dtm.TransferId)
 			} else if client.transferIn == nil {
 				if dtm.Flags&msgs.SegmentStart == 0 {
 					client.log().WithField("msg", dtm).Warn(
@@ -79,7 +80,7 @@ func (client *Client) handleEstablished() (err error) {
 				} else {
 					client.log().WithField("msg", dtm).Debug("Create new incoming transfer")
 
-					client.transferIn = NewIncomingTransfer(dtm.TransferId)
+					client.transferIn = utils.NewIncomingTransfer(dtm.TransferId)
 				}
 			}
 
@@ -154,7 +155,7 @@ func (client *Client) Send(bndl *bundle.Bundle) error {
 	}
 
 	client.transferOutId += 1
-	var t = NewBundleOutgoingTransfer(client.transferOutId, *bndl)
+	var t = utils.NewBundleOutgoingTransfer(client.transferOutId, *bndl)
 
 	var tlog = client.log().WithFields(log.Fields{
 		"bundle":   bndl,

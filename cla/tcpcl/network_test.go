@@ -6,6 +6,7 @@ package tcpcl
 
 import (
 	"fmt"
+	"math/rand"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -15,6 +16,15 @@ import (
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 )
+
+func testGetRandomData(size int) []byte {
+	payload := make([]byte, size)
+
+	rand.Seed(0)
+	rand.Read(payload)
+
+	return payload
+}
 
 func getRandomPort(t *testing.T) (port int) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
