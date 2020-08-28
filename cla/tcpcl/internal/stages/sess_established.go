@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
@@ -17,6 +18,9 @@ type SessEstablishedStage struct {
 
 	closeChan chan struct{}
 	finChan   chan struct{}
+
+	bundlesOut chan<- bundle.Bundle
+	bundlesIn  <-chan bundle.Bundle
 
 	lastReceive time.Time
 	lastSend    time.Time
@@ -30,6 +34,9 @@ func (se *SessEstablishedStage) Start(state *State) {
 
 	se.closeChan = make(chan struct{})
 	se.finChan = make(chan struct{})
+
+	se.bundlesOut = make(chan bundle.Bundle)
+	se.bundlesIn = make(chan bundle.Bundle)
 
 	se.lastReceive = time.Now()
 	se.lastSend = time.Now()
@@ -122,6 +129,16 @@ func (se *SessEstablishedStage) handleMsgIn(msg msgs.Message) (err error) {
 	default:
 		err = fmt.Errorf("unexpected message type %T", msg)
 	}
+	return
+}
+
+// Exchanges returns two optional channels for Bundle exchange with the peer. Those channels are only available iff
+// the third exchangeOk variable is true. First channel is to send outgoing Bundles to the peer. The other channel
+// receives incoming Bundles from the peer.
+func (se *SessEstablishedStage) Exchanges() (outgoing chan<- bundle.Bundle, incoming <-chan bundle.Bundle, exchangeOk bool) {
+	outgoing = se.bundlesOut
+	incoming = se.bundlesIn
+	exchangeOk = true
 	return
 }
 

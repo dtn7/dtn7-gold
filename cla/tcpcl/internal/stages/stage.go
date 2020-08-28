@@ -69,6 +69,11 @@ type Stage interface {
 	// Start this Stage based on the previous Stage's State.
 	Start(state *State)
 
+	// Exchanges returns two optional channels for Bundle exchange with the peer. Those channels are only available iff
+	// the third exchangeOk variable is true. First channel is to send outgoing Bundles to the peer. The other channel
+	// receives incoming Bundles from the peer.
+	Exchanges() (outgoing chan<- bundle.Bundle, incoming <-chan bundle.Bundle, exchangeOk bool)
+
 	// Close this Stage down.
 	Close() error
 

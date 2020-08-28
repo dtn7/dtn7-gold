@@ -4,7 +4,11 @@
 
 package stages
 
-import "time"
+import (
+	"time"
+
+	"github.com/dtn7/dtn7-go/bundle"
+)
 
 // dummyStage is used for internal testing.
 //
@@ -35,6 +39,10 @@ func (ds *dummyStage) handler() {
 	}
 
 	close(ds.finChan)
+}
+
+func (ds *dummyStage) Exchanges() (outgoing chan<- bundle.Bundle, incoming <-chan bundle.Bundle, exchangeOk bool) {
+	return nil, nil, false
 }
 
 func (ds *dummyStage) Close() error {
