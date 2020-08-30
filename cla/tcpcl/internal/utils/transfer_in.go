@@ -41,7 +41,7 @@ func (t IncomingTransfer) IsFinished() bool {
 // NextSegment reads data from a XFER_SEGMENT and retruns a XFER_ACK or an error.
 func (t *IncomingTransfer) NextSegment(dtm msgs.DataTransmissionMessage) (dam msgs.DataAcknowledgementMessage, err error) {
 	if t.IsFinished() {
-		err = fmt.Errorf("Transfer has already received an end flag")
+		err = fmt.Errorf("transfer has already received an end flag")
 		return
 	}
 
@@ -54,7 +54,7 @@ func (t *IncomingTransfer) NextSegment(dtm msgs.DataTransmissionMessage) (dam ms
 		err = dtmErr
 		return
 	} else if n != len(dtm.Data) {
-		err = fmt.Errorf("Expected %d bytes instead of  %d", len(dtm.Data), n)
+		err = fmt.Errorf("expected %d bytes instead of  %d", len(dtm.Data), n)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (t *IncomingTransfer) NextSegment(dtm msgs.DataTransmissionMessage) (dam ms
 // ToBundle returns the Bundle for a finished Transfer.
 func (t *IncomingTransfer) ToBundle() (bndl bundle.Bundle, err error) {
 	if !t.IsFinished() {
-		err = fmt.Errorf("Transfer has not been finished")
+		err = fmt.Errorf("transfer has not been finished")
 		return
 	}
 
