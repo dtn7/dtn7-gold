@@ -1,31 +1,36 @@
 module github.com/dtn7/dtn7-go
 
 require (
-	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/BurntSushi/toml v0.3.1
-	github.com/RyanCarrier/dijkstra v0.0.0-20190613134106-3f5a38e7002e
+	github.com/OneOfOne/xxhash v1.2.8 // indirect
+	github.com/RyanCarrier/dijkstra v1.0.0
+	github.com/dgraph-io/badger v1.6.1 // indirect
+	github.com/dgraph-io/ristretto v0.0.3 // indirect
+	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dtn7/cboring v0.1.5
-	github.com/dtn7/rf95modem-go v0.2.0
+	github.com/dtn7/rf95modem-go v0.3.1
 	github.com/felixge/tcpkeepalive v0.0.0-20160804073959-5bb0b2dea91e
-	github.com/fsnotify/fsnotify v1.4.7
-	github.com/golang/protobuf v1.3.2 // indirect
-	github.com/gorilla/mux v1.7.4
-	github.com/gorilla/websocket v1.4.1
-	github.com/hashicorp/go-multierror v1.0.0
+	github.com/fsnotify/fsnotify v1.4.9
+	github.com/golang/protobuf v1.4.2 // indirect
+	github.com/google/go-cmp v0.5.2 // indirect
+	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/websocket v1.4.2
+	github.com/hashicorp/go-multierror v1.1.0
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
-	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
-	github.com/schollz/peerdiscovery v1.4.0
-	github.com/sirupsen/logrus v1.4.2
-	github.com/timshannon/badgerhold v0.0.0-20190415130923-192650dd187a
-	github.com/ulikunitz/xz v0.5.6
-	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
-	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
-)
-
-exclude (
-	github.com/RyanCarrier/dijkstra-1 v0.0.0-20170512020943-0e5801a26345
-	github.com/albertorestifo/dijkstra v0.0.0-20160910063646-aba76f725f72
-	github.com/mattomatic/dijkstra v0.0.0-20130617153013-6f6d134eb237
+	github.com/kr/text v0.2.0 // indirect
+	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/schollz/peerdiscovery v1.5.1
+	github.com/sirupsen/logrus v1.6.0
+	github.com/stretchr/testify v1.6.1 // indirect
+	github.com/timshannon/badgerhold v0.0.0-20200723210455-8addb9de1e75
+	github.com/ulikunitz/xz v0.5.8
+	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
+	golang.org/x/sys v0.0.0-20200828194041-157a740278f4 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )
 
 go 1.13
