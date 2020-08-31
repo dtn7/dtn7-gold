@@ -5,6 +5,8 @@
 package stages
 
 import (
+	"sync"
+
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
@@ -13,6 +15,9 @@ import (
 type StageHandler struct {
 	stages []Stage
 	state  *State
+
+	currentStage      Stage
+	currentStageMutex sync.RWMutex
 
 	errChan   chan error
 	closeChan chan struct{}
@@ -41,16 +46,24 @@ func NewStageHandler(stages []Stage, msgIn, msgOut chan msgs.Message, config Con
 func (sh *StageHandler) handler() {
 	defer close(sh.errChan)
 
+	defer func() {
+		sh.currentStageMutex.Lock()
+		sh.currentStage = nil
+		sh.currentStageMutex.Unlock()
+	}()
+
 	for i := 0; i < len(sh.stages); i++ {
-		stage := sh.stages[i]
-		stage.Start(sh.state)
+		sh.currentStageMutex.Lock()
+		sh.currentStage = sh.stages[i]
+		sh.currentStage.Start(sh.state)
+		sh.currentStageMutex.Unlock()
 
 		select {
 		case <-sh.closeChan:
-			_ = stage.Close()
+			_ = sh.currentStage.Close()
 			return
 
-		case <-stage.Finished():
+		case <-sh.currentStage.Finished():
 			if err := sh.state.StageError; err != nil {
 				sh.errChan <- err
 				return
@@ -60,8 +73,24 @@ func (sh *StageHandler) handler() {
 }
 
 // Error might return errors risen in a Stage.
-func (sh *StageHandler) Error() chan error {
+func (sh *StageHandler) Error() <-chan error {
 	return sh.errChan
+}
+
+// Exchanges returns two optional channels for Message exchange with the peer.
+//
+// The implementation for a StageHandler wraps the call for the current Stage. If there is currently no stage,
+// exchangeOk is always false.
+func (sh *StageHandler) Exchanges() (outgoing chan<- msgs.Message, incoming <-chan msgs.Message, exchangeOk bool) {
+	sh.currentStageMutex.RLock()
+	defer sh.currentStageMutex.RUnlock()
+
+	if sh.currentStage == nil {
+		exchangeOk = false
+		return
+	} else {
+		return sh.currentStage.Exchanges()
+	}
 }
 
 // Close this StageHandler and the current Stage.

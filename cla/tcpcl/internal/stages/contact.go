@@ -7,7 +7,6 @@ package stages
 import (
 	"fmt"
 
-	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
@@ -78,7 +77,7 @@ func (cs *ContactStage) handlePassive() {
 }
 
 // Exchanges are not possible in the ContactStage.
-func (cs *ContactStage) Exchanges() (outgoing chan<- bundle.Bundle, incoming <-chan bundle.Bundle, exchangeOk bool) {
+func (cs *ContactStage) Exchanges() (outgoing chan<- msgs.Message, incoming <-chan msgs.Message, exchangeOk bool) {
 	return nil, nil, false
 }
 

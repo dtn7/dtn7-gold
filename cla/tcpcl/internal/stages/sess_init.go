@@ -92,6 +92,6 @@ func (ci *SessInitStage) Close() error {
 }
 
 // Finished closes this channel to indicate this Stage has finished. Afterwards the State should be inspected.
-func (ci *SessInitStage) Finished() chan struct{} {
+func (ci *SessInitStage) Finished() <-chan struct{} {
 	return ci.finChan
 }
