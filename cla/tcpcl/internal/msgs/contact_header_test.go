@@ -12,7 +12,7 @@ import (
 
 func TestContactHeaderMarshal(t *testing.T) {
 	tests := []struct {
-		contactHeader ContactHeader
+		contactHeader *ContactHeader
 		expectedData  []byte
 	}{
 		{NewContactHeader(0), []byte{0x64, 0x74, 0x6E, 0x21, 0x04, 0x00}},

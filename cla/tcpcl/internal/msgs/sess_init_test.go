@@ -79,7 +79,6 @@ func TestSessionInitMessage(t *testing.T) {
 		// Session Extension Item Length (u32):
 		0x00, 0x00, 0x00, 0x00,
 	}
-	t4session := SessionInitMessage{}
 
 	t5data := []byte{
 		// Message Header:
@@ -97,7 +96,6 @@ func TestSessionInitMessage(t *testing.T) {
 		// Session Extension Item Length (u32):
 		0x00, 0x00, 0x00, 0x00,
 	}
-	t5session := SessionInitMessage{}
 
 	t6data := []byte{
 		// Message Header:
@@ -116,7 +114,7 @@ func TestSessionInitMessage(t *testing.T) {
 		// Session Extension Items:
 		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 	}
-	t6session := SessionInitMessage{}
+	t6session := new(SessionInitMessage)
 
 	t7data := []byte{
 		// Message Header:
@@ -135,25 +133,24 @@ func TestSessionInitMessage(t *testing.T) {
 		// Session Extension Items:
 		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 	}
-	t7session := SessionInitMessage{}
 
 	tests := []struct {
 		valid     bool
 		bijective bool
-		sim       SessionInitMessage
+		sim       *SessionInitMessage
 		data      []byte
 	}{
 		{true, true, t1session, t1data},
 		{true, true, t2session, t2data},
 		{true, true, t3session, t3data},
-		{false, false, t4session, t4data},
-		{false, false, t5session, t5data},
+		{false, false, nil, t4data},
+		{false, false, nil, t5data},
 		{true, false, t6session, t6data},
-		{false, false, t7session, t7data},
+		{false, false, nil, t7data},
 	}
 
 	for _, test := range tests {
-		var sim SessionInitMessage
+		var sim = new(SessionInitMessage)
 		var buf = bytes.NewBuffer(test.data)
 
 		if err := sim.Unmarshal(buf); (err == nil) != test.valid {

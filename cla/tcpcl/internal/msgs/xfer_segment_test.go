@@ -56,7 +56,6 @@ func TestDataTransmissionMessage(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		// Data:
 	}
-	t3message := DataTransmissionMessage{}
 
 	t4data := []byte{
 		// Message Header:
@@ -71,7 +70,6 @@ func TestDataTransmissionMessage(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0F,
 		// Data:
 	}
-	t4message := DataTransmissionMessage{}
 
 	t5data := []byte{
 		// Message Header:
@@ -94,17 +92,17 @@ func TestDataTransmissionMessage(t *testing.T) {
 		valid     bool
 		bijective bool
 		data      []byte
-		dtm       DataTransmissionMessage
+		dtm       *DataTransmissionMessage
 	}{
 		{true, true, t1data, t1message},
 		{true, true, t2data, t2message},
-		{false, false, t3data, t3message},
-		{false, false, t4data, t4message},
+		{false, false, t3data, nil},
+		{false, false, t4data, nil},
 		{true, false, t5data, t5message},
 	}
 
 	for _, test := range tests {
-		var dtm DataTransmissionMessage
+		var dtm = new(DataTransmissionMessage)
 		var buf = bytes.NewBuffer(test.data)
 
 		if err := dtm.Unmarshal(buf); (err == nil) != test.valid {

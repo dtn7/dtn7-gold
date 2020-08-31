@@ -29,7 +29,6 @@ func TestTransferRefusalMessage(t *testing.T) {
 		// Transfer ID:
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	}
-	t2message := TransferRefusalMessage{}
 
 	t3data := []byte{
 		// Message Header:
@@ -44,15 +43,15 @@ func TestTransferRefusalMessage(t *testing.T) {
 	tests := []struct {
 		valid bool
 		data  []byte
-		trm   TransferRefusalMessage
+		trm   *TransferRefusalMessage
 	}{
 		{true, t1data, t1message},
-		{false, t2data, t2message},
+		{false, t2data, nil},
 		{false, t3data, t3message},
 	}
 
 	for _, test := range tests {
-		var trm TransferRefusalMessage
+		var trm = new(TransferRefusalMessage)
 		var buf = bytes.NewBuffer(test.data)
 
 		if err := trm.Unmarshal(buf); (err == nil) != test.valid {

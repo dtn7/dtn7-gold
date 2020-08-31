@@ -26,8 +26,8 @@ type SessionInitMessage struct {
 }
 
 // NewSessionInitMessage creates a new SessionInitMessage with given fields.
-func NewSessionInitMessage(keepaliveInterval uint16, segmentMru, transferMru uint64, nodeId string) SessionInitMessage {
-	return SessionInitMessage{
+func NewSessionInitMessage(keepaliveInterval uint16, segmentMru, transferMru uint64, nodeId string) *SessionInitMessage {
+	return &SessionInitMessage{
 		KeepaliveInterval: keepaliveInterval,
 		SegmentMru:        segmentMru,
 		TransferMru:       transferMru,

@@ -21,8 +21,8 @@ type DataAcknowledgementMessage struct {
 }
 
 // NewDataAcknowledgementMessage creates a new DataAcknowledgementMessage with given fields.
-func NewDataAcknowledgementMessage(flags SegmentFlags, tid, ackLen uint64) DataAcknowledgementMessage {
-	return DataAcknowledgementMessage{
+func NewDataAcknowledgementMessage(flags SegmentFlags, tid, ackLen uint64) *DataAcknowledgementMessage {
+	return &DataAcknowledgementMessage{
 		Flags:      flags,
 		TransferId: tid,
 		AckLen:     ackLen,

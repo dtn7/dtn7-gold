@@ -121,3 +121,75 @@ func TestSessEstablishedStageKeepaliveTimeout(t *testing.T) {
 		t.Fatal("no KEEPALIVEs were received")
 	}
 }
+
+func TestSessEstablishedStageMessageExchange(t *testing.T) {
+	// Channels are buffered because those are directly linked between sessions. In some cases, one session is already
+	// closing down, while the other tries to send.
+	msgIn := make(chan msgs.Message, 32)
+	msgOut := make(chan msgs.Message, 32)
+
+	keepaliveSec := uint16(2)
+
+	sess1 := &SessEstablishedStage{}
+	state1 := &State{
+		MsgIn:     msgIn,
+		MsgOut:    msgOut,
+		Keepalive: keepaliveSec,
+	}
+
+	sess2 := &SessEstablishedStage{}
+	state2 := &State{
+		MsgIn:     msgOut,
+		MsgOut:    msgIn,
+		Keepalive: keepaliveSec,
+	}
+
+	xchMsgs := []msgs.Message{
+		// func NewDataTransmissionMessage(flags SegmentFlags, tid uint64, data []byte) DataTransmissionMessage {
+		msgs.NewDataTransmissionMessage(msgs.SegmentStart, 1, []byte("hello")),
+	}
+
+	// Start sessions
+	startTime := time.Now()
+	sess1.Start(state1)
+	sess2.Start(state2)
+
+	outXch1, inXch1, _ := sess1.Exchanges()
+	outXch2, inXch2, _ := sess2.Exchanges()
+
+	// Let them exchange some KEEPALIVEs
+	select {
+	case <-sess1.Finished():
+		t.Fatal("active finished")
+	case <-sess2.Finished():
+		t.Fatal("passive finished")
+	case <-time.After(time.Duration(keepaliveSec*3) * time.Second):
+	}
+
+	// Close sessions
+	_ = sess1.Close()
+	_ = sess2.Close()
+
+	finChan := make(chan struct{})
+	go func() { finChan <- <-sess1.Finished() }()
+	go func() { finChan <- <-sess2.Finished() }()
+
+	for fins := 0; fins < 2; {
+		select {
+		case <-finChan:
+			fins += 1
+		case <-time.After(250 * time.Millisecond):
+			t.Fatal("timeout")
+		}
+	}
+
+	// Check send/receive timestamps
+	for _, sess := range []*SessEstablishedStage{sess1, sess2} {
+		if deltaSend := sess.lastSend.Sub(startTime); deltaSend < 2*time.Second {
+			t.Fatalf("%v send delta is %v", sess, deltaSend)
+		}
+		if deltaReceive := sess.lastReceive.Sub(startTime); deltaReceive < 2*time.Second {
+			t.Fatalf("%v receive delta is %v", sess, deltaReceive)
+		}
+	}
+}

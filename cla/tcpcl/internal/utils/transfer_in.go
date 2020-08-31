@@ -38,8 +38,8 @@ func (t IncomingTransfer) IsFinished() bool {
 	return t.endFlag
 }
 
-// NextSegment reads data from a XFER_SEGMENT and retruns a XFER_ACK or an error.
-func (t *IncomingTransfer) NextSegment(dtm msgs.DataTransmissionMessage) (dam msgs.DataAcknowledgementMessage, err error) {
+// NextSegment reads data from a XFER_SEGMENT and returns a XFER_ACK or an error.
+func (t *IncomingTransfer) NextSegment(dtm *msgs.DataTransmissionMessage) (dam *msgs.DataAcknowledgementMessage, err error) {
 	if t.IsFinished() {
 		err = fmt.Errorf("transfer has already received an end flag")
 		return

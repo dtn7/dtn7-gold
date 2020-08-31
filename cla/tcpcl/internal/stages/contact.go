@@ -57,8 +57,7 @@ func (cs *ContactStage) receiveMsgOrClose() (ch *msgs.ContactHeader, err error) 
 }
 
 func (cs *ContactStage) handleActive() {
-	ch := msgs.NewContactHeader(cs.state.Configuration.ContactFlags)
-	cs.state.MsgOut <- &ch
+	cs.state.MsgOut <- msgs.NewContactHeader(cs.state.Configuration.ContactFlags)
 
 	if ch, err := cs.receiveMsgOrClose(); err != nil {
 		cs.state.StageError = err
@@ -75,8 +74,7 @@ func (cs *ContactStage) handlePassive() {
 		cs.state.ContactFlags = ch.Flags
 	}
 
-	ch := msgs.NewContactHeader(cs.state.Configuration.ContactFlags)
-	cs.state.MsgOut <- &ch
+	cs.state.MsgOut <- msgs.NewContactHeader(cs.state.Configuration.ContactFlags)
 }
 
 // Exchanges are not possible in the ContactStage.

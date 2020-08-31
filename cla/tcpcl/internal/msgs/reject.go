@@ -58,8 +58,8 @@ type MessageRejectionMessage struct {
 }
 
 // NewMessageRejectionMessage creates a new MessageRejectionMessage with given fields.
-func NewMessageRejectionMessage(reasonCode MessageRejectionReason, messageHeader uint8) MessageRejectionMessage {
-	return MessageRejectionMessage{
+func NewMessageRejectionMessage(reasonCode MessageRejectionReason, messageHeader uint8) *MessageRejectionMessage {
+	return &MessageRejectionMessage{
 		ReasonCode:    reasonCode,
 		MessageHeader: messageHeader,
 	}

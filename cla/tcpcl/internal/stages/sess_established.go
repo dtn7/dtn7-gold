@@ -19,8 +19,8 @@ type SessEstablishedStage struct {
 	closeChan chan struct{}
 	finChan   chan struct{}
 
-	xmsgOut chan<- msgs.Message
-	xmsgIn  <-chan msgs.Message
+	xmsgOut chan msgs.Message
+	xmsgIn  chan msgs.Message
 
 	lastReceive time.Time
 	lastSend    time.Time
@@ -66,6 +66,9 @@ func (se *SessEstablishedStage) handle() {
 
 		case msg := <-se.state.MsgIn:
 			err = se.handleMsgIn(msg)
+
+		case msg := <-se.xmsgOut:
+			err = se.messageOut(msg)
 		}
 
 		if err != nil {
@@ -77,9 +80,11 @@ func (se *SessEstablishedStage) handle() {
 
 // messageOut dispatches an outgoing message to the channel and updates the lastSend field. This method MUST be used
 // instead of using the channel directly.
-func (se *SessEstablishedStage) messageOut(msg msgs.Message) {
+func (se *SessEstablishedStage) messageOut(msg msgs.Message) error {
 	se.state.MsgOut <- msg
 	se.lastSend = time.Now()
+
+	return nil
 }
 
 // handleKeepalive is called from handle when the keepalive ticker ticks.
@@ -100,8 +105,9 @@ func (se *SessEstablishedStage) handleKeepalive() error {
 
 	// Check last send message; send a KEEPALIVE if the time delta goes to zero
 	if sendDelta <= keepalive/8 {
-		keepaliveMsg := msgs.NewKeepaliveMessage()
-		se.messageOut(&keepaliveMsg)
+		if err := se.messageOut(msgs.NewKeepaliveMessage()); err != nil {
+			return err
+		}
 
 		se.keepalive.Reschedule(keepalive / 2)
 	} else {
@@ -115,19 +121,18 @@ func (se *SessEstablishedStage) handleMsgIn(msg msgs.Message) (err error) {
 	se.lastReceive = time.Now()
 
 	switch msg := msg.(type) {
+	case *msgs.SessionInitMessage:
+		err = fmt.Errorf("unexpected SESS_INIT message")
+
 	/* TODO
 	case *msgs.SessionTerminationMessage:
-
-	case *msgs.DataTransmissionMessage:
-
-	case *msgs.DataAcknowledgementMessage:
 	*/
 
 	case *msgs.KeepaliveMessage:
 		// nothing to do
 
 	default:
-		err = fmt.Errorf("unexpected message type %T", msg)
+		se.xmsgIn <- msg
 	}
 	return
 }

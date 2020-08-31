@@ -40,8 +40,8 @@ type ContactHeader struct {
 var contactHeaderHead = []byte{0x64, 0x74, 0x6E, 0x21, 0x04}
 
 // NewContactHeader creates a new ContactHeader with given ContactFlags.
-func NewContactHeader(flags ContactFlags) ContactHeader {
-	return ContactHeader{
+func NewContactHeader(flags ContactFlags) *ContactHeader {
+	return &ContactHeader{
 		Flags: flags,
 	}
 }

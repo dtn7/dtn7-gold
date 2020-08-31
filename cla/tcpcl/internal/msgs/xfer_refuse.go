@@ -69,8 +69,8 @@ type TransferRefusalMessage struct {
 }
 
 // NewTransferRefusalMessage creates a new TransferRefusalMessage with given fields.
-func NewTransferRefusalMessage(reason TransferRefusalCode, tid uint64) TransferRefusalMessage {
-	return TransferRefusalMessage{
+func NewTransferRefusalMessage(reason TransferRefusalCode, tid uint64) *TransferRefusalMessage {
+	return &TransferRefusalMessage{
 		ReasonCode: reason,
 		TransferId: tid,
 	}

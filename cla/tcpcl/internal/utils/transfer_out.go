@@ -54,7 +54,7 @@ func NewBundleOutgoingTransfer(id uint64, b bundle.Bundle) *OutgoingTransfer {
 
 // NextSegment creates the next XFER_SEGMENT for the given MRU or an EOF in case
 // of a finished Writer.
-func (t *OutgoingTransfer) NextSegment(mru uint64) (dtm msgs.DataTransmissionMessage, err error) {
+func (t *OutgoingTransfer) NextSegment(mru uint64) (dtm *msgs.DataTransmissionMessage, err error) {
 	var segFlags msgs.SegmentFlags
 
 	if t.startFlag {

@@ -14,16 +14,16 @@ func TestMessageRejectionMessage(t *testing.T) {
 	tests := []struct {
 		valid bool
 		data  []byte
-		mrm   MessageRejectionMessage
+		mrm   *MessageRejectionMessage
 	}{
 		{true, []byte{0x06, 0x01, 0x01}, NewMessageRejectionMessage(RejectionTypeUnknown, 0x01)},
 		{true, []byte{0x06, 0x03, 0x01}, NewMessageRejectionMessage(RejectionUnexpected, 0x01)},
-		{false, []byte{0x07, 0x00, 0x00}, MessageRejectionMessage{}},
-		{false, []byte{0x06, 0xF0, 0x00}, MessageRejectionMessage{}},
+		{false, []byte{0x07, 0x00, 0x00}, nil},
+		{false, []byte{0x06, 0xF0, 0x00}, nil},
 	}
 
 	for _, test := range tests {
-		var mrm MessageRejectionMessage
+		var mrm = new(MessageRejectionMessage)
 		var buf = bytes.NewBuffer(test.data)
 
 		if err := mrm.Unmarshal(buf); (err == nil) != test.valid {

@@ -92,8 +92,8 @@ type SessionTerminationMessage struct {
 }
 
 // NewSessionTerminationMessage creates a new SessionTerminationMessage with given fields.
-func NewSessionTerminationMessage(flags SessionTerminationFlags, reason SessionTerminationCode) SessionTerminationMessage {
-	return SessionTerminationMessage{
+func NewSessionTerminationMessage(flags SessionTerminationFlags, reason SessionTerminationCode) *SessionTerminationMessage {
+	return &SessionTerminationMessage{
 		Flags:      flags,
 		ReasonCode: reason,
 	}

@@ -59,11 +59,12 @@ func (ci *SessInitStage) handle() {
 	)
 
 	if ci.state.Configuration.ActivePeer {
-		ci.state.MsgOut <- &ciOut
+		ci.state.MsgOut <- ciOut
 		ciIn, err = ci.receiveMsgOrClose()
 	} else {
-		if ciIn, err = ci.receiveMsgOrClose(); err == nil {
-			ci.state.MsgOut <- &ciOut
+		ciIn, err = ci.receiveMsgOrClose()
+		if err == nil {
+			ci.state.MsgOut <- ciOut
 		}
 	}
 

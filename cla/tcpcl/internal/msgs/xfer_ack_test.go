@@ -33,19 +33,18 @@ func TestDataAcknowledgementMessage(t *testing.T) {
 		// Acknowledgement Length:
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
 	}
-	t2message := DataAcknowledgementMessage{}
 
 	tests := []struct {
 		valid bool
 		data  []byte
-		dam   DataAcknowledgementMessage
+		dam   *DataAcknowledgementMessage
 	}{
 		{true, t1data, t1message},
-		{false, t2data, t2message},
+		{false, t2data, nil},
 	}
 
 	for _, test := range tests {
-		var dam DataAcknowledgementMessage
+		var dam = new(DataAcknowledgementMessage)
 		var buf = bytes.NewBuffer(test.data)
 
 		if err := dam.Unmarshal(buf); (err == nil) != test.valid {

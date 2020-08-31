@@ -50,8 +50,8 @@ type DataTransmissionMessage struct {
 }
 
 // NewDataTransmissionMessage creates a new DataTransmissionMessage with given fields.
-func NewDataTransmissionMessage(flags SegmentFlags, tid uint64, data []byte) DataTransmissionMessage {
-	return DataTransmissionMessage{
+func NewDataTransmissionMessage(flags SegmentFlags, tid uint64, data []byte) *DataTransmissionMessage {
+	return &DataTransmissionMessage{
 		Flags:      flags,
 		TransferId: tid,
 		Data:       data,

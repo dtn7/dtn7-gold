@@ -17,8 +17,8 @@ const KEEPALIVE uint8 = 0x04
 type KeepaliveMessage struct{}
 
 // NewKeepaliveMessage creates a new KeepaliveMessage.
-func NewKeepaliveMessage() KeepaliveMessage {
-	return KeepaliveMessage{}
+func NewKeepaliveMessage() *KeepaliveMessage {
+	return &KeepaliveMessage{}
 }
 
 func (_ KeepaliveMessage) String() string {

@@ -66,9 +66,9 @@ func TestReadMessage(t *testing.T) {
 		data  []byte
 		msg   Message
 	}{
-		{true, t1data, &t1msg},
-		{true, t2data, &t2msg},
-		{true, t3data, &t3msg},
+		{true, t1data, t1msg},
+		{true, t2data, t2msg},
+		{true, t3data, t3msg},
 		{false, t4data, nil},
 		{false, t5data, nil},
 	}
