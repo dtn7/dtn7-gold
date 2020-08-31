@@ -80,7 +80,7 @@ func (ci *SessInitStage) handle() {
 }
 
 // Exchanges are not possible in the SessInitStage.
-func (ci *SessInitStage) Exchanges() (outgoing chan<- bundle.Bundle, incoming <-chan bundle.Bundle, exchangeOk bool) {
+func (ci *SessInitStage) Exchanges() (outgoing chan<- msgs.Message, incoming <-chan msgs.Message, exchangeOk bool) {
 	return nil, nil, false
 }
 

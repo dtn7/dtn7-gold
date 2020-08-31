@@ -7,7 +7,7 @@ package stages
 import (
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
 // dummyStage is used for internal testing.
@@ -41,7 +41,7 @@ func (ds *dummyStage) handler() {
 	close(ds.finChan)
 }
 
-func (ds *dummyStage) Exchanges() (outgoing chan<- bundle.Bundle, incoming <-chan bundle.Bundle, exchangeOk bool) {
+func (ds *dummyStage) Exchanges() (outgoing chan<- msgs.Message, incoming <-chan msgs.Message, exchangeOk bool) {
 	return nil, nil, false
 }
 
