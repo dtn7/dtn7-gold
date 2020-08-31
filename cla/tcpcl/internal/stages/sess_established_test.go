@@ -5,6 +5,8 @@
 package stages
 
 import (
+	"reflect"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -144,26 +146,67 @@ func TestSessEstablishedStageMessageExchange(t *testing.T) {
 		Keepalive: keepaliveSec,
 	}
 
-	xchMsgs := []msgs.Message{
-		// func NewDataTransmissionMessage(flags SegmentFlags, tid uint64, data []byte) DataTransmissionMessage {
+	xch1Msgs := []msgs.Message{
 		msgs.NewDataTransmissionMessage(msgs.SegmentStart, 1, []byte("hello")),
+		msgs.NewDataTransmissionMessage(0, 1, []byte(" ")),
+		msgs.NewDataTransmissionMessage(msgs.SegmentEnd, 1, []byte("world")),
+		msgs.NewDataAcknowledgementMessage(msgs.SegmentStart|msgs.SegmentEnd, 23, 6),
+	}
+
+	xch2Msgs := []msgs.Message{
+		msgs.NewDataAcknowledgementMessage(msgs.SegmentStart, 1, 5),
+		msgs.NewDataAcknowledgementMessage(0, 1, 6),
+		msgs.NewDataAcknowledgementMessage(msgs.SegmentEnd, 1, 11),
+		msgs.NewDataTransmissionMessage(msgs.SegmentStart|msgs.SegmentEnd, 23, []byte("foobar")),
 	}
 
 	// Start sessions
-	startTime := time.Now()
 	sess1.Start(state1)
 	sess2.Start(state2)
 
 	outXch1, inXch1, _ := sess1.Exchanges()
 	outXch2, inXch2, _ := sess2.Exchanges()
 
-	// Let them exchange some KEEPALIVEs
+	// Exchange the messages
+	var wg sync.WaitGroup
+	wg.Add(2)
+	wgFin := make(chan struct{})
+
+	go func() {
+		for i, msgOut := range xch1Msgs {
+			outXch1 <- msgOut
+
+			msgIn := <-inXch1
+			if !reflect.DeepEqual(msgIn, xch2Msgs[i]) {
+				t.Logf("expected %v, got %v", xch2Msgs[i], msgIn)
+				panic("fatal") // t.Fatal does not work within goroutines
+			}
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		for i, msgOut := range xch2Msgs {
+			msgIn := <-inXch2
+			if !reflect.DeepEqual(msgIn, xch1Msgs[i]) {
+				t.Logf("expected %v, got %v", xch1Msgs[i], msgIn)
+				panic("fatal") // t.Fatal does not work within goroutines
+			}
+
+			outXch2 <- msgOut
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		wg.Wait()
+		close(wgFin)
+	}()
+
 	select {
-	case <-sess1.Finished():
-		t.Fatal("active finished")
-	case <-sess2.Finished():
-		t.Fatal("passive finished")
-	case <-time.After(time.Duration(keepaliveSec*3) * time.Second):
+	case <-wgFin:
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("timeout")
 	}
 
 	// Close sessions
@@ -180,16 +223,6 @@ func TestSessEstablishedStageMessageExchange(t *testing.T) {
 			fins += 1
 		case <-time.After(250 * time.Millisecond):
 			t.Fatal("timeout")
-		}
-	}
-
-	// Check send/receive timestamps
-	for _, sess := range []*SessEstablishedStage{sess1, sess2} {
-		if deltaSend := sess.lastSend.Sub(startTime); deltaSend < 2*time.Second {
-			t.Fatalf("%v send delta is %v", sess, deltaSend)
-		}
-		if deltaReceive := sess.lastReceive.Sub(startTime); deltaReceive < 2*time.Second {
-			t.Fatalf("%v receive delta is %v", sess, deltaReceive)
 		}
 	}
 }
