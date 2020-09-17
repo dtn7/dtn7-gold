@@ -52,9 +52,8 @@ func NewBundleOutgoingTransfer(id uint64, b bundle.Bundle) *OutgoingTransfer {
 	return t
 }
 
-// NextSegment creates the next XFER_SEGMENT for the given MRU or an EOF in case
-// of a finished Writer.
-func (t *OutgoingTransfer) NextSegment(mru uint64) (dtm *msgs.DataTransmissionMessage, err error) {
+// NextSegment creates the next XFER_SEGMENT for the given MTU or an EOF in case of a finished Writer.
+func (t *OutgoingTransfer) NextSegment(mtu uint64) (dtm *msgs.DataTransmissionMessage, err error) {
 	var segFlags msgs.SegmentFlags
 
 	if t.startFlag {
@@ -62,7 +61,7 @@ func (t *OutgoingTransfer) NextSegment(mru uint64) (dtm *msgs.DataTransmissionMe
 		segFlags |= msgs.SegmentStart
 	}
 
-	var buf = make([]byte, mru)
+	var buf = make([]byte, mtu)
 	if n, rErr := io.ReadFull(t.dataStream, buf); rErr == io.ErrUnexpectedEOF {
 		buf = buf[:n]
 		segFlags |= msgs.SegmentEnd

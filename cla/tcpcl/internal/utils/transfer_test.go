@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
 func testGetRandomData(size int) []byte {
@@ -66,5 +67,59 @@ func TestTransfer(t *testing.T) {
 				t.Fatalf("Bundles differ")
 			}
 		})
+	}
+}
+
+func TestTransferManager(t *testing.T) {
+	msgIn := make(chan msgs.Message)
+	msgOut := make(chan msgs.Message)
+
+	tm1 := NewTransferManager(msgIn, msgOut, 65535)
+	tm2 := NewTransferManager(msgOut, msgIn, 65535)
+
+	_, tm1Errs := tm1.Exchange()
+	tm2Bundles, tm2Errs := tm2.Exchange()
+
+	var sizes = []int{1, 1024, 1048576}
+
+	for _, size := range sizes {
+		bndlOut, err := bundle.Builder().
+			CRC(bundle.CRC32).
+			Source("dtn://src/").
+			Destination("dtn://dst/").
+			CreationTimestampNow().
+			Lifetime("30m").
+			HopCountBlock(64).
+			PayloadBlock(testGetRandomData(size)).
+			Build()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		sendErr := make(chan error)
+		go func() { sendErr <- tm1.Send(bndlOut) }()
+
+		select {
+		case err := <-sendErr:
+			t.Fatal(err)
+
+		case err := <-tm1Errs:
+			t.Fatal(err)
+
+		case err := <-tm2Errs:
+			t.Fatal(err)
+
+		case bndlIn := <-tm2Bundles:
+			if !reflect.DeepEqual(bndlIn, bndlOut) {
+				t.Fatalf("bundles differ: %v, %v", bndlIn, bndlOut)
+			}
+		}
+	}
+
+	if err := tm1.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := tm2.Close(); err != nil {
+		t.Fatal(err)
 	}
 }
