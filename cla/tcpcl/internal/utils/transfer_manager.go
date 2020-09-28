@@ -9,6 +9,7 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
@@ -24,7 +25,7 @@ type TransferManager struct {
 	chanBundles chan bundle.Bundle
 	chanErrors  chan error
 
-	mtu uint64
+	segmentMtu uint64
 
 	inTransfers sync.Map // map[uint64]*IncomingTransfer
 
@@ -35,8 +36,8 @@ type TransferManager struct {
 	stopped  uint64
 }
 
-// NewTransferManager for incoming and outgoing msgs.Message channels and a configured MTU.
-func NewTransferManager(msgIn <-chan msgs.Message, msgOut chan<- msgs.Message, mtu uint64) (tm *TransferManager) {
+// NewTransferManager for incoming and outgoing msgs.Message channels and a configured segment MTU.
+func NewTransferManager(msgIn <-chan msgs.Message, msgOut chan<- msgs.Message, segmentMtu uint64) (tm *TransferManager) {
 	tm = &TransferManager{
 		msgIn:  msgIn,
 		msgOut: msgOut,
@@ -44,7 +45,7 @@ func NewTransferManager(msgIn <-chan msgs.Message, msgOut chan<- msgs.Message, m
 		chanBundles: make(chan bundle.Bundle),
 		chanErrors:  make(chan error),
 
-		mtu: mtu,
+		segmentMtu: segmentMtu,
 
 		stopChan: make(chan struct{}),
 	}
@@ -149,7 +150,7 @@ func (tm *TransferManager) Send(b bundle.Bundle) error {
 				return
 			}
 
-			dtm, err := transfer.NextSegment(tm.mtu)
+			dtm, err := transfer.NextSegment(tm.segmentMtu)
 
 			if err != nil {
 				if err == io.EOF {
@@ -166,21 +167,36 @@ func (tm *TransferManager) Send(b bundle.Bundle) error {
 	}()
 
 	go func() {
-		for msg := range ackChan {
-			switch msg := msg.(type) {
-			case *msgs.DataAcknowledgementMessage:
-				if expected := atomic.LoadUint64(&expectedLen); expected != 0 && expected >= msg.AckLen {
-					errChan <- nil
+		// This is kind of a dirty hack to re-check the expected length.
+		// It might occur that the XFER_ACK message arrives _before_ expectedLen is set.
+		var ackedLen uint64
+
+		for {
+			select {
+			case msg := <-ackChan:
+				switch msg := msg.(type) {
+				case *msgs.DataAcknowledgementMessage:
+					if expected := atomic.LoadUint64(&expectedLen); expected == msg.AckLen {
+						errChan <- nil
+						return
+					} else {
+						ackedLen = msg.AckLen
+					}
+
+				case *msgs.TransferRefusalMessage:
+					errChan <- fmt.Errorf("received refusal message: %v", msg)
+					return
+
+				default:
+					errChan <- fmt.Errorf("received unexpected message: %v", msg)
 					return
 				}
 
-			case *msgs.TransferRefusalMessage:
-				errChan <- fmt.Errorf("received refusal message: %v", msg)
-				return
-
-			default:
-				errChan <- fmt.Errorf("received unexpected message: %v", msg)
-				return
+			case <-time.After(100 * time.Millisecond):
+				if expected := atomic.LoadUint64(&expectedLen); expected == ackedLen {
+					errChan <- nil
+					return
+				}
 			}
 		}
 	}()

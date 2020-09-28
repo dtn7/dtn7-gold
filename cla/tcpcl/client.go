@@ -2,94 +2,50 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// +build none
-
 package tcpcl
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"strings"
-	"sync"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
+	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/stages"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/utils"
 )
-
-// sessTermErr will be returned from a state handler iff a SESS_TERM was received.
-var sessTermErr = errors.New("SESS_TERM received")
 
 // Client is a TCPCL client for a bidirectional Bundle exchange. Thus, the Client type implements both
 // cla.ConvergenceReceiver and cla.ConvergenceSender. A Client can be created by the Listener for incoming
 // connections or dialed for outbounding connections.
 type Client struct {
-	address        string
-	started        bool
-	permanent      bool
-	endpointID     bundle.EndpointID
-	peerEndpointID bundle.EndpointID
+	address    string
+	permanent  bool
+	activePeer bool
 
-	conn net.Conn
+	started bool
+	conn    net.Conn
 
-	msgsOut chan msgs.Message
-	msgsIn  chan msgs.Message
+	messageSwitch   *utils.MessageSwitch
+	stageHandler    *stages.StageHandler
+	transferManager *utils.TransferManager
 
-	handleMetaStop        chan struct{}
-	handleMetaStopAck     chan struct{}
-	handlerConnInStop     chan struct{}
-	handlerConnInStopAck  chan struct{}
-	handlerConnOutStop    chan struct{}
-	handlerConnOutStopAck chan struct{}
-	handlerStateStop      chan struct{}
-	handlerStateStopAck   chan struct{}
-
-	active bool
-	state  *ClientState
-
-	// Contact state fields:
-	contactSent bool
-	contactRecv bool
-	chSent      msgs.ContactHeader
-	chRecv      msgs.ContactHeader
-
-	// Init state fields:
-	initSent     bool
-	initRecv     bool
-	sessInitSent msgs.SessionInitMessage
-	sessInitRecv msgs.SessionInitMessage
-
-	keepalive   uint16
-	segmentMru  uint64
-	transferMru uint64
-
-	// Established state fields:
-	keepaliveStarted bool
-	keepaliveLast    time.Time
-	keepaliveTicker  *time.Ticker
-
-	transferOutMutex sync.Mutex
-	transferOutId    uint64
-	transferOutSend  chan msgs.Message
-	transferOutAck   chan msgs.Message
-
-	transferIn *utils.IncomingTransfer
+	nodeId     bundle.EndpointID
+	peerNodeId bundle.EndpointID
 
 	reportChan chan cla.ConvergenceStatus
+	closeChan  chan struct{}
 }
 
 // NewClient creates a new Client on an existing connection. This function is used from the Listener.
 func NewClient(conn net.Conn, endpointID bundle.EndpointID) *Client {
 	return &Client{
 		address:    conn.RemoteAddr().String(),
+		activePeer: false,
 		conn:       conn,
-		active:     false,
-		endpointID: endpointID,
+		nodeId:     endpointID,
 	}
 }
 
@@ -98,44 +54,32 @@ func DialClient(address string, endpointID bundle.EndpointID, permanent bool) *C
 	return &Client{
 		address:    address,
 		permanent:  permanent,
-		active:     true,
-		endpointID: endpointID,
+		activePeer: true,
+		nodeId:     endpointID,
 	}
 }
 
 func (client *Client) String() string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "TCPCL(")
+	_, _ = fmt.Fprintf(&b, "TCPCL(")
 	if client.conn != nil {
-		fmt.Fprintf(&b, "peer=%v, ", client.conn.RemoteAddr())
+		_, _ = fmt.Fprintf(&b, "peer=%v, ", client.conn.RemoteAddr())
 	} else {
-		fmt.Fprintf(&b, "peer=NONE, ")
+		_, _ = fmt.Fprintf(&b, "peer=NONE, ")
 	}
-	fmt.Fprintf(&b, "active peer=%t", client.active)
-	fmt.Fprintf(&b, ")")
+	_, _ = fmt.Fprintf(&b, "activePeer peer=%t", client.activePeer)
+	_, _ = fmt.Fprintf(&b, ")")
 
 	return b.String()
 }
 
-// log prepares a new log entry with predefined session data.
-func (client *Client) log() *log.Entry {
-	return log.WithFields(log.Fields{
-		"session": client,
-		"state":   client.state,
-	})
-}
-
 func (client *Client) Start() (err error, retry bool) {
-	client.state = new(ClientState)
-
 	if client.started {
-		if client.active {
-			client.log().Debug("Clearing connection for reactivation")
-			<-client.handleMetaStopAck
+		if client.activePeer {
 			client.conn = nil
 		} else {
-			err = fmt.Errorf("Passive client cannot be restarted")
+			err = fmt.Errorf("passive client cannot be restarted")
 			retry = false
 			return
 		}
@@ -144,8 +88,6 @@ func (client *Client) Start() (err error, retry bool) {
 	client.started = true
 
 	if client.conn == nil {
-		client.log().Debug("Trying to establish a connection")
-
 		if conn, connErr := net.DialTimeout("tcp", client.address, time.Second); connErr != nil {
 			err = connErr
 			retry = true
@@ -156,48 +98,116 @@ func (client *Client) Start() (err error, retry bool) {
 		}
 	}
 
-	client.log().Info("Starting client")
+	client.reportChan = make(chan cla.ConvergenceStatus, 32)
+	client.closeChan = make(chan struct{})
 
-	client.contactSent = false
-	client.contactRecv = false
-	client.initSent = false
-	client.initRecv = false
-	client.keepaliveStarted = false
-	client.transferOutId = 0
-	client.transferIn = nil
+	client.messageSwitch = utils.NewMessageSwitch(client.conn, client.conn)
+	msIncoming, msOutgoing, _ := client.messageSwitch.Exchange()
 
-	client.msgsOut = make(chan msgs.Message, 100)
-	client.msgsIn = make(chan msgs.Message, 100)
-	client.transferOutSend = make(chan msgs.Message)
-	client.transferOutAck = make(chan msgs.Message)
+	conf := stages.Configuration{
+		ActivePeer:   client.activePeer,
+		ContactFlags: 0,
+		Keepalive:    30,
+		SegmentMru:   52428800,
+		TransferMru:  1073741824,
+		NodeId:       client.nodeId,
+	}
 
-	client.handleMetaStop = make(chan struct{}, 10)
-	client.handleMetaStopAck = make(chan struct{}, 2)
-	client.handlerConnInStop = make(chan struct{}, 2)
-	client.handlerConnInStopAck = make(chan struct{}, 2)
-	client.handlerConnOutStop = make(chan struct{}, 2)
-	client.handlerConnOutStopAck = make(chan struct{}, 2)
-	client.handlerStateStop = make(chan struct{}, 2)
-	client.handlerStateStopAck = make(chan struct{}, 2)
+	sMtuChan := make(chan uint64)
+	stageHandlerStages := []stages.StageSetup{
+		{Stage: &stages.ContactStage{}},
+		{
+			Stage: &stages.SessInitStage{},
+			PostHook: func(_ *stages.StageHandler, state *stages.State) error {
+				client.peerNodeId = state.PeerNodeId
+				return nil
+			},
+		},
+		{
+			Stage: &stages.SessEstablishedStage{},
+			StartHook: func(_ *stages.StageHandler, state *stages.State) error {
+				sMtuChan <- state.SegmentMtu
+				return nil
+			},
+		}}
+	client.stageHandler = stages.NewStageHandler(stageHandlerStages, msIncoming, msOutgoing, conf)
 
-	client.reportChan = make(chan cla.ConvergenceStatus, 100)
+	select {
+	case <-time.After(5 * time.Second):
+		err = fmt.Errorf("establishing an exchangable connection timed out")
+		retry = true
+		return
 
-	go client.handleMeta()
-	go client.handleConnIn()
-	go client.handleConnOut()
-	go client.handleState()
+	case sMtu := <-sMtuChan:
+		var stageHandlerOut chan<- msgs.Message
+		var stageHandlerIn <-chan msgs.Message
+		var stageHandlerOk bool
 
+		for i := 0; i < 5; i++ {
+			if stageHandlerOut, stageHandlerIn, stageHandlerOk = client.stageHandler.Exchanges(); stageHandlerOk {
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		if !stageHandlerOk {
+			err = fmt.Errorf("fetching exchange channels failed")
+			retry = true
+			return
+		}
+
+		client.transferManager = utils.NewTransferManager(stageHandlerIn, stageHandlerOut, sMtu)
+	}
+
+	client.reportChan <- cla.NewConvergencePeerAppeared(client, client.peerNodeId)
+
+	go client.handle()
 	return
 }
 
-func (client *Client) Close() {
-	client.handleMetaStop <- struct{}{}
+func (client *Client) handle() {
+	_, _, messageSwitchErr := client.messageSwitch.Exchange()
+	stageHandlerErr := client.stageHandler.Error()
+	incomingBundles, transferManagerErr := client.transferManager.Exchange()
 
-	// TODO: there are currently some synchronization issues..
-	select {
-	case <-time.After(500 * time.Millisecond):
-	case <-client.handleMetaStopAck:
+	defer func() {
+		client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.peerNodeId)
+
+		_ = client.transferManager.Close()
+		_ = client.stageHandler.Close()
+		_ = client.messageSwitch.Close()
+
+		client.transferManager = nil
+		client.stageHandler = nil
+		client.messageSwitch = nil
+	}()
+
+	for {
+		var err error
+		select {
+		case b := <-incomingBundles:
+			client.reportChan <- cla.NewConvergenceReceivedBundle(client, client.nodeId, &b)
+
+		case <-client.closeChan:
+			return
+
+		case err = <-messageSwitchErr:
+		case err = <-stageHandlerErr:
+		case err = <-transferManagerErr:
+		}
+
+		if err != nil {
+			// TODO
+			return
+		}
 	}
+}
+
+func (client *Client) Send(b *bundle.Bundle) error {
+	return client.transferManager.Send(*b)
+}
+
+func (client *Client) Close() {
+	close(client.closeChan)
 }
 
 func (client *Client) Channel() chan cla.ConvergenceStatus {
@@ -213,9 +223,9 @@ func (client *Client) IsPermanent() bool {
 }
 
 func (client *Client) GetEndpointID() bundle.EndpointID {
-	return client.endpointID
+	return client.nodeId
 }
 
 func (client *Client) GetPeerEndpointID() bundle.EndpointID {
-	return client.peerEndpointID
+	return client.peerNodeId
 }

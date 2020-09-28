@@ -133,10 +133,6 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, wg *sync.WaitG
 	go func() {
 		defer clientWg.Done()
 
-		for !client.state.IsEstablished() {
-			// Busy waiting..
-		}
-
 		for i := 0; i < msgs; i++ {
 			bndl, err := bundle.Builder().
 				CRC(bundle.CRC32).
