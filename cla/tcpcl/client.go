@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
@@ -19,7 +21,7 @@ import (
 
 // Client is a TCPCL client for a bidirectional Bundle exchange. Thus, the Client type implements both
 // cla.ConvergenceReceiver and cla.ConvergenceSender. A Client can be created by the Listener for incoming
-// connections or dialed for outbounding connections.
+// connections or dialed for outgoing connections.
 type Client struct {
 	address    string
 	permanent  bool
@@ -74,6 +76,10 @@ func (client *Client) String() string {
 	return b.String()
 }
 
+func (client *Client) log() *log.Entry {
+	return log.WithField("cla", client.String())
+}
+
 func (client *Client) Start() (err error, retry bool) {
 	if client.started {
 		if client.activePeer {
@@ -95,6 +101,8 @@ func (client *Client) Start() (err error, retry bool) {
 		} else {
 			client.conn = conn
 			client.address = conn.RemoteAddr().String()
+
+			client.log().Debug("Dialed successfully")
 		}
 	}
 
@@ -115,9 +123,19 @@ func (client *Client) Start() (err error, retry bool) {
 
 	sMtuChan := make(chan uint64)
 	stageHandlerStages := []stages.StageSetup{
-		{Stage: &stages.ContactStage{}},
+		{
+			Stage: &stages.ContactStage{},
+			StartHook: func(_ *stages.StageHandler, _ *stages.State) error {
+				client.log().Debug("Started Contact Stage")
+				return nil
+			},
+		},
 		{
 			Stage: &stages.SessInitStage{},
+			StartHook: func(_ *stages.StageHandler, _ *stages.State) error {
+				client.log().Debug("Started Session Init Stage")
+				return nil
+			},
 			PostHook: func(_ *stages.StageHandler, state *stages.State) error {
 				client.peerNodeId = state.PeerNodeId
 				return nil
@@ -126,6 +144,8 @@ func (client *Client) Start() (err error, retry bool) {
 		{
 			Stage: &stages.SessEstablishedStage{},
 			StartHook: func(_ *stages.StageHandler, state *stages.State) error {
+				client.log().Debug("Started Session Established Stage")
+
 				sMtuChan <- state.SegmentMtu
 				return nil
 			},
@@ -158,6 +178,8 @@ func (client *Client) Start() (err error, retry bool) {
 		client.transferManager = utils.NewTransferManager(stageHandlerIn, stageHandlerOut, sMtu)
 	}
 
+	client.log().Info("Started TCPCL4")
+
 	client.reportChan <- cla.NewConvergencePeerAppeared(client, client.peerNodeId)
 
 	go client.handle()
@@ -170,6 +192,8 @@ func (client *Client) handle() {
 	incomingBundles, transferManagerErr := client.transferManager.Exchange()
 
 	defer func() {
+		client.log().Info("Closing down TCPCL4")
+
 		client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.peerNodeId)
 
 		_ = client.transferManager.Close()
@@ -185,9 +209,11 @@ func (client *Client) handle() {
 		var err error
 		select {
 		case b := <-incomingBundles:
+			client.log().WithField("bundle", b).Info("Received Bundle")
 			client.reportChan <- cla.NewConvergenceReceivedBundle(client, client.nodeId, &b)
 
 		case <-client.closeChan:
+			client.log().Debug("Received close signal")
 			return
 
 		case err = <-messageSwitchErr:
@@ -196,13 +222,16 @@ func (client *Client) handle() {
 		}
 
 		if err != nil {
-			// TODO
+			client.log().WithError(err).Error("Error occurred")
 			return
 		}
 	}
 }
 
 func (client *Client) Send(b *bundle.Bundle) error {
+	client.log().WithField("bundle", *b).Info("Sending Bundle...")
+	defer client.log().WithField("bundle", *b).Info("Sent Bundle")
+
 	return client.transferManager.Send(*b)
 }
 

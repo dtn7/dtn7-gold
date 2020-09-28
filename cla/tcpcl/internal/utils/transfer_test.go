@@ -97,7 +97,11 @@ func TestTransferManager(t *testing.T) {
 		}
 
 		sendErr := make(chan error)
-		go func() { sendErr <- tm1.Send(bndlOut) }()
+		go func() {
+			if err := tm1.Send(bndlOut); err != nil {
+				sendErr <- err
+			}
+		}()
 
 		select {
 		case err := <-sendErr:

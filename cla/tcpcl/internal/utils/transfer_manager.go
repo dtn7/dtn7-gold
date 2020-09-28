@@ -5,11 +5,11 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
@@ -137,73 +137,30 @@ func (tm *TransferManager) Send(b bundle.Bundle) error {
 	tm.outFeedback.Store(transfer.Id, ackChan)
 	defer tm.outFeedback.Delete(transfer.Id)
 
-	errChan := make(chan error)
-	expectedLen := uint64(0)
-
-	go func() {
-		tmpExpectedLen := uint64(0)
-		defer atomic.StoreUint64(&expectedLen, tmpExpectedLen)
-
-		for {
-			if atomic.LoadUint64(&tm.stopped) != 0 {
-				errChan <- fmt.Errorf("TransferManager was stopped")
-				return
-			}
-
-			dtm, err := transfer.NextSegment(tm.segmentMtu)
-
-			if err != nil {
-				if err == io.EOF {
-					errChan <- nil
-				} else {
-					errChan <- err
-				}
-				return
-			}
-
-			tmpExpectedLen += uint64(len(dtm.Data))
-			tm.msgOut <- dtm
+	for {
+		if atomic.LoadUint64(&tm.stopped) != 0 {
+			return fmt.Errorf("TransferManager was stopped")
 		}
-	}()
 
-	go func() {
-		// This is kind of a dirty hack to re-check the expected length.
-		// It might occur that the XFER_ACK message arrives _before_ expectedLen is set.
-		var ackedLen uint64
-
-		for {
-			select {
-			case msg := <-ackChan:
-				switch msg := msg.(type) {
-				case *msgs.DataAcknowledgementMessage:
-					if expected := atomic.LoadUint64(&expectedLen); expected == msg.AckLen {
-						errChan <- nil
-						return
-					} else {
-						ackedLen = msg.AckLen
-					}
-
-				case *msgs.TransferRefusalMessage:
-					errChan <- fmt.Errorf("received refusal message: %v", msg)
-					return
-
-				default:
-					errChan <- fmt.Errorf("received unexpected message: %v", msg)
-					return
-				}
-
-			case <-time.After(100 * time.Millisecond):
-				if expected := atomic.LoadUint64(&expectedLen); expected == ackedLen {
-					errChan <- nil
-					return
-				}
+		dtm, err := transfer.NextSegment(tm.segmentMtu)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			} else {
+				return err
 			}
 		}
-	}()
 
-	for i := 0; i < 2; i++ {
-		if err := <-errChan; err != nil {
-			return err
+		tm.msgOut <- dtm
+
+		switch response := (<-ackChan).(type) {
+		case *msgs.DataAcknowledgementMessage:
+
+		case *msgs.TransferRefusalMessage:
+			return fmt.Errorf("received refusal message: %v", response)
+
+		default:
+			return fmt.Errorf("received unexpected message: %v", response)
 		}
 	}
 

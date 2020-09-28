@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// +build none
-
 package tcpcl
 
 import (
@@ -14,6 +12,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
@@ -194,26 +194,26 @@ func startTestTCPCLNetwork(msgs, clients, payload int, t *testing.T) {
 }
 
 func TestTCPCLNetwork(t *testing.T) {
+	logrus.SetLevel(logrus.DebugLevel)
+
 	tests := []struct {
 		clients int
 		msgs    int
-	}{{clients: 1, msgs: 1},
-		{clients: 1, msgs: 25},
-		{clients: 5, msgs: 25}}
+		payload int
+	}{
+		{1, 1, 64},
+		/*
+			{1, 1, 1024},
+			{1, 1, 1048576},
+			{1, 8, 1024},
+			{1, 256, 1024},
+		*/
+		{2, 1, 64},
+	}
 
 	for _, test := range tests {
-		t.Run(fmt.Sprintf("%d_clients_%d_msgs", test.clients, test.msgs), func(t *testing.T) {
-			startTestTCPCLNetwork(test.msgs, test.clients, 64, t)
-		})
-	}
-}
-
-func TestTCPCLPayloadNetwork(t *testing.T) {
-	sizes := []int{64, 1024, 1048576}
-
-	for _, size := range sizes {
-		t.Run(fmt.Sprintf("%d", size), func(t *testing.T) {
-			startTestTCPCLNetwork(10, 1, size, t)
+		t.Run(fmt.Sprintf("%+v", test), func(t *testing.T) {
+			startTestTCPCLNetwork(test.msgs, test.clients, test.payload, t)
 		})
 	}
 }
