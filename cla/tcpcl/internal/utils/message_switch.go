@@ -5,6 +5,7 @@
 package utils
 
 import (
+	"bufio"
 	"errors"
 	"io"
 	"sync/atomic"
@@ -47,12 +48,14 @@ func NewMessageSwitch(in io.Reader, out io.Writer) (ms *MessageSwitch) {
 }
 
 func (ms *MessageSwitch) handleIn() {
+	in := bufio.NewReader(ms.in)
+
 	for {
 		if atomic.LoadUint32(&ms.finished) != 0 {
 			return
 		}
 
-		if msg, err := msgs.ReadMessage(ms.in); err != nil {
+		if msg, err := msgs.ReadMessage(in); err != nil {
 			if atomic.CompareAndSwapUint32(&ms.finished, 0, 1) {
 				ms.errChan <- err
 				return
@@ -64,12 +67,20 @@ func (ms *MessageSwitch) handleIn() {
 }
 
 func (ms *MessageSwitch) handleOut() {
+	out := bufio.NewWriter(ms.out)
+
 	for msg := range ms.outChan {
 		if atomic.LoadUint32(&ms.finished) != 0 {
 			return
 		}
 
-		if err := msg.Marshal(ms.out); err != nil {
+		if err := msg.Marshal(out); err != nil {
+			if atomic.CompareAndSwapUint32(&ms.finished, 0, 1) {
+				ms.errChan <- err
+				return
+			}
+		}
+		if err := out.Flush(); err != nil {
 			if atomic.CompareAndSwapUint32(&ms.finished, 0, 1) {
 				ms.errChan <- err
 				return
