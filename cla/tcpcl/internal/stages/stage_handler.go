@@ -10,13 +10,24 @@ import (
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 )
 
+// StageSetup wraps a Stage with two possible hooks (pre and post) to be used within the StageHandler.
+type StageSetup struct {
+	// Stage to be executed.
+	Stage Stage
+
+	// PreHook will be executed before starting the Stage if not nil.
+	PreHook func(*State) error
+	// PostHook will be executed after a finished Stage if not nil.
+	PostHook func(*State) error
+}
+
 // StageHandler executes a sequence of Stages and passes the State from one Stage to another. Errors might be propagated
 // back through the Error method.
 type StageHandler struct {
-	stages []Stage
+	stages []StageSetup
 	state  *State
 
-	currentStage      Stage
+	currentStage      StageSetup
 	currentStageMutex sync.RWMutex
 
 	errChan   chan error
@@ -24,7 +35,7 @@ type StageHandler struct {
 }
 
 // NewStageHandler for a slice of Stages, Message channels and a Configuration.
-func NewStageHandler(stages []Stage, msgIn, msgOut chan msgs.Message, config Configuration) (sh *StageHandler) {
+func NewStageHandler(stages []StageSetup, msgIn <-chan msgs.Message, msgOut chan<- msgs.Message, config Configuration) (sh *StageHandler) {
 	sh = &StageHandler{
 		stages: stages,
 		state: &State{
@@ -48,25 +59,40 @@ func (sh *StageHandler) handler() {
 
 	defer func() {
 		sh.currentStageMutex.Lock()
-		sh.currentStage = nil
+		sh.currentStage = StageSetup{}
+		sh.currentStage.Stage = nil
 		sh.currentStageMutex.Unlock()
 	}()
 
 	for i := 0; i < len(sh.stages); i++ {
 		sh.currentStageMutex.Lock()
 		sh.currentStage = sh.stages[i]
-		sh.currentStage.Start(sh.state)
+
+		if sh.currentStage.PreHook != nil {
+			if err := sh.currentStage.PreHook(sh.state); err != nil {
+				sh.errChan <- err
+				return
+			}
+		}
+
+		sh.currentStage.Stage.Start(sh.state)
 		sh.currentStageMutex.Unlock()
 
 		select {
 		case <-sh.closeChan:
-			_ = sh.currentStage.Close()
+			_ = sh.currentStage.Stage.Close()
 			return
 
-		case <-sh.currentStage.Finished():
+		case <-sh.currentStage.Stage.Finished():
 			if err := sh.state.StageError; err != nil {
 				sh.errChan <- err
 				return
+			}
+			if sh.stages[i].PostHook != nil {
+				if err := sh.stages[i].PostHook(sh.state); err != nil {
+					sh.errChan <- err
+					return
+				}
 			}
 		}
 	}
@@ -85,11 +111,11 @@ func (sh *StageHandler) Exchanges() (outgoing chan<- msgs.Message, incoming <-ch
 	sh.currentStageMutex.RLock()
 	defer sh.currentStageMutex.RUnlock()
 
-	if sh.currentStage == nil {
+	if sh.currentStage.Stage == nil {
 		exchangeOk = false
 		return
 	} else {
-		return sh.currentStage.Exchanges()
+		return sh.currentStage.Stage.Exchanges()
 	}
 }
 

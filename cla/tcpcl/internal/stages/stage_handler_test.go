@@ -5,6 +5,8 @@
 package stages
 
 import (
+	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -15,7 +17,7 @@ import (
 func TestStageHandlerDummy(t *testing.T) {
 	s1 := dummyStage{delay: 100 * time.Millisecond}
 	s2 := dummyStage{delay: 200 * time.Millisecond}
-	stages := []Stage{&s1, &s2}
+	stages := []StageSetup{{Stage: &s1}, {Stage: &s2}}
 
 	msgIn := make(chan msgs.Message)
 	msgOut := make(chan msgs.Message)
@@ -43,8 +45,8 @@ func TestStageHandlerDummy(t *testing.T) {
 }
 
 func TestStageHandlerPingPong(t *testing.T) {
-	stages1 := []Stage{&ContactStage{}, &SessInitStage{}, &SessEstablishedStage{}}
-	stages2 := []Stage{&ContactStage{}, &SessInitStage{}, &SessEstablishedStage{}}
+	stages1 := []StageSetup{{Stage: &ContactStage{}}, {Stage: &SessInitStage{}}, {Stage: &SessEstablishedStage{}}}
+	stages2 := []StageSetup{{Stage: &ContactStage{}}, {Stage: &SessInitStage{}}, {Stage: &SessEstablishedStage{}}}
 
 	conf1 := Configuration{
 		ActivePeer:  true,
@@ -94,5 +96,101 @@ func TestStageHandlerPingPong(t *testing.T) {
 		case <-time.After(250 * time.Millisecond):
 			t.Fatal("timeout")
 		}
+	}
+}
+
+func TestStageHandlerHooks(t *testing.T) {
+	var s1Pre, s1Post, s2Pre, s2Post int64
+
+	s1 := dummyStage{delay: 100 * time.Millisecond}
+	s2 := dummyStage{delay: 200 * time.Millisecond}
+	stages := []StageSetup{
+		{
+			Stage: &s1,
+			PreHook: func(_ *State) error {
+				atomic.StoreInt64(&s1Pre, time.Now().UnixNano())
+				return nil
+			},
+			PostHook: func(_ *State) error {
+				atomic.StoreInt64(&s1Post, time.Now().UnixNano())
+				return nil
+			},
+		},
+		{
+			Stage: &s2,
+			PreHook: func(_ *State) error {
+				atomic.StoreInt64(&s2Pre, time.Now().UnixNano())
+				return nil
+			},
+			PostHook: func(_ *State) error {
+				atomic.StoreInt64(&s2Post, time.Now().UnixNano())
+				return nil
+			},
+		}}
+
+	msgIn := make(chan msgs.Message)
+	msgOut := make(chan msgs.Message)
+
+	conf := Configuration{
+		ActivePeer:   true,
+		ContactFlags: 0,
+		Keepalive:    30,
+		SegmentMru:   65535,
+		TransferMru:  1048576,
+		NodeId:       bundle.MustNewEndpointID("dtn://example/"),
+	}
+
+	sh := NewStageHandler(stages, msgIn, msgOut, conf)
+
+	select {
+	case err := <-sh.Error():
+		if err != nil {
+			t.Fatal(err)
+		}
+
+	case <-time.After(2 * (s1.delay + s2.delay)):
+		t.Fatal("timeout")
+	}
+
+	if !(s1Pre < s1Post && s1Post < s2Pre && s2Pre < s2Post) {
+		t.Fatalf("hooks failed: %d, %d, %d, %d", s1Pre, s1Post, s2Pre, s2Post)
+	}
+}
+
+func TestStageHandlerHooksFail(t *testing.T) {
+	hookErr := errors.New("oh noes")
+
+	s1 := dummyStage{delay: 100 * time.Millisecond}
+	stages := []StageSetup{
+		{
+			Stage: &s1,
+			PostHook: func(_ *State) error {
+				return hookErr
+			},
+		},
+	}
+
+	msgIn := make(chan msgs.Message)
+	msgOut := make(chan msgs.Message)
+
+	conf := Configuration{
+		ActivePeer:   true,
+		ContactFlags: 0,
+		Keepalive:    30,
+		SegmentMru:   65535,
+		TransferMru:  1048576,
+		NodeId:       bundle.MustNewEndpointID("dtn://example/"),
+	}
+
+	sh := NewStageHandler(stages, msgIn, msgOut, conf)
+
+	select {
+	case err := <-sh.Error():
+		if !errors.Is(err, hookErr) {
+			t.Fatal(err)
+		}
+
+	case <-time.After(2 * s1.delay):
+		t.Fatal("timeout")
 	}
 }
