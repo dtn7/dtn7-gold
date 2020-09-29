@@ -40,3 +40,8 @@ func (geb *GenericExtensionBlock) CheckValid() error {
 func (geb *GenericExtensionBlock) BlockTypeCode() uint64 {
 	return geb.typeCode
 }
+
+// BlockTypeName must return a constant string, this block's name.
+func (geb *GenericExtensionBlock) BlockTypeName() string {
+	return "N/A"
+}

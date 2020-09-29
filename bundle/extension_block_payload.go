@@ -14,6 +14,11 @@ func (pb *PayloadBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypePayloadBlock
 }
 
+// BlockTypeName must return a constant string, this block's name.
+func (pb *PayloadBlock) BlockTypeName() string {
+	return "Payload Block"
+}
+
 // NewPayloadBlock creates a new PayloadBlock with the given payload.
 func NewPayloadBlock(data []byte) *PayloadBlock {
 	pb := PayloadBlock(data)

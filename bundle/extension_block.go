@@ -54,6 +54,9 @@ type ExtensionBlock interface {
 
 	// BlockTypeCode must return a constant integer, indicating the block type code.
 	BlockTypeCode() uint64
+
+	// BlockTypeName must return a constant string, this block's name.
+	BlockTypeName() string
 }
 
 // ExtensionBlockManager keeps a book on various types of ExtensionBlocks that

@@ -19,6 +19,11 @@ func (pnb *PreviousNodeBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypePreviousNodeBlock
 }
 
+// BlockTypeName must return a constant string, this block's name.
+func (pnb *PreviousNodeBlock) BlockTypeName() string {
+	return "Previous Node Block"
+}
+
 // NewPreviousNodeBlock creates a new Previous Node Block for an Endpoint ID.
 func NewPreviousNodeBlock(prev EndpointID) *PreviousNodeBlock {
 	pnb := PreviousNodeBlock(prev)

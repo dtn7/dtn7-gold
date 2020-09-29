@@ -23,6 +23,11 @@ func (hcb *HopCountBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypeHopCountBlock
 }
 
+// BlockTypeName must return a constant string, this block's name.
+func (hcb *HopCountBlock) BlockTypeName() string {
+	return "Hop Count Block"
+}
+
 // NewHopCountBlock creates a new HopCountBlock with a given hop limit.
 func NewHopCountBlock(limit uint8) *HopCountBlock {
 	return &HopCountBlock{

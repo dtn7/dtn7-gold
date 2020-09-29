@@ -180,10 +180,12 @@ func (cb CanonicalBlock) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		BlockNumber   uint64            `json:"blockNumber"`
 		BlockTypeCode uint64            `json:"blockTypeCode"`
+		BlockType     string            `json:"blockType"`
 		ControlFlags  BlockControlFlags `json:"blockControlFlags"`
 		Data          interface{}       `json:"data"`
 	}{
 		BlockNumber:   cb.BlockNumber,
+		BlockType:     cb.Value.BlockTypeName(),
 		BlockTypeCode: cb.Value.BlockTypeCode(),
 		ControlFlags:  cb.BlockControlFlags,
 		Data:          dataField,

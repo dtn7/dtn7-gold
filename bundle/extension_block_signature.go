@@ -44,6 +44,11 @@ func (s *SignatureBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypeSignatureBlock
 }
 
+// BlockTypeName must return a constant string, this block's name.
+func (s *SignatureBlock) BlockTypeName() string {
+	return "Signature Block"
+}
+
 // signatureBundleData creates a Buffer of the Primary Block and Payload Block data, used as the message to be signed.
 func signatureBundleData(b Bundle) (pbData bytes.Buffer, err error) {
 	if err = cboring.Marshal(&b.PrimaryBlock, &pbData); err != nil {

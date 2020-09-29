@@ -81,24 +81,24 @@ func TestCanonicalBlockJson(t *testing.T) {
 		{CanonicalBlock{
 			BlockNumber: 1,
 			Value:       NewPayloadBlock([]byte("hello world")),
-		}, []byte(`{"blockNumber":1,"blockTypeCode":1,"blockControlFlags":null,"data":"aGVsbG8gd29ybGQ="}`)},
+		}, []byte(`{"blockNumber":1,"blockTypeCode":1,"blockType":"Payload Block","blockControlFlags":null,"data":"aGVsbG8gd29ybGQ="}`)},
 		{CanonicalBlock{
 			BlockNumber:       23,
 			BlockControlFlags: DeleteBundle,
 			Value:             NewGenericExtensionBlock(nil, 42),
-		}, []byte(`{"blockNumber":23,"blockTypeCode":42,"blockControlFlags":["DELETE_BUNDLE"],"data":"QA=="}`)},
+		}, []byte(`{"blockNumber":23,"blockTypeCode":42,"blockType":"N/A","blockControlFlags":["DELETE_BUNDLE"],"data":"QA=="}`)},
 		{CanonicalBlock{
 			BlockNumber: 1,
 			Value:       NewBundleAgeBlock(23),
-		}, []byte(`{"blockNumber":1,"blockTypeCode":7,"blockControlFlags":null,"data":"23 ms"}`)},
+		}, []byte(`{"blockNumber":1,"blockTypeCode":7,"blockType":"Bundle Age Block","blockControlFlags":null,"data":"23 ms"}`)},
 		{CanonicalBlock{
 			BlockNumber: 1,
 			Value:       NewHopCountBlock(23),
-		}, []byte(`{"blockNumber":1,"blockTypeCode":10,"blockControlFlags":null,"data":{"limit":23,"count":0}}`)},
+		}, []byte(`{"blockNumber":1,"blockTypeCode":10,"blockType":"Hop Count Block","blockControlFlags":null,"data":{"limit":23,"count":0}}`)},
 		{CanonicalBlock{
 			BlockNumber: 1,
 			Value:       NewPreviousNodeBlock(MustNewEndpointID("dtn://foo/23")),
-		}, []byte(`{"blockNumber":1,"blockTypeCode":6,"blockControlFlags":null,"data":"dtn://foo/23"}`)},
+		}, []byte(`{"blockNumber":1,"blockTypeCode":6,"blockType":"Previous Node Block","blockControlFlags":null,"data":"dtn://foo/23"}`)},
 	}
 
 	for _, test := range tests {

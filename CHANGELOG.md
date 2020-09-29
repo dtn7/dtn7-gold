@@ -33,6 +33,8 @@ Types of changes:
 - Compare EndpointIDs based on both scheme and authority part.
 - Allow any bundle.ExtensionBlock to implement a json.Marshaler for a
   more human readable output. This was done for the bpbis blocks.
+- bundle.ExtensionBlock has a "BlockTypeName" next to its type code for
+  a human readable output.
 
 
 ## [0.8.0] - 2020-08-05

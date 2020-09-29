@@ -20,6 +20,11 @@ func (bab *BundleAgeBlock) BlockTypeCode() uint64 {
 	return ExtBlockTypeBundleAgeBlock
 }
 
+// BlockTypeName must return a constant string, this block's name.
+func (bab *BundleAgeBlock) BlockTypeName() string {
+	return "Bundle Age Block"
+}
+
 // NewBundleAgeBlock creates a new BundleAgeBlock for the given milliseconds.
 func NewBundleAgeBlock(ms uint64) *BundleAgeBlock {
 	bab := BundleAgeBlock(ms)
