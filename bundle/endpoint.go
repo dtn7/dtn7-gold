@@ -6,6 +6,7 @@ package bundle
 
 import (
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -166,6 +167,11 @@ func (eid *EndpointID) UnmarshalCbor(r io.Reader) error {
 	}
 
 	return nil
+}
+
+// MarshalJSON writes the JSON representation of an EndpointID, which is the String representation.
+func (eid EndpointID) MarshalJSON() ([]byte, error) {
+	return json.Marshal(eid.String())
 }
 
 // Authority is the authority part of the Endpoint URI, e.g., "foo" for "dtn://foo/bar".

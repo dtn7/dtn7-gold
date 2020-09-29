@@ -5,6 +5,7 @@
 package bundle
 
 import (
+	"encoding/json"
 	"io"
 
 	"github.com/dtn7/cboring"
@@ -44,6 +45,11 @@ func (pnb *PreviousNodeBlock) UnmarshalCbor(r io.Reader) error {
 		*pnb = PreviousNodeBlock(endpoint)
 		return nil
 	}
+}
+
+// MarshalJSON writes the JSON representation of a PreviousNodeBlock.
+func (pnb *PreviousNodeBlock) MarshalJSON() ([]byte, error) {
+	return json.Marshal(pnb.Endpoint())
 }
 
 // CheckValid returns an array of errors for incorrect data.

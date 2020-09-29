@@ -5,6 +5,8 @@
 package bundle
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/dtn7/cboring"
@@ -49,6 +51,11 @@ func (bab *BundleAgeBlock) UnmarshalCbor(r io.Reader) error {
 		*bab = BundleAgeBlock(us)
 		return nil
 	}
+}
+
+// MarshalJSON writes a JSON representation for a Bundle Age Block, e.g., "23 ms".
+func (bab *BundleAgeBlock) MarshalJSON() ([]byte, error) {
+	return json.Marshal(fmt.Sprintf("%d ms", bab.Age()))
 }
 
 // CheckValid returns an array of errors for incorrect data.

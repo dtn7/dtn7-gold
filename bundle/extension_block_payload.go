@@ -4,6 +4,8 @@
 
 package bundle
 
+import "encoding/json"
+
 // PayloadBlock implements the Bundle Protocol's Payload Block.
 type PayloadBlock []byte
 
@@ -32,6 +34,13 @@ func (pb *PayloadBlock) MarshalBinary() ([]byte, error) {
 func (pb *PayloadBlock) UnmarshalBinary(data []byte) error {
 	*pb = data
 	return nil
+}
+
+// MarshalJSON writes the binary representation of a PayloadBlock.
+//
+// If this type does not implement the json.Marshaler, the CBOR encoding would be returned which might be misleading.
+func (pb *PayloadBlock) MarshalJSON() ([]byte, error) {
+	return json.Marshal(pb.Data())
 }
 
 // CheckValid returns an array of errors for incorrect data.

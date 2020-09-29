@@ -5,6 +5,7 @@
 package bundle
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -83,6 +84,14 @@ func (hcb *HopCountBlock) UnmarshalCbor(r io.Reader) error {
 	}
 
 	return nil
+}
+
+// MarshalJSON writes a JSON representation of this Hop Count Block.
+func (hcb *HopCountBlock) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Limit uint8 `json:"limit"`
+		Count uint8 `json:"count"`
+	}{hcb.Limit, hcb.Count})
 }
 
 // CheckValid returns an array of errors for incorrect data.

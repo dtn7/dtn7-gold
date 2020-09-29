@@ -165,21 +165,28 @@ func (cb *CanonicalBlock) UnmarshalCbor(r io.Reader) error {
 
 // MarshalJSON writes a JSON object for this Canonical Block.
 func (cb CanonicalBlock) MarshalJSON() ([]byte, error) {
-	var buff bytes.Buffer
-	if err := GetExtensionBlockManager().WriteBlock(cb.Value, &buff); err != nil {
-		return nil, err
+	var dataField interface{}
+
+	if _, ok := cb.Value.(json.Marshaler); ok {
+		dataField = cb.Value
+	} else {
+		var buff bytes.Buffer
+		if err := GetExtensionBlockManager().WriteBlock(cb.Value, &buff); err != nil {
+			return nil, err
+		}
+		dataField = buff.Bytes()
 	}
 
 	return json.Marshal(&struct {
 		BlockNumber   uint64            `json:"blockNumber"`
 		BlockTypeCode uint64            `json:"blockTypeCode"`
 		ControlFlags  BlockControlFlags `json:"blockControlFlags"`
-		Data          []byte            `json:"data"`
+		Data          interface{}       `json:"data"`
 	}{
 		BlockNumber:   cb.BlockNumber,
 		BlockTypeCode: cb.Value.BlockTypeCode(),
 		ControlFlags:  cb.BlockControlFlags,
-		Data:          buff.Bytes(),
+		Data:          dataField,
 	})
 }
 

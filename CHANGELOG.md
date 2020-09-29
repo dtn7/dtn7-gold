@@ -31,6 +31,8 @@ Types of changes:
 ### Changed
 - An invalid EndpointID struct is interpreted as dtn:none.
 - Compare EndpointIDs based on both scheme and authority part.
+- Allow any bundle.ExtensionBlock to implement a json.Marshaler for a
+  more human readable output. This was done for the bpbis blocks.
 
 
 ## [0.8.0] - 2020-08-05

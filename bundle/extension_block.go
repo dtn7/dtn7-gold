@@ -42,10 +42,13 @@ const (
 	ExtBlockTypeSignatureBlock uint64 = 195
 )
 
-// ExtensionBlock describes the block-type specific data of any Canonical Block. Such an ExtensionBlock
-// must implement either the cboring.CborMarshaler interface, if its serializable to / from CBOR, or both
-// encoding.BinaryMarshaler and encoding.BinaryUnmarshaler. The latter allows any kind of serialization,
-// e.g., to a totally custom format.
+// ExtensionBlock describes the block-type specific data of any Canonical Block.
+//
+// Such an ExtensionBlock must implement either the cboring.CborMarshaler interface, if its serializable
+// to / from CBOR, or both encoding.BinaryMarshaler and encoding.BinaryUnmarshaler. The latter allows any kind
+// of serialization, e.g., to a totally custom format.
+//
+// Furthermore, an ExtensionBlock can implement the json.Marshaler for a more human-readable representation.
 type ExtensionBlock interface {
 	Valid
 
