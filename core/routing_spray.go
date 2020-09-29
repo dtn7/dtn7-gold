@@ -434,6 +434,10 @@ func (bsb *BinarySprayBlock) BlockTypeCode() uint64 {
 	return bundle.ExtBlockTypeBinarySprayBlock
 }
 
+func (bsb *BinarySprayBlock) BlockTypeName() string {
+	return "Binary Spray Routing Block"
+}
+
 func (bsb *BinarySprayBlock) CheckValid() error {
 	return nil
 }

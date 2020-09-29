@@ -610,6 +610,10 @@ func (dtlsrb *DTLSRBlock) BlockTypeCode() uint64 {
 	return bundle.ExtBlockTypeDTLSRBlock
 }
 
+func (dtlsrb *DTLSRBlock) BlockTypeName() string {
+	return "DTLSR Block"
+}
+
 func (dtlsrb *DTLSRBlock) CheckValid() error {
 	return nil
 }

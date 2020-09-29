@@ -475,6 +475,10 @@ func (pBlock *ProphetBlock) BlockTypeCode() uint64 {
 	return bundle.ExtBlockTypeProphetBlock
 }
 
+func (pBlock *ProphetBlock) BlockTypeName() string {
+	return "Prophet Routing Block"
+}
+
 func (pBlock ProphetBlock) CheckValid() error {
 	return nil
 }
