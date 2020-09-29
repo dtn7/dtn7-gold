@@ -245,7 +245,7 @@ func (client *Client) handle() {
 }
 
 func (client *Client) Send(b *bundle.Bundle) error {
-	client.log().WithField("bundle", *b).Info("Sending Bundle...")
+	client.log().WithField("bundle", *b).Debug("Sending Bundle...")
 	defer client.log().WithField("bundle", *b).Info("Sent Bundle")
 
 	return client.transferManager.Send(*b)
