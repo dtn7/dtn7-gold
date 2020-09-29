@@ -5,12 +5,15 @@
 package stages
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/utils"
 )
+
+var sessTermRecv = errors.New("SESS_TERM")
 
 // SessEstablishedStage models an established TCPCLv4 session after a successfully SESS_INIT.
 type SessEstablishedStage struct {
@@ -60,12 +63,16 @@ func (se *SessEstablishedStage) handle() {
 		select {
 		case <-se.closeChan:
 			err = StageClose
+			_ = se.messageOut(msgs.NewSessionTerminationMessage(0, msgs.TerminationUnknown))
 
 		case <-se.keepalive.C:
 			err = se.handleKeepalive()
 
 		case msg := <-se.state.MsgIn:
-			err = se.handleMsgIn(msg)
+			if err = se.handleMsgIn(msg); errors.Is(err, sessTermRecv) {
+				_ = se.messageOut(msgs.NewSessionTerminationMessage(msgs.TerminationReply, msgs.TerminationUnknown))
+				err = StageClose
+			}
 
 		case msg := <-se.xmsgOut:
 			err = se.messageOut(msg)
@@ -124,9 +131,8 @@ func (se *SessEstablishedStage) handleMsgIn(msg msgs.Message) (err error) {
 	case *msgs.SessionInitMessage:
 		err = fmt.Errorf("unexpected SESS_INIT message")
 
-	/* TODO
 	case *msgs.SessionTerminationMessage:
-	*/
+		err = sessTermRecv
 
 	case *msgs.KeepaliveMessage:
 		// nothing to do

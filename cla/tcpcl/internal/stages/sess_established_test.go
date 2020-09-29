@@ -5,6 +5,7 @@
 package stages
 
 import (
+	"errors"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -224,5 +225,51 @@ func TestSessEstablishedStageMessageExchange(t *testing.T) {
 		case <-time.After(250 * time.Millisecond):
 			t.Fatal("timeout")
 		}
+	}
+}
+
+func TestSessEstablishedStageSessTerm(t *testing.T) {
+	// Channels are buffered because those are directly linked between sessions. In some cases, one session is already
+	// closing down, while the other tries to send.
+	msgIn := make(chan msgs.Message, 32)
+	msgOut := make(chan msgs.Message, 32)
+
+	keepaliveSec := uint16(30)
+
+	sess1 := &SessEstablishedStage{}
+	state1 := &State{
+		MsgIn:     msgIn,
+		MsgOut:    msgOut,
+		Keepalive: keepaliveSec,
+	}
+
+	sess2 := &SessEstablishedStage{}
+	state2 := &State{
+		MsgIn:     msgOut,
+		MsgOut:    msgIn,
+		Keepalive: keepaliveSec,
+	}
+
+	// Start sessions
+	sess1.Start(state1)
+	sess2.Start(state2)
+
+	time.Sleep(100 * time.Millisecond)
+
+	if err := sess1.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case <-sess2.Finished():
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("timeout")
+	}
+
+	if err := sess1.state.StageError; !errors.Is(err, StageClose) {
+		t.Fatalf("error is %v", err)
+	}
+	if err := sess2.state.StageError; !errors.Is(err, StageClose) {
+		t.Fatalf("error is %v", err)
 	}
 }
