@@ -10,6 +10,7 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
@@ -153,14 +154,21 @@ func (tm *TransferManager) Send(b bundle.Bundle) error {
 
 		tm.msgOut <- dtm
 
-		switch response := (<-ackChan).(type) {
-		case *msgs.DataAcknowledgementMessage:
+		select {
+		case response := <-ackChan:
+			switch response := response.(type) {
+			case *msgs.DataAcknowledgementMessage:
 
-		case *msgs.TransferRefusalMessage:
-			return fmt.Errorf("received refusal message: %v", response)
+			case *msgs.TransferRefusalMessage:
+				return fmt.Errorf("received refusal message: %v", response)
 
-		default:
-			return fmt.Errorf("received unexpected message: %v", response)
+			default:
+				return fmt.Errorf("received unexpected message: %v", response)
+			}
+
+		case <-time.After(10 * time.Second):
+			return fmt.Errorf("timeout: waiting for segment acknowledgement; id = %d, stopped = %t",
+				transfer.Id, atomic.LoadUint64(&tm.stopped) != 0)
 		}
 	}
 

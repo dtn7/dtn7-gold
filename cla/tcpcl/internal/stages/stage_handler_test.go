@@ -89,7 +89,7 @@ func TestStageHandlerPingPong(t *testing.T) {
 
 		select {
 		case err := <-sh.Error():
-			if err != nil {
+			if err != nil && err != StageClose {
 				t.Fatal(err)
 			}
 

@@ -68,26 +68,27 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 			case cla.PeerAppeared:
 				atomic.AddUint32(&msgsApprd, 1)
 
-				go func(c cla.Convergence) {
-					if sender, ok := c.(cla.ConvergenceSender); !ok {
-						errs <- fmt.Errorf("New peer is not a ConvergenceSender; %v", cs)
+				/*
+					if sender, ok := cs.Sender.(cla.ConvergenceSender); !ok {
+						errs <- fmt.Errorf("listener: new peer is not a ConvergenceSender; %v", cs)
 					} else {
+
 						bndl, err := bundle.Builder().
 							CRC(bundle.CRC32).
 							Source("dtn://server/").
 							Destination(cs.Message).
 							CreationTimestampNow().
-							Lifetime("30m").
+							Lifetime(30 * time.Minute).
 							HopCountBlock(64).
 							PayloadBlock([]byte("hello back!")).
 							Build()
 						if err != nil {
-							errs <- err
-						} else if err := sender.Send(&bndl); err != nil {
-							errs <- err
+							errs <- fmt.Errorf("listener: %w", err)
+						} else if err = sender.Send(&bndl); err != nil {
+							errs <- fmt.Errorf("listener: %w", err)
 						}
 					}
-				}(cs.Sender)
+				*/
 			}
 		}
 	}()
@@ -96,42 +97,44 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 	// Wait for last transmission to be finished
 	time.Sleep(time.Second)
 
+	logrus.Info("Closing listener / manager")
+
 	manager.Close()
 
 	if r := atomic.LoadUint32(&msgsRecv); r != uint32(msgs*clients) {
-		errs <- fmt.Errorf("Listener received %d messages instead of %d", r, msgs*clients)
+		errs <- fmt.Errorf("listener received %d messages instead of %d", r, msgs*clients)
 	}
 	if a := atomic.LoadUint32(&msgsApprd); a != uint32(clients) {
-		errs <- fmt.Errorf("Listener received %d appeared peers instead of %d", a, clients)
+		errs <- fmt.Errorf("listener received %d appeared peers instead of %d", a, clients)
 	}
 }
 
-func handleClient(serverAddr string, clientNo, msgs, payload int, wg *sync.WaitGroup, errs chan error) {
-	defer wg.Done()
-
-	var msgsRecv uint32
+func handleClient(serverAddr string, clientNo, msgs, payload int, clientWg *sync.WaitGroup, errs chan error) {
+	defer clientWg.Done()
 
 	clientEid := fmt.Sprintf("dtn://client-%d/", clientNo)
 	client := DialClient(serverAddr, bundle.MustNewEndpointID(clientEid), false)
 	if err, _ := client.Start(); err != nil {
-		errs <- err
+		errs <- fmt.Errorf("client %d: %w", clientNo, err)
 		return
 	}
 
-	var clientWg sync.WaitGroup
-	clientWg.Add(1)
+	time.Sleep(time.Second)
+
+	var thisClientWg sync.WaitGroup
+	thisClientWg.Add(1)
 
 	go func() {
 		for {
 			switch cs := <-client.Channel(); cs.MessageType {
 			case cla.ReceivedBundle:
-				atomic.AddUint32(&msgsRecv, 1)
+				// thisClientWg.Done()
 			}
 		}
 	}()
 
 	go func() {
-		defer clientWg.Done()
+		defer thisClientWg.Done()
 
 		for i := 0; i < msgs; i++ {
 			bndl, err := bundle.Builder().
@@ -139,29 +142,27 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, wg *sync.WaitG
 				Source(clientEid).
 				Destination("dtn://server/").
 				CreationTimestampNow().
-				Lifetime("30m").
+				Lifetime(30 * time.Minute).
 				HopCountBlock(64).
 				PayloadBlock(testGetRandomData(payload)).
 				Build()
 
 			if err != nil {
-				errs <- err
+				errs <- fmt.Errorf("client %d: %w", clientNo, err)
 				return
 			} else if err := client.Send(&bndl); err != nil {
-				errs <- err
+				errs <- fmt.Errorf("client %d: %w", clientNo, err)
 				return
 			}
 		}
 	}()
 
-	clientWg.Wait()
+	thisClientWg.Wait()
 	time.Sleep(time.Second)
 
-	client.Close()
+	logrus.WithField("client", clientNo).Info("Closing client")
 
-	if r := atomic.LoadUint32(&msgsRecv); r != 1 {
-		errs <- fmt.Errorf("Client received %d messages instead of 1", r)
-	}
+	client.Close()
 }
 
 func startTestTCPCLNetwork(msgs, clients, payload int, t *testing.T) {
@@ -207,6 +208,7 @@ func TestTCPCLNetwork(t *testing.T) {
 		{2, 1, 64},
 		{2, 1, 1048576},
 		{2, 256, 1024},
+		{64, 1, 1024},
 	}
 
 	for _, test := range tests {

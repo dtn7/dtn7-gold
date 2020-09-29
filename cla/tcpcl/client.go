@@ -38,7 +38,9 @@ type Client struct {
 	peerNodeId bundle.EndpointID
 
 	reportChan chan cla.ConvergenceStatus
-	closeChan  chan struct{}
+
+	closeChanSyn chan struct{}
+	closeChanAck chan struct{}
 }
 
 // NewClient creates a new Client on an existing connection. This function is used from the Listener.
@@ -70,7 +72,11 @@ func (client *Client) String() string {
 	} else {
 		_, _ = fmt.Fprintf(&b, "peer=NONE, ")
 	}
-	_, _ = fmt.Fprintf(&b, "activePeer peer=%t", client.activePeer)
+	if client.activePeer {
+		_, _ = fmt.Fprintf(&b, "peer=active")
+	} else {
+		_, _ = fmt.Fprintf(&b, "peer=passive")
+	}
 	_, _ = fmt.Fprintf(&b, ")")
 
 	return b.String()
@@ -107,7 +113,9 @@ func (client *Client) Start() (err error, retry bool) {
 	}
 
 	client.reportChan = make(chan cla.ConvergenceStatus, 32)
-	client.closeChan = make(chan struct{})
+
+	client.closeChanSyn = make(chan struct{})
+	client.closeChanAck = make(chan struct{})
 
 	client.messageSwitch = utils.NewMessageSwitch(client.conn, client.conn)
 	msIncoming, msOutgoing, _ := client.messageSwitch.Exchange()
@@ -153,7 +161,7 @@ func (client *Client) Start() (err error, retry bool) {
 	client.stageHandler = stages.NewStageHandler(stageHandlerStages, msIncoming, msOutgoing, conf)
 
 	select {
-	case <-time.After(5 * time.Second):
+	case <-time.After(15 * time.Second):
 		err = fmt.Errorf("establishing an exchangable connection timed out")
 		retry = true
 		return
@@ -196,13 +204,21 @@ func (client *Client) handle() {
 
 		client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.peerNodeId)
 
-		_ = client.transferManager.Close()
-		_ = client.stageHandler.Close()
-		_ = client.messageSwitch.Close()
+		closeErrs := []error{
+			client.transferManager.Close(),
+			client.stageHandler.Close(),
+			client.messageSwitch.Close()}
+		for i, err := range closeErrs {
+			if err != nil {
+				client.log().WithError(err).WithField("no", i).Warn("Error occurred while closing")
+			}
+		}
 
 		client.transferManager = nil
 		client.stageHandler = nil
 		client.messageSwitch = nil
+
+		close(client.closeChanAck)
 	}()
 
 	for {
@@ -212,7 +228,7 @@ func (client *Client) handle() {
 			client.log().WithField("bundle", b).Info("Received Bundle")
 			client.reportChan <- cla.NewConvergenceReceivedBundle(client, client.nodeId, &b)
 
-		case <-client.closeChan:
+		case <-client.closeChanSyn:
 			client.log().Debug("Received close signal")
 			return
 
@@ -236,7 +252,8 @@ func (client *Client) Send(b *bundle.Bundle) error {
 }
 
 func (client *Client) Close() {
-	close(client.closeChan)
+	close(client.closeChanSyn)
+	<-client.closeChanAck
 }
 
 func (client *Client) Channel() chan cla.ConvergenceStatus {

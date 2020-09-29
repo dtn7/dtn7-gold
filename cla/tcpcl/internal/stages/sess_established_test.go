@@ -266,6 +266,8 @@ func TestSessEstablishedStageSessTerm(t *testing.T) {
 		t.Fatal("timeout")
 	}
 
+	<-sess1.Finished()
+
 	if err := sess1.state.StageError; !errors.Is(err, StageClose) {
 		t.Fatalf("error is %v", err)
 	}
