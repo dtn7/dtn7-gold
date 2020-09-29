@@ -25,8 +25,6 @@ Types of changes:
 ## [Unreleased]
 ### Added
 - Specific routing algorithm for data mules in sensor networks.
-- Socket Convergence Layer Protocol (SoCLP) for bidirectional bundle
-  exchange over different socket-like protocols.
 - Add all the necessary contrib files to run dtnd as a daemon. Packages can be built without having to rely on external sources.
 - GitHub Action to perform multiple Go Race Detector tests at night.
 
