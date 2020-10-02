@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"strings"
 	"time"
 
@@ -21,12 +20,14 @@ import (
 )
 
 // Client is a TCPCL client for a bidirectional Bundle exchange. Thus, the Client type implements both
-// cla.ConvergenceReceiver and cla.ConvergenceSender. A Client can be created by the Listener for incoming
+// cla.ConvergenceReceiver and cla.ConvergenceSender. A Client can be created by the TCPListener for incoming
 // connections or dialed for outgoing connections.
 type Client struct {
 	address    string
 	permanent  bool
 	activePeer bool
+
+	customStartFunc func(*Client) error
 
 	started    bool
 	connReader io.Reader
@@ -44,28 +45,6 @@ type Client struct {
 
 	closeChanSyn chan struct{}
 	closeChanAck chan struct{}
-}
-
-// NewClient creates a new Client on an existing connection. This function is used from the Listener.
-func NewClient(conn net.Conn, endpointID bundle.EndpointID) *Client {
-	return &Client{
-		address:    conn.RemoteAddr().String(),
-		activePeer: false,
-		connReader: conn,
-		connWriter: conn,
-		connCloser: conn,
-		nodeId:     endpointID,
-	}
-}
-
-// DialClient tries to establish a new TCPCL Client to a remote server.
-func DialClient(address string, endpointID bundle.EndpointID, permanent bool) *Client {
-	return &Client{
-		address:    address,
-		permanent:  permanent,
-		activePeer: true,
-		nodeId:     endpointID,
-	}
 }
 
 func (client *Client) String() string {
@@ -105,17 +84,9 @@ func (client *Client) Start() (err error, retry bool) {
 	client.started = true
 
 	if client.connReader == nil {
-		if conn, connErr := net.DialTimeout("tcp", client.address, time.Second); connErr != nil {
-			err = connErr
+		if err = client.customStartFunc(client); err != nil {
 			retry = true
 			return
-		} else {
-			client.connReader = conn
-			client.connWriter = conn
-			client.connCloser = conn
-			client.address = conn.RemoteAddr().String()
-
-			client.log().Debug("Dialed successfully")
 		}
 	}
 

@@ -80,7 +80,7 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		clas := ds.c.RegisteredCLAs(cla.TCPCL)
 		if len(clas) > 0 {
 			for _, eid := range clas {
-				client = tcpcl.DialClient(fmt.Sprintf("%s:%d", addr, dm.Port), eid, false)
+				client = tcpcl.DialTCP(fmt.Sprintf("%s:%d", addr, dm.Port), eid, false)
 				ds.c.RegisterConvergable(client)
 			}
 		} else {

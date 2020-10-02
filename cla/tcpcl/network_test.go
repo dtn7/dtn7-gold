@@ -57,7 +57,7 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 	defer serverWg.Done()
 
 	manager := cla.NewManager()
-	manager.Register(NewListener(serverAddr, bundle.MustNewEndpointID("dtn://server/")))
+	manager.Register(ListenTCP(serverAddr, bundle.MustNewEndpointID("dtn://server/")))
 
 	go func() {
 		for {
@@ -109,7 +109,7 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, clientWg *sync
 	defer clientWg.Done()
 
 	clientEid := fmt.Sprintf("dtn://client-%d/", clientNo)
-	client := DialClient(serverAddr, bundle.MustNewEndpointID(clientEid), false)
+	client := DialTCP(serverAddr, bundle.MustNewEndpointID(clientEid), false)
 	if err, _ := client.Start(); err != nil {
 		errs <- fmt.Errorf("client %d: %w", clientNo, err)
 		return
