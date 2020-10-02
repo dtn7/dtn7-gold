@@ -58,8 +58,8 @@ func (ms *MessageSwitch) handleIn() {
 		if msg, err := msgs.ReadMessage(in); err != nil {
 			if atomic.CompareAndSwapUint32(&ms.finished, 0, 1) {
 				ms.errChan <- err
-				return
 			}
+			return
 		} else {
 			ms.inChan <- msg
 		}
@@ -77,14 +77,14 @@ func (ms *MessageSwitch) handleOut() {
 		if err := msg.Marshal(out); err != nil {
 			if atomic.CompareAndSwapUint32(&ms.finished, 0, 1) {
 				ms.errChan <- err
-				return
 			}
+			return
 		}
 		if err := out.Flush(); err != nil {
 			if atomic.CompareAndSwapUint32(&ms.finished, 0, 1) {
 				ms.errChan <- err
-				return
 			}
+			return
 		}
 	}
 }

@@ -5,7 +5,9 @@
 package tcpcl
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"time"
@@ -26,8 +28,10 @@ type Client struct {
 	permanent  bool
 	activePeer bool
 
-	started bool
-	conn    net.Conn
+	started    bool
+	connReader io.Reader
+	connWriter io.Writer
+	connCloser io.Closer
 
 	messageSwitch   *utils.MessageSwitch
 	stageHandler    *stages.StageHandler
@@ -47,7 +51,9 @@ func NewClient(conn net.Conn, endpointID bundle.EndpointID) *Client {
 	return &Client{
 		address:    conn.RemoteAddr().String(),
 		activePeer: false,
-		conn:       conn,
+		connReader: conn,
+		connWriter: conn,
+		connCloser: conn,
 		nodeId:     endpointID,
 	}
 }
@@ -66,11 +72,9 @@ func (client *Client) String() string {
 	var b strings.Builder
 
 	_, _ = fmt.Fprintf(&b, "TCPCL(")
-	if client.conn != nil {
-		_, _ = fmt.Fprintf(&b, "peer=%v, ", client.conn.RemoteAddr())
-	} else {
-		_, _ = fmt.Fprintf(&b, "peer=NONE, ")
-	}
+	_, _ = fmt.Fprintf(&b, "address=%s, ", client.Address())
+	_, _ = fmt.Fprintf(&b, "node=%s, ", client.GetEndpointID())
+	_, _ = fmt.Fprintf(&b, "peer=%v, ", client.GetPeerEndpointID())
 	if client.activePeer {
 		_, _ = fmt.Fprintf(&b, "peer=active")
 	} else {
@@ -88,7 +92,9 @@ func (client *Client) log() *log.Entry {
 func (client *Client) Start() (err error, retry bool) {
 	if client.started {
 		if client.activePeer {
-			client.conn = nil
+			client.connReader = nil
+			client.connWriter = nil
+			client.connCloser = nil
 		} else {
 			err = fmt.Errorf("passive client cannot be restarted")
 			retry = false
@@ -98,13 +104,15 @@ func (client *Client) Start() (err error, retry bool) {
 
 	client.started = true
 
-	if client.conn == nil {
+	if client.connReader == nil {
 		if conn, connErr := net.DialTimeout("tcp", client.address, time.Second); connErr != nil {
 			err = connErr
 			retry = true
 			return
 		} else {
-			client.conn = conn
+			client.connReader = conn
+			client.connWriter = conn
+			client.connCloser = conn
 			client.address = conn.RemoteAddr().String()
 
 			client.log().Debug("Dialed successfully")
@@ -116,7 +124,7 @@ func (client *Client) Start() (err error, retry bool) {
 	client.closeChanSyn = make(chan struct{})
 	client.closeChanAck = make(chan struct{})
 
-	client.messageSwitch = utils.NewMessageSwitch(client.conn, client.conn)
+	client.messageSwitch = utils.NewMessageSwitch(client.connReader, client.connWriter)
 	msIncoming, msOutgoing, _ := client.messageSwitch.Exchange()
 
 	conf := stages.Configuration{
@@ -193,13 +201,21 @@ func (client *Client) handle() {
 
 		client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.peerNodeId)
 
-		closeErrs := []error{
-			client.transferManager.Close(),
-			client.stageHandler.Close(),
-			client.messageSwitch.Close()}
-		for i, err := range closeErrs {
-			if err != nil {
-				client.log().WithError(err).WithField("no", i).Warn("Error occurred while closing")
+		closeErrFuncs := []func() error{
+			client.transferManager.Close,
+			client.stageHandler.Close,
+			client.messageSwitch.Close,
+			func() error {
+				if client.connCloser != nil {
+					return client.connCloser.Close()
+				} else {
+					return nil
+				}
+			},
+		}
+		for i, errFunc := range closeErrFuncs {
+			if err := errFunc(); err != nil {
+				client.log().WithError(err).WithField("no", i).Debug("Error occurred while closing")
 			}
 		}
 
@@ -227,7 +243,11 @@ func (client *Client) handle() {
 		}
 
 		if err != nil {
-			client.log().WithError(err).Error("Error occurred")
+			if errors.Is(err, io.EOF) {
+				client.log().Info("Received EOF")
+			} else {
+				client.log().WithError(err).Error("Error occurred")
+			}
 			return
 		}
 	}
