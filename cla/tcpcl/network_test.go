@@ -60,50 +60,41 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 	manager.Register(NewListener(serverAddr, bundle.MustNewEndpointID("dtn://server/")))
 
 	go func() {
-		responseSent := make(map[cla.Convergence]struct{})
-
 		for {
 			switch cs := <-manager.Channel(); cs.MessageType {
 			case cla.ReceivedBundle:
 				atomic.AddUint32(&msgsRecv, 1)
 
-				if _, alreadySent := responseSent[cs.Sender]; !alreadySent {
-					responseSent[cs.Sender] = struct{}{}
-
-					go func() {
-						if sender, ok := cs.Sender.(cla.ConvergenceSender); !ok {
-							errs <- fmt.Errorf("listener: new peer is not a ConvergenceSender; %v", cs)
-						} else {
-							bndl, err := bundle.Builder().
-								CRC(bundle.CRC32).
-								Source("dtn://server/").
-								Destination(cs.Sender.(cla.ConvergenceSender).GetPeerEndpointID()).
-								CreationTimestampNow().
-								Lifetime(30 * time.Minute).
-								HopCountBlock(64).
-								PayloadBlock([]byte("hello back!")).
-								Build()
-							if err != nil {
-								errs <- fmt.Errorf("listener: %w", err)
-							} else if err = sender.Send(&bndl); err != nil {
-								errs <- fmt.Errorf("listener: %w", err)
-							}
-						}
-					}()
-				}
-
 			case cla.PeerAppeared:
 				atomic.AddUint32(&msgsApprd, 1)
+
+				if sender, ok := cs.Sender.(cla.ConvergenceSender); !ok {
+					errs <- fmt.Errorf("listener: new peer is not a ConvergenceSender; %v", cs)
+				} else {
+					dst := cs.Sender.(cla.ConvergenceSender).GetPeerEndpointID()
+					bndl, err := bundle.Builder().
+						CRC(bundle.CRC32).
+						Source("dtn://server/").
+						Destination(dst).
+						CreationTimestampNow().
+						Lifetime(30 * time.Minute).
+						HopCountBlock(64).
+						PayloadBlock([]byte("hello back!")).
+						Build()
+					if err != nil {
+						errs <- fmt.Errorf("listener: %w", err)
+					} else if err = sender.Send(&bndl); err != nil {
+						errs <- fmt.Errorf("listener for %v: %w", dst, err)
+					}
+				}
 			}
 		}
 	}()
 
 	clientWg.Wait()
-	// Wait for last transmission to be finished
 	time.Sleep(time.Second)
 
 	logrus.Info("Closing listener / manager")
-
 	manager.Close()
 
 	if r := atomic.LoadUint32(&msgsRecv); r != uint32(msgs*clients) {
@@ -154,10 +145,8 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, clientWg *sync
 
 			if err != nil {
 				errs <- fmt.Errorf("client %d: %w", clientNo, err)
-				return
 			} else if err := client.Send(&bndl); err != nil {
 				errs <- fmt.Errorf("client %d: %w", clientNo, err)
-				return
 			}
 		}
 	}()
@@ -166,7 +155,6 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, clientWg *sync
 	time.Sleep(time.Second)
 
 	logrus.WithField("client", clientNo).Info("Closing client")
-
 	client.Close()
 }
 

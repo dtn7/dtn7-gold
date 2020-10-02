@@ -21,7 +21,6 @@ type Listener struct {
 	listenAddress string
 	endpointID    bundle.EndpointID
 	manager       *cla.Manager
-	clas          []cla.Convergence
 
 	stopSyn chan struct{}
 	stopAck chan struct{}
@@ -71,7 +70,6 @@ func (listener *Listener) Start() error {
 					listener.Close()
 				} else if conn, err := ln.Accept(); err == nil {
 					client := NewClient(conn, listener.endpointID)
-					listener.clas = append(listener.clas, client)
 					listener.manager.Register(client)
 				}
 			}

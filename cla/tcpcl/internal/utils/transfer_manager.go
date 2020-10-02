@@ -134,7 +134,7 @@ func (tm *TransferManager) handle() {
 func (tm *TransferManager) Send(b bundle.Bundle) error {
 	transfer := NewBundleOutgoingTransfer(atomic.AddUint64(&tm.outNextId, 1)-1, b)
 
-	ackChan := make(chan msgs.Message, 128)
+	ackChan := make(chan msgs.Message, 32)
 	tm.outFeedback.Store(transfer.Id, ackChan)
 	defer tm.outFeedback.Delete(transfer.Id)
 

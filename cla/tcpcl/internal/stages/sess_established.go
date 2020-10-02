@@ -38,8 +38,8 @@ func (se *SessEstablishedStage) Start(state *State) {
 	se.closeChan = make(chan struct{})
 	se.finChan = make(chan struct{})
 
-	se.xmsgOut = make(chan msgs.Message)
-	se.xmsgIn = make(chan msgs.Message)
+	se.xmsgOut = make(chan msgs.Message, 32)
+	se.xmsgIn = make(chan msgs.Message, 32)
 
 	se.lastReceive = time.Now()
 	se.lastSend = time.Now()

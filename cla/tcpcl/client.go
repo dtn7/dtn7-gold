@@ -14,7 +14,6 @@ import (
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
-	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/stages"
 	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/utils"
 )
@@ -167,23 +166,13 @@ func (client *Client) Start() (err error, retry bool) {
 		return
 
 	case sMtu := <-sMtuChan:
-		var stageHandlerOut chan<- msgs.Message
-		var stageHandlerIn <-chan msgs.Message
-		var stageHandlerOk bool
-
-		for i := 0; i < 5; i++ {
-			if stageHandlerOut, stageHandlerIn, stageHandlerOk = client.stageHandler.Exchanges(); stageHandlerOk {
-				break
-			}
-			time.Sleep(100 * time.Millisecond)
-		}
-		if !stageHandlerOk {
+		if stageHandlerOut, stageHandlerIn, ok := client.stageHandler.Exchanges(); !ok {
 			err = fmt.Errorf("fetching exchange channels failed")
 			retry = true
 			return
+		} else {
+			client.transferManager = utils.NewTransferManager(stageHandlerIn, stageHandlerOut, sMtu)
 		}
-
-		client.transferManager = utils.NewTransferManager(stageHandlerIn, stageHandlerOut, sMtu)
 	}
 
 	client.log().Info("Started TCPCL4")

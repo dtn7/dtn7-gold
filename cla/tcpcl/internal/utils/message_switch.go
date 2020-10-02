@@ -34,8 +34,8 @@ func NewMessageSwitch(in io.Reader, out io.Writer) (ms *MessageSwitch) {
 		in:  in,
 		out: out,
 
-		inChan:  make(chan msgs.Message),
-		outChan: make(chan msgs.Message),
+		inChan:  make(chan msgs.Message, 32),
+		outChan: make(chan msgs.Message, 32),
 		errChan: make(chan error),
 
 		finished: 0,
