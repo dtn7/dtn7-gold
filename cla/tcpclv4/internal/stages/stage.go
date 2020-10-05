@@ -40,13 +40,13 @@ type State struct {
 	// Configuration to be used; should not be altered.
 	Configuration Configuration
 
-	// MsgIn and MsgOut are channels for incoming (receiving) and outgoing (sending) TCPCL messages with an underlying
+	// MsgIn and MsgOut are channels for incoming (receiving) and outgoing (sending) TCPCLv4 messages with an underlying
 	// connector, e.g., an util.MessageSwitch.
 	MsgIn  <-chan msgs.Message
 	MsgOut chan<- msgs.Message
 
-	// ExchangeMsgIn and ExchangeMsgOut are channels for incoming (receiving) and outgoing (sending) TCPCL messages with
-	// a higher-level util, e.g., an util.TransferManager.
+	// ExchangeMsgIn and ExchangeMsgOut are channels for incoming (receiving) and outgoing (sending) TCPCLv4 messages
+	// with a higher-level util, e.g., an util.TransferManager.
 	ExchangeMsgIn  chan msgs.Message
 	ExchangeMsgOut chan msgs.Message
 

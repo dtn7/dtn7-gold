@@ -13,7 +13,7 @@ import (
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
-// OutgoingTransfer represents an outgoing Bundle Transfer for the TCPCL.
+// OutgoingTransfer represents an outgoing Bundle Transfer for the TCPCLv4.
 type OutgoingTransfer struct {
 	Id uint64
 

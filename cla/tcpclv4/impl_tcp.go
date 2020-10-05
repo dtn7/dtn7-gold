@@ -15,7 +15,8 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 )
 
-// TCPListener is a TCPCL server bound to a TCP port to accept incoming TCPCL connections.
+// TCPListener is a TCPCLv4 server bound to a TCP port to accept incoming TCPCLv4 connections.
+//
 // This type implements the cla.ConvergenceProvider and should be supervised by a cla.Manager.
 type TCPListener struct {
 	listenAddress string
@@ -38,10 +39,13 @@ func ListenTCP(listenAddress string, endpointID bundle.EndpointID) *TCPListener 
 	}
 }
 
+// RegisterManager tells the TCPListener where to report new instances of cla.Convergence to.
 func (listener *TCPListener) RegisterManager(manager *cla.Manager) {
 	listener.manager = manager
 }
 
+// Start this TCPListener. Before being started, the the RegisterManager method tells this Client its cla.Manager. The
+// cla.Manager will both call the RegisterManager and Start methods.
 func (listener *TCPListener) Start() error {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", listener.listenAddress)
 	if err != nil {
@@ -79,6 +83,7 @@ func (listener *TCPListener) Start() error {
 	return nil
 }
 
+// Close signals this TCPListener to shut down.
 func (listener *TCPListener) Close() {
 	close(listener.stopSyn)
 	<-listener.stopAck
@@ -114,7 +119,7 @@ func newClientTCP(conn net.Conn, endpointID bundle.EndpointID) *Client {
 	}
 }
 
-// DialTCP tries to establish a new TCPCL Client to a remote server.
+// DialTCP tries to establish a new TCPCLv4 Client to a remote server.
 func DialTCP(address string, endpointID bundle.EndpointID, permanent bool) *Client {
 	return &Client{
 		address:         address,

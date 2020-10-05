@@ -158,7 +158,7 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, clientWg *sync
 	client.Close()
 }
 
-func startTestTCPCLNetwork(msgs, clients, payload int, t *testing.T) {
+func startTestTCPNetwork(msgs, clients, payload int, t *testing.T) {
 	var serverAddr = fmt.Sprintf("localhost:%d", getRandomPort(t))
 	var errs = make(chan error)
 
@@ -187,7 +187,7 @@ func startTestTCPCLNetwork(msgs, clients, payload int, t *testing.T) {
 	}
 }
 
-func TestTCPCLNetwork(t *testing.T) {
+func TestTCPNetwork(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 
 	tests := []struct {
@@ -206,7 +206,7 @@ func TestTCPCLNetwork(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%+v", test), func(t *testing.T) {
-			startTestTCPCLNetwork(test.msgs, test.clients, test.payload, t)
+			startTestTCPNetwork(test.msgs, test.clients, test.payload, t)
 		})
 	}
 }

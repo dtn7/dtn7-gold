@@ -39,7 +39,7 @@ const (
 	// TerminationIdleTimeout indicates a session being closed due to idleness.
 	TerminationIdleTimeout SessionTerminationCode = 0x01
 
-	// TerminationVersionMismatch indicates that the node cannot conform to the specified TCPCL protocol version number.
+	// TerminationVersionMismatch indicates that the node cannot conform to the TCPCLv4 protocol version number.
 	TerminationVersionMismatch SessionTerminationCode = 0x02
 
 	// TerminationBusy indicates a too busy node.

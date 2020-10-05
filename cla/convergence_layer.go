@@ -41,7 +41,7 @@ type Convergable interface {
 type Convergence interface {
 	Convergable
 
-	// Start starts this Convergence{Receiver,Sender} and might return an error
+	// Start this Convergence{Receiver,Sender} and return both an error
 	// and a boolean indicating if another Start should be tried later.
 	Start() (error, bool)
 
@@ -72,9 +72,9 @@ type ConvergenceReceiver interface {
 type ConvergenceSender interface {
 	Convergence
 
-	// Send transmits a bundle to this ConvergenceSender's endpoint. This method
-	// should be thread safe and finish transmitting one bundle, before acting
-	// on the next. This could be achieved by using a mutex or the like.
+	// Send a bundle to this ConvergenceSender's endpoint. This method should
+	// be thread safe and finish transmitting one bundle, before acting on the
+	// next. This could be achieved by using a mutex or the like.
 	Send(bndl *bundle.Bundle) error
 
 	// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
@@ -93,8 +93,8 @@ type ConvergenceProvider interface {
 	// of Convergence to.
 	RegisterManager(*Manager)
 
-	// Start starts this ConvergenceProvider. Before being started, the the
-	// RegisterManager method tells this ConvergenceProvider its Manager. However,
-	// the Manager will both call the RegisterManager and Start methods.
+	// Start this ConvergenceProvider. Before being started, the the
+	// RegisterManager method tells this ConvergenceProvider its Manager. The
+	// Manager will both call the RegisterManager and Start methods.
 	Start() error
 }

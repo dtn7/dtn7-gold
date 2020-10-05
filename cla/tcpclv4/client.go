@@ -19,9 +19,11 @@ import (
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/utils"
 )
 
-// Client is a TCPCL client for a bidirectional Bundle exchange. Thus, the Client type implements both
-// cla.ConvergenceReceiver and cla.ConvergenceSender. A Client can be created by the TCPListener for incoming
-// connections or dialed for outgoing connections.
+// Client is a TCPCLv4 client for a bidirectional Bundle exchange. Thus, the Client type implements both
+// cla.ConvergenceReceiver and cla.ConvergenceSender.
+//
+// A Client can be created by a Listener, e.g., a TCPListener, for incoming connections or dialed for outgoing
+// connections, e.g., via DialTCP.
 type Client struct {
 	address    string
 	permanent  bool
@@ -50,7 +52,7 @@ type Client struct {
 func (client *Client) String() string {
 	var b strings.Builder
 
-	_, _ = fmt.Fprintf(&b, "TCPCL(")
+	_, _ = fmt.Fprintf(&b, "TCPCLv4(")
 	_, _ = fmt.Fprintf(&b, "address=%s, ", client.Address())
 	_, _ = fmt.Fprintf(&b, "node=%s, ", client.GetEndpointID())
 	_, _ = fmt.Fprintf(&b, "peer=%v, ", client.GetPeerEndpointID())
@@ -68,6 +70,7 @@ func (client *Client) log() *log.Entry {
 	return log.WithField("cla", client.String())
 }
 
+// Start this Client and return both an error and a boolean indicating if another Start should be tried later.
 func (client *Client) Start() (err error, retry bool) {
 	if client.started {
 		if client.activePeer {
@@ -149,7 +152,7 @@ func (client *Client) Start() (err error, retry bool) {
 		client.transferManager = utils.NewTransferManager(stageHandlerIn, stageHandlerOut, sMtu)
 	}
 
-	client.log().Info("Started TCPCL4")
+	client.log().Info("Started TCPCLv4")
 
 	client.reportChan <- cla.NewConvergencePeerAppeared(client, client.peerNodeId)
 
@@ -163,7 +166,7 @@ func (client *Client) handle() {
 	incomingBundles, transferManagerErr := client.transferManager.Exchange()
 
 	defer func() {
-		client.log().Info("Closing down TCPCL4")
+		client.log().Info("Closing down TCPCLv4")
 
 		client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.peerNodeId)
 
@@ -219,6 +222,7 @@ func (client *Client) handle() {
 	}
 }
 
+// Send a bundle to this Client's endpoint.
 func (client *Client) Send(b *bundle.Bundle) error {
 	client.log().WithField("bundle", *b).Debug("Sending Bundle...")
 	defer client.log().WithField("bundle", *b).Info("Sent Bundle")
@@ -226,27 +230,34 @@ func (client *Client) Send(b *bundle.Bundle) error {
 	return client.transferManager.Send(*b)
 }
 
+// Close signals this Client to shut down.
 func (client *Client) Close() {
 	close(client.closeChanSyn)
 	<-client.closeChanAck
 }
 
+// Channel represents a return channel for transmitted bundles, status messages, etc.
 func (client *Client) Channel() chan cla.ConvergenceStatus {
 	return client.reportChan
 }
 
+// Address should return a unique address string to both identify this Client and ensure it will not opened twice.
 func (client *Client) Address() string {
 	return client.address
 }
 
+// IsPermanent returns true, if this CLA should not be removed after failures.
 func (client *Client) IsPermanent() bool {
 	return client.permanent
 }
 
+// GetEndpointID returns the endpoint ID assigned to this CLA.
 func (client *Client) GetEndpointID() bundle.EndpointID {
 	return client.nodeId
 }
 
+// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer, if it's known. Otherwise the zero endpoint
+// will be returned.
 func (client *Client) GetPeerEndpointID() bundle.EndpointID {
 	return client.peerNodeId
 }

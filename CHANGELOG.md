@@ -36,6 +36,7 @@ Types of changes:
 - bundle.ExtensionBlock has a "BlockTypeName" next to its type code for
   a human readable output.
 - Renamed cla/tcpcl package to cla/tcpclv4.
+- Bump draft-ietf-dtn-tcpclv4 version from 14 to 21.
 
 
 ## [0.8.0] - 2020-08-05

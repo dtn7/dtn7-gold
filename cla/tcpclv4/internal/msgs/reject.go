@@ -17,10 +17,10 @@ const (
 	// RejectionTypeUnknown indicates an unknown Message Type Code.
 	RejectionTypeUnknown MessageRejectionReason = 0x01
 
-	// RejectionUnsupported indicates that this TCPCL node cannot comply with the message content.
+	// RejectionUnsupported indicates that this TCPCLv4 node cannot comply with the message content.
 	RejectionUnsupported MessageRejectionReason = 0x02
 
-	// RejectionUnexpected indicates that this TCPCL node received a message while being in a state which does not
+	// RejectionUnexpected indicates that this TCPCLv4 node received a message while being in a state which does not
 	// expected this message.
 	RejectionUnexpected MessageRejectionReason = 0x03
 )

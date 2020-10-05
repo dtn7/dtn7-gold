@@ -23,7 +23,7 @@ This software implements the current draft of the Bundle Protocol Version 7.
 ### Convergence Layer
 Bundles might be exchanged between nodes by the following protocols.
 
-- TCP Convergence Layer Protocol Version 4 ([draft-ietf-dtn-tcpclv4-14][dtn-tcpcl-14])
+- TCP Convergence Layer Protocol Version 4 ([draft-ietf-dtn-tcpclv4-21][dtn-tcpcl-21])
 - Minimal TCP Convergence-Layer Protocol ([draft-ietf-dtn-mtcpcl-01][dtn-mtcpcl-01])
 - Bundle Broadcasting Connector, a generic Broadcasting Interface
     - [rf95modem] based CLA for LoRa PHY by [rf95modem-go]
@@ -150,7 +150,7 @@ To simplify the copyright stuff, the [REUSE][reuse] tool is used.
 [brew]: https://brew.sh
 [dtn-bpbis-26]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-26
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
-[dtn-tcpcl-14]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-14
+[dtn-tcpcl-21]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-21
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
 [godoc]: https://godoc.org/github.com/dtn7/dtn7-go
 [gofmt]: https://blog.golang.org/gofmt

@@ -13,7 +13,7 @@ import (
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
-// IncomingTransfer represents an incoming Bundle Transfer for the TCPCL.
+// IncomingTransfer represents an incoming Bundle Transfer for the TCPCLv4.
 type IncomingTransfer struct {
 	Id uint64
 

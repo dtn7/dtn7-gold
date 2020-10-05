@@ -11,13 +11,13 @@ import (
 	"reflect"
 )
 
-// Message describes all kind of TCPCL messages, which have their serialization and deserialization in common.
+// Message describes all kind of TCPCLv4 messages, which have their serialization and deserialization in common.
 type Message interface {
 	Marshal(w io.Writer) error
 	Unmarshal(r io.Reader) error
 }
 
-// messages maps the different TCPCL message type codes to an example instance of their type.
+// messages maps the different TCPCLv4 message type codes to an example instance of their type.
 var messages = map[uint8]Message{
 	SESS_INIT:    &SessionInitMessage{},
 	SESS_TERM:    &SessionTerminationMessage{},
@@ -36,7 +36,7 @@ var messages = map[uint8]Message{
 func NewMessage(typeCode uint8) (msg Message, err error) {
 	msgType, exists := messages[typeCode]
 	if !exists {
-		err = fmt.Errorf("no TCPCL Message registered for type code %x", typeCode)
+		err = fmt.Errorf("no TCPCLv4 Message registered for type code %x", typeCode)
 		return
 	}
 
@@ -45,7 +45,7 @@ func NewMessage(typeCode uint8) (msg Message, err error) {
 	return
 }
 
-// ReadMessage parses the next TCPCL message from the Reader.
+// ReadMessage parses the next TCPCLv4 message from the Reader.
 func ReadMessage(r io.Reader) (msg Message, err error) {
 	msgTypeBytes := make([]byte, 1)
 	if _, msgTypeErr := io.ReadFull(r, msgTypeBytes); msgTypeErr != nil {
