@@ -201,8 +201,8 @@ func (c *Connector) IsPermanent() bool {
 	return c.permanent
 }
 
-func (c *Connector) Send(bndl *bundle.Bundle) error {
-	var t, tErr = NewOutgoingTransmission(c.tid, *bndl, c.modem.Mtu())
+func (c *Connector) Send(bndl bundle.Bundle) error {
+	var t, tErr = NewOutgoingTransmission(c.tid, bndl, c.modem.Mtu())
 	if tErr != nil {
 		return tErr
 	}

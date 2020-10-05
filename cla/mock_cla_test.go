@@ -121,11 +121,11 @@ func (m *mockConvSender) IsPermanent() bool { return m.permanent }
 
 func (m *mockConvSender) GetPeerEndpointID() bundle.EndpointID { return m.peerEndpointId }
 
-func (m *mockConvSender) Send(bndl *bundle.Bundle) error {
+func (m *mockConvSender) Send(bndl bundle.Bundle) error {
 	if m.sendFail {
 		return fmt.Errorf("sendFail := true")
 	}
 
-	m.sentBndls = append(m.sentBndls, *bndl)
+	m.sentBndls = append(m.sentBndls, bndl)
 	return nil
 }

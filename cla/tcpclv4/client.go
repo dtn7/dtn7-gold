@@ -223,11 +223,11 @@ func (client *Client) handle() {
 }
 
 // Send a bundle to this Client's endpoint.
-func (client *Client) Send(b *bundle.Bundle) error {
-	client.log().WithField("bundle", *b).Debug("Sending Bundle...")
-	defer client.log().WithField("bundle", *b).Info("Sent Bundle")
+func (client *Client) Send(b bundle.Bundle) error {
+	client.log().WithField("bundle", b).Debug("Sending Bundle...")
+	defer client.log().WithField("bundle", b).Info("Sent Bundle")
 
-	return client.transferManager.Send(*b)
+	return client.transferManager.Send(b)
 }
 
 // Close signals this Client to shut down.

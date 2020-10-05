@@ -83,7 +83,7 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 						Build()
 					if err != nil {
 						errs <- fmt.Errorf("listener: %w", err)
-					} else if err = sender.Send(&bndl); err != nil {
+					} else if err = sender.Send(bndl); err != nil {
 						errs <- fmt.Errorf("listener for %v: %w", dst, err)
 					}
 				}
@@ -147,7 +147,7 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, clientWg *sync
 
 			if err != nil {
 				errs <- fmt.Errorf("client %d: %w", clientNo, err)
-			} else if err := client.Send(&bndl); err != nil {
+			} else if err := client.Send(bndl); err != nil {
 				errs <- fmt.Errorf("client %d: %w", clientNo, err)
 			}
 		}

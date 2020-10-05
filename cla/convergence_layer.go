@@ -78,7 +78,7 @@ type ConvergenceSender interface {
 	// Send a bundle to this ConvergenceSender's endpoint. This method should
 	// be thread safe and finish transmitting one bundle, before acting on the
 	// next. This could be achieved by using a mutex or the like.
-	Send(bndl *bundle.Bundle) error
+	Send(bundle.Bundle) error
 
 	// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
 	// if it's known. Otherwise the zero endpoint will be returned.

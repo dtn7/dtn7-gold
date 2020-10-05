@@ -115,7 +115,7 @@ func (client *MTCPClient) handler() {
 	}
 }
 
-func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
+func (client *MTCPClient) Send(bndl bundle.Bundle) (err error) {
 	defer func() {
 		if r := recover(); r != nil && err == nil {
 			err = fmt.Errorf("MTCPClient.Send: %v", r)
@@ -133,7 +133,7 @@ func (client *MTCPClient) Send(bndl *bundle.Bundle) (err error) {
 	connWriter := bufio.NewWriter(client.conn)
 
 	buff := new(bytes.Buffer)
-	if cborErr := cboring.Marshal(bndl, buff); cborErr != nil {
+	if cborErr := cboring.Marshal(&bndl, buff); cborErr != nil {
 		err = cborErr
 		return
 	}

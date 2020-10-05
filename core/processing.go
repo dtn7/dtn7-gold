@@ -271,7 +271,7 @@ func (c *Core) forward(bp BundlePack) {
 				"cla":    node,
 			}).Info("Sending bundle to a CLA (ConvergenceSender)")
 
-			if err := node.Send(bp.MustBundle()); err != nil {
+			if err := node.Send(*bp.MustBundle()); err != nil {
 				log.WithFields(log.Fields{
 					"bundle": bp.ID(),
 					"cla":    node,

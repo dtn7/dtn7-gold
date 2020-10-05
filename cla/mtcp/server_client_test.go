@@ -108,7 +108,7 @@ func TestMTCPServerClient(t *testing.T) {
 			}(client)
 
 			for i := 0; i < packages; i++ {
-				errCh <- client.Send(&bndl)
+				errCh <- client.Send(bndl)
 			}
 
 			if err := client.Close(); err != nil {
