@@ -29,6 +29,7 @@ func TestSessInitStage(t *testing.T) {
 		MsgIn:  msgIn,
 		MsgOut: msgOut,
 	}
+	activeClose := make(chan struct{})
 
 	passiveSessInit := &SessInitStage{}
 	passiveState := &State{
@@ -42,13 +43,11 @@ func TestSessInitStage(t *testing.T) {
 		MsgIn:  msgOut,
 		MsgOut: msgIn,
 	}
-
-	activeSessInit.Start(activeState)
-	passiveSessInit.Start(passiveState)
+	passiveClose := make(chan struct{})
 
 	finChan := make(chan struct{})
-	go func() { finChan <- <-activeSessInit.Finished() }()
-	go func() { finChan <- <-passiveSessInit.Finished() }()
+	go func() { activeSessInit.Handle(activeState, activeClose); finChan <- struct{}{} }()
+	go func() { passiveSessInit.Handle(passiveState, passiveClose); finChan <- struct{}{} }()
 
 	for fins := 0; fins < 2; {
 		select {

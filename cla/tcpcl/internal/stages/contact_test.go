@@ -24,6 +24,7 @@ func TestContactStage(t *testing.T) {
 		MsgIn:  msgIn,
 		MsgOut: msgOut,
 	}
+	activeClose := make(chan struct{})
 
 	passiveContact := &ContactStage{}
 	passiveState := &State{
@@ -34,13 +35,11 @@ func TestContactStage(t *testing.T) {
 		MsgIn:  msgOut,
 		MsgOut: msgIn,
 	}
-
-	activeContact.Start(activeState)
-	passiveContact.Start(passiveState)
+	passiveClose := make(chan struct{})
 
 	finChan := make(chan struct{})
-	go func() { finChan <- <-activeContact.Finished() }()
-	go func() { finChan <- <-passiveContact.Finished() }()
+	go func() { activeContact.Handle(activeState, activeClose); finChan <- struct{}{} }()
+	go func() { passiveContact.Handle(passiveState, passiveClose); finChan <- struct{}{} }()
 
 	for fins := 0; fins < 2; {
 		select {

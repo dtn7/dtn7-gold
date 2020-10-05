@@ -103,7 +103,7 @@ func TestStageHandlerHooks(t *testing.T) {
 	stages := []StageSetup{
 		{
 			Stage: &s1,
-			StartHook: func(_ *StageHandler, _ *State) error {
+			PreHook: func(_ *StageHandler, _ *State) error {
 				atomic.StoreInt64(&s1Pre, time.Now().UnixNano())
 				return nil
 			},
@@ -114,7 +114,7 @@ func TestStageHandlerHooks(t *testing.T) {
 		},
 		{
 			Stage: &s2,
-			StartHook: func(_ *StageHandler, _ *State) error {
+			PreHook: func(_ *StageHandler, _ *State) error {
 				atomic.StoreInt64(&s2Pre, time.Now().UnixNano())
 				return nil
 			},

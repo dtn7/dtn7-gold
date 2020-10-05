@@ -70,14 +70,8 @@ type State struct {
 	// SESS INIT STAGE END
 }
 
-// Stage described by this interface. It should be started by the Start method, which gets a configuration.
+// Stage described by this interface.
 type Stage interface {
-	// Start this Stage based on the previous Stage's State.
-	Start(state *State)
-
-	// Close this Stage down.
-	Close() error
-
-	// Finished closes this channel to indicate this Stage has finished. Afterwards the State should be inspected.
-	Finished() <-chan struct{}
+	// Handle this Stage's action based on the previous Stage's State and the StageHandler's close channel.
+	Handle(state *State, closeChan <-chan struct{})
 }

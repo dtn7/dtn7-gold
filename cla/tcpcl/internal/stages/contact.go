@@ -12,46 +12,19 @@ import (
 
 // ContactStage models the initial ContactHeader exchange.
 type ContactStage struct {
-	state *State
-
-	closeChan chan struct{}
-	finChan   chan struct{}
+	state     *State
+	closeChan <-chan struct{}
 }
 
-// Start this Stage based on the previous Stage's State.
-func (cs *ContactStage) Start(state *State) {
+// Handle this Stage's action based on the previous Stage's State and the StageHandler's close channel.
+func (cs *ContactStage) Handle(state *State, closeChan <-chan struct{}) {
 	cs.state = state
+	cs.closeChan = closeChan
 
-	cs.closeChan = make(chan struct{})
-	cs.finChan = make(chan struct{})
-
-	go cs.handle()
-}
-
-func (cs *ContactStage) handle() {
 	if cs.state.Configuration.ActivePeer {
 		cs.handleActive()
 	} else {
 		cs.handlePassive()
-	}
-
-	close(cs.finChan)
-}
-
-func (cs *ContactStage) receiveMsgOrClose() (ch *msgs.ContactHeader, err error) {
-	select {
-	case <-cs.closeChan:
-		err = StageClose
-		return
-
-	case msg := <-cs.state.MsgIn:
-		var ok bool
-		if ch, ok = msg.(*msgs.ContactHeader); !ok {
-			err = fmt.Errorf("received message has invalid type %T", msg)
-			ch = nil
-		}
-
-		return
 	}
 }
 
@@ -76,13 +49,19 @@ func (cs *ContactStage) handlePassive() {
 	cs.state.MsgOut <- msgs.NewContactHeader(cs.state.Configuration.ContactFlags)
 }
 
-// Close this Stage down.
-func (cs *ContactStage) Close() error {
-	close(cs.closeChan)
-	return nil
-}
+func (cs *ContactStage) receiveMsgOrClose() (ch *msgs.ContactHeader, err error) {
+	select {
+	case <-cs.closeChan:
+		err = StageClose
+		return
 
-// Finished closes this channel to indicate this Stage has finished. Afterwards the State should be inspected.
-func (cs *ContactStage) Finished() <-chan struct{} {
-	return cs.finChan
+	case msg := <-cs.state.MsgIn:
+		var ok bool
+		if ch, ok = msg.(*msgs.ContactHeader); !ok {
+			err = fmt.Errorf("received message has invalid type %T", msg)
+			ch = nil
+		}
+
+		return
+	}
 }

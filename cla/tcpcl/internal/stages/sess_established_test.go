@@ -29,6 +29,7 @@ func TestSessEstablishedStageKeepalivePingPong(t *testing.T) {
 		MsgOut:    msgOut,
 		Keepalive: keepaliveSec,
 	}
+	activeClose := make(chan struct{})
 
 	passiveSess := &SessEstablishedStage{}
 	passiveState := &State{
@@ -36,28 +37,25 @@ func TestSessEstablishedStageKeepalivePingPong(t *testing.T) {
 		MsgOut:    msgIn,
 		Keepalive: keepaliveSec,
 	}
+	passiveClose := make(chan struct{})
 
 	// Start sessions
 	startTime := time.Now()
-	activeSess.Start(activeState)
-	passiveSess.Start(passiveState)
+
+	finChan := make(chan struct{})
+	go func() { activeSess.Handle(activeState, activeClose); finChan <- struct{}{} }()
+	go func() { passiveSess.Handle(passiveState, passiveClose); finChan <- struct{}{} }()
 
 	// Let them exchange some KEEPALIVEs
 	select {
-	case <-activeSess.Finished():
-		t.Fatal("active finished")
-	case <-passiveSess.Finished():
-		t.Fatal("passive finished")
+	case <-finChan:
+		t.Fatal("session finished")
 	case <-time.After(time.Duration(keepaliveSec*3) * time.Second):
 	}
 
 	// Close sessions
-	_ = activeSess.Close()
-	_ = passiveSess.Close()
-
-	finChan := make(chan struct{})
-	go func() { finChan <- <-activeSess.Finished() }()
-	go func() { finChan <- <-passiveSess.Finished() }()
+	close(activeClose)
+	close(passiveClose)
 
 	for fins := 0; fins < 2; {
 		select {
@@ -91,9 +89,11 @@ func TestSessEstablishedStageKeepaliveTimeout(t *testing.T) {
 		MsgOut:    msgOut,
 		Keepalive: keepaliveSec,
 	}
+	closer := make(chan struct{})
 
 	// Start sessions
-	sess.Start(state)
+	finChan := make(chan struct{})
+	go func() { sess.Handle(state, closer); close(finChan) }()
 
 	// Read outgoing KEEPALIVEs
 	keepaliveCounter := int32(0)
@@ -107,13 +107,13 @@ func TestSessEstablishedStageKeepaliveTimeout(t *testing.T) {
 
 	// Wait for an error because of missing KEEPALIVEs
 	select {
-	case <-sess.Finished():
+	case <-finChan:
 	case <-time.After(time.Duration(keepaliveSec*3) * time.Second):
 		t.Fatal("timeout")
 	}
 
 	// Close sessions
-	_ = sess.Close()
+	close(closer)
 
 	if state.StageError == nil || state.StageError == StageClose {
 		t.Fatal("no error is stored")
@@ -143,6 +143,7 @@ func TestSessEstablishedStageMessageExchange(t *testing.T) {
 		ExchangeMsgOut: exchangeMsgOut,
 		Keepalive:      keepaliveSec,
 	}
+	close1 := make(chan struct{})
 
 	sess2 := &SessEstablishedStage{}
 	state2 := &State{
@@ -152,6 +153,7 @@ func TestSessEstablishedStageMessageExchange(t *testing.T) {
 		ExchangeMsgOut: exchangeMsgIn,
 		Keepalive:      keepaliveSec,
 	}
+	close2 := make(chan struct{})
 
 	xch1Msgs := []msgs.Message{
 		msgs.NewDataTransmissionMessage(msgs.SegmentStart, 1, []byte("hello")),
@@ -168,8 +170,9 @@ func TestSessEstablishedStageMessageExchange(t *testing.T) {
 	}
 
 	// Start sessions
-	sess1.Start(state1)
-	sess2.Start(state2)
+	finChan := make(chan struct{})
+	go func() { sess1.Handle(state1, close1); finChan <- struct{}{} }()
+	go func() { sess2.Handle(state2, close2); finChan <- struct{}{} }()
 
 	outXch1, inXch1 := exchangeMsgOut, exchangeMsgIn
 	outXch2, inXch2 := exchangeMsgIn, exchangeMsgOut
@@ -217,12 +220,8 @@ func TestSessEstablishedStageMessageExchange(t *testing.T) {
 	}
 
 	// Close sessions
-	_ = sess1.Close()
-	_ = sess2.Close()
-
-	finChan := make(chan struct{})
-	go func() { finChan <- <-sess1.Finished() }()
-	go func() { finChan <- <-sess2.Finished() }()
+	close(close1)
+	close(close2)
 
 	for fins := 0; fins < 2; {
 		select {
@@ -248,6 +247,7 @@ func TestSessEstablishedStageSessTerm(t *testing.T) {
 		MsgOut:    msgOut,
 		Keepalive: keepaliveSec,
 	}
+	close1 := make(chan struct{})
 
 	sess2 := &SessEstablishedStage{}
 	state2 := &State{
@@ -255,24 +255,23 @@ func TestSessEstablishedStageSessTerm(t *testing.T) {
 		MsgOut:    msgIn,
 		Keepalive: keepaliveSec,
 	}
+	close2 := make(chan struct{})
 
 	// Start sessions
-	sess1.Start(state1)
-	sess2.Start(state2)
+	finChan := make(chan struct{})
+	go func() { sess1.Handle(state1, close1); finChan <- struct{}{} }()
+	go func() { sess2.Handle(state2, close2); finChan <- struct{}{} }()
 
 	time.Sleep(100 * time.Millisecond)
+	close(close1)
 
-	if err := sess1.Close(); err != nil {
-		t.Fatal(err)
+	for i := 0; i < 2; i++ {
+		select {
+		case <-finChan:
+		case <-time.After(100 * time.Millisecond):
+			t.Fatal("timeout")
+		}
 	}
-
-	select {
-	case <-sess2.Finished():
-	case <-time.After(100 * time.Millisecond):
-		t.Fatal("timeout")
-	}
-
-	<-sess1.Finished()
 
 	if err := sess1.state.StageError; !errors.Is(err, StageClose) {
 		t.Fatalf("error is %v", err)

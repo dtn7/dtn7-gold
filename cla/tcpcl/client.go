@@ -111,15 +111,15 @@ func (client *Client) Start() (err error, retry bool) {
 	stageHandlerStages := []stages.StageSetup{
 		{
 			Stage: &stages.ContactStage{},
-			StartHook: func(_ *stages.StageHandler, _ *stages.State) error {
-				client.log().Debug("Started Contact Stage")
+			PreHook: func(_ *stages.StageHandler, _ *stages.State) error {
+				client.log().Debug("Starting Contact Stage")
 				return nil
 			},
 		},
 		{
 			Stage: &stages.SessInitStage{},
-			StartHook: func(_ *stages.StageHandler, _ *stages.State) error {
-				client.log().Debug("Started Session Init Stage")
+			PreHook: func(_ *stages.StageHandler, _ *stages.State) error {
+				client.log().Debug("Starting Session Init Stage")
 				return nil
 			},
 			PostHook: func(_ *stages.StageHandler, state *stages.State) error {
@@ -129,8 +129,8 @@ func (client *Client) Start() (err error, retry bool) {
 		},
 		{
 			Stage: &stages.SessEstablishedStage{},
-			StartHook: func(_ *stages.StageHandler, state *stages.State) error {
-				client.log().Debug("Started Session Established Stage")
+			PreHook: func(_ *stages.StageHandler, state *stages.State) error {
+				client.log().Debug("Starting Session Established Stage")
 
 				sMtuChan <- state.SegmentMtu
 				return nil

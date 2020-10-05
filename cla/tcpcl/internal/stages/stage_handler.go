@@ -15,8 +15,8 @@ type StageSetup struct {
 	// Stage to be executed.
 	Stage Stage
 
-	// StartHook will be executed after starting the Stage, if not nil.
-	StartHook func(*StageHandler, *State) error
+	// PreHook will be executed before starting the Stage, if not nil.
+	PreHook func(*StageHandler, *State) error
 	// PostHook will be executed after a finished Stage, if not nil.
 	PostHook func(*StageHandler, *State) error
 }
@@ -69,32 +69,25 @@ func (sh *StageHandler) handler() {
 	for i := 0; i < len(sh.stages); i++ {
 		sh.currentStageMutex.Lock()
 		sh.currentStage = sh.stages[i]
-
-		sh.currentStage.Stage.Start(sh.state)
 		sh.currentStageMutex.Unlock()
 
-		if sh.currentStage.StartHook != nil {
-			if err := sh.currentStage.StartHook(sh, sh.state); err != nil {
+		if sh.currentStage.PreHook != nil {
+			if err := sh.currentStage.PreHook(sh, sh.state); err != nil {
 				sh.errChan <- err
 				return
 			}
 		}
 
-		select {
-		case <-sh.closeChan:
-			_ = sh.currentStage.Stage.Close()
+		sh.currentStage.Stage.Handle(sh.state, sh.closeChan)
+		if err := sh.state.StageError; err != nil {
+			sh.errChan <- err
 			return
+		}
 
-		case <-sh.currentStage.Stage.Finished():
-			if err := sh.state.StageError; err != nil {
+		if sh.stages[i].PostHook != nil {
+			if err := sh.stages[i].PostHook(sh, sh.state); err != nil {
 				sh.errChan <- err
 				return
-			}
-			if sh.stages[i].PostHook != nil {
-				if err := sh.stages[i].PostHook(sh, sh.state); err != nil {
-					sh.errChan <- err
-					return
-				}
 			}
 		}
 	}

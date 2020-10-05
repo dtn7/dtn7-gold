@@ -17,10 +17,8 @@ var sessTermRecv = errors.New("SESS_TERM")
 
 // SessEstablishedStage models an established TCPCLv4 session after a successfully SESS_INIT.
 type SessEstablishedStage struct {
-	state *State
-
-	closeChan chan struct{}
-	finChan   chan struct{}
+	state     *State
+	closeChan <-chan struct{}
 
 	lastReceive time.Time
 	lastSend    time.Time
@@ -28,23 +26,15 @@ type SessEstablishedStage struct {
 	keepalive *utils.KeepaliveTicker
 }
 
-// Start this Stage based on the previous Stage's State.
-func (se *SessEstablishedStage) Start(state *State) {
+// Handle this Stage's action based on the previous Stage's State and the StageHandler's close channel.
+func (se *SessEstablishedStage) Handle(state *State, closeChan <-chan struct{}) {
 	se.state = state
-
-	se.closeChan = make(chan struct{})
-	se.finChan = make(chan struct{})
+	se.closeChan = closeChan
 
 	se.lastReceive = time.Now()
 	se.lastSend = time.Now()
 
 	se.keepalive = utils.NewKeepaliveTicker()
-
-	go se.handle()
-}
-
-func (se *SessEstablishedStage) handle() {
-	defer close(se.finChan)
 
 	if se.state.Keepalive != 0 {
 		se.keepalive.Reschedule(time.Duration(se.state.Keepalive) * time.Second / 2)
@@ -135,15 +125,4 @@ func (se *SessEstablishedStage) handleMsgIn(msg msgs.Message) (err error) {
 		se.state.ExchangeMsgIn <- msg
 	}
 	return
-}
-
-// Close this Stage down.
-func (se *SessEstablishedStage) Close() error {
-	close(se.closeChan)
-	return nil
-}
-
-// Finished closes this channel to indicate this Stage has finished. Afterwards the State should be inspected.
-func (se *SessEstablishedStage) Finished() <-chan struct{} {
-	return se.finChan
 }
