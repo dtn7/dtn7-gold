@@ -48,7 +48,9 @@ func (m *mockConvRec) Start() (err error, retry bool) {
 	return
 }
 
-func (_ *mockConvRec) Close() {}
+func (_ *mockConvRec) Close() error {
+	return nil
+}
 
 func (m *mockConvRec) Channel() chan ConvergenceStatus { return m.reportChan }
 
@@ -107,7 +109,9 @@ func (m *mockConvSender) Start() (err error, retry bool) {
 	return
 }
 
-func (_ *mockConvSender) Close() {}
+func (_ *mockConvSender) Close() error {
+	return nil
+}
 
 func (m *mockConvSender) Channel() chan ConvergenceStatus { return m.reportChan }
 

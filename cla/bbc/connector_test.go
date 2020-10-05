@@ -60,7 +60,9 @@ func TestConnectorUnregisterTransmission(t *testing.T) {
 		t.Fatalf("Received Bundle: %v", rec)
 
 	case <-time.After(100 * time.Millisecond):
-		c.Close()
+		if err := c.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if len(c.transmissions) > 0 {

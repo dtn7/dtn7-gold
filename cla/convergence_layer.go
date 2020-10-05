@@ -12,7 +12,7 @@
 //
 // An implemented convergence layer can be a ConvergenceReceiver,
 // ConvergenceSender or even both. This depends on the convergence layer's
-// specification and is an implemention matter.
+// specification and is an implementation matter.
 //
 // Furthermore, the ConvergenceProvider provides the ability to create new
 // instances of Convergence objects.
@@ -23,18 +23,21 @@
 // work seamlessly with the types above.
 package cla
 
-import "github.com/dtn7/dtn7-go/bundle"
+import (
+	"io"
+
+	"github.com/dtn7/dtn7-go/bundle"
+)
 
 // Convergable describes any kind of type which supports convergence layer-
 // related services. This can be both a more specified Convergence interface
 // type or a ConvergenceProvider.
 type Convergable interface {
-	// Close signals this Convergable to shut down.
-	Close()
+	io.Closer
 }
 
 // Convergence is an interface to describe all kinds of Convergence Layer
-// Adapters. There should not be a direct implemention of this interface. One
+// Adapters. There should not be a direct implementation of this interface. One
 // must implement ConvergenceReceiver and/or ConvergenceSender, which are both
 // extending this interface.
 // A type can be both a ConvergenceReceiver and ConvergenceSender.

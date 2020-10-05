@@ -95,7 +95,9 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 	time.Sleep(time.Second)
 
 	logrus.Info("Closing listener / manager")
-	manager.Close()
+	if err := manager.Close(); err != nil {
+		errs <- err
+	}
 
 	if r := atomic.LoadUint32(&msgsRecv); r != uint32(msgs*clients) {
 		errs <- fmt.Errorf("listener received %d messages instead of %d", r, msgs*clients)
@@ -155,7 +157,9 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, clientWg *sync
 	time.Sleep(time.Second)
 
 	logrus.WithField("client", clientNo).Info("Closing client")
-	client.Close()
+	if err := client.Close(); err != nil {
+		errs <- err
+	}
 }
 
 func startTestTCPNetwork(msgs, clients, payload int, t *testing.T) {

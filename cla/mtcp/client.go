@@ -91,7 +91,7 @@ func (client *MTCPClient) handler() {
 			client.mutex.Lock()
 			defer client.mutex.Unlock()
 
-			client.conn.Close()
+			_ = client.conn.Close()
 			close(client.reportChan)
 
 			close(client.stopAck)
@@ -166,9 +166,11 @@ func (client *MTCPClient) Channel() chan cla.ConvergenceStatus {
 	return client.reportChan
 }
 
-func (client *MTCPClient) Close() {
+func (client *MTCPClient) Close() error {
 	close(client.stopSyn)
 	<-client.stopAck
+
+	return nil
 }
 
 func (client *MTCPClient) GetPeerEndpointID() bundle.EndpointID {

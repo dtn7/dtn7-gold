@@ -34,7 +34,7 @@ func TestManager(t *testing.T) {
 
 	/* Setup */
 	var manager = NewManager()
-	defer manager.Close()
+	defer func() { _ = manager.Close() }()
 
 	// Read the Manager's outbounding channel
 	var readErrCh = make(chan error, receiverNo)

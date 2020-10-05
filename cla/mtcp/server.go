@@ -59,7 +59,7 @@ func (serv *MTCPServer) Start() (error, bool) {
 		for {
 			select {
 			case <-serv.stopSyn:
-				ln.Close()
+				_ = ln.Close()
 				close(serv.reportChan)
 				close(serv.stopAck)
 
@@ -72,7 +72,7 @@ func (serv *MTCPServer) Start() (error, bool) {
 						"error": err,
 					}).Warn("MTCPServer failed to set deadline on TCP socket")
 
-					serv.Close()
+					_ = serv.Close()
 				} else if conn, err := ln.Accept(); err == nil {
 					go serv.handleSender(conn)
 				}
@@ -85,7 +85,7 @@ func (serv *MTCPServer) Start() (error, bool) {
 
 func (serv *MTCPServer) handleSender(conn net.Conn) {
 	defer func() {
-		conn.Close()
+		_ = conn.Close()
 
 		if r := recover(); r != nil {
 			log.WithFields(log.Fields{
@@ -143,9 +143,11 @@ func (serv *MTCPServer) Channel() chan cla.ConvergenceStatus {
 	return serv.reportChan
 }
 
-func (serv *MTCPServer) Close() {
+func (serv *MTCPServer) Close() error {
 	close(serv.stopSyn)
 	<-serv.stopAck
+
+	return nil
 }
 
 func (serv MTCPServer) GetEndpointID() bundle.EndpointID {

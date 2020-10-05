@@ -37,6 +37,7 @@ Types of changes:
   a human readable output.
 - Renamed cla/tcpcl package to cla/tcpclv4.
 - Bump draft-ietf-dtn-tcpclv4 version from 14 to 21.
+- cla.Convergence uses io.Closer's Close function
 
 
 ## [0.8.0] - 2020-08-05

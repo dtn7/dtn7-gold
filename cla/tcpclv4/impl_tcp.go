@@ -71,7 +71,7 @@ func (listener *TCPListener) Start() error {
 					log.WithError(err).WithField("cla", listener).Warn(
 						"TCPListener failed to set deadline on TCP socket")
 
-					listener.Close()
+					_ = listener.Close()
 				} else if conn, err := ln.Accept(); err == nil {
 					client := newClientTCP(conn, listener.endpointID)
 					listener.manager.Register(client)
@@ -84,9 +84,11 @@ func (listener *TCPListener) Start() error {
 }
 
 // Close signals this TCPListener to shut down.
-func (listener *TCPListener) Close() {
+func (listener *TCPListener) Close() error {
 	close(listener.stopSyn)
 	<-listener.stopAck
+
+	return nil
 }
 
 func (listener TCPListener) String() string {

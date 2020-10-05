@@ -175,16 +175,18 @@ func (c *Connector) handlerWrite() {
 	}
 }
 
-func (c *Connector) Close() {
+func (c *Connector) Close() (err error) {
 	close(c.closedRSyn)
 	close(c.closedWSyn)
 
-	if err := c.modem.Close(); err != nil {
+	if err = c.modem.Close(); err != nil {
 		log.WithField("bbc", c.Address()).WithError(err).Warn("Closing Modem errored")
 	}
 
 	<-c.closedRAck
 	<-c.closedWAck
+
+	return
 }
 
 func (c *Connector) Channel() chan cla.ConvergenceStatus {

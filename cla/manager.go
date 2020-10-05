@@ -93,7 +93,7 @@ func (manager *Manager) handler() {
 
 			manager.providersMutex.Lock()
 			for _, provider := range manager.providers {
-				provider.Close()
+				_ = provider.Close()
 			}
 			manager.providersMutex.Unlock()
 
@@ -157,13 +157,15 @@ func (manager *Manager) isStopped() bool {
 }
 
 // Close the Manager and all supervised CLAs.
-func (manager *Manager) Close() {
+func (manager *Manager) Close() error {
 	manager.stopFlagMutex.Lock()
 	manager.stopFlag = true
 	manager.stopFlagMutex.Unlock()
 
 	close(manager.stopSyn)
 	<-manager.stopAck
+
+	return nil
 }
 
 // Register any kind of Convergable.

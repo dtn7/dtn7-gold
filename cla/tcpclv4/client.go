@@ -231,9 +231,11 @@ func (client *Client) Send(b *bundle.Bundle) error {
 }
 
 // Close signals this Client to shut down.
-func (client *Client) Close() {
+func (client *Client) Close() error {
 	close(client.closeChanSyn)
 	<-client.closeChanAck
+
+	return nil
 }
 
 // Channel represents a return channel for transmitted bundles, status messages, etc.

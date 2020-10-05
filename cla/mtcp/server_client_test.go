@@ -26,7 +26,7 @@ func getRandomPort(t *testing.T) int {
 		t.Fatal(err)
 	}
 
-	defer l.Close()
+	defer func() { _ = l.Close() }()
 
 	return l.Addr().(*net.TCPAddr).Port
 }
@@ -83,7 +83,9 @@ func TestMTCPServerClient(t *testing.T) {
 				}
 
 				if cVal == 0 {
-					serv.Close()
+					if err := serv.Close(); err != nil {
+						errCh <- err
+					}
 					return
 				}
 			}
@@ -109,7 +111,10 @@ func TestMTCPServerClient(t *testing.T) {
 				errCh <- client.Send(&bndl)
 			}
 
-			client.Close()
+			if err := client.Close(); err != nil {
+				errCh <- err
+				return
+			}
 		}()
 	}
 

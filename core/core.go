@@ -140,12 +140,12 @@ func (c *Core) handler() {
 		case <-c.stopSyn:
 			c.cron.Stop()
 
-			c.claManager.Close()
+			if err := c.claManager.Close(); err != nil {
+				log.WithError(err).Warn("Closing CLA Manager while shutting down errored")
+			}
 
-			if storeErr := c.store.Close(); storeErr != nil {
-				log.WithFields(log.Fields{
-					"error": storeErr,
-				}).Warn("Closing store while shutting down the Core errors")
+			if err := c.store.Close(); err != nil {
+				log.WithError(err).Warn("Closing store while shutting down errored")
 			}
 
 			close(c.stopAck)
