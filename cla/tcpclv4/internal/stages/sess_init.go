@@ -9,7 +9,7 @@ import (
 	"math"
 
 	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
 // SessInitStage models the session initialization resp. SESS_INIT exchange.

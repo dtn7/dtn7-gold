@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/dtn7/dtn7-go/bundle"
-	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
 func testGetRandomData(size int) []byte {

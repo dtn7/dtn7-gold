@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
-	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/utils"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/utils"
 )
 
 var sessTermRecv = errors.New("SESS_TERM")

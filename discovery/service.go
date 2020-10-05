@@ -13,7 +13,7 @@ import (
 
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/mtcp"
-	"github.com/dtn7/dtn7-go/cla/tcpcl"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4"
 	"github.com/dtn7/dtn7-go/core"
 	"github.com/schollz/peerdiscovery"
 )
@@ -80,7 +80,7 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 		clas := ds.c.RegisteredCLAs(cla.TCPCL)
 		if len(clas) > 0 {
 			for _, eid := range clas {
-				client = tcpcl.DialTCP(fmt.Sprintf("%s:%d", addr, dm.Port), eid, false)
+				client = tcpclv4.DialTCP(fmt.Sprintf("%s:%d", addr, dm.Port), eid, false)
 				ds.c.RegisterConvergable(client)
 			}
 		} else {

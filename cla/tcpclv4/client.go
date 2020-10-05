@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package tcpcl
+package tcpclv4
 
 import (
 	"errors"
@@ -15,8 +15,8 @@ import (
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
-	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/stages"
-	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/utils"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/stages"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/utils"
 )
 
 // Client is a TCPCL client for a bidirectional Bundle exchange. Thus, the Client type implements both

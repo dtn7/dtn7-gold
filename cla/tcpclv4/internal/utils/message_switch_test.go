@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
 func TestMessageSwitchSimple(t *testing.T) {

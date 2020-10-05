@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package tcpcl
+package tcpclv4
 
 import (
 	"fmt"
@@ -85,7 +85,7 @@ func (listener *TCPListener) Close() {
 }
 
 func (listener TCPListener) String() string {
-	return fmt.Sprintf("tcpcl://%s", listener.listenAddress)
+	return fmt.Sprintf("tcpclv4://%s", listener.listenAddress)
 }
 
 func tcpClientStart(client *Client) error {

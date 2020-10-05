@@ -7,7 +7,7 @@ package stages
 import (
 	"sync"
 
-	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
 // StageSetup wraps a Stage with two possible hooks (pre and post) to be used within the StageHandler.

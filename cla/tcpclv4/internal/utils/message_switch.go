@@ -10,7 +10,7 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/dtn7/dtn7-go/cla/tcpcl/internal/msgs"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
 // MessageSwitch exchanges msgs.Messages from an io.Reader and io.Writer to channels. The channels can be accessed

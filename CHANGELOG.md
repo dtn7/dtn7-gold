@@ -35,6 +35,7 @@ Types of changes:
   more human readable output. This was done for the bpbis blocks.
 - bundle.ExtensionBlock has a "BlockTypeName" next to its type code for
   a human readable output.
+- Renamed cla/tcpcl package to cla/tcpclv4.
 
 
 ## [0.8.0] - 2020-08-05

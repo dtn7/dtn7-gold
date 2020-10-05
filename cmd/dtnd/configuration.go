@@ -23,7 +23,7 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/bbc"
 	"github.com/dtn7/dtn7-go/cla/mtcp"
-	"github.com/dtn7/dtn7-go/cla/tcpcl"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4"
 	"github.com/dtn7/dtn7-go/core"
 	"github.com/dtn7/dtn7-go/discovery"
 )
@@ -137,7 +137,7 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergabl
 			return nil, nodeId, cla.TCPCL, discovery.DiscoveryMessage{}, err
 		}
 
-		listener := tcpcl.ListenTCP(conv.Endpoint, nodeId)
+		listener := tcpclv4.ListenTCP(conv.Endpoint, nodeId)
 
 		msg := discovery.DiscoveryMessage{
 			Type:     cla.TCPCL,
@@ -163,7 +163,7 @@ func parsePeer(conv convergenceConf, nodeId bundle.EndpointID) (cla.ConvergenceS
 		return mtcp.NewMTCPClient(conv.Endpoint, endpointID, true), nil
 
 	case "tcpcl":
-		return tcpcl.DialTCP(conv.Endpoint, nodeId, true), nil
+		return tcpclv4.DialTCP(conv.Endpoint, nodeId, true), nil
 
 	default:
 		return nil, fmt.Errorf("unknown peer.protocol \"%s\"", conv.Protocol)
