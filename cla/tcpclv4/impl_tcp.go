@@ -68,7 +68,7 @@ func (listener *TCPListener) Start() error {
 
 			default:
 				if err := ln.SetDeadline(time.Now().Add(50 * time.Millisecond)); err != nil {
-					log.WithError(err).WithField("cla", listener).Warn(
+					log.WithError(err).WithField("cla", listener).Error(
 						"TCPListener failed to set deadline on TCP socket")
 
 					_ = listener.Close()
@@ -95,6 +95,7 @@ func (listener TCPListener) String() string {
 	return fmt.Sprintf("tcpclv4://%s", listener.listenAddress)
 }
 
+// tcpClientStart is the Client's customStartFunc for TCP.
 func tcpClientStart(client *Client) error {
 	if conn, connErr := net.DialTimeout("tcp", client.address, time.Second); connErr != nil {
 		return connErr
@@ -121,7 +122,7 @@ func newClientTCP(conn net.Conn, endpointID bundle.EndpointID) *Client {
 	}
 }
 
-// DialTCP tries to establish a new TCPCLv4 Client to a remote server.
+// DialTCP tries to establish a new TCPCLv4 Client to a remote TCPListener.
 func DialTCP(address string, endpointID bundle.EndpointID, permanent bool) *Client {
 	return &Client{
 		address:         address,

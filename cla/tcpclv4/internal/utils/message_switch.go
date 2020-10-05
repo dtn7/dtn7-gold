@@ -13,6 +13,14 @@ import (
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
+// WriteFlusher is the interface that groups the io.Writer with a Flush() function, as known from the bufio.Writer.
+//
+// This is kind of necessary for the WebSocketReadWriteFlushCloser which requires a specific Flush function.
+type WriteFlusher interface {
+	io.Writer
+	Flush() error
+}
+
 // MessageSwitch exchanges msgs.Messages from an io.Reader and io.Writer to channels. The channels can be accessed
 // through the Exchange method. If either the io.Reader or the io.Writer is closeable (io.Closer), closing should be
 // performed after the MessageSwitcher has finished.
@@ -67,7 +75,12 @@ func (ms *MessageSwitch) handleIn() {
 }
 
 func (ms *MessageSwitch) handleOut() {
-	out := bufio.NewWriter(ms.out)
+	var out WriteFlusher
+	if outWriteFlusher, ok := ms.out.(WriteFlusher); ok {
+		out = outWriteFlusher
+	} else {
+		out = bufio.NewWriter(ms.out)
+	}
 
 	for msg := range ms.outChan {
 		if atomic.LoadUint32(&ms.finished) != 0 {
