@@ -80,11 +80,6 @@ func (ci *SessInitStage) handle() {
 	close(ci.finChan)
 }
 
-// Exchanges are not possible in the SessInitStage.
-func (ci *SessInitStage) Exchanges() (outgoing chan<- msgs.Message, incoming <-chan msgs.Message, exchangeOk bool) {
-	return nil, nil, false
-}
-
 // Close this Stage down.
 func (ci *SessInitStage) Close() error {
 	close(ci.closeChan)

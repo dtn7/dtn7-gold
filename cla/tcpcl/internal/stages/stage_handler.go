@@ -39,10 +39,12 @@ func NewStageHandler(stages []StageSetup, msgIn <-chan msgs.Message, msgOut chan
 	sh = &StageHandler{
 		stages: stages,
 		state: &State{
-			Configuration: config,
-			MsgIn:         msgIn,
-			MsgOut:        msgOut,
-			StageError:    nil,
+			Configuration:  config,
+			MsgIn:          msgIn,
+			MsgOut:         msgOut,
+			ExchangeMsgIn:  make(chan msgs.Message, 32),
+			ExchangeMsgOut: make(chan msgs.Message, 32),
+			StageError:     nil,
 		},
 
 		errChan:   make(chan error),
@@ -103,20 +105,9 @@ func (sh *StageHandler) Error() <-chan error {
 	return sh.errChan
 }
 
-// Exchanges returns two optional channels for Message exchange with the peer.
-//
-// The implementation for a StageHandler wraps the call for the current Stage. If there is currently no stage,
-// exchangeOk is always false.
-func (sh *StageHandler) Exchanges() (outgoing chan<- msgs.Message, incoming <-chan msgs.Message, exchangeOk bool) {
-	sh.currentStageMutex.RLock()
-	defer sh.currentStageMutex.RUnlock()
-
-	if sh.currentStage.Stage == nil {
-		exchangeOk = false
-		return
-	} else {
-		return sh.currentStage.Stage.Exchanges()
-	}
+// Exchanges returns two channels for Message exchange with the peer.
+func (sh *StageHandler) Exchanges() (incoming <-chan msgs.Message, outgoing chan<- msgs.Message) {
+	return sh.state.ExchangeMsgIn, sh.state.ExchangeMsgOut
 }
 
 // Close this StageHandler and the current Stage.

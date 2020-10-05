@@ -145,13 +145,8 @@ func (client *Client) Start() (err error, retry bool) {
 		return
 
 	case sMtu := <-sMtuChan:
-		if stageHandlerOut, stageHandlerIn, ok := client.stageHandler.Exchanges(); !ok {
-			err = fmt.Errorf("fetching exchange channels failed")
-			retry = true
-			return
-		} else {
-			client.transferManager = utils.NewTransferManager(stageHandlerIn, stageHandlerOut, sMtu)
-		}
+		stageHandlerIn, stageHandlerOut := client.stageHandler.Exchanges()
+		client.transferManager = utils.NewTransferManager(stageHandlerIn, stageHandlerOut, sMtu)
 	}
 
 	client.log().Info("Started TCPCL4")

@@ -22,9 +22,6 @@ type SessEstablishedStage struct {
 	closeChan chan struct{}
 	finChan   chan struct{}
 
-	xmsgOut chan msgs.Message
-	xmsgIn  chan msgs.Message
-
 	lastReceive time.Time
 	lastSend    time.Time
 
@@ -37,9 +34,6 @@ func (se *SessEstablishedStage) Start(state *State) {
 
 	se.closeChan = make(chan struct{})
 	se.finChan = make(chan struct{})
-
-	se.xmsgOut = make(chan msgs.Message, 32)
-	se.xmsgIn = make(chan msgs.Message, 32)
 
 	se.lastReceive = time.Now()
 	se.lastSend = time.Now()
@@ -74,7 +68,7 @@ func (se *SessEstablishedStage) handle() {
 				err = StageClose
 			}
 
-		case msg := <-se.xmsgOut:
+		case msg := <-se.state.ExchangeMsgOut:
 			err = se.messageOut(msg)
 		}
 
@@ -138,18 +132,8 @@ func (se *SessEstablishedStage) handleMsgIn(msg msgs.Message) (err error) {
 		// nothing to do
 
 	default:
-		se.xmsgIn <- msg
+		se.state.ExchangeMsgIn <- msg
 	}
-	return
-}
-
-// Exchanges returns two optional channels for Message exchange with the peer. Those channels are only available iff
-// the third exchangeOk variable is true. First channel is to send outgoing Messages to the peer, e.g.,
-// XFER_SEGMENTs, XFER_ACKs, XFER_REFUSE, MSG_REFUSE, or SESS_TERM. The other channel receives incoming messages.
-func (se *SessEstablishedStage) Exchanges() (outgoing chan<- msgs.Message, incoming <-chan msgs.Message, exchangeOk bool) {
-	outgoing = se.xmsgOut
-	incoming = se.xmsgIn
-	exchangeOk = true
 	return
 }
 

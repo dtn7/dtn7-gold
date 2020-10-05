@@ -130,21 +130,27 @@ func TestSessEstablishedStageMessageExchange(t *testing.T) {
 	// closing down, while the other tries to send.
 	msgIn := make(chan msgs.Message, 32)
 	msgOut := make(chan msgs.Message, 32)
+	exchangeMsgIn := make(chan msgs.Message, 32)
+	exchangeMsgOut := make(chan msgs.Message, 32)
 
 	keepaliveSec := uint16(2)
 
 	sess1 := &SessEstablishedStage{}
 	state1 := &State{
-		MsgIn:     msgIn,
-		MsgOut:    msgOut,
-		Keepalive: keepaliveSec,
+		MsgIn:          msgIn,
+		MsgOut:         msgOut,
+		ExchangeMsgIn:  exchangeMsgIn,
+		ExchangeMsgOut: exchangeMsgOut,
+		Keepalive:      keepaliveSec,
 	}
 
 	sess2 := &SessEstablishedStage{}
 	state2 := &State{
-		MsgIn:     msgOut,
-		MsgOut:    msgIn,
-		Keepalive: keepaliveSec,
+		MsgIn:          msgOut,
+		MsgOut:         msgIn,
+		ExchangeMsgIn:  exchangeMsgOut,
+		ExchangeMsgOut: exchangeMsgIn,
+		Keepalive:      keepaliveSec,
 	}
 
 	xch1Msgs := []msgs.Message{
@@ -165,8 +171,8 @@ func TestSessEstablishedStageMessageExchange(t *testing.T) {
 	sess1.Start(state1)
 	sess2.Start(state2)
 
-	outXch1, inXch1, _ := sess1.Exchanges()
-	outXch2, inXch2, _ := sess2.Exchanges()
+	outXch1, inXch1 := exchangeMsgOut, exchangeMsgIn
+	outXch2, inXch2 := exchangeMsgIn, exchangeMsgOut
 
 	// Exchange the messages
 	var wg sync.WaitGroup

@@ -81,10 +81,6 @@ func TestStageHandlerPingPong(t *testing.T) {
 	}
 
 	for _, sh := range []*StageHandler{sh1, sh2} {
-		if _, _, ok := sh.Exchanges(); !ok {
-			t.Fatal("StageHandler is not in an exchange state")
-		}
-
 		_ = sh.Close()
 
 		select {

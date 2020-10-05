@@ -76,11 +76,6 @@ func (cs *ContactStage) handlePassive() {
 	cs.state.MsgOut <- msgs.NewContactHeader(cs.state.Configuration.ContactFlags)
 }
 
-// Exchanges are not possible in the ContactStage.
-func (cs *ContactStage) Exchanges() (outgoing chan<- msgs.Message, incoming <-chan msgs.Message, exchangeOk bool) {
-	return nil, nil, false
-}
-
 // Close this Stage down.
 func (cs *ContactStage) Close() error {
 	close(cs.closeChan)

@@ -40,9 +40,15 @@ type State struct {
 	// Configuration to be used; should not be altered.
 	Configuration Configuration
 
-	// MsgIn and MsgOut are channels for incoming (receiving) and outgoing (sending) TCPCL Messages.
+	// MsgIn and MsgOut are channels for incoming (receiving) and outgoing (sending) TCPCL messages with an underlying
+	// connector, e.g., an util.MessageSwitch.
 	MsgIn  <-chan msgs.Message
 	MsgOut chan<- msgs.Message
+
+	// ExchangeMsgIn and ExchangeMsgOut are channels for incoming (receiving) and outgoing (sending) TCPCL messages with
+	// a higher-level util, e.g., an util.TransferManager.
+	ExchangeMsgIn  chan msgs.Message
+	ExchangeMsgOut chan msgs.Message
 
 	// StageError reports back the failure of a stage.
 	StageError error
@@ -68,11 +74,6 @@ type State struct {
 type Stage interface {
 	// Start this Stage based on the previous Stage's State.
 	Start(state *State)
-
-	// Exchanges returns two optional channels for Message exchange with the peer. Those channels are only available iff
-	// the third exchangeOk variable is true. First channel is to send outgoing Messages to the peer, e.g.,
-	// XFER_SEGMENTs, XFER_ACKs, XFER_REFUSE, MSG_REFUSE, or SESS_TERM. The other channel receives incoming messages.
-	Exchanges() (outgoing chan<- msgs.Message, incoming <-chan msgs.Message, exchangeOk bool)
 
 	// Close this Stage down.
 	Close() error
