@@ -34,7 +34,7 @@ type TransferManager struct {
 	outFeedback sync.Map // map[uint64]chan msgs.Message
 
 	stopChan chan struct{}
-	stopped  uint64
+	stopped  uint32
 }
 
 // NewTransferManager for incoming and outgoing msgs.Message channels and a configured segment MTU.
@@ -65,7 +65,7 @@ func (tm *TransferManager) Exchange() (bundles <-chan bundle.Bundle, errChan <-c
 
 // Close down this TransferManager.
 func (tm *TransferManager) Close() (err error) {
-	if atomic.CompareAndSwapUint64(&tm.stopped, 0, 1) {
+	if atomic.CompareAndSwapUint32(&tm.stopped, 0, 1) {
 		close(tm.stopChan)
 	} else {
 		err = fmt.Errorf("TransferManager was already closed")
@@ -139,7 +139,7 @@ func (tm *TransferManager) Send(b bundle.Bundle) error {
 	defer tm.outFeedback.Delete(transfer.Id)
 
 	// Signal abortion from "this" main Goroutine back to the sending one.
-	var stopped uint64
+	var stopped uint32
 
 	// Signal errors or total length from the sending Goroutine back to "this" main one.
 	errChan := make(chan error, 1)
@@ -148,9 +148,9 @@ func (tm *TransferManager) Send(b bundle.Bundle) error {
 	go func() {
 		var l int
 		for {
-			if atomic.LoadUint64(&stopped) != 0 {
+			if atomic.LoadUint32(&stopped) != 0 {
 				return
-			} else if atomic.LoadUint64(&tm.stopped) != 0 {
+			} else if atomic.LoadUint32(&tm.stopped) != 0 {
 				errChan <- fmt.Errorf("TransferManager was stopped")
 				return
 			}
@@ -189,14 +189,14 @@ func (tm *TransferManager) Send(b bundle.Bundle) error {
 				}
 
 			default:
-				atomic.StoreUint64(&stopped, 1)
+				atomic.StoreUint32(&stopped, 1)
 				return fmt.Errorf("received unexpected message: %T, %v", response, response)
 			}
 
 		case <-time.After(10 * time.Second):
-			atomic.StoreUint64(&stopped, 1)
+			atomic.StoreUint32(&stopped, 1)
 			return fmt.Errorf("timeout: waiting for segment acknowledgement; id = %d, stopped = %t",
-				transfer.Id, atomic.LoadUint64(&tm.stopped) != 0)
+				transfer.Id, atomic.LoadUint32(&tm.stopped) != 0)
 		}
 	}
 }
