@@ -16,7 +16,7 @@ func TestMessageSwitchSimple(t *testing.T) {
 	const keepaliveSends = 1000
 
 	in, out := io.Pipe()
-	ms := NewMessageSwitch(in, out)
+	ms := NewMessageSwitchReaderWriter(in, out)
 	incoming, outgoing, errChan := ms.Exchange()
 
 	go func() {

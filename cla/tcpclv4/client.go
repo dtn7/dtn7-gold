@@ -36,7 +36,7 @@ type Client struct {
 	connWriter io.Writer
 	connCloser io.Closer
 
-	messageSwitch   *utils.MessageSwitch
+	messageSwitch   utils.MessageSwitch
 	stageHandler    *stages.StageHandler
 	transferManager *utils.TransferManager
 
@@ -98,7 +98,7 @@ func (client *Client) Start() (err error, retry bool) {
 	client.closeChanSyn = make(chan struct{})
 	client.closeChanAck = make(chan struct{})
 
-	client.messageSwitch = utils.NewMessageSwitch(client.connReader, client.connWriter)
+	client.messageSwitch = utils.NewMessageSwitchReaderWriter(client.connReader, client.connWriter)
 	msIncoming, msOutgoing, _ := client.messageSwitch.Exchange()
 
 	conf := stages.Configuration{
