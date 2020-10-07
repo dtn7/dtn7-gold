@@ -22,7 +22,7 @@ func TestDiscoveryMessageCbor(t *testing.T) {
 			Port:     8000,
 		},
 		{
-			Type:     cla.TCPCL,
+			Type:     cla.TCPCLv4,
 			Endpoint: bundle.MustNewEndpointID("dtn://foobar/"),
 			Port:     8000,
 		},
@@ -32,7 +32,7 @@ func TestDiscoveryMessageCbor(t *testing.T) {
 			Port:     12345,
 		},
 		{
-			Type:     cla.TCPCL,
+			Type:     cla.TCPCLv4,
 			Endpoint: bundle.MustNewEndpointID("ipn:1337.23"),
 			Port:     12345,
 		},

@@ -18,6 +18,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
+
 	"github.com/dtn7/dtn7-go/agent"
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
@@ -131,21 +132,42 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergabl
 
 		return mtcp.NewMTCPServer(conv.Endpoint, nodeId, true), nodeId, cla.MTCP, msg, nil
 
-	case "tcpcl":
+	case "tcpclv4":
 		portInt, err := parseListenPort(conv.Endpoint)
 		if err != nil {
-			return nil, nodeId, cla.TCPCL, discovery.DiscoveryMessage{}, err
+			return nil, nodeId, cla.TCPCLv4, discovery.DiscoveryMessage{}, err
 		}
 
 		listener := tcpclv4.ListenTCP(conv.Endpoint, nodeId)
 
 		msg := discovery.DiscoveryMessage{
-			Type:     cla.TCPCL,
+			Type:     cla.TCPCLv4,
 			Endpoint: nodeId,
 			Port:     uint(portInt),
 		}
 
-		return listener, nodeId, cla.TCPCL, msg, nil
+		return listener, nodeId, cla.TCPCLv4, msg, nil
+
+	case "tcpclv4-ws":
+		listener := tcpclv4.ListenWebSocket(nodeId)
+
+		httpMux := http.NewServeMux()
+		httpMux.Handle("/tcpclv4", listener)
+		httpServer := &http.Server{
+			Addr:    conv.Endpoint,
+			Handler: httpMux,
+		}
+
+		errChan := make(chan error)
+		go func() { errChan <- httpServer.ListenAndServe() }()
+
+		select {
+		case err := <-errChan:
+			return nil, nodeId, cla.TCPCLv4WebSocket, discovery.DiscoveryMessage{}, err
+
+		case <-time.After(100 * time.Millisecond):
+			return listener, nodeId, cla.TCPCLv4WebSocket, discovery.DiscoveryMessage{}, nil
+		}
 
 	default:
 		return nil, nodeId, 0, discovery.DiscoveryMessage{}, fmt.Errorf("unknown listen.protocol \"%s\"", conv.Protocol)
@@ -153,17 +175,20 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergabl
 }
 
 func parsePeer(conv convergenceConf, nodeId bundle.EndpointID) (cla.ConvergenceSender, error) {
-	endpointID, err := bundle.NewEndpointID(conv.Node)
-	if err != nil {
-		return nil, err
-	}
 
 	switch conv.Protocol {
 	case "mtcp":
-		return mtcp.NewMTCPClient(conv.Endpoint, endpointID, true), nil
+		if endpointID, err := bundle.NewEndpointID(conv.Node); err != nil {
+			return nil, err
+		} else {
+			return mtcp.NewMTCPClient(conv.Endpoint, endpointID, true), nil
+		}
 
-	case "tcpcl":
+	case "tcpclv4":
 		return tcpclv4.DialTCP(conv.Endpoint, nodeId, true), nil
+
+	case "tcpclv4-ws":
+		return tcpclv4.DialWebSocket(conv.Endpoint, nodeId, true), nil
 
 	default:
 		return nil, fmt.Errorf("unknown peer.protocol \"%s\"", conv.Protocol)

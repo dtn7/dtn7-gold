@@ -9,15 +9,16 @@ package cla
 type CLAType uint
 
 const (
-	// TCPCL is the "Delay-Tolerant Networking TCP Convergence Layer Protocol
-	// Version 4" as specified in draft-ietf-dtn-tcpclv4-14 or newer.
-	TCPCL CLAType = 0
+	// TCPCLv4 identifies the Delay-Tolerant Networking TCP Convergence Layer Protocol Version 4, implemented in cla/tcpclv4.
+	TCPCLv4 CLAType = 0
 
-	// MTCP is the "Minimal TCP Convergence-Layer Protocol" as specified in
-	// draft-ietf-dtn-mtcpcl-01 or newer documents.
-	MTCP CLAType = 1
+	// TCPCLv4WebSocket identifies a variation of TCPCLv4 based on WebSockets.
+	TCPCLv4WebSocket CLAType = 1
 
-	// BBC is the Bundle Broadcasting Connector
+	// MTCP identifies the Minimal TCP Convergence-Layer Protocol, implemented in cla/mtcp.
+	MTCP CLAType = 10
+
+	// BBC identifies the Bundle Broadcasting Connector, implemented in cla/bbc.
 	// Only here for completeness
-	BBC CLAType = 2
+	BBC CLAType = 20
 )

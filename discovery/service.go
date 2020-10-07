@@ -76,15 +76,15 @@ func (ds *DiscoveryService) handleDiscovery(dm DiscoveryMessage, addr string) {
 			log.Debug("Peer requested MTCP, but we don't run any such CLA")
 		}
 
-	case cla.TCPCL:
-		clas := ds.c.RegisteredCLAs(cla.TCPCL)
+	case cla.TCPCLv4:
+		clas := ds.c.RegisteredCLAs(cla.TCPCLv4)
 		if len(clas) > 0 {
 			for _, eid := range clas {
 				client = tcpclv4.DialTCP(fmt.Sprintf("%s:%d", addr, dm.Port), eid, false)
 				ds.c.RegisterConvergable(client)
 			}
 		} else {
-			log.Debug("Peer requested TCPCL, but we don't run any such CLA")
+			log.Debug("Peer requested TCPCLv4, but we don't run any such CLA")
 		}
 
 	default:

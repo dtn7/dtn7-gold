@@ -27,6 +27,7 @@ Types of changes:
 - Specific routing algorithm for data mules in sensor networks.
 - Add all the necessary contrib files to run dtnd as a daemon. Packages can be built without having to rely on external sources.
 - GitHub Action to perform multiple Go Race Detector tests at night.
+- Add WebSocket-based variant of TCPCLv4.
 
 ### Changed
 - An invalid EndpointID struct is interpreted as dtn:none.
@@ -36,8 +37,10 @@ Types of changes:
 - bundle.ExtensionBlock has a "BlockTypeName" next to its type code for
   a human readable output.
 - Renamed cla/tcpcl package to cla/tcpclv4.
+- Renamed tcpcl to tcpclv4 in dtnd's configuration.
 - Bump draft-ietf-dtn-tcpclv4 version from 14 to 21.
 - API change on cla.Convergence and cla.ConvergenceSender.
+- Changed CLAType numbers to allow grouping similar Convergence Layers.
 
 
 ## [0.8.0] - 2020-08-05

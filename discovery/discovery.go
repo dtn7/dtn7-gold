@@ -126,18 +126,20 @@ func (dm *DiscoveryMessage) UnmarshalCbor(r io.Reader) error {
 func (dm DiscoveryMessage) String() string {
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "DiscoveryMessage(")
+	_, _ = fmt.Fprintf(&builder, "DiscoveryMessage(")
 
 	switch dm.Type {
-	case cla.TCPCL:
-		fmt.Fprintf(&builder, "TCPCL")
+	case cla.TCPCLv4:
+		_, _ = fmt.Fprintf(&builder, "TCPCLv4")
+	case cla.TCPCLv4WebSocket:
+		_, _ = fmt.Fprint(&builder, "TCPCLv4-WebSocket")
 	case cla.MTCP:
-		fmt.Fprintf(&builder, "MTCP")
+		_, _ = fmt.Fprintf(&builder, "MTCP")
 	default:
-		fmt.Fprintf(&builder, "Unknown CLA")
+		_, _ = fmt.Fprintf(&builder, "Unknown CLA")
 	}
 
-	fmt.Fprintf(&builder, ",%v,%d)", dm.Endpoint, dm.Port)
+	_, _ = fmt.Fprintf(&builder, ",%v,%d)", dm.Endpoint, dm.Port)
 
 	return builder.String()
 }

@@ -64,11 +64,18 @@ rest = true
 # Each listen is another convergence layer adapter (CLA). Multiple [[listen]]
 # blocks are usable.
 [[listen]]
-# Protocol to use, one of tcpcl, mtcp, bbc.
-protocol = "tcpcl"
+# Protocol to use, one of tcpclv4, tcpclv4-ws, mtcp, bbc.
+protocol = "tcpclv4"
 
 # Address to bind this CLA to.
 endpoint = ":4556"
+
+
+# Another example based on the WebSocket variant of the TCPCLv4.
+# [[listen]]
+# protocol = "tcpclv4-ws"
+# # Webserver on port 8081 with a WebSocket endpoint at "ws://HOST:8081/tcpclv4".
+# endpoint = ":8081"
 
 
 # Another example for a Bundle Broadcasting Connector with a rf95modem.
@@ -79,16 +86,20 @@ endpoint = ":4556"
 
 # Multiple [[peers]] might be configured.
 # [[peer]]
-# # The name/endpoint ID of this peer.
-# node = "dtn://beta/"
-# # Protocol to use, one of tcpcl, mtcp.
-# protocol = "tcpcl"
+# # Protocol to use, one of tcpclv4, tcpclv4-ws, mtcp.
+# protocol = "tcpclv4"
 # # Address to connect to this CLA.
 # endpoint = "10.0.0.2:4556"
 
 
+# [[peer]]
+# protocol = "tcpclv4-ws"
+# endpoint = "ws://HOST:PORT/tcpclv4"
+
+
 # Another peer example..
 # [[peer]]
+# # The name/endpoint ID of this peer, as MTCP does not support any introduction.
 # node = "dtn://gamma/"
 # protocol = "mtcp"
 # endpoint = "[fc23::2]:35037"
