@@ -105,7 +105,7 @@ func (client *Client) Start() (err error, retry bool) {
 		ActivePeer:   client.activePeer,
 		ContactFlags: 0,
 		Keepalive:    30,
-		SegmentMru:   52428800,
+		SegmentMru:   1048576,
 		TransferMru:  1073741824,
 		NodeId:       client.nodeId,
 	}

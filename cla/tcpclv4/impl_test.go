@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -19,7 +20,19 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 )
 
-func testGetRandomData(size int) []byte {
+func randomTcpPort(t *testing.T) (port int) {
+	if addr, err := net.ResolveTCPAddr("tcp", "localhost:0"); err != nil {
+		t.Fatal(err)
+	} else if l, err := net.ListenTCP("tcp", addr); err != nil {
+		t.Fatal(err)
+	} else {
+		port = l.Addr().(*net.TCPAddr).Port
+		_ = l.Close()
+	}
+	return
+}
+
+func randomData(size int) []byte {
 	payload := make([]byte, size)
 
 	rand.Seed(0)
@@ -28,27 +41,9 @@ func testGetRandomData(size int) []byte {
 	return payload
 }
 
-func getRandomPort(t *testing.T) (port int) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	port = l.Addr().(*net.TCPAddr).Port
-
-	if err := l.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	return
-}
-
-func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sync.WaitGroup, errs chan error) {
+func handleListener(
+	listener cla.ConvergenceProvider, msgs, clients int, clientWg, serverWg *sync.WaitGroup, errs chan error,
+) {
 	var (
 		msgsRecv  uint32
 		msgsApprd uint32
@@ -57,7 +52,7 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 	defer serverWg.Done()
 
 	manager := cla.NewManager()
-	manager.Register(ListenTCP(serverAddr, bundle.MustNewEndpointID("dtn://server/")))
+	manager.Register(listener)
 
 	go func() {
 		for {
@@ -107,11 +102,14 @@ func handleListener(serverAddr string, msgs, clients int, clientWg, serverWg *sy
 	}
 }
 
-func handleClient(serverAddr string, clientNo, msgs, payload int, clientWg *sync.WaitGroup, errs chan error) {
+func handleClient(
+	mkClient func(string, bundle.EndpointID) *Client,
+	serverAddr string, clientNo, msgs, payload int, clientWg *sync.WaitGroup, errs chan error,
+) {
 	defer clientWg.Done()
 
-	clientEid := fmt.Sprintf("dtn://client-%d/", clientNo)
-	client := DialTCP(serverAddr, bundle.MustNewEndpointID(clientEid), false)
+	clientEid := bundle.MustNewEndpointID(fmt.Sprintf("dtn://client-%d/", clientNo))
+	client := mkClient(serverAddr, clientEid)
 	if err, _ := client.Start(); err != nil {
 		errs <- fmt.Errorf("client %d: %w", clientNo, err)
 		return
@@ -142,7 +140,7 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, clientWg *sync
 				CreationTimestampNow().
 				Lifetime(30 * time.Minute).
 				HopCountBlock(64).
-				PayloadBlock(testGetRandomData(payload)).
+				PayloadBlock(randomData(payload)).
 				Build()
 
 			if err != nil {
@@ -162,8 +160,11 @@ func handleClient(serverAddr string, clientNo, msgs, payload int, clientWg *sync
 	}
 }
 
-func startTestTCPNetwork(msgs, clients, payload int, t *testing.T) {
-	var serverAddr = fmt.Sprintf("localhost:%d", getRandomPort(t))
+func startTestNetwork(
+	mkListener func(string) cla.ConvergenceProvider, mkClient func(string, bundle.EndpointID) *Client,
+	msgs, clients, payload int, t *testing.T,
+) {
+	var serverAddr = fmt.Sprintf("localhost:%d", randomTcpPort(t))
 	var errs = make(chan error)
 
 	var clientWg sync.WaitGroup
@@ -172,11 +173,11 @@ func startTestTCPNetwork(msgs, clients, payload int, t *testing.T) {
 	clientWg.Add(clients)
 	serverWg.Add(1)
 
-	go handleListener(serverAddr, msgs, clients, &clientWg, &serverWg, errs)
+	go handleListener(mkListener(serverAddr), msgs, clients, &clientWg, &serverWg, errs)
 	time.Sleep(250 * time.Millisecond)
 
 	for i := 0; i < clients; i++ {
-		go handleClient(serverAddr, i, msgs, payload, &clientWg, errs)
+		go handleClient(mkClient, serverAddr, i, msgs, payload, &clientWg, errs)
 	}
 
 	go func() {
@@ -191,26 +192,63 @@ func startTestTCPNetwork(msgs, clients, payload int, t *testing.T) {
 	}
 }
 
-func TestTCPNetwork(t *testing.T) {
+func TestImplNetwork(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 
+	mkTcpListener := func(addr string) cla.ConvergenceProvider {
+		return ListenTCP(addr, bundle.MustNewEndpointID("dtn://server/"))
+	}
+	mkTcpClient := func(addr string, eid bundle.EndpointID) *Client {
+		return DialTCP(addr, eid, false)
+	}
+
+	mkWsListener := func(addr string) cla.ConvergenceProvider {
+		listener := ListenWebSocket(bundle.MustNewEndpointID("dtn://server/"))
+
+		httpMux := http.NewServeMux()
+		httpMux.Handle("/tcpclv4", listener)
+		httpServer := &http.Server{
+			Addr:    addr,
+			Handler: httpMux,
+		}
+		go func() { _ = httpServer.ListenAndServe() }()
+
+		return listener
+	}
+	mkWsClient := func(addr string, eid bundle.EndpointID) *Client {
+		return DialWebSocket("ws://"+addr+"/tcpclv4", eid, false)
+	}
+
 	tests := []struct {
+		name string
+
 		clients int
 		msgs    int
 		payload int
+
+		mkListener func(string) cla.ConvergenceProvider
+		mkClient   func(string, bundle.EndpointID) *Client
 	}{
-		{1, 1, 64},
-		{1, 1, 1048576},
-		{1, 256, 1024},
-		{2, 1, 64},
-		{2, 1, 1048576},
-		{2, 256, 1024},
-		{64, 1, 1024},
+		{"TCP", 1, 1, 64, mkTcpListener, mkTcpClient},
+		{"TCP", 1, 1, 2097152, mkTcpListener, mkTcpClient},
+		{"TCP", 1, 256, 1024, mkTcpListener, mkTcpClient},
+		{"TCP", 2, 1, 64, mkTcpListener, mkTcpClient},
+		{"TCP", 2, 1, 2097152, mkTcpListener, mkTcpClient},
+		{"TCP", 2, 256, 1024, mkTcpListener, mkTcpClient},
+		{"TCP", 64, 1, 1024, mkTcpListener, mkTcpClient},
+
+		{"WebSocket", 1, 1, 64, mkWsListener, mkWsClient},
+		// {"WebSocket", 1, 1, 2097152, mkWsListener, mkWsClient},
+		{"WebSocket", 1, 256, 1024, mkWsListener, mkWsClient},
+		{"WebSocket", 2, 1, 64, mkWsListener, mkWsClient},
+		// {"WebSocket", 2, 1, 2097152, mkWsListener, mkWsClient},
+		{"WebSocket", 2, 256, 1024, mkWsListener, mkWsClient},
+		{"WebSocket", 64, 1, 1024, mkWsListener, mkWsClient},
 	}
 
 	for _, test := range tests {
-		t.Run(fmt.Sprintf("%+v", test), func(t *testing.T) {
-			startTestTCPNetwork(test.msgs, test.clients, test.payload, t)
+		t.Run(fmt.Sprintf("%s-%d-%d-%d", test.name, test.clients, test.msgs, test.payload), func(t *testing.T) {
+			startTestNetwork(test.mkListener, test.mkClient, test.msgs, test.clients, test.payload, t)
 		})
 	}
 }

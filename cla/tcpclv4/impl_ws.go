@@ -6,6 +6,7 @@ package tcpclv4
 
 import (
 	"net/http"
+	"sync/atomic"
 
 	log "github.com/sirupsen/logrus"
 
@@ -21,7 +22,9 @@ import (
 // This type implements the cla.ConvergenceProvider and should be supervised by a cla.Manager.
 type WebSocketListener struct {
 	endpointID bundle.EndpointID
-	manager    *cla.Manager
+
+	manager      *cla.Manager
+	managerReady uint32
 
 	upgrader websocket.Upgrader
 }
@@ -37,6 +40,7 @@ func ListenWebSocket(endpointID bundle.EndpointID) *WebSocketListener {
 // RegisterManager tells the WebSocketListener where to report new instances of cla.Convergence to.
 func (listener *WebSocketListener) RegisterManager(manager *cla.Manager) {
 	listener.manager = manager
+	atomic.StoreUint32(&listener.managerReady, 1)
 }
 
 // Start this WebSocketListener.
@@ -53,6 +57,10 @@ func (listener *WebSocketListener) Close() error {
 
 // ServeHTTP upgrades a HTTP connection to a WebSocket connection which is used for TCPCLv4.
 func (listener *WebSocketListener) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	if atomic.LoadUint32(&listener.managerReady) != 1 {
+		return
+	}
+
 	if conn, err := listener.upgrader.Upgrade(writer, request, nil); err != nil {
 		log.WithField("cla", listener).WithError(err).Warn("Upgrading connection errored")
 	} else {
