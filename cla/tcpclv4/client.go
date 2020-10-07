@@ -32,8 +32,6 @@ type Client struct {
 	customStartFunc func(*Client) error
 
 	started    bool
-	connReader io.Reader
-	connWriter io.Writer
 	connCloser io.Closer
 
 	messageSwitch   utils.MessageSwitch
@@ -74,8 +72,6 @@ func (client *Client) log() *log.Entry {
 func (client *Client) Start() (err error, retry bool) {
 	if client.started {
 		if client.activePeer {
-			client.connReader = nil
-			client.connWriter = nil
 			client.connCloser = nil
 		} else {
 			err = fmt.Errorf("passive client cannot be restarted")
@@ -86,19 +82,17 @@ func (client *Client) Start() (err error, retry bool) {
 
 	client.started = true
 
-	if client.connReader == nil {
-		if err = client.customStartFunc(client); err != nil {
-			retry = true
-			return
-		}
-	}
-
 	client.reportChan = make(chan cla.ConvergenceStatus, 32)
 
 	client.closeChanSyn = make(chan struct{})
 	client.closeChanAck = make(chan struct{})
 
-	client.messageSwitch = utils.NewMessageSwitchReaderWriter(client.connReader, client.connWriter)
+	if client.messageSwitch == nil {
+		if err = client.customStartFunc(client); err != nil {
+			retry = true
+			return
+		}
+	}
 	msIncoming, msOutgoing, _ := client.messageSwitch.Exchange()
 
 	conf := stages.Configuration{

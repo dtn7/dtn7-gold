@@ -220,7 +220,7 @@ func TestImplNetwork(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
+		protocol string
 
 		clients int
 		msgs    int
@@ -238,16 +238,16 @@ func TestImplNetwork(t *testing.T) {
 		{"TCP", 64, 1, 1024, mkTcpListener, mkTcpClient},
 
 		{"WebSocket", 1, 1, 64, mkWsListener, mkWsClient},
-		// {"WebSocket", 1, 1, 2097152, mkWsListener, mkWsClient},
+		{"WebSocket", 1, 1, 2097152, mkWsListener, mkWsClient},
 		{"WebSocket", 1, 256, 1024, mkWsListener, mkWsClient},
 		{"WebSocket", 2, 1, 64, mkWsListener, mkWsClient},
-		// {"WebSocket", 2, 1, 2097152, mkWsListener, mkWsClient},
+		{"WebSocket", 2, 1, 2097152, mkWsListener, mkWsClient},
 		{"WebSocket", 2, 256, 1024, mkWsListener, mkWsClient},
 		{"WebSocket", 64, 1, 1024, mkWsListener, mkWsClient},
 	}
 
 	for _, test := range tests {
-		t.Run(fmt.Sprintf("%s-%d-%d-%d", test.name, test.clients, test.msgs, test.payload), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s-%d-%d-%d", test.protocol, test.clients, test.msgs, test.payload), func(t *testing.T) {
 			startTestNetwork(test.mkListener, test.mkClient, test.msgs, test.clients, test.payload, t)
 		})
 	}

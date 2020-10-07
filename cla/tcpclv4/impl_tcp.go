@@ -13,6 +13,7 @@ import (
 
 	"github.com/dtn7/dtn7-go/bundle"
 	"github.com/dtn7/dtn7-go/cla"
+	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/utils"
 )
 
 // TCPListener is a TCPCLv4 server bound to a TCP port to accept incoming TCPCLv4 connections.
@@ -100,9 +101,8 @@ func tcpClientStart(client *Client) error {
 	if conn, connErr := net.DialTimeout("tcp", client.address, time.Second); connErr != nil {
 		return connErr
 	} else {
-		client.connReader = conn
-		client.connWriter = conn
 		client.connCloser = conn
+		client.messageSwitch = utils.NewMessageSwitchReaderWriter(conn, conn)
 
 		client.log().Debug("Dialed successfully")
 		return nil
@@ -115,9 +115,8 @@ func newClientTCP(conn net.Conn, endpointID bundle.EndpointID) *Client {
 		address:         conn.RemoteAddr().String(),
 		activePeer:      false,
 		customStartFunc: tcpClientStart,
-		connReader:      conn,
-		connWriter:      conn,
 		connCloser:      conn,
+		messageSwitch:   utils.NewMessageSwitchReaderWriter(conn, conn),
 		nodeId:          endpointID,
 	}
 }

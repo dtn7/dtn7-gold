@@ -74,10 +74,8 @@ func webSocketClientStart(client *Client) error {
 	if conn, _, err := websocket.DefaultDialer.Dial(client.address, nil); err != nil {
 		return err
 	} else {
-		rwc := utils.NewWebSocketReadWriteFlushCloser(conn)
-		client.connReader = rwc
-		client.connWriter = rwc
-		client.connCloser = rwc
+		client.connCloser = conn
+		client.messageSwitch = utils.NewMessageSwitchWebSocket(conn)
 
 		client.log().Debug("Dialed successfully")
 		return nil
@@ -86,14 +84,12 @@ func webSocketClientStart(client *Client) error {
 
 // newClientWebSocket creates a new Client on a new *websocket.Conn. This function is called from the WebSocketListener.
 func newClientWebSocket(conn *websocket.Conn, endpointID bundle.EndpointID) *Client {
-	rwc := utils.NewWebSocketReadWriteFlushCloser(conn)
 	return &Client{
 		address:         conn.RemoteAddr().String(),
 		activePeer:      false,
 		customStartFunc: webSocketClientStart,
-		connReader:      rwc,
-		connWriter:      rwc,
-		connCloser:      rwc,
+		connCloser:      conn,
+		messageSwitch:   utils.NewMessageSwitchWebSocket(conn),
 		nodeId:          endpointID,
 	}
 }

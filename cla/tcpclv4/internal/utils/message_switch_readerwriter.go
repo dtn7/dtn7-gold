@@ -13,17 +13,8 @@ import (
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
-// WriteFlusher is the interface that groups the io.Writer with a Flush() function, as known from the bufio.Writer.
-//
-// This is kind of necessary for the WebSocketReadWriteFlushCloser which requires a specific Flush function.
-type WriteFlusher interface {
-	io.Writer
-	Flush() error
-}
-
-// MessageSwitchReaderWriter exchanges msgs.Messages from an io.Reader and io.Writer to channels. The channels can be
-// accessed through the Exchange method. If either the io.Reader or the io.Writer is closeable (io.Closer), closing
-// should be performed after the MessageSwitcher has finished.
+// MessageSwitchReaderWriter exchanges msgs.Messages from an io.Reader and io.Writer to channels. If one of the
+// io.Reader or the io.Writer is closeable, closing should be performed after the MessageSwitcher has finished.
 type MessageSwitchReaderWriter struct {
 	in  io.Reader
 	out io.Writer
@@ -45,14 +36,18 @@ func NewMessageSwitchReaderWriter(in io.Reader, out io.Writer) (ms *MessageSwitc
 		inChan:  make(chan msgs.Message, 32),
 		outChan: make(chan msgs.Message, 32),
 		errChan: make(chan error),
-
-		finished: 0,
 	}
 
 	go ms.handleIn()
 	go ms.handleOut()
 
 	return
+}
+
+func (ms *MessageSwitchReaderWriter) sendErr(err error) {
+	if atomic.CompareAndSwapUint32(&ms.finished, 0, 1) {
+		ms.errChan <- err
+	}
 }
 
 func (ms *MessageSwitchReaderWriter) handleIn() {
@@ -64,9 +59,7 @@ func (ms *MessageSwitchReaderWriter) handleIn() {
 		}
 
 		if msg, err := msgs.ReadMessage(in); err != nil {
-			if atomic.CompareAndSwapUint32(&ms.finished, 0, 1) {
-				ms.errChan <- err
-			}
+			ms.sendErr(err)
 			return
 		} else {
 			ms.inChan <- msg
@@ -75,12 +68,7 @@ func (ms *MessageSwitchReaderWriter) handleIn() {
 }
 
 func (ms *MessageSwitchReaderWriter) handleOut() {
-	var out WriteFlusher
-	if outWriteFlusher, ok := ms.out.(WriteFlusher); ok {
-		out = outWriteFlusher
-	} else {
-		out = bufio.NewWriter(ms.out)
-	}
+	out := bufio.NewWriter(ms.out)
 
 	for msg := range ms.outChan {
 		if atomic.LoadUint32(&ms.finished) != 0 {
@@ -88,15 +76,11 @@ func (ms *MessageSwitchReaderWriter) handleOut() {
 		}
 
 		if err := msg.Marshal(out); err != nil {
-			if atomic.CompareAndSwapUint32(&ms.finished, 0, 1) {
-				ms.errChan <- err
-			}
+			ms.sendErr(err)
 			return
 		}
 		if err := out.Flush(); err != nil {
-			if atomic.CompareAndSwapUint32(&ms.finished, 0, 1) {
-				ms.errChan <- err
-			}
+			ms.sendErr(err)
 			return
 		}
 	}
