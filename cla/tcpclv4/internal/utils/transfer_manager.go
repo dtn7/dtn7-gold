@@ -138,39 +138,65 @@ func (tm *TransferManager) Send(b bundle.Bundle) error {
 	tm.outFeedback.Store(transfer.Id, ackChan)
 	defer tm.outFeedback.Delete(transfer.Id)
 
-	for {
-		if atomic.LoadUint64(&tm.stopped) != 0 {
-			return fmt.Errorf("TransferManager was stopped")
-		}
+	// Signal abortion from "this" main Goroutine back to the sending one.
+	var stopped uint64
 
-		dtm, err := transfer.NextSegment(tm.segmentMtu)
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			} else {
-				return err
+	// Signal errors or total length from the sending Goroutine back to "this" main one.
+	errChan := make(chan error, 1)
+	lenChan := make(chan int, 1)
+
+	go func() {
+		var l int
+		for {
+			if atomic.LoadUint64(&stopped) != 0 {
+				return
+			} else if atomic.LoadUint64(&tm.stopped) != 0 {
+				errChan <- fmt.Errorf("TransferManager was stopped")
+				return
 			}
+
+			dtm, err := transfer.NextSegment(tm.segmentMtu)
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					lenChan <- l
+				} else {
+					errChan <- err
+				}
+				return
+			}
+
+			tm.msgOut <- dtm
+			l += len(dtm.Data)
 		}
+	}()
 
-		tm.msgOut <- dtm
-
+	var inLen, outLen int
+	for {
 		select {
+		case err := <-errChan:
+			return err
+
+		case outLen = <-lenChan:
+			if outLen == inLen {
+				return nil
+			}
+
 		case response := <-ackChan:
 			switch response := response.(type) {
 			case *msgs.DataAcknowledgementMessage:
-
-			case *msgs.TransferRefusalMessage:
-				return fmt.Errorf("received refusal message: %v", response)
+				if inLen = int(response.AckLen); outLen == inLen {
+					return nil
+				}
 
 			default:
-				return fmt.Errorf("received unexpected message: %v", response)
+				atomic.StoreUint64(&stopped, 1)
+				return fmt.Errorf("received unexpected message: %T, %v", response, response)
 			}
 
 		case <-time.After(10 * time.Second):
+			atomic.StoreUint64(&stopped, 1)
 			return fmt.Errorf("timeout: waiting for segment acknowledgement; id = %d, stopped = %t",
 				transfer.Id, atomic.LoadUint64(&tm.stopped) != 0)
 		}
 	}
-
-	return nil
 }
