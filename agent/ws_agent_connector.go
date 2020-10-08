@@ -162,7 +162,11 @@ func (wac *WebSocketAgentConnector) ReadBundle() (b bundle.Bundle, err error) {
 		}
 	}()
 
-	b = <-wac.msgInBundleChan
+	if bIn, ok := <-wac.msgInBundleChan; ok {
+		b = bIn
+	} else {
+		err = fmt.Errorf("channel was closed")
+	}
 	return
 }
 

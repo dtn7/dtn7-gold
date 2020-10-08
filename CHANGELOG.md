@@ -42,6 +42,10 @@ Types of changes:
 - API change on cla.Convergence and cla.ConvergenceSender.
 - Changed CLAType numbers to allow grouping similar Convergence Layers.
 
+### Fix
+- Check if WebSocket Agent's channel is closed to mitigate dtn-tool from
+  crashing.
+
 
 ## [0.8.0] - 2020-08-05
 ### Added
