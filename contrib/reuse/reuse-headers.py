@@ -38,7 +38,13 @@ FILE_IGNORE = [
         # reuse
         ".reuse/dep5",
         "LICENSE",
-        "LICENSES/GPL-3.0-or-later.txt"
+        "LICENSES/GPL-3.0-or-later.txt",
+
+        # syntax detection has issues with some configuration files
+        "contrib/systemd/service/dtn7.service",
+        "contrib/systemd/sysusers/dtn7",
+        "contrib/systemd/tmpfiles/dtn7",
+        "contrib/ufw/dtn7",
         ]
 
 
