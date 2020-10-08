@@ -23,7 +23,8 @@ This software implements the current draft of the Bundle Protocol Version 7.
 ### Convergence Layer
 Bundles might be exchanged between nodes by the following protocols.
 
-- TCP Convergence Layer Protocol Version 4 ([draft-ietf-dtn-tcpclv4-21][dtn-tcpcl-21])
+- TCP Convergence Layer Protocol Version 4 ([draft-ietf-dtn-tcpclv4-21][dtn-tcpcl-21]), including:
+    - WebSocket-based variant
 - Minimal TCP Convergence-Layer Protocol ([draft-ietf-dtn-mtcpcl-01][dtn-mtcpcl-01])
 - Bundle Broadcasting Connector, a generic Broadcasting Interface
     - [rf95modem] based CLA for LoRa PHY by [rf95modem-go]
