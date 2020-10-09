@@ -8,7 +8,7 @@ package core
 import (
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 )
 
@@ -49,16 +49,16 @@ func (er *EpidemicRouting) NotifyIncoming(bp BundlePack) {
 	}
 
 	// Check if we got a PreviousNodeBlock and extract its EndpointID
-	var prevNode bundle.EndpointID
-	if pnBlock, err := bndl.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
-		prevNode = pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
+	var prevNode bpv7.EndpointID
+	if pnBlock, err := bndl.ExtensionBlock(bpv7.ExtBlockTypePreviousNodeBlock); err == nil {
+		prevNode = pnBlock.Value.(*bpv7.PreviousNodeBlock).Endpoint()
 	} else {
 		return
 	}
 
-	sentEids, ok := bi.Properties["routing/epidemic/sent"].([]bundle.EndpointID)
+	sentEids, ok := bi.Properties["routing/epidemic/sent"].([]bpv7.EndpointID)
 	if !ok {
-		sentEids = make([]bundle.EndpointID, 0)
+		sentEids = make([]bpv7.EndpointID, 0)
 	}
 
 	// Check if PreviousNodeBlock is already known
@@ -129,7 +129,7 @@ func (er *EpidemicRouting) DispatchingAllowed(bp BundlePack) bool {
 
 		return true
 	} else if dst, ok := bi.Properties["routing/epidemic/destination"]; ok {
-		if er.c.HasEndpoint(dst.(bundle.EndpointID)) {
+		if er.c.HasEndpoint(dst.(bpv7.EndpointID)) {
 			return true
 		}
 	}
@@ -162,9 +162,9 @@ func (er *EpidemicRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSe
 		return
 	}
 
-	sentEids, ok := bi.Properties["routing/epidemic/sent"].([]bundle.EndpointID)
+	sentEids, ok := bi.Properties["routing/epidemic/sent"].([]bpv7.EndpointID)
 	if !ok {
-		sentEids = make([]bundle.EndpointID, 0)
+		sentEids = make([]bpv7.EndpointID, 0)
 	}
 
 	log.WithFields(log.Fields{

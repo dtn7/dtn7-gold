@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
@@ -24,7 +24,7 @@ func TestSessInitStage(t *testing.T) {
 			Keepalive:   60,
 			SegmentMru:  65535,
 			TransferMru: 0xFFFFFFFF,
-			NodeId:      bundle.MustNewEndpointID("dtn://active/"),
+			NodeId:      bpv7.MustNewEndpointID("dtn://active/"),
 		},
 		MsgIn:  msgIn,
 		MsgOut: msgOut,
@@ -38,7 +38,7 @@ func TestSessInitStage(t *testing.T) {
 			Keepalive:   30,
 			SegmentMru:  23,
 			TransferMru: 42,
-			NodeId:      bundle.MustNewEndpointID("dtn://passive/"),
+			NodeId:      bpv7.MustNewEndpointID("dtn://passive/"),
 		},
 		MsgIn:  msgOut,
 		MsgOut: msgIn,

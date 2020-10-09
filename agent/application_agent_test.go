@@ -7,25 +7,25 @@ package agent
 import (
 	"testing"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 func TestAppAgentContainsEndpoint(t *testing.T) {
-	appAgent := newMockAgent([]bundle.EndpointID{bundle.MustNewEndpointID("dtn://foo/"), bundle.MustNewEndpointID("dtn://bar/")})
+	appAgent := newMockAgent([]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://foo/"), bpv7.MustNewEndpointID("dtn://bar/")})
 
 	tests := []struct {
-		eids  []bundle.EndpointID
+		eids  []bpv7.EndpointID
 		valid bool
 	}{
-		{[]bundle.EndpointID{}, false},
-		{[]bundle.EndpointID{bundle.MustNewEndpointID("dtn://foo/")}, true},
-		{[]bundle.EndpointID{bundle.MustNewEndpointID("dtn://bar/")}, true},
-		{[]bundle.EndpointID{bundle.MustNewEndpointID("dtn://foo/"), bundle.MustNewEndpointID("dtn://bar/")}, true},
-		{[]bundle.EndpointID{bundle.MustNewEndpointID("dtn://bar/"), bundle.MustNewEndpointID("dtn://foo/")}, true},
-		{[]bundle.EndpointID{bundle.MustNewEndpointID("dtn://bar/"), bundle.MustNewEndpointID("dtn://bar/")}, true},
-		{[]bundle.EndpointID{bundle.MustNewEndpointID("dtn://baz/"), bundle.MustNewEndpointID("dtn://bar/")}, true},
-		{[]bundle.EndpointID{bundle.MustNewEndpointID("dtn://baz/"), bundle.MustNewEndpointID("dtn://ban/")}, false},
-		{[]bundle.EndpointID{bundle.MustNewEndpointID("dtn://baz/"), bundle.MustNewEndpointID("dtn://ban/"), bundle.MustNewEndpointID("dtn://bar/")}, true},
+		{[]bpv7.EndpointID{}, false},
+		{[]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://foo/")}, true},
+		{[]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://bar/")}, true},
+		{[]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://foo/"), bpv7.MustNewEndpointID("dtn://bar/")}, true},
+		{[]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://bar/"), bpv7.MustNewEndpointID("dtn://foo/")}, true},
+		{[]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://bar/"), bpv7.MustNewEndpointID("dtn://bar/")}, true},
+		{[]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://baz/"), bpv7.MustNewEndpointID("dtn://bar/")}, true},
+		{[]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://baz/"), bpv7.MustNewEndpointID("dtn://ban/")}, false},
+		{[]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://baz/"), bpv7.MustNewEndpointID("dtn://ban/"), bpv7.MustNewEndpointID("dtn://bar/")}, true},
 	}
 
 	for _, test := range tests {

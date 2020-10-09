@@ -9,7 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/gorilla/websocket"
 )
 
@@ -63,7 +63,7 @@ func (w *WebSocketAgent) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 }
 
 // Endpoints of all currently connected clients.
-func (w *WebSocketAgent) Endpoints() []bundle.EndpointID {
+func (w *WebSocketAgent) Endpoints() []bpv7.EndpointID {
 	return w.clientMux.Endpoints()
 }
 

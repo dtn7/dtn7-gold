@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/storage"
 
@@ -105,13 +105,13 @@ func (routingConf RoutingConf) RoutingAlgorithm(c *Core) (ra RoutingAlgorithm, e
 
 // sendMetadataBundle can be used by routing algorithm to send relevant metadata to peers
 // Metadata needs to be serialised as an ExtensionBlock
-func sendMetadataBundle(c *Core, source bundle.EndpointID, destination bundle.EndpointID, metadataBlock bundle.ExtensionBlock) error {
-	bundleBuilder := bundle.Builder()
+func sendMetadataBundle(c *Core, source bpv7.EndpointID, destination bpv7.EndpointID, metadataBlock bpv7.ExtensionBlock) error {
+	bundleBuilder := bpv7.Builder()
 	bundleBuilder.Source(source)
 	bundleBuilder.Destination(destination)
 	bundleBuilder.CreationTimestampNow()
 	bundleBuilder.Lifetime("1m")
-	bundleBuilder.BundleCtrlFlags(bundle.MustNotFragmented)
+	bundleBuilder.BundleCtrlFlags(bpv7.MustNotFragmented)
 	// no Payload
 	bundleBuilder.PayloadBlock(byte(1))
 
@@ -135,12 +135,12 @@ func sendMetadataBundle(c *Core, source bundle.EndpointID, destination bundle.En
 // filterCLAs filters the nodes which already received a Bundle for a specific routing algorithm, e.g., "epidemic".
 // It returns a list of unused ConvergenceSenders and an updated list of all sent EndpointIDs. The second should be
 // stored as "routing/${algorithm}/sent" within the specific algorithm.
-func filterCLAs(bundleItem storage.BundleItem, clas []cla.ConvergenceSender, algorithm string) (filtered []cla.ConvergenceSender, sentEids []bundle.EndpointID) {
+func filterCLAs(bundleItem storage.BundleItem, clas []cla.ConvergenceSender, algorithm string) (filtered []cla.ConvergenceSender, sentEids []bpv7.EndpointID) {
 	filtered = make([]cla.ConvergenceSender, 0)
 
-	sentEids, ok := bundleItem.Properties["routing/"+algorithm+"/sent"].([]bundle.EndpointID)
+	sentEids, ok := bundleItem.Properties["routing/"+algorithm+"/sent"].([]bpv7.EndpointID)
 	if !ok {
-		sentEids = make([]bundle.EndpointID, 0)
+		sentEids = make([]bpv7.EndpointID, 0)
 	}
 
 	for _, cs := range clas {

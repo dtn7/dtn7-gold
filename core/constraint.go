@@ -8,7 +8,7 @@ package core
 type Constraint int
 
 const (
-	// DispatchPending is assigned to a bundle if its dispatching is pending.
+	// DispatchPending is assigned to a bpv7 if its dispatching is pending.
 	DispatchPending Constraint = iota
 
 	// ForwardPending is assigned to a bundle if its forwarding is pending.

@@ -11,29 +11,29 @@ import (
 
 	"github.com/dtn7/dtn7-go/cla"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 func TestDiscoveryMessageCbor(t *testing.T) {
 	var tests = []DiscoveryMessage{
 		{
 			Type:     cla.MTCP,
-			Endpoint: bundle.MustNewEndpointID("dtn://foobar/"),
+			Endpoint: bpv7.MustNewEndpointID("dtn://foobar/"),
 			Port:     8000,
 		},
 		{
 			Type:     cla.TCPCLv4,
-			Endpoint: bundle.MustNewEndpointID("dtn://foobar/"),
+			Endpoint: bpv7.MustNewEndpointID("dtn://foobar/"),
 			Port:     8000,
 		},
 		{
 			Type:     cla.MTCP,
-			Endpoint: bundle.MustNewEndpointID("ipn:1337.23"),
+			Endpoint: bpv7.MustNewEndpointID("ipn:1337.23"),
 			Port:     12345,
 		},
 		{
 			Type:     cla.TCPCLv4,
-			Endpoint: bundle.MustNewEndpointID("ipn:1337.23"),
+			Endpoint: bpv7.MustNewEndpointID("ipn:1337.23"),
 			Port:     12345,
 		},
 	}

@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
@@ -29,8 +29,8 @@ func TestTransfer(t *testing.T) {
 
 	for _, size := range sizes {
 		t.Run(fmt.Sprintf("%d", size), func(t *testing.T) {
-			bndlOut, err := bundle.Builder().
-				CRC(bundle.CRC32).
+			bndlOut, err := bpv7.Builder().
+				CRC(bpv7.CRC32).
 				Source("dtn://src/").
 				Destination("dtn://dst/").
 				CreationTimestampNow().
@@ -83,8 +83,8 @@ func TestTransferManager(t *testing.T) {
 	var sizes = []int{1, 1024, 1048576}
 
 	for _, size := range sizes {
-		bndlOut, err := bundle.Builder().
-			CRC(bundle.CRC32).
+		bndlOut, err := bpv7.Builder().
+			CRC(bpv7.CRC32).
 			Source("dtn://src/").
 			Destination("dtn://dst/").
 			CreationTimestampNow().

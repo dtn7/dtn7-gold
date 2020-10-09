@@ -15,7 +15,7 @@ import (
 
 	"github.com/RyanCarrier/dijkstra"
 	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 )
 
@@ -38,7 +38,7 @@ type DTLSRConfig struct {
 type DTLSR struct {
 	c *Core
 	// routingTable is a [endpoint]forwardingNode mapping
-	routingTable map[bundle.EndpointID]bundle.EndpointID
+	routingTable map[bpv7.EndpointID]bpv7.EndpointID
 	// peerChange denotes whether there has been a change in our direct connections
 	// since we last calculated our routing table/broadcast our peer data
 	peerChange bool
@@ -47,14 +47,14 @@ type DTLSR struct {
 	// receivedChange denotes whether we received new data since we last computed our routing table
 	receivedChange bool
 	// receivedData is peerData received from other nodes
-	receivedData map[bundle.EndpointID]peerData
+	receivedData map[bpv7.EndpointID]peerData
 	// nodeIndex and index Node are a bidirectional mapping EndpointID <-> uint64
 	// necessary since the dijkstra implementation only accepts integer node identifiers
-	nodeIndex map[bundle.EndpointID]int
-	indexNode []bundle.EndpointID
+	nodeIndex map[bpv7.EndpointID]int
+	indexNode []bpv7.EndpointID
 	length    int
 	// broadcastAddress is where metadata-bundles are sent to
-	broadcastAddress bundle.EndpointID
+	broadcastAddress bpv7.EndpointID
 	// purgeTime is the time until a peer gets removed from the peer list
 	purgeTime time.Duration
 	// dataMutex is a RW-mutex which protects change operations to the algorithm's metadata
@@ -64,12 +64,12 @@ type DTLSR struct {
 // peerData contains a peer's connection data
 type peerData struct {
 	// id is the node's endpoint id
-	id bundle.EndpointID
+	id bpv7.EndpointID
 	// timestamp is the time the last change occurred
 	// when receiving other node's data, we only update if the timestamp in newer
-	timestamp bundle.DtnTime
+	timestamp bpv7.DtnTime
 	// peers is a mapping of previously seen peers and the respective timestamp of the last encounter
-	peers map[bundle.EndpointID]bundle.DtnTime
+	peers map[bpv7.EndpointID]bpv7.DtnTime
 }
 
 func (pd peerData) isNewerThan(other peerData) bool {
@@ -81,7 +81,7 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 		"config": config,
 	}).Debug("Initialising DTLSR")
 
-	bAddress, err := bundle.NewEndpointID(dtlsrBroadcastAddress)
+	bAddress, err := bpv7.NewEndpointID(dtlsrBroadcastAddress)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"dtlsrBroadcastAddress": dtlsrBroadcastAddress,
@@ -97,17 +97,17 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 
 	dtlsr := DTLSR{
 		c:            c,
-		routingTable: make(map[bundle.EndpointID]bundle.EndpointID),
+		routingTable: make(map[bpv7.EndpointID]bpv7.EndpointID),
 		peerChange:   false,
 		peers: peerData{
 			id:        c.NodeId,
-			timestamp: bundle.DtnTimeNow(),
-			peers:     make(map[bundle.EndpointID]bundle.DtnTime),
+			timestamp: bpv7.DtnTimeNow(),
+			peers:     make(map[bpv7.EndpointID]bpv7.DtnTime),
 		},
 		receivedChange:   false,
-		receivedData:     make(map[bundle.EndpointID]peerData),
-		nodeIndex:        map[bundle.EndpointID]int{c.NodeId: 0},
-		indexNode:        []bundle.EndpointID{c.NodeId},
+		receivedData:     make(map[bpv7.EndpointID]peerData),
+		nodeIndex:        map[bpv7.EndpointID]int{c.NodeId: 0},
+		indexNode:        []bpv7.EndpointID{c.NodeId},
 		length:           1,
 		broadcastAddress: bAddress,
 		purgeTime:        purgeTime,
@@ -149,8 +149,8 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 	}
 
 	// register our custom metadata-block
-	extensionBlockManager := bundle.GetExtensionBlockManager()
-	if !extensionBlockManager.IsKnown(bundle.ExtBlockTypeDTLSRBlock) {
+	extensionBlockManager := bpv7.GetExtensionBlockManager()
+	if !extensionBlockManager.IsKnown(bpv7.ExtBlockTypeDTLSRBlock) {
 		// since we already checked if the block type exists, this really shouldn't ever fail...
 		_ = extensionBlockManager.Register(NewDTLSRBlock(dtlsr.peers))
 	}
@@ -159,7 +159,7 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 }
 
 func (dtlsr *DTLSR) NotifyIncoming(bp BundlePack) {
-	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeDTLSRBlock); err == nil {
+	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeDTLSRBlock); err == nil {
 		log.WithFields(log.Fields{
 			"peer": bp.MustBundle().PrimaryBlock.SourceNode,
 		}).Debug("Received metadata")
@@ -215,12 +215,12 @@ func (dtlsr *DTLSR) NotifyIncoming(bp BundlePack) {
 
 	bndl := bp.MustBundle()
 
-	if pnBlock, err := bndl.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
-		prevNode := pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
+	if pnBlock, err := bndl.ExtensionBlock(bpv7.ExtBlockTypePreviousNodeBlock); err == nil {
+		prevNode := pnBlock.Value.(*bpv7.PreviousNodeBlock).Endpoint()
 
-		sentEids, ok := bundleItem.Properties["routing/dtlsr/sent"].([]bundle.EndpointID)
+		sentEids, ok := bundleItem.Properties["routing/dtlsr/sent"].([]bpv7.EndpointID)
 		if !ok {
-			sentEids = make([]bundle.EndpointID, 0)
+			sentEids = make([]bpv7.EndpointID, 0)
 		}
 
 		bundleItem.Properties["routing/dtlsr/sent"] = append(sentEids, prevNode)
@@ -341,7 +341,7 @@ func (dtlsr *DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 
 	// add node to peer list
 	dtlsr.peers.peers[peerID] = 0
-	dtlsr.peers.timestamp = bundle.DtnTimeNow()
+	dtlsr.peers.timestamp = bpv7.DtnTimeNow()
 	dtlsr.peerChange = true
 
 	log.WithFields(log.Fields{
@@ -369,7 +369,7 @@ func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 	dtlsr.dataMutex.Lock()
 	defer dtlsr.dataMutex.Unlock()
 	// set expiration timestamp for peer
-	timestamp := bundle.DtnTimeNow()
+	timestamp := bpv7.DtnTimeNow()
 	dtlsr.peers.peers[peerID] = timestamp
 	dtlsr.peers.timestamp = timestamp
 	dtlsr.peerChange = true
@@ -387,7 +387,7 @@ func (_ *DTLSR) DispatchingAllowed(_ BundlePack) bool {
 }
 
 // newNode adds a node to the index-mapping (if it was not previously tracked)
-func (dtlsr *DTLSR) newNode(id bundle.EndpointID) {
+func (dtlsr *DTLSR) newNode(id bpv7.EndpointID) {
 	log.WithFields(log.Fields{
 		"NodeID": id,
 	}).Debug("Tracking Node")
@@ -413,7 +413,7 @@ func (dtlsr *DTLSR) newNode(id bundle.EndpointID) {
 func (dtlsr *DTLSR) computeRoutingTable() {
 	log.Debug("Recomputing routing table")
 
-	currentTime := bundle.DtnTimeNow()
+	currentTime := bpv7.DtnTimeNow()
 	graph := dijkstra.NewGraph()
 
 	// add vertices
@@ -474,7 +474,7 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 		}
 	}
 
-	routingTable := make(map[bundle.EndpointID]bundle.EndpointID)
+	routingTable := make(map[bpv7.EndpointID]bpv7.EndpointID)
 	for i := 1; i < dtlsr.length; i++ {
 		shortest, err := graph.Shortest(0, i)
 		if err == nil {
@@ -607,7 +607,7 @@ func (dtlsrb *DTLSRBlock) getPeerData() peerData {
 }
 
 func (dtlsrb *DTLSRBlock) BlockTypeCode() uint64 {
-	return bundle.ExtBlockTypeDTLSRBlock
+	return bpv7.ExtBlockTypeDTLSRBlock
 }
 
 func (dtlsrb *DTLSRBlock) BlockTypeName() string {
@@ -661,7 +661,7 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 	}
 
 	// read endpoint id
-	id := bundle.EndpointID{}
+	id := bpv7.EndpointID{}
 	if err := cboring.Unmarshal(&id, r); err != nil {
 		return err
 	} else {
@@ -672,7 +672,7 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 	if timestamp, err := cboring.ReadUInt(r); err != nil {
 		return err
 	} else {
-		dtlsrb.timestamp = bundle.DtnTime(timestamp)
+		dtlsrb.timestamp = bpv7.DtnTime(timestamp)
 	}
 
 	var lenData uint64
@@ -684,10 +684,10 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 	}
 
 	// read the actual data
-	peers := make(map[bundle.EndpointID]bundle.DtnTime)
+	peers := make(map[bpv7.EndpointID]bpv7.DtnTime)
 	var i uint64
 	for i = 0; i < lenData; i++ {
-		peerID := bundle.EndpointID{}
+		peerID := bpv7.EndpointID{}
 		if err := cboring.Unmarshal(&peerID, r); err != nil {
 			return err
 		}
@@ -697,7 +697,7 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 			return err
 		}
 
-		peers[peerID] = bundle.DtnTime(timestamp)
+		peers[peerID] = bpv7.DtnTime(timestamp)
 	}
 
 	dtlsrb.peers = peers

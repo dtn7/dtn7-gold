@@ -10,12 +10,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 )
 
 // SendBundle transmits an outbounding bundle.
-func (c *Core) SendBundle(bndl *bundle.Bundle) {
+func (c *Core) SendBundle(bndl *bpv7.Bundle) {
 	if c.signPriv != nil && bndl.IsAdministrativeRecord() {
 		c.sendBundleAttachSignature(bndl)
 	}
@@ -26,19 +26,19 @@ func (c *Core) SendBundle(bndl *bundle.Bundle) {
 }
 
 // sendBundleAttachSignature attaches a SignatureBlock to outgoing Administrative Records, if configured.
-func (c *Core) sendBundleAttachSignature(bndl *bundle.Bundle) {
+func (c *Core) sendBundleAttachSignature(bndl *bpv7.Bundle) {
 	if c.signPriv == nil || !bndl.IsAdministrativeRecord() {
 		return
 	}
 
-	sb, sbErr := bundle.NewSignatureBlock(*bndl, c.signPriv)
+	sb, sbErr := bpv7.NewSignatureBlock(*bndl, c.signPriv)
 	if sbErr != nil {
 		log.WithField("bundle", bndl.ID()).WithError(sbErr).Error("Creating signature errored, proceeding without")
 		return
 	}
 
-	cb := bundle.NewCanonicalBlock(0, bundle.ReplicateBlock|bundle.DeleteBundle, sb)
-	cb.SetCRCType(bundle.CRC32)
+	cb := bpv7.NewCanonicalBlock(0, bpv7.ReplicateBlock|bpv7.DeleteBundle, sb)
+	cb.SetCRCType(bpv7.CRC32)
 
 	bndl.AddExtensionBlock(cb)
 
@@ -58,13 +58,13 @@ func (c *Core) transmit(bp BundlePack) {
 	_ = bp.Sync()
 
 	src := bp.MustBundle().PrimaryBlock.SourceNode
-	if src != bundle.DtnNone() && !c.HasEndpoint(src) {
+	if src != bpv7.DtnNone() && !c.HasEndpoint(src) {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
 			"source": src,
 		}).Info("Bundle's source is neither dtn:none nor an endpoint of this node")
 
-		c.bundleDeletion(bp, bundle.NoInformation)
+		c.bundleDeletion(bp, bpv7.NoInformation)
 		return
 	}
 
@@ -94,14 +94,14 @@ func (c *Core) receive(bp BundlePack) {
 	bp.AddConstraint(DispatchPending)
 	_ = bp.Sync()
 
-	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestReception) {
-		c.SendStatusReport(bp, bundle.ReceivedBundle, bundle.NoInformation)
+	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bpv7.StatusRequestReception) {
+		c.SendStatusReport(bp, bpv7.ReceivedBundle, bpv7.NoInformation)
 	}
 
 	for i := len(bp.MustBundle().CanonicalBlocks) - 1; i >= 0; i-- {
 		var cb = &bp.MustBundle().CanonicalBlocks[i]
 
-		if bundle.GetExtensionBlockManager().IsKnown(cb.TypeCode()) {
+		if bpv7.GetExtensionBlockManager().IsKnown(cb.TypeCode()) {
 			continue
 		}
 
@@ -111,28 +111,28 @@ func (c *Core) receive(bp BundlePack) {
 			"type":   cb.TypeCode(),
 		}).Warn("Bundle's canonical block is unknown")
 
-		if cb.BlockControlFlags.Has(bundle.StatusReportBlock) {
+		if cb.BlockControlFlags.Has(bpv7.StatusReportBlock) {
 			log.WithFields(log.Fields{
 				"bundle": bp.ID(),
 				"number": i,
 				"type":   cb.TypeCode(),
 			}).Info("Bundle's unknown canonical block requested reporting")
 
-			c.SendStatusReport(bp, bundle.ReceivedBundle, bundle.BlockUnintelligible)
+			c.SendStatusReport(bp, bpv7.ReceivedBundle, bpv7.BlockUnintelligible)
 		}
 
-		if cb.BlockControlFlags.Has(bundle.DeleteBundle) {
+		if cb.BlockControlFlags.Has(bpv7.DeleteBundle) {
 			log.WithFields(log.Fields{
 				"bundle": bp.ID(),
 				"number": i,
 				"type":   cb.TypeCode(),
 			}).Info("Bundle's unknown canonical block requested bundle deletion")
 
-			c.bundleDeletion(bp, bundle.BlockUnintelligible)
+			c.bundleDeletion(bp, bpv7.BlockUnintelligible)
 			return
 		}
 
-		if cb.BlockControlFlags.Has(bundle.RemoveBlock) {
+		if cb.BlockControlFlags.Has(bpv7.RemoveBlock) {
 			log.WithFields(log.Fields{
 				"bundle": bp.ID(),
 				"number": i,
@@ -190,8 +190,8 @@ func (c *Core) forward(bp BundlePack) {
 	bp.RemoveConstraint(DispatchPending)
 	_ = bp.Sync()
 
-	if hcBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeHopCountBlock); err == nil {
-		hc := hcBlock.Value.(*bundle.HopCountBlock)
+	if hcBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeHopCountBlock); err == nil {
+		hc := hcBlock.Value.(*bpv7.HopCountBlock)
 		hc.Increment()
 		hcBlock.Value = hc
 
@@ -206,7 +206,7 @@ func (c *Core) forward(bp BundlePack) {
 				"hop_count": hc,
 			}).Info("Bundle contains an exceeded hop count block")
 
-			c.bundleDeletion(bp, bundle.HopLimitExceeded)
+			c.bundleDeletion(bp, bpv7.HopLimitExceeded)
 			return
 		}
 	}
@@ -217,7 +217,7 @@ func (c *Core) forward(bp BundlePack) {
 			"primary_block": bp.MustBundle().PrimaryBlock,
 		}).Warn("Bundle's primary block's lifetime is exceeded")
 
-		c.bundleDeletion(bp, bundle.LifetimeExpired)
+		c.bundleDeletion(bp, bpv7.LifetimeExpired)
 		return
 	}
 
@@ -227,15 +227,15 @@ func (c *Core) forward(bp BundlePack) {
 				"bundle": bp.ID(),
 			}).Warn("Bundle's lifetime is expired")
 
-			c.bundleDeletion(bp, bundle.LifetimeExpired)
+			c.bundleDeletion(bp, bpv7.LifetimeExpired)
 			return
 		}
 	}
 
-	if pnBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
+	if pnBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypePreviousNodeBlock); err == nil {
 		// Replace the PreviousNodeBlock
-		prevEid := pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
-		pnBlock.Value = bundle.NewPreviousNodeBlock(c.NodeId)
+		prevEid := pnBlock.Value.(*bpv7.PreviousNodeBlock).Endpoint()
+		pnBlock.Value = bpv7.NewPreviousNodeBlock(c.NodeId)
 
 		log.WithFields(log.Fields{
 			"bundle":  bp.ID(),
@@ -244,8 +244,8 @@ func (c *Core) forward(bp BundlePack) {
 		}).Debug("Previous Node Block was updated")
 	} else {
 		// Append a new PreviousNodeBlock
-		bp.MustBundle().AddExtensionBlock(bundle.NewCanonicalBlock(
-			0, 0, bundle.NewPreviousNodeBlock(c.NodeId)))
+		bp.MustBundle().AddExtensionBlock(bpv7.NewCanonicalBlock(
+			0, 0, bpv7.NewPreviousNodeBlock(c.NodeId)))
 	}
 
 	var nodes []cla.ConvergenceSender
@@ -294,8 +294,8 @@ func (c *Core) forward(bp BundlePack) {
 
 	wg.Wait()
 
-	if hcBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeHopCountBlock); err == nil {
-		hc := hcBlock.Value.(*bundle.HopCountBlock)
+	if hcBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeHopCountBlock); err == nil {
+		hc := hcBlock.Value.(*bpv7.HopCountBlock)
 		hc.Decrement()
 		hcBlock.Value = hc
 
@@ -306,8 +306,8 @@ func (c *Core) forward(bp BundlePack) {
 	}
 
 	if bundleSent {
-		if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestForward) {
-			c.SendStatusReport(bp, bundle.ForwardedBundle, bundle.NoInformation)
+		if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bpv7.StatusRequestForward) {
+			c.SendStatusReport(bp, bpv7.ForwardedBundle, bpv7.NoInformation)
 		}
 
 		if deleteAfterwards {
@@ -347,8 +347,8 @@ func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
 		return false
 	}
 
-	payload := canonicalAr.Value.(*bundle.PayloadBlock).Data()
-	ar, err := bundle.NewAdministrativeRecordFromCbor(payload)
+	payload := canonicalAr.Value.(*bpv7.PayloadBlock).Data()
+	ar, err := bpv7.NewAdministrativeRecordFromCbor(payload)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -370,8 +370,8 @@ func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
 	return true
 }
 
-func (c *Core) inspectStatusReport(bp BundlePack, ar bundle.AdministrativeRecord) {
-	if ar.RecordTypeCode() != bundle.ARTypeStatusReport {
+func (c *Core) inspectStatusReport(bp BundlePack, ar bpv7.AdministrativeRecord) {
+	if ar.RecordTypeCode() != bpv7.ARTypeStatusReport {
 		log.WithFields(log.Fields{
 			"bundle":    bp.ID(),
 			"type_code": ar.RecordTypeCode(),
@@ -380,7 +380,7 @@ func (c *Core) inspectStatusReport(bp BundlePack, ar bundle.AdministrativeRecord
 		return
 	}
 
-	var status = *ar.(*bundle.StatusReport)
+	var status = *ar.(*bpv7.StatusReport)
 	var sips = status.StatusInformations()
 
 	if len(sips) == 0 {
@@ -415,10 +415,10 @@ func (c *Core) inspectStatusReport(bp BundlePack, ar bundle.AdministrativeRecord
 		}).Info("Parsing status report")
 
 		switch sip {
-		case bundle.ReceivedBundle, bundle.ForwardedBundle, bundle.DeletedBundle:
+		case bpv7.ReceivedBundle, bpv7.ForwardedBundle, bpv7.DeletedBundle:
 			// Nothing to do
 
-		case bundle.DeliveredBundle:
+		case bpv7.DeliveredBundle:
 			logger := log.WithFields(log.Fields{
 				"bundle":        bp.ID(),
 				"status_rep":    status,
@@ -451,7 +451,7 @@ func (c *Core) localDelivery(bp BundlePack) {
 
 	if bp.MustBundle().IsAdministrativeRecord() {
 		if !c.checkAdministrativeRecord(bp) {
-			c.bundleDeletion(bp, bundle.NoInformation)
+			c.bundleDeletion(bp, bpv7.NoInformation)
 			return
 		}
 	}
@@ -463,8 +463,8 @@ func (c *Core) localDelivery(bp BundlePack) {
 		log.WithField("bundle", bp.ID()).WithError(err).Warn("Delivering local bundle errored")
 	}
 
-	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDelivery) {
-		c.SendStatusReport(bp, bundle.DeliveredBundle, bundle.NoInformation)
+	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bpv7.StatusRequestDelivery) {
+		c.SendStatusReport(bp, bpv7.DeliveredBundle, bpv7.NoInformation)
 	}
 
 	bp.PurgeConstraints()
@@ -480,9 +480,9 @@ func (c *Core) bundleContraindicated(bp BundlePack) {
 	_ = bp.Sync()
 }
 
-func (c *Core) bundleDeletion(bp BundlePack, reason bundle.StatusReportReason) {
-	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bundle.StatusRequestDeletion) {
-		c.SendStatusReport(bp, bundle.DeletedBundle, reason)
+func (c *Core) bundleDeletion(bp BundlePack, reason bpv7.StatusReportReason) {
+	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bpv7.StatusRequestDeletion) {
+		c.SendStatusReport(bp, bpv7.DeletedBundle, reason)
 	}
 
 	bp.PurgeConstraints()

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // mockConvRec mocks a ConvergenceReceiver where all fields are directly editable.
@@ -25,10 +25,10 @@ type mockConvRec struct {
 
 	// address is the unique address and endpointId this mockConvRec's Endpoint ID.
 	address    string
-	endpointId bundle.EndpointID
+	endpointId bpv7.EndpointID
 }
 
-func newMockConvRec(startable bool, address string, eid bundle.EndpointID) *mockConvRec {
+func newMockConvRec(startable bool, address string, eid bpv7.EndpointID) *mockConvRec {
 	return &mockConvRec{
 		startable:      startable,
 		startableRetry: true,
@@ -58,7 +58,7 @@ func (m *mockConvRec) Address() string { return m.address }
 
 func (m *mockConvRec) IsPermanent() bool { return m.permanent }
 
-func (m *mockConvRec) GetEndpointID() bundle.EndpointID { return m.endpointId }
+func (m *mockConvRec) GetEndpointID() bpv7.EndpointID { return m.endpointId }
 
 // mockConvSender mocks a ConvergenceSender where all fields are directly editable.
 type mockConvSender struct {
@@ -74,14 +74,14 @@ type mockConvSender struct {
 
 	// address is the unique address and peerEndpointId the peer's Endpoint ID.
 	address        string
-	peerEndpointId bundle.EndpointID
+	peerEndpointId bpv7.EndpointID
 
 	// sentBndls is an array of all sent bundles, sendFail indicates if sending should fail.
-	sentBndls []bundle.Bundle
+	sentBndls []bpv7.Bundle
 	sendFail  bool
 }
 
-func newMockConvSender(startable bool, address string, eid bundle.EndpointID) *mockConvSender {
+func newMockConvSender(startable bool, address string, eid bpv7.EndpointID) *mockConvSender {
 	return &mockConvSender{
 		startable:      startable,
 		startableRetry: true,
@@ -89,7 +89,7 @@ func newMockConvSender(startable bool, address string, eid bundle.EndpointID) *m
 		permanent:      false,
 		address:        address,
 		peerEndpointId: eid,
-		sentBndls:      make([]bundle.Bundle, 0),
+		sentBndls:      make([]bpv7.Bundle, 0),
 		sendFail:       false,
 	}
 }
@@ -119,9 +119,9 @@ func (m *mockConvSender) Address() string { return m.address }
 
 func (m *mockConvSender) IsPermanent() bool { return m.permanent }
 
-func (m *mockConvSender) GetPeerEndpointID() bundle.EndpointID { return m.peerEndpointId }
+func (m *mockConvSender) GetPeerEndpointID() bpv7.EndpointID { return m.peerEndpointId }
 
-func (m *mockConvSender) Send(bndl bundle.Bundle) error {
+func (m *mockConvSender) Send(bndl bpv7.Bundle) error {
 	if m.sendFail {
 		return fmt.Errorf("sendFail := true")
 	}

@@ -26,7 +26,7 @@ package cla
 import (
 	"io"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // Convergable describes any kind of type which supports convergence layer-
@@ -67,7 +67,7 @@ type ConvergenceReceiver interface {
 	Convergence
 
 	// GetEndpointID returns the endpoint ID assigned to this CLA.
-	GetEndpointID() bundle.EndpointID
+	GetEndpointID() bpv7.EndpointID
 }
 
 // ConvergenceSender is an interface for types which are able to transmit
@@ -78,11 +78,11 @@ type ConvergenceSender interface {
 	// Send a bundle to this ConvergenceSender's endpoint. This method should
 	// be thread safe and finish transmitting one bundle, before acting on the
 	// next. This could be achieved by using a mutex or the like.
-	Send(bundle.Bundle) error
+	Send(bpv7.Bundle) error
 
 	// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
 	// if it's known. Otherwise the zero endpoint will be returned.
-	GetPeerEndpointID() bundle.EndpointID
+	GetPeerEndpointID() bpv7.EndpointID
 }
 
 // ConvergenceProvider is a more general kind of CLA service which does not

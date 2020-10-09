@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 )
 
@@ -29,7 +29,7 @@ type SprayAndWait struct {
 	// l is the number of copies of a bundle which are sprayed
 	l uint64
 	// bundleData stores the metadata for each bundle
-	bundleData map[bundle.BundleID]sprayMetaData
+	bundleData map[bpv7.BundleID]sprayMetaData
 	// Mutex for concurrent modification of data by multiple goroutines
 	dataMutex sync.RWMutex
 }
@@ -37,14 +37,14 @@ type SprayAndWait struct {
 // sprayMetaData stores bundle-specific metadata
 type sprayMetaData struct {
 	// sent is the list of nodes to which we have already relayed this bundle
-	sent []bundle.EndpointID
+	sent []bpv7.EndpointID
 	// remainingCopies is the number of copies we have to distribute before we enter wait-mode
 	remainingCopies uint64
 }
 
 // cleanupMetaData goes through stored metadata, determines if the corresponding bundle is still alive
 // and deletes metadata for expired bundles
-func cleanupMetaData(c *Core, metadata *map[bundle.BundleID]sprayMetaData) {
+func cleanupMetaData(c *Core, metadata *map[bpv7.BundleID]sprayMetaData) {
 	for bundleId := range *metadata {
 		if !c.store.KnowsBundle(bundleId) {
 			delete(*metadata, bundleId)
@@ -61,7 +61,7 @@ func NewSprayAndWait(c *Core, config SprayConfig) *SprayAndWait {
 	sprayAndWait := SprayAndWait{
 		c:          c,
 		l:          config.Multiplicity,
-		bundleData: make(map[bundle.BundleID]sprayMetaData),
+		bundleData: make(map[bpv7.BundleID]sprayMetaData),
 	}
 
 	err := c.cron.Register("spray_and_wait_gc", sprayAndWait.GarbageCollect, time.Second*60)
@@ -87,7 +87,7 @@ func (sw *SprayAndWait) GarbageCollect() {
 func (sw *SprayAndWait) NotifyIncoming(bp BundlePack) {
 	if sw.c.HasEndpoint(bp.MustBundle().PrimaryBlock.SourceNode) {
 		metadata := sprayMetaData{
-			sent:            make([]bundle.EndpointID, 0),
+			sent:            make([]bpv7.EndpointID, 0),
 			remainingCopies: sw.l,
 		}
 
@@ -100,13 +100,13 @@ func (sw *SprayAndWait) NotifyIncoming(bp BundlePack) {
 		}).Debug("SprayAndWait initialised new bundle from this host")
 	} else {
 		metadata := sprayMetaData{
-			sent:            make([]bundle.EndpointID, 0),
+			sent:            make([]bpv7.EndpointID, 0),
 			remainingCopies: 1,
 		}
 
 		// if the bundle has a PreviousNodeBlock, add it to the list of nodes which we know to have the bundle
-		if pnBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
-			metadata.sent = append(metadata.sent, pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint())
+		if pnBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypePreviousNodeBlock); err == nil {
+			metadata.sent = append(metadata.sent, pnBlock.Value.(*bpv7.PreviousNodeBlock).Endpoint())
 		}
 
 		sw.dataMutex.Lock()
@@ -222,7 +222,7 @@ type BinarySpray struct {
 	// l is the number of copies of a bundle which are sprayed
 	l uint64
 	// bundleData stores the metadata for each bundle
-	bundleData map[bundle.BundleID]sprayMetaData
+	bundleData map[bpv7.BundleID]sprayMetaData
 	// Mutex for concurrent modification of data by multiple goroutines
 	dataMutex sync.RWMutex
 }
@@ -234,8 +234,8 @@ func NewBinarySpray(c *Core, config SprayConfig) *BinarySpray {
 	}).Debug("Initialised BinarySpray")
 
 	// register our custom metadata-block
-	extensionBlockManager := bundle.GetExtensionBlockManager()
-	if !extensionBlockManager.IsKnown(bundle.ExtBlockTypeBinarySprayBlock) {
+	extensionBlockManager := bpv7.GetExtensionBlockManager()
+	if !extensionBlockManager.IsKnown(bpv7.ExtBlockTypeBinarySprayBlock) {
 		// since we already checked if the block type exists, this really shouldn't ever fail...
 		_ = extensionBlockManager.Register(NewBinarySprayBlock(0))
 	}
@@ -243,7 +243,7 @@ func NewBinarySpray(c *Core, config SprayConfig) *BinarySpray {
 	binarySpray := BinarySpray{
 		c:          c,
 		l:          config.Multiplicity,
-		bundleData: make(map[bundle.BundleID]sprayMetaData),
+		bundleData: make(map[bpv7.BundleID]sprayMetaData),
 	}
 
 	err := c.cron.Register("binary_spray_gc", binarySpray.GarbageCollect, time.Second*60)
@@ -268,16 +268,16 @@ func (bs *BinarySpray) GarbageCollect() {
 // If yes, then we initialise the remaining Copies to Multiplicity
 // If not we attempt to ready the routing-metadata-block end get the remaining copies
 func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
-	if metadataBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeBinarySprayBlock); err == nil {
+	if metadataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeBinarySprayBlock); err == nil {
 		binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 		metadata := sprayMetaData{
-			sent:            make([]bundle.EndpointID, 0),
+			sent:            make([]bpv7.EndpointID, 0),
 			remainingCopies: binarySprayBlock.RemainingCopies(),
 		}
 
 		// if the bundle has a PreviousNodeBlock, add it to the list of nodes which we know to have the bundle
-		if pnBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
-			metadata.sent = append(metadata.sent, pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint())
+		if pnBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypePreviousNodeBlock); err == nil {
+			metadata.sent = append(metadata.sent, pnBlock.Value.(*bpv7.PreviousNodeBlock).Endpoint())
 		}
 
 		bs.dataMutex.Lock()
@@ -290,7 +290,7 @@ func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
 		}).Debug("SprayAndWait received bundle from foreign host")
 	} else {
 		metadata := sprayMetaData{
-			sent:            make([]bundle.EndpointID, 0),
+			sent:            make([]bpv7.EndpointID, 0),
 			remainingCopies: bs.l,
 		}
 
@@ -349,13 +349,13 @@ func (bs *BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSend
 			metadata.remainingCopies = metadata.remainingCopies - sendCopies
 
 			// if the bundle already has a metadata-block
-			if metadataBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeBinarySprayBlock); err == nil {
+			if metadataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeBinarySprayBlock); err == nil {
 				binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 				binarySprayBlock.SetCopies(sendCopies)
 			} else {
 				// if it doesn't, then create one
 				metadataBlock := NewBinarySprayBlock(sendCopies)
-				bp.MustBundle().AddExtensionBlock(bundle.NewCanonicalBlock(0, 0, metadataBlock))
+				bp.MustBundle().AddExtensionBlock(bpv7.NewCanonicalBlock(0, 0, metadataBlock))
 			}
 
 			// we currently only send a bundle to a single peer at once
@@ -384,7 +384,7 @@ func (bs *BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender
 		"bad_cla": sender,
 	}).Debug("Transmission failure")
 
-	metadataBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeBinarySprayBlock)
+	metadataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeBinarySprayBlock)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -431,7 +431,7 @@ func NewBinarySprayBlock(copies uint64) *BinarySprayBlock {
 }
 
 func (bsb *BinarySprayBlock) BlockTypeCode() uint64 {
-	return bundle.ExtBlockTypeBinarySprayBlock
+	return bpv7.ExtBlockTypeBinarySprayBlock
 }
 
 func (bsb *BinarySprayBlock) BlockTypeName() string {

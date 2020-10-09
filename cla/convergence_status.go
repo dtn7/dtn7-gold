@@ -7,7 +7,7 @@ package cla
 import (
 	"fmt"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // ConvergenceMessageType indicates the kind of a ConvergenceStatus.
@@ -21,11 +21,11 @@ const (
 	ReceivedBundle
 
 	// PeerDisappeared shows the disappearance of a peer. The Message's type must
-	// be a bundle.EndpointID.
+	// be a bpv7.EndpointID.
 	PeerDisappeared
 
 	// PeerAppeared shows the appearance of a peer. The Message's type must be
-	// a bundle.EndpointID
+	// a bpv7.EndpointID
 	PeerAppeared
 )
 
@@ -57,13 +57,13 @@ func (cs ConvergenceStatus) String() string {
 // ConvergenceReceivedBundle is an optional Message content for a
 // ConvergenceStatus for the ReceivedBundle MessageType.
 type ConvergenceReceivedBundle struct {
-	Endpoint bundle.EndpointID
-	Bundle   *bundle.Bundle
+	Endpoint bpv7.EndpointID
+	Bundle   *bpv7.Bundle
 }
 
 // NewConvergenceReceivedBundle creates a new ConvergenceStatus for a
 // ReceivedBundle type, transmitting both EndpointID and Bundle pointer.
-func NewConvergenceReceivedBundle(sender Convergence, eid bundle.EndpointID, bndl *bundle.Bundle) ConvergenceStatus {
+func NewConvergenceReceivedBundle(sender Convergence, eid bpv7.EndpointID, bndl *bpv7.Bundle) ConvergenceStatus {
 	return ConvergenceStatus{
 		Sender:      sender,
 		MessageType: ReceivedBundle,
@@ -76,7 +76,7 @@ func NewConvergenceReceivedBundle(sender Convergence, eid bundle.EndpointID, bnd
 
 // NewConvergencePeerDisappeared creates a new ConvergenceStatus for a
 // PeerDisappeared type, transmission the disappeared EndpointID.
-func NewConvergencePeerDisappeared(sender Convergence, peerEid bundle.EndpointID) ConvergenceStatus {
+func NewConvergencePeerDisappeared(sender Convergence, peerEid bpv7.EndpointID) ConvergenceStatus {
 	return ConvergenceStatus{
 		Sender:      sender,
 		MessageType: PeerDisappeared,
@@ -86,7 +86,7 @@ func NewConvergencePeerDisappeared(sender Convergence, peerEid bundle.EndpointID
 
 // NewConvergencePeerAppeared creates a new ConvergenceStatus for a
 // PeerAppeared type, transmission the appeared EndpointID.
-func NewConvergencePeerAppeared(sender Convergence, peerEid bundle.EndpointID) ConvergenceStatus {
+func NewConvergencePeerAppeared(sender Convergence, peerEid bpv7.EndpointID) ConvergenceStatus {
 	return ConvergenceStatus{
 		Sender:      sender,
 		MessageType: PeerAppeared,

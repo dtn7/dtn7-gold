@@ -7,18 +7,18 @@ package core
 import (
 	"sync"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // idTuple is a tuple struct for looking up a bundle's ID - based on it's source
 // node and DTN time part of the creation timestamp.
 type idTuple struct {
-	source bundle.EndpointID
-	time   bundle.DtnTime
+	source bpv7.EndpointID
+	time   bpv7.DtnTime
 }
 
 // newIdTuple creates an idTuple based on the given bundle.
-func newIdTuple(bndl *bundle.Bundle) idTuple {
+func newIdTuple(bndl *bpv7.Bundle) idTuple {
 	return idTuple{
 		source: bndl.PrimaryBlock.SourceNode,
 		time:   bndl.PrimaryBlock.CreationTimestamp.DtnTime(),
@@ -43,7 +43,7 @@ func NewIdKeeper() IdKeeper {
 
 // update updates the IdKeeper's state regarding this bundle and sets this
 // bundle's sequence number.
-func (idk *IdKeeper) update(bndl *bundle.Bundle) {
+func (idk *IdKeeper) update(bndl *bpv7.Bundle) {
 	var tpl = newIdTuple(bndl)
 
 	idk.mutex.Lock()
@@ -65,10 +65,10 @@ func (idk *IdKeeper) update(bndl *bundle.Bundle) {
 func (idk *IdKeeper) clean() {
 	idk.mutex.Lock()
 
-	var threshold = bundle.DtnTimeNow() - 60*60*24
+	var threshold = bpv7.DtnTimeNow() - 60*60*24
 
 	for tpl := range idk.data {
-		if tpl.time < threshold && tpl.time != bundle.DtnTimeEpoch {
+		if tpl.time < threshold && tpl.time != bpv7.DtnTimeEpoch {
 			delete(idk.data, tpl)
 		}
 	}

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 func setupStoreDir(t *testing.T) string {
@@ -35,7 +35,7 @@ func TestStore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, bErr := bundle.Builder().
+	b, bErr := bpv7.Builder().
 		Source("dtn://src/").
 		Destination("dtn://dest/").
 		CreationTimestampNow().

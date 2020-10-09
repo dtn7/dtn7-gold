@@ -11,7 +11,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/gorilla/websocket"
 )
 
@@ -19,7 +19,7 @@ type webAgentClient struct {
 	sync.Mutex
 
 	conn     *websocket.Conn
-	endpoint bundle.EndpointID
+	endpoint bpv7.EndpointID
 	receiver chan Message
 	sender   chan Message
 
@@ -29,7 +29,7 @@ type webAgentClient struct {
 func newWebAgentClient(conn *websocket.Conn) *webAgentClient {
 	return &webAgentClient{
 		conn:     conn,
-		endpoint: bundle.EndpointID{},
+		endpoint: bpv7.EndpointID{},
 		receiver: make(chan Message),
 		sender:   make(chan Message),
 	}
@@ -144,8 +144,8 @@ func (client *webAgentClient) handleIncomingRegister(m *wamRegister) error {
 		"message":          m,
 	})
 
-	if client.endpoint == (bundle.EndpointID{}) {
-		if eid, err := bundle.NewEndpointID(m.endpoint); err != nil {
+	if client.endpoint == (bpv7.EndpointID{}) {
+		if eid, err := bpv7.NewEndpointID(m.endpoint); err != nil {
 			logger.WithError(err).Warn("Parsing endpoint ID errored")
 			return err
 		} else {
@@ -184,14 +184,14 @@ func (client *webAgentClient) writeMessage(msg webAgentMessage) error {
 	return wc.Close()
 }
 
-func (client *webAgentClient) Endpoints() []bundle.EndpointID {
+func (client *webAgentClient) Endpoints() []bpv7.EndpointID {
 	client.Lock()
 	defer client.Unlock()
 
-	if client.endpoint == (bundle.EndpointID{}) {
+	if client.endpoint == (bpv7.EndpointID{}) {
 		return nil
 	} else {
-		return []bundle.EndpointID{client.endpoint}
+		return []bpv7.EndpointID{client.endpoint}
 	}
 }
 

@@ -13,7 +13,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/stages"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/utils"
@@ -38,8 +38,8 @@ type Client struct {
 	stageHandler    *stages.StageHandler
 	transferManager *utils.TransferManager
 
-	nodeId     bundle.EndpointID
-	peerNodeId bundle.EndpointID
+	nodeId     bpv7.EndpointID
+	peerNodeId bpv7.EndpointID
 
 	reportChan chan cla.ConvergenceStatus
 
@@ -217,7 +217,7 @@ func (client *Client) handle() {
 }
 
 // Send a bundle to this Client's endpoint.
-func (client *Client) Send(b bundle.Bundle) error {
+func (client *Client) Send(b bpv7.Bundle) error {
 	client.log().WithField("bundle", b).Debug("Sending Bundle...")
 	defer client.log().WithField("bundle", b).Info("Sent Bundle")
 
@@ -248,12 +248,12 @@ func (client *Client) IsPermanent() bool {
 }
 
 // GetEndpointID returns the endpoint ID assigned to this CLA.
-func (client *Client) GetEndpointID() bundle.EndpointID {
+func (client *Client) GetEndpointID() bpv7.EndpointID {
 	return client.nodeId
 }
 
 // GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer, if it's known. Otherwise the zero endpoint
 // will be returned.
-func (client *Client) GetPeerEndpointID() bundle.EndpointID {
+func (client *Client) GetPeerEndpointID() bpv7.EndpointID {
 	return client.peerNodeId
 }

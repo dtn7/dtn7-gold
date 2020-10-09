@@ -12,27 +12,27 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/storage"
 )
 
 // BundlePack is a set of a bundle, it's creation or reception time stamp and
 // a set of constraints used in the process of delivering this bundle.
 type BundlePack struct {
-	Id          bundle.BundleID
-	Receiver    bundle.EndpointID
+	Id          bpv7.BundleID
+	Receiver    bpv7.EndpointID
 	Timestamp   time.Time
 	Constraints map[Constraint]bool
 
-	bndl  *bundle.Bundle
+	bndl  *bpv7.Bundle
 	store *storage.Store
 }
 
 // NewBundlePack returns a BundlePack for the given bundle.
-func NewBundlePack(bid bundle.BundleID, store *storage.Store) BundlePack {
+func NewBundlePack(bid bpv7.BundleID, store *storage.Store) BundlePack {
 	bp := BundlePack{
 		Id:          bid,
-		Receiver:    bundle.DtnNone(),
+		Receiver:    bpv7.DtnNone(),
 		Timestamp:   time.Now(),
 		Constraints: make(map[Constraint]bool),
 
@@ -42,7 +42,7 @@ func NewBundlePack(bid bundle.BundleID, store *storage.Store) BundlePack {
 
 	if bi, err := bp.store.QueryId(bp.Id.Scrub()); err == nil {
 		if v, ok := bi.Properties["bundlepack/receiver"]; ok {
-			bp.Receiver = v.(bundle.EndpointID)
+			bp.Receiver = v.(bpv7.EndpointID)
 		}
 		if v, ok := bi.Properties["bundlepack/timestamp"]; ok {
 			bp.Timestamp = v.(time.Time)
@@ -55,7 +55,7 @@ func NewBundlePack(bid bundle.BundleID, store *storage.Store) BundlePack {
 	return bp
 }
 
-func NewBundlePackFromBundle(b bundle.Bundle, store *storage.Store) BundlePack {
+func NewBundlePackFromBundle(b bpv7.Bundle, store *storage.Store) BundlePack {
 	bp := NewBundlePack(b.ID(), store)
 
 	bp.bndl = &b
@@ -97,7 +97,7 @@ func (bp BundlePack) Sync() error {
 }
 
 // Bundle returns this BundlePack's Bundle.
-func (bp *BundlePack) Bundle() (*bundle.Bundle, error) {
+func (bp *BundlePack) Bundle() (*bpv7.Bundle, error) {
 	if bp.bndl != nil {
 		return bp.bndl, nil
 	}
@@ -113,7 +113,7 @@ func (bp *BundlePack) Bundle() (*bundle.Bundle, error) {
 }
 
 // MustBundle: like Bundle, just more stupid
-func (bp *BundlePack) MustBundle() *bundle.Bundle {
+func (bp *BundlePack) MustBundle() *bpv7.Bundle {
 	b, err := bp.Bundle()
 	if err != nil {
 		panic(err)
@@ -128,7 +128,7 @@ func (bp BundlePack) ID() string {
 
 // HasReceiver returns true if this BundlePack has a Receiver value.
 func (bp BundlePack) HasReceiver() bool {
-	return bp.Receiver != bundle.DtnNone()
+	return bp.Receiver != bpv7.DtnNone()
 }
 
 // HasConstraint returns true if the given constraint contains.
@@ -169,12 +169,12 @@ func (bp *BundlePack) UpdateBundleAge() (uint64, error) {
 		return 0, err
 	}
 
-	ageBlock, err := bndl.ExtensionBlock(bundle.ExtBlockTypeBundleAgeBlock)
+	ageBlock, err := bndl.ExtensionBlock(bpv7.ExtBlockTypeBundleAgeBlock)
 	if err != nil {
 		return 0, newCoreError("No such block")
 	}
 
-	age := ageBlock.Value.(*bundle.BundleAgeBlock)
+	age := ageBlock.Value.(*bpv7.BundleAgeBlock)
 	return age.Increment(uint64(time.Since(bp.Timestamp)) / 1000), nil
 }
 

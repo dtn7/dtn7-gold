@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
@@ -48,7 +48,7 @@ func (ci *SessInitStage) Handle(state *State, closeChan <-chan struct{}) {
 		ci.state.Keepalive = uint16(math.Min(float64(ci.state.Configuration.Keepalive), float64(ciIn.KeepaliveInterval)))
 		ci.state.SegmentMtu = ciIn.SegmentMru
 		ci.state.TransferMtu = ciIn.TransferMru
-		ci.state.PeerNodeId, err = bundle.NewEndpointID(ciIn.NodeId)
+		ci.state.PeerNodeId, err = bpv7.NewEndpointID(ciIn.NodeId)
 	}
 
 	ci.state.StageError = err

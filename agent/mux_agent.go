@@ -7,7 +7,7 @@ package agent
 import (
 	"sync"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // MuxAgent mimics an ApplicationAgent to be used as a multiplexer for different ApplicationAgents.
@@ -88,7 +88,7 @@ func (mux *MuxAgent) unregister(agent ApplicationAgent) {
 	}
 }
 
-func (mux *MuxAgent) Endpoints() (endpoints []bundle.EndpointID) {
+func (mux *MuxAgent) Endpoints() (endpoints []bpv7.EndpointID) {
 	mux.Lock()
 	defer mux.Unlock()
 

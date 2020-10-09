@@ -17,7 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/agent"
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -29,7 +29,7 @@ type exchange struct {
 	watcher       *fsnotify.Watcher
 
 	closeChan      chan os.Signal
-	bundleReadChan chan bundle.Bundle
+	bundleReadChan chan bpv7.Bundle
 }
 
 func cleanFilepath(f string) string {
@@ -59,7 +59,7 @@ func startExchange(args []string) {
 	ex := &exchange{
 		directory:      directory,
 		closeChan:      make(chan os.Signal),
-		bundleReadChan: make(chan bundle.Bundle),
+		bundleReadChan: make(chan bpv7.Bundle),
 	}
 
 	signal.Notify(ex.closeChan, os.Interrupt)
@@ -151,7 +151,7 @@ func (ex *exchange) handler() {
 
 func (ex *exchange) readNewFile(e fsnotify.Event) {
 	for i := 0; i < 5; i++ {
-		var b bundle.Bundle
+		var b bpv7.Bundle
 
 		if f, err := os.Open(e.Name); err != nil {
 			log.WithError(err).WithField("file", e.Name).Warn("Opening file errored, retrying..")

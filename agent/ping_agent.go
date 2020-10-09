@@ -7,18 +7,18 @@ package agent
 import (
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // PingAgent is a simple ApplicationAgent to "pong" / acknowledge incoming Bundles.
 type PingAgent struct {
-	endpoint bundle.EndpointID
+	endpoint bpv7.EndpointID
 	receiver chan Message
 	sender   chan Message
 }
 
 // NewPing creates a new PingAgent ApplicationAgent.
-func NewPing(endpoint bundle.EndpointID) *PingAgent {
+func NewPing(endpoint bpv7.EndpointID) *PingAgent {
 	p := &PingAgent{
 		endpoint: endpoint,
 		receiver: make(chan Message),
@@ -51,8 +51,8 @@ func (p *PingAgent) handler() {
 	}
 }
 
-func (p *PingAgent) ackBundle(b bundle.Bundle) {
-	bndl, err := bundle.Builder().
+func (p *PingAgent) ackBundle(b bpv7.Bundle) {
+	bndl, err := bpv7.Builder().
 		Source(p.endpoint).
 		Destination(b.PrimaryBlock.ReportTo).
 		CreationTimestampNow().
@@ -69,8 +69,8 @@ func (p *PingAgent) ackBundle(b bundle.Bundle) {
 	}
 }
 
-func (p *PingAgent) Endpoints() []bundle.EndpointID {
-	return []bundle.EndpointID{p.endpoint}
+func (p *PingAgent) Endpoints() []bpv7.EndpointID {
+	return []bpv7.EndpointID{p.endpoint}
 }
 
 func (p *PingAgent) MessageReceiver() chan Message {

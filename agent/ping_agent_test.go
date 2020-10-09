@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 func TestPingAgent(t *testing.T) {
-	ping := NewPing(bundle.MustNewEndpointID("dtn://foo/ping"))
+	ping := NewPing(bpv7.MustNewEndpointID("dtn://foo/ping"))
 
-	bndlOut, bndlOutErr := bundle.Builder().
+	bndlOut, bndlOutErr := bpv7.Builder().
 		Source("dtn://bar/").
 		Destination("dtn://foo/ping").
 		CreationTimestampNow().

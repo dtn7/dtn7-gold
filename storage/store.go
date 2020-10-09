@@ -11,7 +11,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/timshannon/badgerhold"
 )
 
@@ -67,7 +67,7 @@ func (s *Store) Close() error {
 }
 
 // Push a new/received Bundle to the Store.
-func (s *Store) Push(b bundle.Bundle) error {
+func (s *Store) Push(b bpv7.Bundle) error {
 	bi := newBundleItem(b, s.bundleDir)
 
 	if biStore, err := s.QueryId(b.ID()); err != nil {
@@ -134,7 +134,7 @@ func (s *Store) Update(bi BundleItem) error {
 }
 
 // Delete a BundleItem, represented by the "scrubed" BundleID.
-func (s *Store) Delete(bid bundle.BundleID) error {
+func (s *Store) Delete(bid bpv7.BundleID) error {
 	if bi, err := s.QueryId(bid); err == nil {
 		log.WithFields(log.Fields{
 			"bundle": bid,
@@ -175,7 +175,7 @@ func (s *Store) DeleteExpired() {
 }
 
 // QueryId fetches the BundleItem for the requested BundleID.
-func (s *Store) QueryId(bid bundle.BundleID) (bi BundleItem, err error) {
+func (s *Store) QueryId(bid bpv7.BundleID) (bi BundleItem, err error) {
 	err = s.bh.Get(bid.Scrub().String(), &bi)
 	return
 }
@@ -187,7 +187,7 @@ func (s *Store) QueryPending() (bis []BundleItem, err error) {
 }
 
 // KnowsBundle checks if such a Bundle is known.
-func (s *Store) KnowsBundle(bid bundle.BundleID) bool {
+func (s *Store) KnowsBundle(bid bpv7.BundleID) bool {
 	_, err := s.QueryId(bid)
 	return err != badgerhold.ErrNotFound
 }

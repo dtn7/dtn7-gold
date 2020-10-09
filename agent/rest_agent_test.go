@@ -17,7 +17,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/gorilla/mux"
 )
 
@@ -46,7 +46,7 @@ func TestRestAgentCycle(t *testing.T) {
 	}
 
 	// Register new client
-	registerEid := bundle.MustNewEndpointID("dtn://foo/bar")
+	registerEid := bpv7.MustNewEndpointID("dtn://foo/bar")
 
 	registerUrl := fmt.Sprintf("http://%s/rest/register", addr)
 	registerRequestBuf := new(bytes.Buffer)
@@ -138,7 +138,7 @@ func TestRestAgentCycle(t *testing.T) {
 	}`, registerResponse.UUID, registerEid.String()))
 	buildResponse := RestBuildResponse{}
 
-	buildBndl, buildBndlErr := bundle.Builder().
+	buildBndl, buildBndlErr := bpv7.Builder().
 		Destination("dtn://dst/").
 		Source(registerEid).
 		CreationTimestampEpoch().
@@ -151,7 +151,7 @@ func TestRestAgentCycle(t *testing.T) {
 	}
 
 	var (
-		buildResponseBundle    bundle.Bundle
+		buildResponseBundle    bpv7.Bundle
 		buildResponseWaitGroup sync.WaitGroup
 	)
 	buildResponseWaitGroup.Add(1)

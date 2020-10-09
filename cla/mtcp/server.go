@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 )
 
@@ -23,7 +23,7 @@ import (
 type MTCPServer struct {
 	listenAddress string
 	reportChan    chan cla.ConvergenceStatus
-	endpointID    bundle.EndpointID
+	endpointID    bpv7.EndpointID
 	permanent     bool
 
 	stopSyn chan struct{}
@@ -33,7 +33,7 @@ type MTCPServer struct {
 // NewMTCPServer creates a new MTCPServer for the given listen address. The
 // permanent flag indicates if this MTCPServer should never be removed from
 // the core.
-func NewMTCPServer(listenAddress string, endpointID bundle.EndpointID, permanent bool) *MTCPServer {
+func NewMTCPServer(listenAddress string, endpointID bpv7.EndpointID, permanent bool) *MTCPServer {
 	return &MTCPServer{
 		listenAddress: listenAddress,
 		reportChan:    make(chan cla.ConvergenceStatus),
@@ -119,7 +119,7 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 			continue
 		}
 
-		bndl := new(bundle.Bundle)
+		bndl := new(bpv7.Bundle)
 		if err := cboring.Unmarshal(bndl, connReader); err != nil {
 			log.WithFields(log.Fields{
 				"cla":   serv,
@@ -150,7 +150,7 @@ func (serv *MTCPServer) Close() error {
 	return nil
 }
 
-func (serv MTCPServer) GetEndpointID() bundle.EndpointID {
+func (serv MTCPServer) GetEndpointID() bpv7.EndpointID {
 	return serv.endpointID
 }
 

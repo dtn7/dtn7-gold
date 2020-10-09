@@ -16,7 +16,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 )
 
@@ -67,8 +67,8 @@ func handleListener(
 					errs <- fmt.Errorf("listener: new peer is not a ConvergenceSender; %v", cs)
 				} else {
 					dst := cs.Sender.(cla.ConvergenceSender).GetPeerEndpointID()
-					bndl, err := bundle.Builder().
-						CRC(bundle.CRC32).
+					bndl, err := bpv7.Builder().
+						CRC(bpv7.CRC32).
 						Source("dtn://server/").
 						Destination(dst).
 						CreationTimestampNow().
@@ -103,12 +103,12 @@ func handleListener(
 }
 
 func handleClient(
-	mkClient func(string, bundle.EndpointID) *Client,
+	mkClient func(string, bpv7.EndpointID) *Client,
 	serverAddr string, clientNo, msgs, payload int, clientWg *sync.WaitGroup, errs chan error,
 ) {
 	defer clientWg.Done()
 
-	clientEid := bundle.MustNewEndpointID(fmt.Sprintf("dtn://client-%d/", clientNo))
+	clientEid := bpv7.MustNewEndpointID(fmt.Sprintf("dtn://client-%d/", clientNo))
 	client := mkClient(serverAddr, clientEid)
 	if err, _ := client.Start(); err != nil {
 		errs <- fmt.Errorf("client %d: %w", clientNo, err)
@@ -133,8 +133,8 @@ func handleClient(
 		defer thisClientWg.Done()
 
 		for i := 0; i < msgs; i++ {
-			bndl, err := bundle.Builder().
-				CRC(bundle.CRC32).
+			bndl, err := bpv7.Builder().
+				CRC(bpv7.CRC32).
 				Source(clientEid).
 				Destination("dtn://server/").
 				CreationTimestampNow().
@@ -161,7 +161,7 @@ func handleClient(
 }
 
 func startTestNetwork(
-	mkListener func(string) cla.ConvergenceProvider, mkClient func(string, bundle.EndpointID) *Client,
+	mkListener func(string) cla.ConvergenceProvider, mkClient func(string, bpv7.EndpointID) *Client,
 	msgs, clients, payload int, t *testing.T,
 ) {
 	var serverAddr = fmt.Sprintf("localhost:%d", randomTcpPort(t))
@@ -196,14 +196,14 @@ func TestImplNetwork(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 
 	mkTcpListener := func(addr string) cla.ConvergenceProvider {
-		return ListenTCP(addr, bundle.MustNewEndpointID("dtn://server/"))
+		return ListenTCP(addr, bpv7.MustNewEndpointID("dtn://server/"))
 	}
-	mkTcpClient := func(addr string, eid bundle.EndpointID) *Client {
+	mkTcpClient := func(addr string, eid bpv7.EndpointID) *Client {
 		return DialTCP(addr, eid, false)
 	}
 
 	mkWsListener := func(addr string) cla.ConvergenceProvider {
-		listener := ListenWebSocket(bundle.MustNewEndpointID("dtn://server/"))
+		listener := ListenWebSocket(bpv7.MustNewEndpointID("dtn://server/"))
 
 		httpMux := http.NewServeMux()
 		httpMux.Handle("/tcpclv4", listener)
@@ -215,7 +215,7 @@ func TestImplNetwork(t *testing.T) {
 
 		return listener
 	}
-	mkWsClient := func(addr string, eid bundle.EndpointID) *Client {
+	mkWsClient := func(addr string, eid bpv7.EndpointID) *Client {
 		return DialWebSocket("ws://"+addr+"/tcpclv4", eid, false)
 	}
 
@@ -227,7 +227,7 @@ func TestImplNetwork(t *testing.T) {
 		payload int
 
 		mkListener func(string) cla.ConvergenceProvider
-		mkClient   func(string, bundle.EndpointID) *Client
+		mkClient   func(string, bpv7.EndpointID) *Client
 	}{
 		{"TCP", 1, 1, 64, mkTcpListener, mkTcpClient},
 		{"TCP", 1, 1, 2097152, mkTcpListener, mkTcpClient},

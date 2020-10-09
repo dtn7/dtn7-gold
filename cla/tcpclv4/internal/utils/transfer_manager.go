@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
@@ -23,7 +23,7 @@ type TransferManager struct {
 	msgIn  <-chan msgs.Message
 	msgOut chan<- msgs.Message
 
-	chanBundles chan bundle.Bundle
+	chanBundles chan bpv7.Bundle
 	chanErrors  chan error
 
 	segmentMtu uint64
@@ -43,7 +43,7 @@ func NewTransferManager(msgIn <-chan msgs.Message, msgOut chan<- msgs.Message, s
 		msgIn:  msgIn,
 		msgOut: msgOut,
 
-		chanBundles: make(chan bundle.Bundle),
+		chanBundles: make(chan bpv7.Bundle),
 		chanErrors:  make(chan error),
 
 		segmentMtu: segmentMtu,
@@ -57,7 +57,7 @@ func NewTransferManager(msgIn <-chan msgs.Message, msgOut chan<- msgs.Message, s
 }
 
 // Exchange channels for incoming Bundles or errors.
-func (tm *TransferManager) Exchange() (bundles <-chan bundle.Bundle, errChan <-chan error) {
+func (tm *TransferManager) Exchange() (bundles <-chan bpv7.Bundle, errChan <-chan error) {
 	bundles = tm.chanBundles
 	errChan = tm.chanErrors
 	return
@@ -131,7 +131,7 @@ func (tm *TransferManager) handle() {
 }
 
 // Send an outgoing Bundle. This method blocks until the Bundle was sent successfully or an error arises.
-func (tm *TransferManager) Send(b bundle.Bundle) error {
+func (tm *TransferManager) Send(b bpv7.Bundle) error {
 	transfer := NewBundleOutgoingTransfer(atomic.AddUint64(&tm.outNextId, 1)-1, b)
 
 	ackChan := make(chan msgs.Message, 32)

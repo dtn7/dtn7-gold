@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // mockAgent is a trivial implementation of an ApplicationAgent, only used for testing.
 type mockAgent struct {
 	sync.Mutex
 
-	endpoints []bundle.EndpointID
+	endpoints []bpv7.EndpointID
 	receiver  chan Message
 	sender    chan Message
 
@@ -25,7 +25,7 @@ type mockAgent struct {
 }
 
 // newMockAgent creates a mockAgent for the given endpoints.
-func newMockAgent(endpoints []bundle.EndpointID) (m *mockAgent) {
+func newMockAgent(endpoints []bpv7.EndpointID) (m *mockAgent) {
 	m = &mockAgent{
 		endpoints: endpoints,
 		receiver:  make(chan Message),
@@ -64,7 +64,7 @@ func (m *mockAgent) send(msg Message) {
 	m.sender <- msg
 }
 
-func (m *mockAgent) Endpoints() []bundle.EndpointID {
+func (m *mockAgent) Endpoints() []bpv7.EndpointID {
 	return m.endpoints
 }
 
@@ -76,7 +76,7 @@ func (m *mockAgent) MessageSender() chan Message {
 	return m.sender
 }
 func TestMockAgent(t *testing.T) {
-	b0, err := bundle.Builder().
+	b0, err := bpv7.Builder().
 		Source("dtn://src/").
 		Destination("dtn://agent/mock/").
 		CreationTimestampEpoch().
@@ -89,7 +89,7 @@ func TestMockAgent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b1, err := bundle.Builder().
+	b1, err := bpv7.Builder().
 		Source("dtn://src/").
 		Destination("dtn://agent/mock/").
 		CreationTimestampNow().
@@ -100,7 +100,7 @@ func TestMockAgent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mock := newMockAgent([]bundle.EndpointID{bundle.MustNewEndpointID("dtn://agent/mock/")})
+	mock := newMockAgent([]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://agent/mock/")})
 
 	mock.MessageReceiver() <- BundleMessage{b0}
 	mock.MessageReceiver() <- BundleMessage{b1}

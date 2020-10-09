@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 func TestManager(t *testing.T) {
@@ -20,7 +20,7 @@ func TestManager(t *testing.T) {
 		receiverNo int = 200
 	)
 
-	var bndl, bndlErr = bundle.Builder().
+	var bndl, bndlErr = bpv7.Builder().
 		Source("dtn://src/").
 		Destination("dtn://dest/").
 		CreationTimestampEpoch().
@@ -60,7 +60,7 @@ func TestManager(t *testing.T) {
 	for i := 0; i < senderNo; i++ {
 		sender[i] = newMockConvSender(
 			true, fmt.Sprintf("mock://sender_%d/", i),
-			bundle.MustNewEndpointID(fmt.Sprintf("dtn://ms_%d/", i)))
+			bpv7.MustNewEndpointID(fmt.Sprintf("dtn://ms_%d/", i)))
 
 		manager.Register(sender[i])
 	}
@@ -69,7 +69,7 @@ func TestManager(t *testing.T) {
 	for i := 0; i < receiverNo; i++ {
 		receiver[i] = newMockConvRec(
 			true, fmt.Sprintf("mock://receiver_%d/", i),
-			bundle.MustNewEndpointID(fmt.Sprintf("dtn://mr_%d/", i)))
+			bpv7.MustNewEndpointID(fmt.Sprintf("dtn://mr_%d/", i)))
 
 		manager.Register(receiver[i])
 	}

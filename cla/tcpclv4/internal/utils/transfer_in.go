@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
@@ -67,7 +67,7 @@ func (t *IncomingTransfer) NextSegment(dtm *msgs.DataTransmissionMessage) (dam *
 }
 
 // ToBundle returns the Bundle for a finished Transfer.
-func (t *IncomingTransfer) ToBundle() (bndl bundle.Bundle, err error) {
+func (t *IncomingTransfer) ToBundle() (bndl bpv7.Bundle, err error) {
 	if !t.IsFinished() {
 		err = fmt.Errorf("transfer has not been finished")
 		return

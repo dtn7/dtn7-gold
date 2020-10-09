@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // randomPort returns a random open TCP port.
@@ -37,8 +37,8 @@ func isAddrReachable(addr string) (open bool) {
 }
 
 // createBundle from src to dst for testing purpose.
-func createBundle(src, dst string, t *testing.T) bundle.Bundle {
-	b, err := bundle.Builder().
+func createBundle(src, dst string, t *testing.T) bpv7.Bundle {
+	b, err := bpv7.Builder().
 		Source(src).
 		Destination(dst).
 		CreationTimestampNow().

@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
@@ -38,7 +38,7 @@ func (t OutgoingTransfer) String() string {
 }
 
 // NewBundleOutgoingTransfer creates a new OutgoingTransfer for a Bundle.
-func NewBundleOutgoingTransfer(id uint64, b bundle.Bundle) *OutgoingTransfer {
+func NewBundleOutgoingTransfer(id uint64, b bpv7.Bundle) *OutgoingTransfer {
 	var t, w = NewOutgoingTransfer(id)
 
 	go func(w *io.PipeWriter) {

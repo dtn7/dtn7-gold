@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 )
 
@@ -31,9 +31,9 @@ type ProphetConfig struct {
 type Prophet struct {
 	c *Core
 	// predictabilities are this node's delivery probabilities for other nodes
-	predictabilities map[bundle.EndpointID]float64
+	predictabilities map[bpv7.EndpointID]float64
 	// Map containing the predictability-maps of other nodes
-	peerPredictabilities map[bundle.EndpointID]map[bundle.EndpointID]float64
+	peerPredictabilities map[bpv7.EndpointID]map[bpv7.EndpointID]float64
 	// dataMutex is a RW-mutex which protects change operations to the algorithm's metadata
 	dataMutex sync.RWMutex
 	// config contains the values for prophet constants
@@ -50,8 +50,8 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 
 	prophet := Prophet{
 		c:                    c,
-		predictabilities:     make(map[bundle.EndpointID]float64),
-		peerPredictabilities: make(map[bundle.EndpointID]map[bundle.EndpointID]float64),
+		predictabilities:     make(map[bpv7.EndpointID]float64),
+		peerPredictabilities: make(map[bpv7.EndpointID]map[bpv7.EndpointID]float64),
 		config:               config,
 	}
 
@@ -70,8 +70,8 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 	}
 
 	// register our custom metadata-block
-	extensionBlockManager := bundle.GetExtensionBlockManager()
-	if !extensionBlockManager.IsKnown(bundle.ExtBlockTypeProphetBlock) {
+	extensionBlockManager := bpv7.GetExtensionBlockManager()
+	if !extensionBlockManager.IsKnown(bpv7.ExtBlockTypeProphetBlock) {
 		// since we already checked if the block type exists, this really shouldn't ever fail...
 		_ = extensionBlockManager.Register(newProphetBlock(prophet.predictabilities))
 	}
@@ -80,7 +80,7 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 }
 
 // encounter updates the predictability for an encountered node
-func (prophet *Prophet) encounter(peer bundle.EndpointID) {
+func (prophet *Prophet) encounter(peer bpv7.EndpointID) {
 	// map will return 0 if no value is stored for key
 	pOld := prophet.predictabilities[peer]
 	pNew := pOld + ((1 - pOld) * prophet.config.PInit)
@@ -93,7 +93,7 @@ func (prophet *Prophet) encounter(peer bundle.EndpointID) {
 }
 
 // agePred "ages" - decreases over time - the predictability for a node
-func (prophet *Prophet) agePred(peer bundle.EndpointID) {
+func (prophet *Prophet) agePred(peer bpv7.EndpointID) {
 	pOld := prophet.predictabilities[peer]
 	pNew := pOld * prophet.config.Gamma
 	prophet.predictabilities[peer] = pNew
@@ -116,7 +116,7 @@ func (prophet *Prophet) ageCron() {
 // transitivity increases predictability for nodes based on a peer's corresponding predictability
 // If we are likely to reencounter node b and node b is likely to reencounter node c
 // then we are also a good forwarder for node c
-func (prophet *Prophet) transitivity(peer bundle.EndpointID) {
+func (prophet *Prophet) transitivity(peer bpv7.EndpointID) {
 	// map will return 0 if no value is stored for key
 	peerPredictabilities, present := prophet.peerPredictabilities[peer]
 	if !present {
@@ -149,7 +149,7 @@ func (prophet *Prophet) transitivity(peer bundle.EndpointID) {
 }
 
 // sendMetadata sends our summary-vector with our delivery predictabilities to a peer
-func (prophet *Prophet) sendMetadata(destination bundle.EndpointID) {
+func (prophet *Prophet) sendMetadata(destination bpv7.EndpointID) {
 	prophet.dataMutex.RLock()
 	source := prophet.c.NodeId
 	metadataBlock := newProphetBlock(prophet.predictabilities)
@@ -167,7 +167,7 @@ func (prophet *Prophet) sendMetadata(destination bundle.EndpointID) {
 }
 
 func (prophet *Prophet) NotifyIncoming(bp BundlePack) {
-	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(bundle.ExtBlockTypeProphetBlock); err == nil {
+	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeProphetBlock); err == nil {
 		log.WithFields(log.Fields{
 			"source": bp.MustBundle().PrimaryBlock.SourceNode,
 		}).Debug("Received metadata")
@@ -232,16 +232,16 @@ func (prophet *Prophet) NotifyIncoming(bp BundlePack) {
 	}
 
 	// Check if we got a PreviousNodeBlock and extract its EndpointID
-	var prevNode bundle.EndpointID
-	if pnBlock, err := bndl.ExtensionBlock(bundle.ExtBlockTypePreviousNodeBlock); err == nil {
-		prevNode = pnBlock.Value.(*bundle.PreviousNodeBlock).Endpoint()
+	var prevNode bpv7.EndpointID
+	if pnBlock, err := bndl.ExtensionBlock(bpv7.ExtBlockTypePreviousNodeBlock); err == nil {
+		prevNode = pnBlock.Value.(*bpv7.PreviousNodeBlock).Endpoint()
 	} else {
 		return
 	}
 
-	sentEids, ok := bundleItem.Properties["routing/prophet/sent"].([]bundle.EndpointID)
+	sentEids, ok := bundleItem.Properties["routing/prophet/sent"].([]bpv7.EndpointID)
 	if !ok {
-		sentEids = make([]bundle.EndpointID, 0)
+		sentEids = make([]bpv7.EndpointID, 0)
 	}
 
 	// Check if PreviousNodeBlock is already known
@@ -278,7 +278,7 @@ func (prophet *Prophet) SenderForBundle(bp BundlePack) (sender []cla.Convergence
 		return
 	}
 
-	if _, err := bndl.ExtensionBlock(bundle.ExtBlockTypeProphetBlock); err == nil {
+	if _, err := bndl.ExtensionBlock(bpv7.ExtBlockTypeProphetBlock); err == nil {
 		// we do not forward metadata bundles
 		// if the intended recipient is connected the bundle will be forwarded via direct delivery
 		// since we shouldn't have any metadata bundle meant for other nodes, we will also delete these bundles
@@ -296,9 +296,9 @@ func (prophet *Prophet) SenderForBundle(bp BundlePack) (sender []cla.Convergence
 		return
 	}
 
-	sentEids, ok := bundleItem.Properties["routing/prophet/sent"].([]bundle.EndpointID)
+	sentEids, ok := bundleItem.Properties["routing/prophet/sent"].([]bpv7.EndpointID)
 	if !ok {
-		sentEids = make([]bundle.EndpointID, 0)
+		sentEids = make([]bpv7.EndpointID, 0)
 	}
 
 	destination := bndl.PrimaryBlock.Destination
@@ -386,7 +386,7 @@ func (prophet *Prophet) ReportFailure(bp BundlePack, sender cla.ConvergenceSende
 		return
 	}
 
-	sentEids, ok := bundleItem.Properties["routing/prophet/sent"].([]bundle.EndpointID)
+	sentEids, ok := bundleItem.Properties["routing/prophet/sent"].([]bpv7.EndpointID)
 	if !ok {
 		// this shouldn't really happen, no?
 		log.WithFields(log.Fields{
@@ -460,19 +460,19 @@ func (prophet *Prophet) ReportPeerDisappeared(peer cla.Convergence) {
 // ProphetBlock contains routing metadata
 //
 // TODO: Turn this into an administrative record
-type ProphetBlock map[bundle.EndpointID]float64
+type ProphetBlock map[bpv7.EndpointID]float64
 
-func newProphetBlock(data map[bundle.EndpointID]float64) *ProphetBlock {
+func newProphetBlock(data map[bpv7.EndpointID]float64) *ProphetBlock {
 	newBlock := ProphetBlock(data)
 	return &newBlock
 }
 
-func (pBlock *ProphetBlock) getPredictabilities() map[bundle.EndpointID]float64 {
+func (pBlock *ProphetBlock) getPredictabilities() map[bpv7.EndpointID]float64 {
 	return *pBlock
 }
 
 func (pBlock *ProphetBlock) BlockTypeCode() uint64 {
-	return bundle.ExtBlockTypeProphetBlock
+	return bpv7.ExtBlockTypeProphetBlock
 }
 
 func (pBlock *ProphetBlock) BlockTypeName() string {
@@ -512,10 +512,10 @@ func (pBlock *ProphetBlock) UnmarshalCbor(r io.Reader) error {
 	}
 
 	// read the actual data
-	predictability := make(map[bundle.EndpointID]float64)
+	predictability := make(map[bpv7.EndpointID]float64)
 	var i uint64
 	for i = 0; i < lenData; i++ {
-		peerID := bundle.EndpointID{}
+		peerID := bpv7.EndpointID{}
 		if err := cboring.Unmarshal(&peerID, r); err != nil {
 			return err
 		}

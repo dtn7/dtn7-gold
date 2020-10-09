@@ -10,11 +10,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 func TestWebsocketAgentMessageEnDecode(t *testing.T) {
-	b, err := bundle.Builder().
+	b, err := bpv7.Builder().
 		Source("dtn://src/").
 		Destination("dtn://dst/").
 		CreationTimestampEpoch().

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
@@ -28,7 +28,7 @@ func TestStageHandlerDummy(t *testing.T) {
 		Keepalive:    30,
 		SegmentMru:   65535,
 		TransferMru:  1048576,
-		NodeId:       bundle.MustNewEndpointID("dtn://example/"),
+		NodeId:       bpv7.MustNewEndpointID("dtn://example/"),
 	}
 
 	sh := NewStageHandler(stages, msgIn, msgOut, conf)
@@ -53,14 +53,14 @@ func TestStageHandlerPingPong(t *testing.T) {
 		Keepalive:   10,
 		SegmentMru:  1024,
 		TransferMru: 1048576,
-		NodeId:      bundle.MustNewEndpointID("dtn://one/"),
+		NodeId:      bpv7.MustNewEndpointID("dtn://one/"),
 	}
 	conf2 := Configuration{
 		ActivePeer:  false,
 		Keepalive:   10,
 		SegmentMru:  1024,
 		TransferMru: 1048576,
-		NodeId:      bundle.MustNewEndpointID("dtn://two/"),
+		NodeId:      bpv7.MustNewEndpointID("dtn://two/"),
 	}
 
 	// Buffer channels because those are directly linked and one peer might stop before the other one.
@@ -133,7 +133,7 @@ func TestStageHandlerHooks(t *testing.T) {
 		Keepalive:    30,
 		SegmentMru:   65535,
 		TransferMru:  1048576,
-		NodeId:       bundle.MustNewEndpointID("dtn://example/"),
+		NodeId:       bpv7.MustNewEndpointID("dtn://example/"),
 	}
 
 	sh := NewStageHandler(stages, msgIn, msgOut, conf)
@@ -175,7 +175,7 @@ func TestStageHandlerHooksFail(t *testing.T) {
 		Keepalive:    30,
 		SegmentMru:   65535,
 		TransferMru:  1048576,
-		NodeId:       bundle.MustNewEndpointID("dtn://example/"),
+		NodeId:       bpv7.MustNewEndpointID("dtn://example/"),
 	}
 
 	sh := NewStageHandler(stages, msgIn, msgOut, conf)

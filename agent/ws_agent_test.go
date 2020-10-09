@@ -15,7 +15,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/gorilla/websocket"
 )
 
@@ -138,7 +138,7 @@ func TestWebAgentNew(t *testing.T) {
 			ws.MessageReceiver() <- SyscallResponseMessage{
 				Request:   "test",
 				Response:  []byte{0x23, 0x42},
-				Recipient: bundle.MustNewEndpointID("dtn://foobar/"),
+				Recipient: bpv7.MustNewEndpointID("dtn://foobar/"),
 			}
 		}
 

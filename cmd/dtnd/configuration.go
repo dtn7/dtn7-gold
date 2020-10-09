@@ -20,7 +20,7 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"github.com/dtn7/dtn7-go/agent"
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/bbc"
 	"github.com/dtn7/dtn7-go/cla/mtcp"
@@ -93,7 +93,7 @@ func parseListenPort(endpoint string) (port int, err error) {
 }
 
 // parseListen inspects a "listen" convergenceConf and returns a Convergable.
-func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergable, bundle.EndpointID, cla.CLAType, discovery.DiscoveryMessage, error) {
+func parseListen(conv convergenceConf, nodeId bpv7.EndpointID) (cla.Convergable, bpv7.EndpointID, cla.CLAType, discovery.DiscoveryMessage, error) {
 	log.WithFields(log.Fields{
 		"EndpointID": conv.Node,
 		"Endpoint":   conv.Endpoint,
@@ -102,7 +102,7 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergabl
 
 	// if the user has configured an EndpointID for this convergence adaptor
 	if conv.Node != "" {
-		parsedId, err := bundle.NewEndpointID(conv.Node)
+		parsedId, err := bpv7.NewEndpointID(conv.Node)
 		if err != nil {
 			return nil, nodeId, 0, discovery.DiscoveryMessage{}, err
 		} else {
@@ -174,11 +174,11 @@ func parseListen(conv convergenceConf, nodeId bundle.EndpointID) (cla.Convergabl
 	}
 }
 
-func parsePeer(conv convergenceConf, nodeId bundle.EndpointID) (cla.ConvergenceSender, error) {
+func parsePeer(conv convergenceConf, nodeId bpv7.EndpointID) (cla.ConvergenceSender, error) {
 
 	switch conv.Protocol {
 	case "mtcp":
-		if endpointID, err := bundle.NewEndpointID(conv.Node); err != nil {
+		if endpointID, err := bpv7.NewEndpointID(conv.Node); err != nil {
 			return nil, err
 		} else {
 			return mtcp.NewMTCPClient(conv.Endpoint, endpointID, true), nil
@@ -289,7 +289,7 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		"routing": conf.Routing.Algorithm,
 	}).Debug("Selected routing algorithm")
 
-	nodeId, nodeErr := bundle.NewEndpointID(conf.Core.NodeId)
+	nodeId, nodeErr := bpv7.NewEndpointID(conf.Core.NodeId)
 	if nodeErr != nil {
 		err = nodeErr
 		return

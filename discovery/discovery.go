@@ -16,7 +16,7 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 
 	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 // DiscoveryMessage is the kind of message used by this peer/neighbor discovery.
 type DiscoveryMessage struct {
 	Type     cla.CLAType
-	Endpoint bundle.EndpointID
+	Endpoint bpv7.EndpointID
 	Port     uint
 }
 

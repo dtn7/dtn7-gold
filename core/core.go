@@ -14,7 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/agent"
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/storage"
 )
@@ -23,7 +23,7 @@ import (
 // reception of bundles.
 type Core struct {
 	InspectAllBundles bool
-	NodeId            bundle.EndpointID
+	NodeId            bpv7.EndpointID
 
 	agentManager *AgentManager
 	cron         *Cron
@@ -45,14 +45,14 @@ type Core struct {
 // 	inspectAllBundles: inspect all administrative records, not only those addressed to this node
 // 	routingConf: selected routing algorithm and its configuration
 // 	signPriv: optional ed25519 private key (64 bytes long) to sign all outgoing bundles; or nil to not use this feature
-func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool, routingConf RoutingConf, signPriv ed25519.PrivateKey) (*Core, error) {
+func NewCore(storePath string, nodeId bpv7.EndpointID, inspectAllBundles bool, routingConf RoutingConf, signPriv ed25519.PrivateKey) (*Core, error) {
 	var c = new(Core)
 
-	gob.Register([]bundle.EndpointID{})
-	gob.Register(bundle.EndpointID{})
-	gob.Register(map[cla.CLAType][]bundle.EndpointID{})
-	gob.Register(bundle.DtnEndpoint{})
-	gob.Register(bundle.IpnEndpoint{})
+	gob.Register([]bpv7.EndpointID{})
+	gob.Register(bpv7.EndpointID{})
+	gob.Register(map[cla.CLAType][]bpv7.EndpointID{})
+	gob.Register(bpv7.DtnEndpoint{})
+	gob.Register(bpv7.IpnEndpoint{})
 	gob.Register(map[Constraint]bool{})
 	gob.Register(time.Time{})
 
@@ -88,7 +88,7 @@ func NewCore(storePath string, nodeId bundle.EndpointID, inspectAllBundles bool,
 		}
 		c.signPriv = signPriv
 
-		if err := bundle.GetExtensionBlockManager().Register(&bundle.SignatureBlock{}); err != nil {
+		if err := bpv7.GetExtensionBlockManager().Register(&bpv7.SignatureBlock{}); err != nil {
 			return nil, fmt.Errorf("SignatureBlock registration errored: %v", err)
 		}
 	}
@@ -196,7 +196,7 @@ func (c *Core) RegisterApplicationAgent(app agent.ApplicationAgent) {
 // senderForDestination returns an array of ConvergenceSenders whose endpoint ID
 // equals the requested one. This is used for direct delivery, comparing the
 // PrimaryBlock's destination to the assigned endpoint ID of each CLA.
-func (c *Core) senderForDestination(endpoint bundle.EndpointID) (css []cla.ConvergenceSender) {
+func (c *Core) senderForDestination(endpoint bpv7.EndpointID) (css []cla.ConvergenceSender) {
 	for _, cs := range c.claManager.Sender() {
 		if cs.GetPeerEndpointID().SameNode(endpoint) {
 			css = append(css, cs)
@@ -207,7 +207,7 @@ func (c *Core) senderForDestination(endpoint bundle.EndpointID) (css []cla.Conve
 
 // HasEndpoint checks if the given endpoint ID is assigned either to an
 // application or a CLA governed by this Application Agent.
-func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
+func (c *Core) HasEndpoint(endpoint bpv7.EndpointID) bool {
 	if c.NodeId.SameNode(endpoint) {
 		return true
 	}
@@ -231,10 +231,10 @@ func (c *Core) HasEndpoint(endpoint bundle.EndpointID) bool {
 
 // SendStatusReport creates a new status report in response to the given
 // BundlePack and transmits it.
-func (c *Core) SendStatusReport(bp BundlePack, status bundle.StatusInformationPos, reason bundle.StatusReportReason) {
+func (c *Core) SendStatusReport(bp BundlePack, status bpv7.StatusInformationPos, reason bpv7.StatusReportReason) {
 	// Don't respond to other administrative records
 	bndl, _ := bp.Bundle()
-	if bndl.PrimaryBlock.BundleControlFlags.Has(bundle.AdministrativeRecordPayload) {
+	if bndl.PrimaryBlock.BundleControlFlags.Has(bpv7.AdministrativeRecordPayload) {
 		return
 	}
 
@@ -249,8 +249,8 @@ func (c *Core) SendStatusReport(bp BundlePack, status bundle.StatusInformationPo
 		"reason": reason,
 	}).Info("Sending a status report for a bundle")
 
-	var sr = bundle.NewStatusReport(*bndl, status, reason, bundle.DtnTimeNow())
-	var ar, arErr = bundle.AdministrativeRecordToCbor(&sr)
+	var sr = bpv7.NewStatusReport(*bndl, status, reason, bpv7.DtnTimeNow())
+	var ar, arErr = bpv7.AdministrativeRecordToCbor(&sr)
 	if arErr != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -261,7 +261,7 @@ func (c *Core) SendStatusReport(bp BundlePack, status bundle.StatusInformationPo
 	}
 
 	var aaEndpoint = bp.Receiver
-	if aaEndpoint == bundle.DtnNone() {
+	if aaEndpoint == bpv7.DtnNone() {
 		aaEndpoint = c.NodeId
 	}
 
@@ -274,8 +274,8 @@ func (c *Core) SendStatusReport(bp BundlePack, status bundle.StatusInformationPo
 		return
 	}
 
-	var outBndl, err = bundle.Builder().
-		BundleCtrlFlags(bundle.AdministrativeRecordPayload).
+	var outBndl, err = bpv7.Builder().
+		BundleCtrlFlags(bpv7.AdministrativeRecordPayload).
 		Source(aaEndpoint).
 		Destination(bndl.PrimaryBlock.ReportTo).
 		CreationTimestampNow().
@@ -302,13 +302,13 @@ func (c *Core) RegisterConvergable(conv cla.Convergable) {
 
 // RegisterCLA registers a CLA with the clamanager (just as the RegisterConvergable-method)
 // but also adds the CLAs endpoint id to the set of registered IDs for its type.
-func (c *Core) RegisterCLA(conv cla.Convergable, claType cla.CLAType, eid bundle.EndpointID) {
+func (c *Core) RegisterCLA(conv cla.Convergable, claType cla.CLAType, eid bpv7.EndpointID) {
 	c.claManager.RegisterEndpointID(claType, eid)
 	c.claManager.Register(conv)
 }
 
 // RegisteredCLAs returns the EndpointIDs of all registered CLAs of the specified type.
 // Returns an empty slice if no CLAs of the tye exist.
-func (c *Core) RegisteredCLAs(claType cla.CLAType) []bundle.EndpointID {
+func (c *Core) RegisteredCLAs(claType cla.CLAType) []bpv7.EndpointID {
 	return c.claManager.EndpointIDs(claType)
 }

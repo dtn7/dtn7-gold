@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 func TestConnector(t *testing.T) {
@@ -16,7 +16,7 @@ func TestConnector(t *testing.T) {
 	c := NewConnector(newDummyModem(23, hub), true)
 	_, _ = c.Start()
 
-	b, bErr := bundle.Builder().
+	b, bErr := bpv7.Builder().
 		Source("dtn://src/").
 		Destination("dtn://dst/").
 		CreationTimestampNow().
@@ -40,7 +40,7 @@ func TestConnectorUnregisterTransmission(t *testing.T) {
 	c := NewConnector(newDummyModem(10, hub), true)
 	_, _ = c.Start()
 
-	b, bErr := bundle.Builder().
+	b, bErr := bpv7.Builder().
 		Source("dtn://src/").
 		Destination("dtn://dst/").
 		CreationTimestampNow().
@@ -83,7 +83,7 @@ func TestLoRaConnector(t *testing.T) {
 	c1 := NewConnector(m1, true)
 	_, _ = c1.Start()
 
-	b, bErr := bundle.Builder().
+	b, bErr := bpv7.Builder().
 		Source("dtn://src/").
 		Destination("dtn://dst/").
 		CreationTimestampNow().

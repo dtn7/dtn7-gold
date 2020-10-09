@@ -4,7 +4,7 @@
 
 package agent
 
-import "github.com/dtn7/dtn7-go/bundle"
+import "github.com/dtn7/dtn7-go/bpv7"
 
 // RestRegisterRequest describes a JSON to be POSTed to /register.
 type RestRegisterRequest struct {
@@ -34,8 +34,8 @@ type RestFetchRequest struct {
 
 // RestFetchResponse describes a JSON response for /fetch.
 type RestFetchResponse struct {
-	Error   string          `json:"error"`
-	Bundles []bundle.Bundle `json:"bundles"`
+	Error   string        `json:"error"`
+	Bundles []bpv7.Bundle `json:"bundles"`
 }
 
 // RestBuildRequest describes a JSON to be POSTed to /build.

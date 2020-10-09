@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/ulikunitz/xz"
 )
 
@@ -92,7 +92,7 @@ func (t *IncomingTransmission) ReadFragment(f Fragment) (finished bool, err erro
 	return
 }
 
-func (t *IncomingTransmission) Bundle() (bndl bundle.Bundle, err error) {
+func (t *IncomingTransmission) Bundle() (bndl bpv7.Bundle, err error) {
 	if !t.IsFinished() {
 		err = fmt.Errorf("Transmission is not finished yet")
 		return
@@ -117,7 +117,7 @@ type OutgoingTransmission struct {
 }
 
 // NewOutgoingTransmission creates a new OutgoingTransmission for a Bundle.
-func NewOutgoingTransmission(transmissionID byte, bndl bundle.Bundle, mtu int) (t *OutgoingTransmission, err error) {
+func NewOutgoingTransmission(transmissionID byte, bndl bpv7.Bundle, mtu int) (t *OutgoingTransmission, err error) {
 	var buf bytes.Buffer
 	if xzW, xzErr := xz.NewWriter(&buf); xzErr != nil {
 		err = xzErr

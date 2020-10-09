@@ -19,7 +19,7 @@ import (
 // addition, there is a permanently connected server to which sensor data should be sent. For the connection there are
 // data mules, which are travelling between sensors and server.
 //
-// Addressing within the network is based on the "dtn" URI scheme, compare bundle.DtnEndpoint. The role of the node can
+// Addressing within the network is based on the "dtn" URI scheme, compare bpv7.DtnEndpoint. The role of the node can
 // be determined from the node name, e.g., "dtn://tree23.sensor/" is a sensor. The node naming syntax is configurable.
 //
 // This algorithm is exclusively for data mules. No completely new algorithm is defined here, but an existing one is

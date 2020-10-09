@@ -12,7 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/utils"
 )
@@ -21,7 +21,7 @@ import (
 //
 // This type implements the cla.ConvergenceProvider and should be supervised by a cla.Manager.
 type WebSocketListener struct {
-	endpointID bundle.EndpointID
+	endpointID bpv7.EndpointID
 
 	manager      *cla.Manager
 	managerReady uint32
@@ -30,7 +30,7 @@ type WebSocketListener struct {
 }
 
 // ListenWebSocket creates a new WebSocketListener.
-func ListenWebSocket(endpointID bundle.EndpointID) *WebSocketListener {
+func ListenWebSocket(endpointID bpv7.EndpointID) *WebSocketListener {
 	return &WebSocketListener{
 		endpointID: endpointID,
 		upgrader:   websocket.Upgrader{},
@@ -83,7 +83,7 @@ func webSocketClientStart(client *Client) error {
 }
 
 // newClientWebSocket creates a new Client on a new *websocket.Conn. This function is called from the WebSocketListener.
-func newClientWebSocket(conn *websocket.Conn, endpointID bundle.EndpointID) *Client {
+func newClientWebSocket(conn *websocket.Conn, endpointID bpv7.EndpointID) *Client {
 	return &Client{
 		address:         conn.RemoteAddr().String(),
 		activePeer:      false,
@@ -95,7 +95,7 @@ func newClientWebSocket(conn *websocket.Conn, endpointID bundle.EndpointID) *Cli
 }
 
 // DialWebSocket tries to establish a new TCPCLv4 Client to a remote WebSocketListener.
-func DialWebSocket(address string, endpointID bundle.EndpointID, permanent bool) *Client {
+func DialWebSocket(address string, endpointID bpv7.EndpointID, permanent bool) *Client {
 	return &Client{
 		address:         address,
 		permanent:       permanent,

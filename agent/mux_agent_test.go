@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 func TestMuxAgent(t *testing.T) {
-	b1, err := bundle.Builder().
+	b1, err := bpv7.Builder().
 		Source("dtn://src/").
 		Destination("dtn://agent/mock-1/").
 		CreationTimestampEpoch().
@@ -28,8 +28,8 @@ func TestMuxAgent(t *testing.T) {
 
 	mux := NewMuxAgent()
 
-	mock1 := newMockAgent([]bundle.EndpointID{bundle.MustNewEndpointID("dtn://agent/mock-1/")})
-	mock2 := newMockAgent([]bundle.EndpointID{bundle.MustNewEndpointID("dtn://agent/mock-2/")})
+	mock1 := newMockAgent([]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://agent/mock-1/")})
+	mock2 := newMockAgent([]bpv7.EndpointID{bpv7.MustNewEndpointID("dtn://agent/mock-2/")})
 
 	mux.Register(mock1)
 	mux.Register(mock2)
@@ -56,7 +56,7 @@ func TestMuxAgent(t *testing.T) {
 		break
 	}
 
-	b1.PrimaryBlock.Destination = bundle.MustNewEndpointID("dtn://agent/mock-2/")
+	b1.PrimaryBlock.Destination = bpv7.MustNewEndpointID("dtn://agent/mock-2/")
 	mux.MessageReceiver() <- BundleMessage{b1}
 	time.Sleep(500 * time.Millisecond)
 

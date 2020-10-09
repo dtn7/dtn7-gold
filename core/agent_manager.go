@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/agent"
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // AgentManager is a proxy to connect different ApplicationAgents with the core package.
@@ -75,7 +75,7 @@ func (manager *AgentManager) Register(appAgent agent.ApplicationAgent) {
 }
 
 // HasEndpoint checks if some specific EndpointID is registered for some ApplicationAgent.
-func (manager *AgentManager) HasEndpoint(eid bundle.EndpointID) bool {
+func (manager *AgentManager) HasEndpoint(eid bpv7.EndpointID) bool {
 	return agent.AppAgentHasEndpoint(manager.mux, eid)
 }
 

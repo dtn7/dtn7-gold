@@ -5,7 +5,7 @@
 package agent
 
 import (
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // Message is a generic interface to specify an information exchange between an ApplicationAgent and some Manager.
@@ -13,30 +13,30 @@ import (
 type Message interface {
 	// Recipients returns a list of endpoints to which this message is addressed.
 	// However, if this message is not addressed to some specific endpoint, nil must be returned.
-	Recipients() []bundle.EndpointID
+	Recipients() []bpv7.EndpointID
 }
 
 // BundleMessage indicates a transmitted Bundle.
 // If the Message is received from an ApplicationAgent, it is an incoming Bundle.
 // If the Message is sent from an ApplicationAgent, it is an outgoing Bundle.
 type BundleMessage struct {
-	Bundle bundle.Bundle
+	Bundle bpv7.Bundle
 }
 
 // Recipients are the Bundle destination for a BundleMessage.
-func (bm BundleMessage) Recipients() []bundle.EndpointID {
-	return []bundle.EndpointID{bm.Bundle.PrimaryBlock.Destination}
+func (bm BundleMessage) Recipients() []bpv7.EndpointID {
+	return []bpv7.EndpointID{bm.Bundle.PrimaryBlock.Destination}
 }
 
 // SyscallRequestMessage is sent from an ApplicationAgent to request some "syscall" specific information.
 type SyscallRequestMessage struct {
-	Sender  bundle.EndpointID
+	Sender  bpv7.EndpointID
 	Request string
 }
 
 // Recipients are not available for a SyscallRequestMessage.
-func (srm SyscallRequestMessage) Recipients() []bundle.EndpointID {
-	return []bundle.EndpointID{srm.Sender}
+func (srm SyscallRequestMessage) Recipients() []bpv7.EndpointID {
+	return []bpv7.EndpointID{srm.Sender}
 }
 
 // SyscallResponseMessage is the answer to a SyscallRequestMessage, sent to an ApplicationAgent.
@@ -44,12 +44,12 @@ func (srm SyscallRequestMessage) Recipients() []bundle.EndpointID {
 type SyscallResponseMessage struct {
 	Request   string
 	Response  []byte
-	Recipient bundle.EndpointID
+	Recipient bpv7.EndpointID
 }
 
 // Recipients are the sender of the SyscallRequestMessage.
-func (srm SyscallResponseMessage) Recipients() []bundle.EndpointID {
-	return []bundle.EndpointID{srm.Recipient}
+func (srm SyscallResponseMessage) Recipients() []bpv7.EndpointID {
+	return []bpv7.EndpointID{srm.Recipient}
 }
 
 // ShutdownMessage indicates the closing down of an ApplicationAgent.
@@ -58,6 +58,6 @@ func (srm SyscallResponseMessage) Recipients() []bundle.EndpointID {
 type ShutdownMessage struct{}
 
 // Recipients are not available for a ShutdownMessage.
-func (sm ShutdownMessage) Recipients() []bundle.EndpointID {
+func (sm ShutdownMessage) Recipients() []bpv7.EndpointID {
 	return nil
 }

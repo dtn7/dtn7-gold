@@ -9,7 +9,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // showBundle for the "show" CLI options.
@@ -23,7 +23,7 @@ func showBundle(args []string) {
 
 		err  error
 		f    io.ReadCloser
-		b    bundle.Bundle
+		b    bpv7.Bundle
 		bMsg []byte
 	)
 

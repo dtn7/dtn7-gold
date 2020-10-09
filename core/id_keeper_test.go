@@ -7,30 +7,30 @@ package core
 import (
 	"testing"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 func TestIdKeeper(t *testing.T) {
-	bndl0, err := bundle.Builder().
+	bndl0, err := bpv7.Builder().
 		Source("dtn://src/").
 		Destination("dtn://dest/").
 		CreationTimestampEpoch().
 		Lifetime("60s").
-		BundleCtrlFlags(bundle.MustNotFragmented|bundle.RequestStatusTime).
-		BundleAgeBlock(0, bundle.DeleteBundle).
+		BundleCtrlFlags(bpv7.MustNotFragmented|bpv7.RequestStatusTime).
+		BundleAgeBlock(0, bpv7.DeleteBundle).
 		PayloadBlock([]byte("hello world!")).
 		Build()
 	if err != nil {
 		t.Errorf("Creating bundle failed: %v", err)
 	}
 
-	bndl1, err := bundle.Builder().
+	bndl1, err := bpv7.Builder().
 		Source("dtn://src/").
 		Destination("dtn://dest/").
 		CreationTimestampEpoch().
 		Lifetime("60s").
-		BundleCtrlFlags(bundle.MustNotFragmented|bundle.RequestStatusTime).
-		BundleAgeBlock(0, bundle.DeleteBundle).
+		BundleCtrlFlags(bpv7.MustNotFragmented|bpv7.RequestStatusTime).
+		BundleAgeBlock(0, bpv7.DeleteBundle).
 		PayloadBlock([]byte("hello world!")).
 		Build()
 	if err != nil {

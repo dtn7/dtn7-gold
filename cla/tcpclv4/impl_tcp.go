@@ -11,7 +11,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/utils"
 )
@@ -21,7 +21,7 @@ import (
 // This type implements the cla.ConvergenceProvider and should be supervised by a cla.Manager.
 type TCPListener struct {
 	listenAddress string
-	endpointID    bundle.EndpointID
+	endpointID    bpv7.EndpointID
 	manager       *cla.Manager
 
 	stopSyn chan struct{}
@@ -30,7 +30,7 @@ type TCPListener struct {
 
 // ListenTCP creates a new TCPListener which should be bound to the given address and advertises the endpoint ID as
 // its own node identifier.
-func ListenTCP(listenAddress string, endpointID bundle.EndpointID) *TCPListener {
+func ListenTCP(listenAddress string, endpointID bpv7.EndpointID) *TCPListener {
 	return &TCPListener{
 		listenAddress: listenAddress,
 		endpointID:    endpointID,
@@ -110,7 +110,7 @@ func tcpClientStart(client *Client) error {
 }
 
 // newClientTCP creates a new Client on an existing connection. This function is used from the TCPListener.
-func newClientTCP(conn net.Conn, endpointID bundle.EndpointID) *Client {
+func newClientTCP(conn net.Conn, endpointID bpv7.EndpointID) *Client {
 	return &Client{
 		address:         conn.RemoteAddr().String(),
 		activePeer:      false,
@@ -122,7 +122,7 @@ func newClientTCP(conn net.Conn, endpointID bundle.EndpointID) *Client {
 }
 
 // DialTCP tries to establish a new TCPCLv4 Client to a remote TCPListener.
-func DialTCP(address string, endpointID bundle.EndpointID, permanent bool) *Client {
+func DialTCP(address string, endpointID bpv7.EndpointID, permanent bool) *Client {
 	return &Client{
 		address:         address,
 		permanent:       permanent,

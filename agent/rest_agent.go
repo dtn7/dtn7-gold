@@ -13,7 +13,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/gorilla/mux"
 )
 
@@ -76,8 +76,8 @@ type RestAgent struct {
 	sender   chan Message
 
 	// map UUIDs to EIDs and received bundles
-	clients sync.Map // uuid[string] -> bundle.EndpointID
-	mailbox sync.Map // uuid[string] -> []bundle.Bundle
+	clients sync.Map // uuid[string] -> bpv7.EndpointID
+	mailbox sync.Map // uuid[string] -> []bpv7.Bundle
 }
 
 // NewRestAgent creates a new RESTful Application Agent.
@@ -122,18 +122,18 @@ func (ra *RestAgent) handler() {
 func (ra *RestAgent) receiveBundleMessage(msg BundleMessage) {
 	var uuids []string
 	ra.clients.Range(func(k, v interface{}) bool {
-		if bagHasEndpoint(msg.Recipients(), v.(bundle.EndpointID)) {
+		if bagHasEndpoint(msg.Recipients(), v.(bpv7.EndpointID)) {
 			uuids = append(uuids, k.(string))
 		}
 		return false // multiple clients might be registered for some endpoint
 	})
 
 	for _, uuid := range uuids {
-		var bundles []bundle.Bundle
+		var bundles []bpv7.Bundle
 		if val, ok := ra.mailbox.Load(uuid); !ok {
-			bundles = []bundle.Bundle{msg.Bundle}
+			bundles = []bpv7.Bundle{msg.Bundle}
 		} else {
-			bundles = append(val.([]bundle.Bundle), msg.Bundle)
+			bundles = append(val.([]bpv7.Bundle), msg.Bundle)
 		}
 
 		ra.mailbox.Store(uuid, bundles)
@@ -164,7 +164,7 @@ func (ra *RestAgent) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	if jsonErr := json.NewDecoder(r.Body).Decode(&registerRequest); jsonErr != nil {
 		registerResponse.Error = jsonErr.Error()
-	} else if eid, eidErr := bundle.NewEndpointID(registerRequest.EndpointId); eidErr != nil {
+	} else if eid, eidErr := bpv7.NewEndpointID(registerRequest.EndpointId); eidErr != nil {
 		registerResponse.Error = eidErr.Error()
 	} else if uuid, uuidErr := ra.randomUuid(); uuidErr != nil {
 		registerResponse.Error = uuidErr.Error()
@@ -217,12 +217,12 @@ func (ra *RestAgent) handleFetch(w http.ResponseWriter, r *http.Request) {
 		fetchResponse.Error = jsonErr.Error()
 	} else if val, ok := ra.mailbox.Load(fetchRequest.UUID); ok {
 		log.WithField("uuid", fetchRequest.UUID).Info("REST client fetches bundles")
-		fetchResponse.Bundles = val.([]bundle.Bundle)
+		fetchResponse.Bundles = val.([]bpv7.Bundle)
 
 		ra.mailbox.Delete(fetchRequest.UUID)
 	} else if !ok {
 		log.WithField("uuid", fetchRequest.UUID).Debug("REST client has no new bundles to fetch")
-		fetchResponse.Bundles = make([]bundle.Bundle, 0)
+		fetchResponse.Bundles = make([]bpv7.Bundle, 0)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -244,7 +244,7 @@ func (ra *RestAgent) handleBuild(w http.ResponseWriter, r *http.Request) {
 	} else if eid, ok := ra.clients.Load(buildRequest.UUID); !ok {
 		log.WithField("uuid", buildRequest.UUID).Debug("REST client cannot build for unknown UUID")
 		buildResponse.Error = "Invalid UUID"
-	} else if b, bErr := bundle.BuildFromMap(buildRequest.Args); bErr != nil {
+	} else if b, bErr := bpv7.BuildFromMap(buildRequest.Args); bErr != nil {
 		log.WithError(bErr).WithField("uuid", buildRequest.UUID).Warn("REST client failed to build a bundle")
 		buildResponse.Error = bErr.Error()
 	} else if pb := b.PrimaryBlock; pb.SourceNode != eid && pb.ReportTo != eid {
@@ -269,9 +269,9 @@ func (ra *RestAgent) handleBuild(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ra *RestAgent) Endpoints() (eids []bundle.EndpointID) {
+func (ra *RestAgent) Endpoints() (eids []bpv7.EndpointID) {
 	ra.clients.Range(func(_, v interface{}) bool {
-		eids = append(eids, v.(bundle.EndpointID))
+		eids = append(eids, v.(bpv7.EndpointID))
 		return false
 	})
 	return

@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // createBundle for the "create" CLI option.
@@ -27,7 +27,7 @@ func createBundle(args []string) {
 
 		err  error
 		data []byte
-		b    bundle.Bundle
+		b    bpv7.Bundle
 		f    io.WriteCloser
 	)
 
@@ -40,8 +40,8 @@ func createBundle(args []string) {
 		printFatal(err, "Reading input errored")
 	}
 
-	b, err = bundle.Builder().
-		CRC(bundle.CRC32).
+	b, err = bpv7.Builder().
+		CRC(bpv7.CRC32).
 		Source(sender).
 		Destination(receiver).
 		CreationTimestampNow().

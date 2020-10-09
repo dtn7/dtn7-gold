@@ -113,7 +113,7 @@ Usage of ./dtn-tool create|show|exchange:
 
 ## Go Library
 Multiple parts of this software are usable as a Go library.
-The `bundle` package contains code for bundle modification, serialization and deserialization and would most likely the most interesting part.
+The `bpv7` package contains code for bundle modification, serialization and deserialization and would most likely the most interesting part.
 If you are interested in working with this code, check out the [documentation][godoc].
 
 

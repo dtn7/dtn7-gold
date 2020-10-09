@@ -16,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 )
 
@@ -25,7 +25,7 @@ import (
 // a ConvergenceSender.
 type MTCPClient struct {
 	conn       net.Conn
-	peer       bundle.EndpointID
+	peer       bpv7.EndpointID
 	mutex      sync.Mutex
 	reportChan chan cla.ConvergenceStatus
 
@@ -39,7 +39,7 @@ type MTCPClient struct {
 // NewMTCPClient creates a new MTCPClient, connected to the given address for
 // the registered endpoint ID. The permanent flag indicates if this MTCPClient
 // should never be removed from the core.
-func NewMTCPClient(address string, peer bundle.EndpointID, permanent bool) *MTCPClient {
+func NewMTCPClient(address string, peer bpv7.EndpointID, permanent bool) *MTCPClient {
 	return &MTCPClient{
 		peer:      peer,
 		permanent: permanent,
@@ -51,7 +51,7 @@ func NewMTCPClient(address string, peer bundle.EndpointID, permanent bool) *MTCP
 // permanent flag indicates if this MTCPClient should never be removed from
 // the core.
 func NewAnonymousMTCPClient(address string, permanent bool) *MTCPClient {
-	return NewMTCPClient(address, bundle.DtnNone(), permanent)
+	return NewMTCPClient(address, bpv7.DtnNone(), permanent)
 }
 
 func (client *MTCPClient) Start() (err error, retry bool) {
@@ -115,7 +115,7 @@ func (client *MTCPClient) handler() {
 	}
 }
 
-func (client *MTCPClient) Send(bndl bundle.Bundle) (err error) {
+func (client *MTCPClient) Send(bndl bpv7.Bundle) (err error) {
 	defer func() {
 		if r := recover(); r != nil && err == nil {
 			err = fmt.Errorf("MTCPClient.Send: %v", r)
@@ -173,7 +173,7 @@ func (client *MTCPClient) Close() error {
 	return nil
 }
 
-func (client *MTCPClient) GetPeerEndpointID() bundle.EndpointID {
+func (client *MTCPClient) GetPeerEndpointID() bpv7.EndpointID {
 	return client.peer
 }
 

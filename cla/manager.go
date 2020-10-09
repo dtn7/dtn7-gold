@@ -11,7 +11,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // Manager monitors and manages the various CLAs, restarts them if necessary,
@@ -29,7 +29,7 @@ type Manager struct {
 	// convs: Map[string]*convergenceElem
 	convs *sync.Map
 
-	listenerIDs map[CLAType][]bundle.EndpointID
+	listenerIDs map[CLAType][]bpv7.EndpointID
 
 	// providers is an array of ConvergenceProvider. Those will report their
 	// created Convergence objects to this Manager, which also supervises it.
@@ -60,7 +60,7 @@ func NewManager() *Manager {
 
 		convs: new(sync.Map),
 
-		listenerIDs: make(map[CLAType][]bundle.EndpointID),
+		listenerIDs: make(map[CLAType][]bpv7.EndpointID),
 
 		inChnl:  make(chan ConvergenceStatus, 100),
 		outChnl: make(chan ConvergenceStatus),
@@ -113,7 +113,7 @@ func (manager *Manager) handler() {
 			case PeerDisappeared:
 				log.WithFields(log.Fields{
 					"cla":      cs.Sender,
-					"endpoint": cs.Message.(bundle.EndpointID),
+					"endpoint": cs.Message.(bpv7.EndpointID),
 				}).Info("CLA Manager received Peer Disappeared, restarting CLA")
 
 				manager.Restart(cs.Sender)
@@ -320,13 +320,13 @@ func (manager *Manager) Receiver() (crs []ConvergenceReceiver) {
 	return
 }
 
-func (manager *Manager) RegisterEndpointID(claType CLAType, eid bundle.EndpointID) {
+func (manager *Manager) RegisterEndpointID(claType CLAType, eid bpv7.EndpointID) {
 	clas, ok := manager.listenerIDs[claType]
 
 	if ok {
 		clas = append(clas, eid)
 	} else {
-		clas = []bundle.EndpointID{eid}
+		clas = []bpv7.EndpointID{eid}
 	}
 
 	manager.listenerIDs[claType] = clas
@@ -334,15 +334,15 @@ func (manager *Manager) RegisterEndpointID(claType CLAType, eid bundle.EndpointI
 
 // EndpointIDs returns the EndpointIDs of all registered CLAs of the specified type.
 // Returns an empty slice if no CLAs of the tye exist.
-func (manager *Manager) EndpointIDs(claType CLAType) []bundle.EndpointID {
+func (manager *Manager) EndpointIDs(claType CLAType) []bpv7.EndpointID {
 	if clas, ok := manager.listenerIDs[claType]; ok {
 		return clas
 	} else {
-		return make([]bundle.EndpointID, 0)
+		return make([]bpv7.EndpointID, 0)
 	}
 }
 
-func (manager *Manager) HasEndpoint(endpoint bundle.EndpointID) bool {
+func (manager *Manager) HasEndpoint(endpoint bpv7.EndpointID) bool {
 	for _, clas := range manager.listenerIDs {
 		for _, adapter := range clas {
 			if adapter.Authority() == endpoint.Authority() {

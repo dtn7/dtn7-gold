@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/gorilla/websocket"
 )
 
@@ -19,7 +19,7 @@ type WebSocketAgentConnector struct {
 	msgOutChan chan webAgentMessage
 	msgOutErr  chan error
 
-	msgInBundleChan  chan bundle.Bundle
+	msgInBundleChan  chan bpv7.Bundle
 	msgInSyscallChan chan []byte
 
 	closeSyn chan struct{}
@@ -39,7 +39,7 @@ func NewWebSocketAgentConnector(apiUrl, endpointId string) (wac *WebSocketAgentC
 		msgOutChan: make(chan webAgentMessage),
 		msgOutErr:  make(chan error),
 
-		msgInBundleChan:  make(chan bundle.Bundle),
+		msgInBundleChan:  make(chan bpv7.Bundle),
 		msgInSyscallChan: make(chan []byte),
 
 		closeSyn: make(chan struct{}),
@@ -143,7 +143,7 @@ func (wac *WebSocketAgentConnector) handler() {
 }
 
 // WriteBundle sends a Bundle to a server.
-func (wac *WebSocketAgentConnector) WriteBundle(b bundle.Bundle) (err error) {
+func (wac *WebSocketAgentConnector) WriteBundle(b bpv7.Bundle) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
@@ -155,7 +155,7 @@ func (wac *WebSocketAgentConnector) WriteBundle(b bundle.Bundle) (err error) {
 }
 
 // ReadBundle returns the next incoming Bundle. This method blocks.
-func (wac *WebSocketAgentConnector) ReadBundle() (b bundle.Bundle, err error) {
+func (wac *WebSocketAgentConnector) ReadBundle() (b bpv7.Bundle, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)

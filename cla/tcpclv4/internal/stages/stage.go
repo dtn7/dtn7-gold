@@ -7,7 +7,7 @@ package stages
 import (
 	"errors"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4/internal/msgs"
 )
 
@@ -29,7 +29,7 @@ type Configuration struct {
 	TransferMru uint64
 
 	// NodeId is this node's ID.
-	NodeId bundle.EndpointID
+	NodeId bpv7.EndpointID
 }
 
 // StageClose signals a closed stage, after calling the Close() method.
@@ -66,7 +66,7 @@ type State struct {
 	// TransferMtu is the peer's transfer MTU.
 	TransferMtu uint64
 	// PeerNodeId is the peer's node ID.
-	PeerNodeId bundle.EndpointID
+	PeerNodeId bpv7.EndpointID
 	// SESS INIT STAGE END
 }
 

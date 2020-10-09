@@ -10,7 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/dtn7/dtn7-go/cla"
 )
 
@@ -119,7 +119,7 @@ func (c *Connector) handleIncomingFragment(frag Fragment) (err error) {
 	}
 
 	if transmission.IsFinished() {
-		var bndl bundle.Bundle
+		var bndl bpv7.Bundle
 
 		if bndl, err = transmission.Bundle(); err == nil {
 			logger.WithFields(log.Fields{
@@ -127,7 +127,7 @@ func (c *Connector) handleIncomingFragment(frag Fragment) (err error) {
 				"bundle":      bndl.ID(),
 			}).Info("Bundle Broadcasting Connector received Bundle")
 
-			c.reportChan <- cla.NewConvergenceReceivedBundle(c, bundle.DtnNone(), &bndl)
+			c.reportChan <- cla.NewConvergenceReceivedBundle(c, bpv7.DtnNone(), &bndl)
 		} else {
 			// Returning error variable err keeps its value and cleanup code follows. That's why we don't return here.
 			logger.WithError(err).WithField("transmission", transmission).Warn(
@@ -201,7 +201,7 @@ func (c *Connector) IsPermanent() bool {
 	return c.permanent
 }
 
-func (c *Connector) Send(bndl bundle.Bundle) error {
+func (c *Connector) Send(bndl bpv7.Bundle) error {
 	var t, tErr = NewOutgoingTransmission(c.tid, bndl, c.modem.Mtu())
 	if tErr != nil {
 		return tErr
@@ -238,12 +238,12 @@ func (c *Connector) Send(bndl bundle.Bundle) error {
 	}
 }
 
-func (c *Connector) GetPeerEndpointID() bundle.EndpointID {
-	return bundle.DtnNone()
+func (c *Connector) GetPeerEndpointID() bpv7.EndpointID {
+	return bpv7.DtnNone()
 }
 
-func (c *Connector) GetEndpointID() bundle.EndpointID {
-	return bundle.DtnNone()
+func (c *Connector) GetEndpointID() bpv7.EndpointID {
+	return bpv7.DtnNone()
 }
 
 func (c *Connector) String() string {

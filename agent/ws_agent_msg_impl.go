@@ -9,7 +9,7 @@ import (
 	"io"
 
 	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-go/bundle"
+	"github.com/dtn7/dtn7-go/bpv7"
 )
 
 // wamStatus is a webAgentMessage to acknowledge a previous message or report an error with a non-empty string.
@@ -66,11 +66,11 @@ func (wr *wamRegister) UnmarshalCbor(r io.Reader) (err error) {
 // wamBundle is a webAgentMessage for sending a Bundle to a peer.
 // This message might be initiated from both a client or a server.
 type wamBundle struct {
-	b bundle.Bundle
+	b bpv7.Bundle
 }
 
 // newBundleMessage creates a new wamBundle webAgentMessage.
-func newBundleMessage(b bundle.Bundle) *wamBundle {
+func newBundleMessage(b bpv7.Bundle) *wamBundle {
 	return &wamBundle{b}
 }
 
