@@ -171,7 +171,7 @@ func (bp *BundlePack) UpdateBundleAge() (uint64, error) {
 
 	ageBlock, err := bndl.ExtensionBlock(bpv7.ExtBlockTypeBundleAgeBlock)
 	if err != nil {
-		return 0, newCoreError("No such block")
+		return 0, fmt.Errorf("no bundle age block exists")
 	}
 
 	age := ageBlock.Value.(*bpv7.BundleAgeBlock)
