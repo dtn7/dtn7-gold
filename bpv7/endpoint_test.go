@@ -34,6 +34,7 @@ func TestEndpointCheckValid(t *testing.T) {
 		ep    EndpointID
 		valid bool
 	}{
+		{EndpointID{nil}, false},
 		{EndpointID{&DtnEndpoint{IsDtnNone: true}}, true},
 		{EndpointID{&IpnEndpoint{0, 0}}, false},
 		{EndpointID{&IpnEndpoint{0, 1}}, false},
@@ -62,7 +63,10 @@ func TestEndpointCbor(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("marshal-%s", test.eid), func(t *testing.T) {
-			e, _ := NewEndpointID(test.eid)
+			e, err := NewEndpointID(test.eid)
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			buff := new(bytes.Buffer)
 			if err := cboring.Marshal(&e, buff); err != nil {
@@ -148,58 +152,63 @@ func TestEndpointSingleton(t *testing.T) {
 
 func TestEndpointIDSameNode(t *testing.T) {
 	tests := []struct {
-		eid1  string
-		eid2  string
+		eid1  EndpointID
+		eid2  EndpointID
 		valid bool
 	}{
 		{
-			eid1:  "dtn://foo/",
-			eid2:  "dtn://foo/",
+			eid1:  MustNewEndpointID("dtn://foo/"),
+			eid2:  MustNewEndpointID("dtn://foo/"),
 			valid: true,
 		},
 		{
-			eid1:  "dtn://foo/",
-			eid2:  "dtn://foo/bar",
+			eid1:  MustNewEndpointID("dtn://foo/"),
+			eid2:  MustNewEndpointID("dtn://foo/bar"),
 			valid: true,
 		},
 		{
-			eid1:  "dtn://foo/bar",
-			eid2:  "dtn://foo/",
+			eid1:  MustNewEndpointID("dtn://foo/bar"),
+			eid2:  MustNewEndpointID("dtn://foo/"),
 			valid: true,
 		},
 		{
-			eid1:  "dtn://foo/bar",
-			eid2:  "dtn://foo/buz",
+			eid1:  MustNewEndpointID("dtn://foo/bar"),
+			eid2:  MustNewEndpointID("dtn://foo/buz"),
 			valid: true,
 		},
 		{
-			eid1:  "dtn://foo/bar",
-			eid2:  "dtn://bar/foo",
+			eid1:  MustNewEndpointID("dtn://foo/bar"),
+			eid2:  MustNewEndpointID("dtn://bar/foo"),
 			valid: false,
 		},
 		{
-			eid1:  "ipn:23.42",
-			eid2:  "dtn://23/42",
+			eid1:  MustNewEndpointID("ipn:23.42"),
+			eid2:  MustNewEndpointID("dtn://23/42"),
+			valid: false,
+		},
+		{
+			eid1:  EndpointID{EndpointType: nil},
+			eid2:  EndpointID{EndpointType: nil},
+			valid: true,
+		},
+		{
+			eid1:  EndpointID{EndpointType: nil},
+			eid2:  DtnNone(),
+			valid: false,
+		},
+		{
+			eid1:  MustNewEndpointID("ipn:23.42"),
+			eid2:  EndpointID{EndpointType: nil},
 			valid: false,
 		},
 	}
 
 	for _, test := range tests {
-		eid1, eid1Err := NewEndpointID(test.eid1)
-		if eid1Err != nil {
-			t.Fatal(eid1Err)
+		if res := test.eid1.SameNode(test.eid2); res != test.valid {
+			t.Fatalf("%v.IsSameNode(%v) := %t", test.eid1, test.eid2, res)
 		}
-
-		eid2, eid2Err := NewEndpointID(test.eid2)
-		if eid2Err != nil {
-			t.Fatal(eid2Err)
-		}
-
-		if res := eid1.SameNode(eid2); res != test.valid {
-			t.Fatalf("%v.IsSameNode(%v) := %t", eid1, eid2, res)
-		}
-		if res := eid2.SameNode(eid1); res != test.valid {
-			t.Fatalf("%v.IsSameNode(%v) := %t", eid2, eid1, res)
+		if res := test.eid2.SameNode(test.eid1); res != test.valid {
+			t.Fatalf("%v.IsSameNode(%v) := %t", test.eid2, test.eid1, res)
 		}
 	}
 }

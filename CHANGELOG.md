@@ -31,6 +31,9 @@ Types of changes:
   is about bpbis and not just bundles. Furthermore this allows to use
   the obvious variable name "bundle".
 
+### Fixed
+- Include nil-check for EndpointID's internal representation.
+
 
 ## [0.9.0] - 2020-10-08
 ### Added
@@ -52,7 +55,7 @@ Types of changes:
 - API change on cla.Convergence and cla.ConvergenceSender.
 - Changed CLAType numbers to allow grouping similar Convergence Layers.
 
-### Fix
+### Fixed
 - Check if WebSocket Agent's channel is closed to mitigate dtn-tool from
   crashing.
 
@@ -76,7 +79,7 @@ Types of changes:
 ### Removed
 - Drop compatibility with Go versions below 1.13.
 
-### Fix
+### Fixed
 - Ensure only Payload Blocks are allowed to get Block Number 1 when
   adding Extension Blocks to an empty Bundle.
 - PrimaryBlock: always overwrite CRC, don't rely on cached values

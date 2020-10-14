@@ -121,6 +121,10 @@ func MustNewEndpointID(uri string) EndpointID {
 
 // MarshalCbor writes the CBOR representation of this Endpoint ID.
 func (eid *EndpointID) MarshalCbor(w io.Writer) error {
+	if err := eid.CheckValid(); err != nil {
+		return err
+	}
+
 	if err := cboring.WriteArrayLength(2, w); err != nil {
 		return err
 	}
@@ -191,19 +195,30 @@ func (eid EndpointID) IsSingleton() bool {
 
 // SameNode checks if two Endpoints contain to the same Node, based on the scheme and authority part.
 func (eid EndpointID) SameNode(other EndpointID) bool {
-	return eid.EndpointType.SchemeName() == other.EndpointType.SchemeName() &&
-		eid.EndpointType.Authority() == other.EndpointType.Authority()
+	switch {
+	case eid.EndpointType == nil && other.EndpointType == nil:
+		return true
+
+	case eid.EndpointType == nil || other.EndpointType == nil:
+		return false
+
+	default:
+		et1, et2 := eid.EndpointType, other.EndpointType
+		return et1.SchemeName() == et2.SchemeName() && et1.Authority() == et2.Authority()
+	}
 }
 
 // CheckValid returns an array of errors for incorrect data.
 func (eid EndpointID) CheckValid() error {
+	if eid.EndpointType == nil {
+		return fmt.Errorf("internal EndpointType is nil")
+	}
 	return eid.EndpointType.CheckValid()
 }
 
 func (eid EndpointID) String() string {
 	if eid.EndpointType == nil {
 		return DtnNone().String()
-	} else {
-		return eid.EndpointType.String()
 	}
+	return eid.EndpointType.String()
 }
