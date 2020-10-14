@@ -194,10 +194,25 @@ func TestEndpointIDSameNode(t *testing.T) {
 		{
 			eid1:  EndpointID{EndpointType: nil},
 			eid2:  DtnNone(),
-			valid: false,
+			valid: true,
+		},
+		{
+			eid1:  DtnNone(),
+			eid2:  EndpointID{EndpointType: nil},
+			valid: true,
+		},
+		{
+			eid1:  DtnNone(),
+			eid2:  DtnNone(),
+			valid: true,
 		},
 		{
 			eid1:  MustNewEndpointID("ipn:23.42"),
+			eid2:  EndpointID{EndpointType: nil},
+			valid: false,
+		},
+		{
+			eid1:  MustNewEndpointID("dtn://foo/bar"),
 			eid2:  EndpointID{EndpointType: nil},
 			valid: false,
 		},
