@@ -80,8 +80,8 @@ func (manager *AgentManager) HasEndpoint(eid bpv7.EndpointID) bool {
 }
 
 // Deliver an outgoing Bundle to a registered ApplicationAgent, addressed by the Bundle's destination.
-func (manager *AgentManager) Deliver(bp BundlePack) error {
-	b, bErr := bp.Bundle()
+func (manager *AgentManager) Deliver(descriptor BundleDescriptor) error {
+	b, bErr := descriptor.Bundle()
 	if bErr != nil {
 		return bErr
 	}
@@ -91,9 +91,9 @@ func (manager *AgentManager) Deliver(bp BundlePack) error {
 		return fmt.Errorf("no registered ApplicationAgent for this Bundle's destination")
 	}
 
-	bp.RemoveConstraint(LocalEndpoint)
-	if err := bp.Sync(); err != nil {
-		log.WithField("bundle", b).WithError(err).Warn("AgentManager errored while sync'ing BundlePack")
+	descriptor.RemoveConstraint(LocalEndpoint)
+	if err := descriptor.Sync(); err != nil {
+		log.WithField("bundle", b).WithError(err).Warn("AgentManager errored while synchronizing BundleDescriptor")
 		return err
 	}
 

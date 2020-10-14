@@ -127,7 +127,7 @@ func (c *Core) checkPendingBundles() {
 				"bundle": bi.Id,
 			}).Info("Retrying bundle from store")
 
-			c.dispatching(NewBundlePack(bi.BId, c.store))
+			c.dispatching(NewBundleDescriptor(bi.BId, c.store))
 		}
 	}
 }
@@ -157,7 +157,7 @@ func (c *Core) handler() {
 			case cla.ReceivedBundle:
 				crb := cs.Message.(cla.ConvergenceReceivedBundle)
 
-				bp := NewBundlePackFromBundle(*crb.Bundle, c.store)
+				bp := NewBundleDescriptorFromBundle(*crb.Bundle, c.store)
 				bp.Receiver = crb.Endpoint
 				_ = bp.Sync()
 
@@ -230,10 +230,10 @@ func (c *Core) HasEndpoint(endpoint bpv7.EndpointID) bool {
 }
 
 // SendStatusReport creates a new status report in response to the given
-// BundlePack and transmits it.
-func (c *Core) SendStatusReport(bp BundlePack, status bpv7.StatusInformationPos, reason bpv7.StatusReportReason) {
+// BundleDescriptor and transmits it.
+func (c *Core) SendStatusReport(descriptor BundleDescriptor, status bpv7.StatusInformationPos, reason bpv7.StatusReportReason) {
 	// Don't respond to other administrative records
-	bndl, _ := bp.Bundle()
+	bndl, _ := descriptor.Bundle()
 	if bndl.PrimaryBlock.BundleControlFlags.Has(bpv7.AdministrativeRecordPayload) {
 		return
 	}
@@ -244,7 +244,7 @@ func (c *Core) SendStatusReport(bp BundlePack, status bpv7.StatusInformationPos,
 	}
 
 	log.WithFields(log.Fields{
-		"bundle": bp.ID(),
+		"bundle": descriptor.ID(),
 		"status": status,
 		"reason": reason,
 	}).Info("Sending a status report for a bundle")
@@ -253,21 +253,21 @@ func (c *Core) SendStatusReport(bp BundlePack, status bpv7.StatusInformationPos,
 	var ar, arErr = bpv7.AdministrativeRecordToCbor(&sr)
 	if arErr != nil {
 		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
+			"bundle": descriptor.ID(),
 			"error":  arErr,
 		}).Warn("Serializing administrative record failed")
 
 		return
 	}
 
-	var aaEndpoint = bp.Receiver
+	var aaEndpoint = descriptor.Receiver
 	if aaEndpoint == bpv7.DtnNone() {
 		aaEndpoint = c.NodeId
 	}
 
 	if !c.HasEndpoint(aaEndpoint) && aaEndpoint != c.NodeId {
 		log.WithFields(log.Fields{
-			"bundle":   bp.ID(),
+			"bundle":   descriptor.ID(),
 			"endpoint": aaEndpoint,
 		}).Warn("Failed to create status report, receiver is not a current endpoint")
 
@@ -285,7 +285,7 @@ func (c *Core) SendStatusReport(bp BundlePack, status bpv7.StatusInformationPos,
 
 	if err != nil {
 		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
+			"bundle": descriptor.ID(),
 			"error":  err,
 		}).Warn("Creating status report bundle failed")
 

@@ -23,23 +23,23 @@ type RoutingAlgorithm interface {
 	// NotifyIncoming notifies this RoutingAlgorithm about incoming bundles.
 	// Whether the algorithm acts on this information or ignores it, is both a
 	// design and implementation decision.
-	NotifyIncoming(bp BundlePack)
+	NotifyIncoming(descriptor BundleDescriptor)
 
 	// DispatchingAllowed will be called from within the *dispatching* step of
 	// the processing pipeline. A RoutingAlgorithm is allowed to drop the
 	// proceeding of a bundle before being inspected further or being delivered
 	// locally or to another node.
-	DispatchingAllowed(bp BundlePack) bool
+	DispatchingAllowed(descriptor BundleDescriptor) bool
 
 	// SenderForBundle returns an array of ConvergenceSender for a requested
-	// bundle. Furthermore the delete flags indicates if this BundlePack should
+	// bundle. Furthermore the delete flags indicates if this BundleDescriptor should
 	// be deleted afterwards.
 	// The CLA selection is based on the algorithm's design.
-	SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool)
+	SenderForBundle(descriptor BundleDescriptor) (sender []cla.ConvergenceSender, delete bool)
 
 	// ReportFailure notifies the RoutingAlgorithm about a failed transmission to
 	// a previously selected CLA. Compare: SenderForBundle.
-	ReportFailure(bp BundlePack, sender cla.ConvergenceSender)
+	ReportFailure(descriptor BundleDescriptor, sender cla.ConvergenceSender)
 
 	// ReportPeerAppeared notifies the RoutingAlgorithm about a new neighbor.
 	ReportPeerAppeared(peer cla.Convergence)

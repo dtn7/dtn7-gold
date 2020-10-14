@@ -28,7 +28,7 @@ func NewEpidemicRouting(c *Core) *EpidemicRouting {
 
 // NotifyIncoming tells the EpidemicRouting about new bundles. In our case, the
 // PreviousNodeBlock will be inspected.
-func (er *EpidemicRouting) NotifyIncoming(bp BundlePack) {
+func (er *EpidemicRouting) NotifyIncoming(bp BundleDescriptor) {
 	bi, biErr := er.c.store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
@@ -81,7 +81,7 @@ func (er *EpidemicRouting) NotifyIncoming(bp BundlePack) {
 	}
 }
 
-func (er *EpidemicRouting) clasForBundle(bp BundlePack, updateDb bool) (css []cla.ConvergenceSender, del bool) {
+func (er *EpidemicRouting) clasForBundle(bp BundleDescriptor, updateDb bool) (css []cla.ConvergenceSender, del bool) {
 	bi, biErr := er.c.store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
@@ -119,7 +119,7 @@ func (er *EpidemicRouting) clasForBundle(bp BundlePack, updateDb bool) (css []cl
 
 // DispatchingAllowed only allows dispatching, iff the bundle is addressed to
 // this Node or if any known CLA without having received this bundle exists.
-func (er *EpidemicRouting) DispatchingAllowed(bp BundlePack) bool {
+func (er *EpidemicRouting) DispatchingAllowed(bp BundleDescriptor) bool {
 	bi, biErr := er.c.store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
@@ -149,11 +149,11 @@ func (er *EpidemicRouting) DispatchingAllowed(bp BundlePack) bool {
 }
 
 // SenderForBundle returns the Core's ConvergenceSenders.
-func (er *EpidemicRouting) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
+func (er *EpidemicRouting) SenderForBundle(bp BundleDescriptor) (css []cla.ConvergenceSender, del bool) {
 	return er.clasForBundle(bp, true)
 }
 
-func (er *EpidemicRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
+func (er *EpidemicRouting) ReportFailure(bp BundleDescriptor, sender cla.ConvergenceSender) {
 	bi, biErr := er.c.store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{

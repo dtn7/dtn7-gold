@@ -158,7 +158,7 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 	return &dtlsr
 }
 
-func (dtlsr *DTLSR) NotifyIncoming(bp BundlePack) {
+func (dtlsr *DTLSR) NotifyIncoming(bp BundleDescriptor) {
 	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeDTLSRBlock); err == nil {
 		log.WithFields(log.Fields{
 			"peer": bp.MustBundle().PrimaryBlock.SourceNode,
@@ -232,11 +232,11 @@ func (dtlsr *DTLSR) NotifyIncoming(bp BundlePack) {
 	}
 }
 
-func (_ *DTLSR) ReportFailure(_ BundlePack, _ cla.ConvergenceSender) {
+func (_ *DTLSR) ReportFailure(_ BundleDescriptor, _ cla.ConvergenceSender) {
 	// if the transmission failed, that is sad, but there is really nothing to do...
 }
 
-func (dtlsr *DTLSR) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool) {
+func (dtlsr *DTLSR) SenderForBundle(bp BundleDescriptor) (sender []cla.ConvergenceSender, delete bool) {
 	delete = false
 
 	bndl, err := bp.Bundle()
@@ -380,7 +380,7 @@ func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 }
 
 // DispatchingAllowed allows the processing of all packages.
-func (_ *DTLSR) DispatchingAllowed(_ BundlePack) bool {
+func (_ *DTLSR) DispatchingAllowed(_ BundleDescriptor) bool {
 	// TODO: for future optimisation, we might track the timestamp of the last recomputation of the routing table
 	// and only dispatch if it changed since the last time we tried.
 	return true

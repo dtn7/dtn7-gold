@@ -84,7 +84,7 @@ func (sw *SprayAndWait) GarbageCollect() {
 // NotifyIncoming tells the routing algorithm about new bundles.
 // In this case, we simply check if we originated this bundle and set Multiplicity if we did
 // If we are not the originator, we don't further distribute the bundle
-func (sw *SprayAndWait) NotifyIncoming(bp BundlePack) {
+func (sw *SprayAndWait) NotifyIncoming(bp BundleDescriptor) {
 	if sw.c.HasEndpoint(bp.MustBundle().PrimaryBlock.SourceNode) {
 		metadata := sprayMetaData{
 			sent:            make([]bpv7.EndpointID, 0),
@@ -120,14 +120,14 @@ func (sw *SprayAndWait) NotifyIncoming(bp BundlePack) {
 }
 
 // DispatchingAllowed allows the processing of all packages.
-func (_ *SprayAndWait) DispatchingAllowed(_ BundlePack) bool {
+func (_ *SprayAndWait) DispatchingAllowed(_ BundleDescriptor) bool {
 	return true
 }
 
 // SenderForBundle returns the Core's ConvergenceSenders.
 // The bundle's originator will distribute Multiplicity copies amongst its peers
 // Forwarders will only every deliver the bundle to its final destination
-func (sw *SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
+func (sw *SprayAndWait) SenderForBundle(bp BundleDescriptor) (css []cla.ConvergenceSender, del bool) {
 	sw.dataMutex.RLock()
 	metadata, ok := sw.bundleData[bp.Id]
 	sw.dataMutex.RUnlock()
@@ -181,7 +181,7 @@ func (sw *SprayAndWait) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSen
 }
 
 // ReportFailure re-increments remaining copies if delivery was unsuccessful.
-func (sw *SprayAndWait) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
+func (sw *SprayAndWait) ReportFailure(bp BundleDescriptor, sender cla.ConvergenceSender) {
 	log.WithFields(log.Fields{
 		"bundle":  bp.ID(),
 		"bad_cla": sender,
@@ -267,7 +267,7 @@ func (bs *BinarySpray) GarbageCollect() {
 // In this case, we check, whether we are the originator of this bundle
 // If yes, then we initialise the remaining Copies to Multiplicity
 // If not we attempt to ready the routing-metadata-block end get the remaining copies
-func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
+func (bs *BinarySpray) NotifyIncoming(bp BundleDescriptor) {
 	if metadataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeBinarySprayBlock); err == nil {
 		binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 		metadata := sprayMetaData{
@@ -305,14 +305,14 @@ func (bs *BinarySpray) NotifyIncoming(bp BundlePack) {
 }
 
 // DispatchingAllowed allows the processing of all packages.
-func (_ *BinarySpray) DispatchingAllowed(_ BundlePack) bool {
+func (_ *BinarySpray) DispatchingAllowed(_ BundleDescriptor) bool {
 	return true
 }
 
 // SenderForBundle returns the Core's ConvergenceSenders.
 // If a node has more than 1 copy left it will send floor(copies/2) to the peer
 // and keep roof(copies/2) for itself
-func (bs *BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSender, del bool) {
+func (bs *BinarySpray) SenderForBundle(bp BundleDescriptor) (css []cla.ConvergenceSender, del bool) {
 	bs.dataMutex.RLock()
 	metadata, ok := bs.bundleData[bp.Id]
 	bs.dataMutex.RUnlock()
@@ -378,7 +378,7 @@ func (bs *BinarySpray) SenderForBundle(bp BundlePack) (css []cla.ConvergenceSend
 }
 
 // ReportFailure resets remaining copies if delivery was unsuccessful.
-func (bs *BinarySpray) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
+func (bs *BinarySpray) ReportFailure(bp BundleDescriptor, sender cla.ConvergenceSender) {
 	log.WithFields(log.Fields{
 		"bundle":  bp.ID(),
 		"bad_cla": sender,

@@ -19,7 +19,7 @@ func (c *Core) SendBundle(bndl *bpv7.Bundle) {
 	if c.signPriv != nil && bndl.IsAdministrativeRecord() {
 		c.sendBundleAttachSignature(bndl)
 	}
-	bp := NewBundlePackFromBundle(*bndl, c.store)
+	bp := NewBundleDescriptorFromBundle(*bndl, c.store)
 
 	c.routing.NotifyIncoming(bp)
 	c.transmit(bp)
@@ -47,7 +47,7 @@ func (c *Core) sendBundleAttachSignature(bndl *bpv7.Bundle) {
 
 // transmit starts the transmission of an outbounding bundle pack. Therefore
 // the source's endpoint ID must be dtn:none or a member of this node.
-func (c *Core) transmit(bp BundlePack) {
+func (c *Core) transmit(bp BundleDescriptor) {
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),
 	}).Info("Transmission of bundle requested")
@@ -72,7 +72,7 @@ func (c *Core) transmit(bp BundlePack) {
 }
 
 // receive handles received/incoming bundles.
-func (c *Core) receive(bp BundlePack) {
+func (c *Core) receive(bp BundleDescriptor) {
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),
 	}).Debug("Received new bundle")
@@ -83,7 +83,7 @@ func (c *Core) receive(bp BundlePack) {
 		}).Debug("Received bundle's ID is already known.")
 
 		// bundleDeletion is _not_ called because this would delete the already
-		// stored BundlePack.
+		// stored BundleDescriptor.
 		return
 	}
 
@@ -150,7 +150,7 @@ func (c *Core) receive(bp BundlePack) {
 }
 
 // dispatching handles the dispatching of received bundles.
-func (c *Core) dispatching(bp BundlePack) {
+func (c *Core) dispatching(bp BundleDescriptor) {
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),
 	}).Info("Dispatching bundle")
@@ -181,7 +181,7 @@ func (c *Core) dispatching(bp BundlePack) {
 }
 
 // forward forwards a bundle pack's bundle to another node.
-func (c *Core) forward(bp BundlePack) {
+func (c *Core) forward(bp BundleDescriptor) {
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),
 	}).Printf("Bundle will be forwarded")
@@ -329,7 +329,7 @@ func (c *Core) forward(bp BundlePack) {
 
 // checkAdministrativeRecord checks administrative records. If this method
 // returns false, an error occured.
-func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
+func (c *Core) checkAdministrativeRecord(bp BundleDescriptor) bool {
 	if !bp.MustBundle().IsAdministrativeRecord() {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID(),
@@ -370,7 +370,7 @@ func (c *Core) checkAdministrativeRecord(bp BundlePack) bool {
 	return true
 }
 
-func (c *Core) inspectStatusReport(bp BundlePack, ar bpv7.AdministrativeRecord) {
+func (c *Core) inspectStatusReport(bp BundleDescriptor, ar bpv7.AdministrativeRecord) {
 	if ar.RecordTypeCode() != bpv7.ARTypeStatusReport {
 		log.WithFields(log.Fields{
 			"bundle":    bp.ID(),
@@ -442,7 +442,7 @@ func (c *Core) inspectStatusReport(bp BundlePack, ar bpv7.AdministrativeRecord) 
 	}
 }
 
-func (c *Core) localDelivery(bp BundlePack) {
+func (c *Core) localDelivery(bp BundleDescriptor) {
 	// TODO: check fragmentation
 
 	log.WithFields(log.Fields{
@@ -471,7 +471,7 @@ func (c *Core) localDelivery(bp BundlePack) {
 	_ = bp.Sync()
 }
 
-func (c *Core) bundleContraindicated(bp BundlePack) {
+func (c *Core) bundleContraindicated(bp BundleDescriptor) {
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),
 	}).Info("Bundle was marked for contraindication")
@@ -480,7 +480,7 @@ func (c *Core) bundleContraindicated(bp BundlePack) {
 	_ = bp.Sync()
 }
 
-func (c *Core) bundleDeletion(bp BundlePack, reason bpv7.StatusReportReason) {
+func (c *Core) bundleDeletion(bp BundleDescriptor, reason bpv7.StatusReportReason) {
 	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bpv7.StatusRequestDeletion) {
 		c.SendStatusReport(bp, bpv7.DeletedBundle, reason)
 	}

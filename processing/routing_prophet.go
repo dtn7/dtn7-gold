@@ -166,7 +166,7 @@ func (prophet *Prophet) sendMetadata(destination bpv7.EndpointID) {
 	}
 }
 
-func (prophet *Prophet) NotifyIncoming(bp BundlePack) {
+func (prophet *Prophet) NotifyIncoming(bp BundleDescriptor) {
 	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeProphetBlock); err == nil {
 		log.WithFields(log.Fields{
 			"source": bp.MustBundle().PrimaryBlock.SourceNode,
@@ -265,11 +265,11 @@ func (prophet *Prophet) NotifyIncoming(bp BundlePack) {
 }
 
 // TODO: dummy implementation
-func (prophet *Prophet) DispatchingAllowed(bp BundlePack) bool {
+func (prophet *Prophet) DispatchingAllowed(bp BundleDescriptor) bool {
 	return true
 }
 
-func (prophet *Prophet) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool) {
+func (prophet *Prophet) SenderForBundle(bp BundleDescriptor) (sender []cla.ConvergenceSender, delete bool) {
 	bndl, err := bp.Bundle()
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -376,7 +376,7 @@ func (prophet *Prophet) SenderForBundle(bp BundlePack) (sender []cla.Convergence
 	return
 }
 
-func (prophet *Prophet) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
+func (prophet *Prophet) ReportFailure(bp BundleDescriptor, sender cla.ConvergenceSender) {
 	bundleItem, err := prophet.c.store.QueryId(bp.Id)
 	if err != nil {
 		log.WithFields(log.Fields{

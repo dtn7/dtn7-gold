@@ -46,17 +46,17 @@ func NewSensorNetworkMuleRouting(algorithm RoutingAlgorithm, sensorNode *regexp.
 }
 
 // NotifyIncoming bundle, which will be handled by the underlying algorithm.
-func (snm *SensorNetworkMuleRouting) NotifyIncoming(bp BundlePack) {
+func (snm *SensorNetworkMuleRouting) NotifyIncoming(bp BundleDescriptor) {
 	snm.algorithm.NotifyIncoming(bp)
 }
 
 // DispatchingAllowed if the underlying algorithm says so.
-func (snm *SensorNetworkMuleRouting) DispatchingAllowed(bp BundlePack) bool {
+func (snm *SensorNetworkMuleRouting) DispatchingAllowed(bp BundleDescriptor) bool {
 	return snm.algorithm.DispatchingAllowed(bp)
 }
 
 // SenderForBundle queries the underlying algorithm and optionally filters the result.
-func (snm *SensorNetworkMuleRouting) SenderForBundle(bp BundlePack) (sender []cla.ConvergenceSender, delete bool) {
+func (snm *SensorNetworkMuleRouting) SenderForBundle(bp BundleDescriptor) (sender []cla.ConvergenceSender, delete bool) {
 	sender, delete = snm.algorithm.SenderForBundle(bp)
 	log.WithField("convergence-senders", sender).Debug("Sensor Mule's algorithm selected peers")
 
@@ -96,7 +96,7 @@ func (snm *SensorNetworkMuleRouting) SenderForBundle(bp BundlePack) (sender []cl
 }
 
 // ReportFailure back to the underlying algorithm.
-func (snm *SensorNetworkMuleRouting) ReportFailure(bp BundlePack, sender cla.ConvergenceSender) {
+func (snm *SensorNetworkMuleRouting) ReportFailure(bp BundleDescriptor, sender cla.ConvergenceSender) {
 	snm.algorithm.ReportFailure(bp, sender)
 }
 
