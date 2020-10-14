@@ -25,8 +25,8 @@ import (
 	"github.com/dtn7/dtn7-go/cla/bbc"
 	"github.com/dtn7/dtn7-go/cla/mtcp"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4"
-	"github.com/dtn7/dtn7-go/core"
 	"github.com/dtn7/dtn7-go/discovery"
+	"github.com/dtn7/dtn7-go/processing"
 )
 
 // tomlConfig describes the TOML-configuration.
@@ -37,7 +37,7 @@ type tomlConfig struct {
 	Agents    agentsConfig
 	Listen    []convergenceConf
 	Peer      []convergenceConf
-	Routing   core.RoutingConf
+	Routing   processing.RoutingConf
 }
 
 // coreConf describes the Core-configuration block.
@@ -240,7 +240,7 @@ func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error)
 }
 
 // parseCore creates the Core based on the given TOML configuration.
-func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, err error) {
+func parseCore(filename string) (c *processing.Core, ds *discovery.DiscoveryService, err error) {
 	var conf tomlConfig
 	if _, err = toml.DecodeFile(filename, &conf); err != nil {
 		return
@@ -281,7 +281,7 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 
 	// Core
 	if conf.Core.Store == "" {
-		err = fmt.Errorf("core.store is empty")
+		err = fmt.Errorf("processing.store is empty")
 		return
 	}
 
@@ -302,7 +302,7 @@ func parseCore(filename string) (c *core.Core, ds *discovery.DiscoveryService, e
 		}
 	}
 
-	if c, err = core.NewCore(conf.Core.Store, nodeId, conf.Core.InspectAllBundles, conf.Routing, signPriv); err != nil {
+	if c, err = processing.NewCore(conf.Core.Store, nodeId, conf.Core.InspectAllBundles, conf.Routing, signPriv); err != nil {
 		return
 	}
 

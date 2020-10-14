@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package core
+package processing
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 	"github.com/dtn7/dtn7-go/bpv7"
 )
 
-// AgentManager is a proxy to connect different ApplicationAgents with the core package.
+// AgentManager is a proxy to connect different ApplicationAgents with the processing package.
 type AgentManager struct {
 	core *Core
 
@@ -24,7 +24,7 @@ type AgentManager struct {
 	closeAck chan struct{}
 }
 
-// NewAgentManager creates a new AgentManager to proxy different ApplicationAgents within the core package.
+// NewAgentManager creates a new AgentManager to proxy different ApplicationAgents within the processing package.
 func NewAgentManager(core *Core) (manager *AgentManager) {
 	manager = &AgentManager{
 		core:     core,

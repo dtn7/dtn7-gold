@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package core
+package processing
 
 import (
 	"crypto/ed25519"
@@ -19,7 +19,7 @@ import (
 	"github.com/dtn7/dtn7-go/storage"
 )
 
-// Core is the inner core of our DTN which handles transmission, reception and
+// Core is the inner processing of our DTN which handles transmission, reception and
 // reception of bundles.
 type Core struct {
 	InspectAllBundles bool

@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package core represents a bundle node's router and contains both the bundle
+// Package processing represents a bundle node's router and contains both the bundle
 // protocol agent and application agent.
 //
 // Here be dragons.
-package core
+package processing

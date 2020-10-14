@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package core
+package processing
 
 import (
 	"io"
@@ -104,7 +104,7 @@ func (prophet *Prophet) agePred(peer bpv7.EndpointID) {
 	}).Debug("Updated predictability via ageing")
 }
 
-// ageCron gets called periodically by the core's cron ange ages all peer predictabilities
+// ageCron gets called periodically by the processing's cron ange ages all peer predictabilities
 func (prophet *Prophet) ageCron() {
 	prophet.dataMutex.Lock()
 	defer prophet.dataMutex.Unlock()

@@ -14,14 +14,14 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 	"github.com/dtn7/dtn7-go/cla/mtcp"
 	"github.com/dtn7/dtn7-go/cla/tcpclv4"
-	"github.com/dtn7/dtn7-go/core"
+	"github.com/dtn7/dtn7-go/processing"
 	"github.com/schollz/peerdiscovery"
 )
 
 // DiscoveryService is a type to publish the node's CLAs to its network while
 // discovering new peers. Internally UDP mulitcast packets are used.
 type DiscoveryService struct {
-	c *core.Core
+	c *processing.Core
 
 	stopChan4 chan struct{}
 	stopChan6 chan struct{}
@@ -112,7 +112,7 @@ func (ds *DiscoveryService) Close() {
 // DiscoveryMessages through IPv4 and/or IPv6, as specified in the parameters.
 // The time between broadcasting two DiscoveryMessages is configured in seconds.
 // Furthermore, received DiscoveryMessages will be processed.
-func NewDiscoveryService(dms []DiscoveryMessage, c *core.Core, interval uint, ipv4, ipv6 bool) (*DiscoveryService, error) {
+func NewDiscoveryService(dms []DiscoveryMessage, c *processing.Core, interval uint, ipv4, ipv6 bool) (*DiscoveryService, error) {
 	log.WithFields(log.Fields{
 		"interval": interval,
 		"ipv4":     ipv4,
