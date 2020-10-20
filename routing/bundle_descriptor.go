@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package processing
+package routing
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ import (
 	"github.com/dtn7/dtn7-go/storage"
 )
 
-// BundleDescriptor is a meta wrapper around a bpv7.Bundle to supply processing information without having to pass or
+// BundleDescriptor is a meta wrapper around a bpv7.Bundle to supply routing information without having to pass or
 // alter the original bpv7.Bundle.
 type BundleDescriptor struct {
 	Id          bpv7.BundleID

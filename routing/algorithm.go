@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package processing
+package routing
 
 import (
 	"fmt"
@@ -16,17 +16,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// RoutingAlgorithm is an interface to specify routing algorithms for
-// delay-tolerant networks. An implementation might store a reference to a Core
-// struct to refer the ConvergenceSenders.
-type RoutingAlgorithm interface {
-	// NotifyNewBundle notifies this RoutingAlgorithm about new bundles. They
+// Algorithm is an interface to specify routing algorithms for delay-tolerant networks.
+type Algorithm interface {
+	// NotifyNewBundle notifies this Algorithm about new bundles. They
 	// might be generated at this node or received from a peer. Whether an
 	// algorithm acts on this information or ignores it, is implementation matter.
 	NotifyNewBundle(descriptor BundleDescriptor)
 
 	// DispatchingAllowed will be called from within the *dispatching* step of
-	// the processing pipeline. A RoutingAlgorithm is allowed to drop the
+	// the processing pipeline. A Algorithm is allowed to drop the
 	// proceeding of a bundle before being inspected further or being delivered
 	// locally or to another node.
 	DispatchingAllowed(descriptor BundleDescriptor) bool
@@ -37,14 +35,14 @@ type RoutingAlgorithm interface {
 	// The CLA selection is based on the algorithm's design.
 	SenderForBundle(descriptor BundleDescriptor) (sender []cla.ConvergenceSender, delete bool)
 
-	// ReportFailure notifies the RoutingAlgorithm about a failed transmission to
+	// ReportFailure notifies the Algorithm about a failed transmission to
 	// a previously selected CLA. Compare: SenderForBundle.
 	ReportFailure(descriptor BundleDescriptor, sender cla.ConvergenceSender)
 
-	// ReportPeerAppeared notifies the RoutingAlgorithm about a new neighbor.
+	// ReportPeerAppeared notifies the Algorithm about a new neighbor.
 	ReportPeerAppeared(peer cla.Convergence)
 
-	// ReportPeerDisappeared notifies the RoutingAlgorithm about the
+	// ReportPeerDisappeared notifies the Algorithm about the
 	// disappearance of a neighbor.
 	ReportPeerDisappeared(peer cla.Convergence)
 }
@@ -70,30 +68,30 @@ type RoutingConf struct {
 }
 
 // RoutingAlgorithm from its configuration.
-func (routingConf RoutingConf) RoutingAlgorithm(c *Core) (ra RoutingAlgorithm, err error) {
+func (routingConf RoutingConf) RoutingAlgorithm(c *Core) (algo Algorithm, err error) {
 	switch routingConf.Algorithm {
 	case "epidemic":
-		ra = NewEpidemicRouting(c)
+		algo = NewEpidemicRouting(c)
 
 	case "spray":
-		ra = NewSprayAndWait(c, routingConf.SprayConf)
+		algo = NewSprayAndWait(c, routingConf.SprayConf)
 
 	case "binary_spray":
-		ra = NewBinarySpray(c, routingConf.SprayConf)
+		algo = NewBinarySpray(c, routingConf.SprayConf)
 
 	case "dtlsr":
-		ra = NewDTLSR(c, routingConf.DTLSRConf)
+		algo = NewDTLSR(c, routingConf.DTLSRConf)
 
 	case "prophet":
-		ra = NewProphet(c, routingConf.ProphetConf)
+		algo = NewProphet(c, routingConf.ProphetConf)
 
 	case "sensor-mule":
-		if algo, algoErr := routingConf.SensorMuleConf.Algorithm.RoutingAlgorithm(c); algoErr != nil {
-			err = algoErr
+		if muleAlgo, muleAlgoErr := routingConf.SensorMuleConf.Algorithm.RoutingAlgorithm(c); muleAlgoErr != nil {
+			err = muleAlgoErr
 		} else if sensorNode, sensorNodeErr := regexp.Compile(routingConf.SensorMuleConf.SensorNodeRegex); sensorNodeErr != nil {
 			err = sensorNodeErr
 		} else {
-			ra = NewSensorNetworkMuleRouting(algo, sensorNode)
+			algo = NewSensorNetworkMuleRouting(muleAlgo, sensorNode)
 		}
 
 	default:

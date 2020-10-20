@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package processing
+package routing
 
 import (
 	"fmt"
@@ -509,7 +509,7 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 	dtlsr.routingTable = routingTable
 }
 
-// recomputeCron gets called periodically by the processing's cron module.
+// recomputeCron gets called periodically by the routing's cron module.
 // Only actually triggers a recompute if the underlying data has changed.
 func (dtlsr *DTLSR) recomputeCron() {
 	dtlsr.dataMutex.RLock()
@@ -548,7 +548,7 @@ func (dtlsr *DTLSR) broadcast() {
 	}
 }
 
-// broadcastCron gets called periodically by the processing's cron module.
+// broadcastCron gets called periodically by the routing's cron module.
 // Only actually triggers a broadcast if peer data has changed
 func (dtlsr *DTLSR) broadcastCron() {
 	dtlsr.dataMutex.RLock()

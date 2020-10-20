@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package processing
+package routing
 
 import (
 	"fmt"
@@ -27,7 +27,7 @@ import (
 // sensors do not receive other sensors' data. A data mule therefore only receives data from sensors or forwards
 // bundles to sensors that are addressed to them, such as receipt confirmations as administrative records.
 type SensorNetworkMuleRouting struct {
-	algorithm  RoutingAlgorithm
+	algorithm  Algorithm
 	sensorNode *regexp.Regexp
 }
 
@@ -38,7 +38,7 @@ type SensorNetworkMuleConfig struct {
 }
 
 // NewSensorNetworkMuleRouting based on an underlying algorithm and a regex to identify sensor nodes by their Node ID.
-func NewSensorNetworkMuleRouting(algorithm RoutingAlgorithm, sensorNode *regexp.Regexp) *SensorNetworkMuleRouting {
+func NewSensorNetworkMuleRouting(algorithm Algorithm, sensorNode *regexp.Regexp) *SensorNetworkMuleRouting {
 	return &SensorNetworkMuleRouting{
 		algorithm:  algorithm,
 		sensorNode: sensorNode,

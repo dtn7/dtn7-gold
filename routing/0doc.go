@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package processing represents a bundle node's router and contains both the bundle
+// Package routing represents a bundle node's router and contains both the bundle
 // protocol agent and application agent.
 //
 // Here be dragons.
-package processing
+package routing

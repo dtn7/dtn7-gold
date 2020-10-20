@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package processing
+package routing
 
 import (
 	"crypto/ed25519"
@@ -29,7 +29,7 @@ type Core struct {
 	cron         *Cron
 	claManager   *cla.Manager
 	idKeeper     IdKeeper
-	routing      RoutingAlgorithm
+	routing      Algorithm
 	signPriv     ed25519.PrivateKey
 
 	store *storage.Store
@@ -108,9 +108,9 @@ func NewCore(storePath string, nodeId bpv7.EndpointID, inspectAllBundles bool, r
 	return c, nil
 }
 
-// SetRoutingAlgorithm overwrites the used RoutingAlgorithm, which defaults to
+// SetRoutingAlgorithm overwrites the used Algorithm, which defaults to
 // EpidemicRouting.
-func (c *Core) SetRoutingAlgorithm(routing RoutingAlgorithm) {
+func (c *Core) SetRoutingAlgorithm(routing Algorithm) {
 	c.routing = routing
 }
 

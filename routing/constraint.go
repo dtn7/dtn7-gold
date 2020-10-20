@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package processing
+package routing
 
 // Constraint is a retention constraint as defined in the subsections of the fifth chapter of dtn-bpbis.
 type Constraint int

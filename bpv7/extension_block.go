@@ -29,13 +29,13 @@ const (
 	// ExtBlockTypeHopCountBlock is the block type code for a Hop Count Block, bpv7/extension_block_hop_count.go
 	ExtBlockTypeHopCountBlock uint64 = 10
 
-	// ExtBlockTypeBinarySprayBlock is the custom block type code for a BinarySprayBlock, processing/routing_spray.go
+	// ExtBlockTypeBinarySprayBlock is the custom block type code for a BinarySprayBlock, routing/algorithm_spray.go
 	ExtBlockTypeBinarySprayBlock uint64 = 192
 
-	// ExtBlockTypeDTLSRBlock is the custom block type code for a DTLSRBlock, processing/routing_dtlsr.go
+	// ExtBlockTypeDTLSRBlock is the custom block type code for a DTLSRBlock, routing/algorithm_dtlsr.go
 	ExtBlockTypeDTLSRBlock uint64 = 193
 
-	// ExtBlockTypeProphetBlock is the custom block type code for a ProphetBlock, processing/routing_prophet.go
+	// ExtBlockTypeProphetBlock is the custom block type code for a ProphetBlock, routing/algorithm_prophet.go
 	ExtBlockTypeProphetBlock uint64 = 194
 
 	// ExtBlockTypeSignatureBlock is the custom block type code for a SignatureBlock, bpv7/extension_block_signature.go

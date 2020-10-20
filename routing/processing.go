@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package processing
+package routing
 
 import (
 	"sync"
@@ -251,7 +251,7 @@ func (c *Core) forward(bp BundleDescriptor) {
 	var nodes []cla.ConvergenceSender
 	var deleteAfterwards = true
 
-	// Try a direct delivery or consult the RoutingAlgorithm otherwise.
+	// Try a direct delivery or consult the Algorithm otherwise.
 	nodes = c.senderForDestination(bp.MustBundle().PrimaryBlock.Destination)
 	if nodes == nil {
 		nodes, deleteAfterwards = c.routing.SenderForBundle(bp)

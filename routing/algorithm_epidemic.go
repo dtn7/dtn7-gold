@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package processing
+package routing
 
 import (
 	log "github.com/sirupsen/logrus"
@@ -12,13 +12,13 @@ import (
 	"github.com/dtn7/dtn7-go/cla"
 )
 
-// EpidemicRouting is an implementation of a RoutingAlgorithm and behaves in a
+// EpidemicRouting is an implementation of a Algorithm and behaves in a
 // flooding-based epidemic way.
 type EpidemicRouting struct {
 	c *Core
 }
 
-// NewEpidemicRouting creates a new EpidemicRouting RoutingAlgorithm interacting
+// NewEpidemicRouting creates a new EpidemicRouting Algorithm interacting
 // with the given Core.
 func NewEpidemicRouting(c *Core) *EpidemicRouting {
 	log.Debug("Initialised epidemic routing")
