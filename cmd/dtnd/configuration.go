@@ -352,8 +352,8 @@ func parseCore(filename string) (c *routing.Core, ds *discovery.Manager, err err
 		}
 
 		ds, err = discovery.NewManager(
-			discoveryMsgs, c, conf.Discovery.Interval,
-			conf.Discovery.IPv4, conf.Discovery.IPv6)
+			c.NodeId, c.RegisterConvergable, discoveryMsgs,
+			time.Duration(conf.Discovery.Interval)*time.Second, conf.Discovery.IPv4, conf.Discovery.IPv6)
 		if err != nil {
 			return
 		}

@@ -9,9 +9,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/dtn7/dtn7-go/cla"
-
 	"github.com/dtn7/dtn7-go/bpv7"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 func TestDiscoveryMessageCbor(t *testing.T) {

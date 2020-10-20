@@ -10,11 +10,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dtn7/dtn7-go/cla"
-
 	"github.com/dtn7/cboring"
 
 	"github.com/dtn7/dtn7-go/bpv7"
+	"github.com/dtn7/dtn7-go/cla"
 )
 
 // Announcement of some node's CLA.
