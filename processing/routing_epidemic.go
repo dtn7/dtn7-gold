@@ -26,9 +26,10 @@ func NewEpidemicRouting(c *Core) *EpidemicRouting {
 	return &EpidemicRouting{c: c}
 }
 
-// NotifyIncoming tells the EpidemicRouting about new bundles. In our case, the
-// PreviousNodeBlock will be inspected.
-func (er *EpidemicRouting) NotifyIncoming(bp BundleDescriptor) {
+// NotifyNewBundle tells the EpidemicRouting about new bundles.
+//
+// In our case, the PreviousNodeBlock will be inspected.
+func (er *EpidemicRouting) NotifyNewBundle(bp BundleDescriptor) {
 	bi, biErr := er.c.store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
@@ -71,7 +72,7 @@ func (er *EpidemicRouting) NotifyIncoming(bp BundleDescriptor) {
 	log.WithFields(log.Fields{
 		"bundle": bp.ID(),
 		"eid":    prevNode,
-	}).Debug("EpidemicRouting received an incomming bundle and checked its PreviousNodeBlock")
+	}).Debug("EpidemicRouting received an incoming bundle and checked its PreviousNodeBlock")
 
 	bi.Properties["routing/epidemic/sent"] = append(sentEids, prevNode)
 	if err := er.c.store.Update(bi); err != nil {

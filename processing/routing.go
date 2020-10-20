@@ -20,10 +20,10 @@ import (
 // delay-tolerant networks. An implementation might store a reference to a Core
 // struct to refer the ConvergenceSenders.
 type RoutingAlgorithm interface {
-	// NotifyIncoming notifies this RoutingAlgorithm about incoming bundles.
-	// Whether the algorithm acts on this information or ignores it, is both a
-	// design and implementation decision.
-	NotifyIncoming(descriptor BundleDescriptor)
+	// NotifyNewBundle notifies this RoutingAlgorithm about new bundles. They
+	// might be generated at this node or received from a peer. Whether an
+	// algorithm acts on this information or ignores it, is implementation matter.
+	NotifyNewBundle(descriptor BundleDescriptor)
 
 	// DispatchingAllowed will be called from within the *dispatching* step of
 	// the processing pipeline. A RoutingAlgorithm is allowed to drop the

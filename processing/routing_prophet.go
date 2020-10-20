@@ -166,7 +166,7 @@ func (prophet *Prophet) sendMetadata(destination bpv7.EndpointID) {
 	}
 }
 
-func (prophet *Prophet) NotifyIncoming(bp BundleDescriptor) {
+func (prophet *Prophet) NotifyNewBundle(bp BundleDescriptor) {
 	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeProphetBlock); err == nil {
 		log.WithFields(log.Fields{
 			"source": bp.MustBundle().PrimaryBlock.SourceNode,

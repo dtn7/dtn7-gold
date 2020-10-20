@@ -158,7 +158,7 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 	return &dtlsr
 }
 
-func (dtlsr *DTLSR) NotifyIncoming(bp BundleDescriptor) {
+func (dtlsr *DTLSR) NotifyNewBundle(bp BundleDescriptor) {
 	if metaDataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeDTLSRBlock); err == nil {
 		log.WithFields(log.Fields{
 			"peer": bp.MustBundle().PrimaryBlock.SourceNode,

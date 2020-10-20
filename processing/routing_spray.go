@@ -81,10 +81,11 @@ func (sw *SprayAndWait) GarbageCollect() {
 	sw.dataMutex.Unlock()
 }
 
-// NotifyIncoming tells the routing algorithm about new bundles.
+// NotifyNewBundle tells the routing algorithm about new bundles.
+//
 // In this case, we simply check if we originated this bundle and set Multiplicity if we did
 // If we are not the originator, we don't further distribute the bundle
-func (sw *SprayAndWait) NotifyIncoming(bp BundleDescriptor) {
+func (sw *SprayAndWait) NotifyNewBundle(bp BundleDescriptor) {
 	if sw.c.HasEndpoint(bp.MustBundle().PrimaryBlock.SourceNode) {
 		metadata := sprayMetaData{
 			sent:            make([]bpv7.EndpointID, 0),
@@ -263,11 +264,12 @@ func (bs *BinarySpray) GarbageCollect() {
 	bs.dataMutex.Unlock()
 }
 
-// NotifyIncoming tells the routing algorithm about new bundles.
+// NotifyNewBundle tells the routing algorithm about new bundles.
+//
 // In this case, we check, whether we are the originator of this bundle
 // If yes, then we initialise the remaining Copies to Multiplicity
 // If not we attempt to ready the routing-metadata-block end get the remaining copies
-func (bs *BinarySpray) NotifyIncoming(bp BundleDescriptor) {
+func (bs *BinarySpray) NotifyNewBundle(bp BundleDescriptor) {
 	if metadataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeBinarySprayBlock); err == nil {
 		binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
 		metadata := sprayMetaData{

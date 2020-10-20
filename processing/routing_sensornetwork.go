@@ -45,9 +45,9 @@ func NewSensorNetworkMuleRouting(algorithm RoutingAlgorithm, sensorNode *regexp.
 	}
 }
 
-// NotifyIncoming bundle, which will be handled by the underlying algorithm.
-func (snm *SensorNetworkMuleRouting) NotifyIncoming(bp BundleDescriptor) {
-	snm.algorithm.NotifyIncoming(bp)
+// NotifyNewBundle will be handled by the underlying algorithm.
+func (snm *SensorNetworkMuleRouting) NotifyNewBundle(bp BundleDescriptor) {
+	snm.algorithm.NotifyNewBundle(bp)
 }
 
 // DispatchingAllowed if the underlying algorithm says so.

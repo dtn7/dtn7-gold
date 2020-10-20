@@ -21,7 +21,7 @@ func (c *Core) SendBundle(bndl *bpv7.Bundle) {
 	}
 	bp := NewBundleDescriptorFromBundle(*bndl, c.store)
 
-	c.routing.NotifyIncoming(bp)
+	c.routing.NotifyNewBundle(bp)
 	c.transmit(bp)
 }
 
@@ -144,7 +144,7 @@ func (c *Core) receive(bp BundleDescriptor) {
 		}
 	}
 
-	c.routing.NotifyIncoming(bp)
+	c.routing.NotifyNewBundle(bp)
 
 	c.dispatching(bp)
 }
