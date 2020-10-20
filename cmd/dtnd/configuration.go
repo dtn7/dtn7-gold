@@ -93,7 +93,7 @@ func parseListenPort(endpoint string) (port int, err error) {
 }
 
 // parseListen inspects a "listen" convergenceConf and returns a Convergable.
-func parseListen(conv convergenceConf, nodeId bpv7.EndpointID) (cla.Convergable, bpv7.EndpointID, cla.CLAType, discovery.DiscoveryMessage, error) {
+func parseListen(conv convergenceConf, nodeId bpv7.EndpointID) (cla.Convergable, bpv7.EndpointID, cla.CLAType, discovery.Announcement, error) {
 	log.WithFields(log.Fields{
 		"EndpointID": conv.Node,
 		"Endpoint":   conv.Endpoint,
@@ -104,7 +104,7 @@ func parseListen(conv convergenceConf, nodeId bpv7.EndpointID) (cla.Convergable,
 	if conv.Node != "" {
 		parsedId, err := bpv7.NewEndpointID(conv.Node)
 		if err != nil {
-			return nil, nodeId, 0, discovery.DiscoveryMessage{}, err
+			return nil, nodeId, 0, discovery.Announcement{}, err
 		} else {
 			log.WithFields(log.Fields{
 				"listener ID": conv.Node,
@@ -116,15 +116,15 @@ func parseListen(conv convergenceConf, nodeId bpv7.EndpointID) (cla.Convergable,
 	switch conv.Protocol {
 	case "bbc":
 		conn, err := bbc.NewBundleBroadcastingConnector(conv.Endpoint, true)
-		return conn, nodeId, cla.BBC, discovery.DiscoveryMessage{}, err
+		return conn, nodeId, cla.BBC, discovery.Announcement{}, err
 
 	case "mtcp":
 		portInt, err := parseListenPort(conv.Endpoint)
 		if err != nil {
-			return nil, nodeId, cla.MTCP, discovery.DiscoveryMessage{}, err
+			return nil, nodeId, cla.MTCP, discovery.Announcement{}, err
 		}
 
-		msg := discovery.DiscoveryMessage{
+		msg := discovery.Announcement{
 			Type:     cla.MTCP,
 			Endpoint: nodeId,
 			Port:     uint(portInt),
@@ -135,12 +135,12 @@ func parseListen(conv convergenceConf, nodeId bpv7.EndpointID) (cla.Convergable,
 	case "tcpclv4":
 		portInt, err := parseListenPort(conv.Endpoint)
 		if err != nil {
-			return nil, nodeId, cla.TCPCLv4, discovery.DiscoveryMessage{}, err
+			return nil, nodeId, cla.TCPCLv4, discovery.Announcement{}, err
 		}
 
 		listener := tcpclv4.ListenTCP(conv.Endpoint, nodeId)
 
-		msg := discovery.DiscoveryMessage{
+		msg := discovery.Announcement{
 			Type:     cla.TCPCLv4,
 			Endpoint: nodeId,
 			Port:     uint(portInt),
@@ -163,14 +163,14 @@ func parseListen(conv convergenceConf, nodeId bpv7.EndpointID) (cla.Convergable,
 
 		select {
 		case err := <-errChan:
-			return nil, nodeId, cla.TCPCLv4WebSocket, discovery.DiscoveryMessage{}, err
+			return nil, nodeId, cla.TCPCLv4WebSocket, discovery.Announcement{}, err
 
 		case <-time.After(100 * time.Millisecond):
-			return listener, nodeId, cla.TCPCLv4WebSocket, discovery.DiscoveryMessage{}, nil
+			return listener, nodeId, cla.TCPCLv4WebSocket, discovery.Announcement{}, nil
 		}
 
 	default:
-		return nil, nodeId, 0, discovery.DiscoveryMessage{}, fmt.Errorf("unknown listen.protocol \"%s\"", conv.Protocol)
+		return nil, nodeId, 0, discovery.Announcement{}, fmt.Errorf("unknown listen.protocol \"%s\"", conv.Protocol)
 	}
 }
 
@@ -240,7 +240,7 @@ func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error)
 }
 
 // parseCore creates the Core based on the given TOML configuration.
-func parseCore(filename string) (c *routing.Core, ds *discovery.DiscoveryService, err error) {
+func parseCore(filename string) (c *routing.Core, ds *discovery.Manager, err error) {
 	var conf tomlConfig
 	if _, err = toml.DecodeFile(filename, &conf); err != nil {
 		return
@@ -277,7 +277,7 @@ func parseCore(filename string) (c *routing.Core, ds *discovery.DiscoveryService
 		log.Warn("Unknown logging format")
 	}
 
-	var discoveryMsgs []discovery.DiscoveryMessage
+	var discoveryMsgs []discovery.Announcement
 
 	// Core
 	if conf.Core.Store == "" {
@@ -325,7 +325,7 @@ func parseCore(filename string) (c *routing.Core, ds *discovery.DiscoveryService
 			return
 		} else {
 			c.RegisterCLA(convRec, claType, eid)
-			if discoMsg != (discovery.DiscoveryMessage{}) {
+			if discoMsg != (discovery.Announcement{}) {
 				discoveryMsgs = append(discoveryMsgs, discoMsg)
 			}
 		}
@@ -351,7 +351,7 @@ func parseCore(filename string) (c *routing.Core, ds *discovery.DiscoveryService
 			conf.Discovery.Interval = 10
 		}
 
-		ds, err = discovery.NewDiscoveryService(
+		ds, err = discovery.NewManager(
 			discoveryMsgs, c, conf.Discovery.Interval,
 			conf.Discovery.IPv4, conf.Discovery.IPv6)
 		if err != nil {

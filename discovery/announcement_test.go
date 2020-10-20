@@ -15,7 +15,7 @@ import (
 )
 
 func TestDiscoveryMessageCbor(t *testing.T) {
-	var tests = []DiscoveryMessage{
+	var tests = []Announcement{
 		{
 			Type:     cla.MTCP,
 			Endpoint: bpv7.MustNewEndpointID("dtn://foobar/"),
@@ -39,13 +39,13 @@ func TestDiscoveryMessageCbor(t *testing.T) {
 	}
 
 	for _, dmIn := range tests {
-		buff, err := DiscoveryMessagesToCbor([]DiscoveryMessage{dmIn})
+		buff, err := MarshalAnnouncements([]Announcement{dmIn})
 		if err != nil {
 			t.Fatalf("Encoding failed: %v", err)
 		}
 
-		// Decode into another DiscoveryMessage
-		dmsOut, err := NewDiscoveryMessagesFromCbor(buff)
+		// Decode into another Announcement
+		dmsOut, err := UnmarshalAnnouncements(buff)
 		if err != nil {
 			t.Fatalf("Decoding failed: %v", err)
 		}
@@ -55,7 +55,7 @@ func TestDiscoveryMessageCbor(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(dmIn, dmsOut[0]) {
-			t.Fatalf("Decoded DiscoveryMessage differs: %v became %v", dmIn, dmsOut[0])
+			t.Fatalf("Decoded Announcement differs: %v became %v", dmIn, dmsOut[0])
 		}
 	}
 }

@@ -5,6 +5,10 @@
 
 package cla
 
+import (
+	"errors"
+)
+
 // CLAType is one of the supported Convergence Layer Adaptors
 type CLAType uint
 
@@ -21,4 +25,33 @@ const (
 	// BBC identifies the Bundle Broadcasting Connector, implemented in cla/bbc.
 	// Only here for completeness
 	BBC CLAType = 20
+
+	unknownClaTypeString string = "unknown CLA type"
 )
+
+// CheckValid checks if its value is known.
+func (claType CLAType) CheckValid() (err error) {
+	if claType.String() == unknownClaTypeString {
+		err = errors.New(unknownClaTypeString)
+	}
+	return
+}
+
+func (claType CLAType) String() string {
+	switch claType {
+	case TCPCLv4:
+		return "TCPCLv4"
+
+	case TCPCLv4WebSocket:
+		return "TCPCLv4 via WebSocket"
+
+	case MTCP:
+		return "MTCP"
+
+	case BBC:
+		return "BBC"
+
+	default:
+		return unknownClaTypeString
+	}
+}
