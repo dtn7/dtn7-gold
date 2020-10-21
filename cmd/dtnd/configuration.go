@@ -19,14 +19,14 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/dtn7/dtn7-go/agent"
-	"github.com/dtn7/dtn7-go/bpv7"
-	"github.com/dtn7/dtn7-go/cla"
-	"github.com/dtn7/dtn7-go/cla/bbc"
-	"github.com/dtn7/dtn7-go/cla/mtcp"
-	"github.com/dtn7/dtn7-go/cla/tcpclv4"
-	"github.com/dtn7/dtn7-go/discovery"
-	"github.com/dtn7/dtn7-go/routing"
+	"github.com/dtn7/dtn7-go/pkg/agent"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/cla"
+	"github.com/dtn7/dtn7-go/pkg/cla/bbc"
+	"github.com/dtn7/dtn7-go/pkg/cla/mtcp"
+	"github.com/dtn7/dtn7-go/pkg/cla/tcpclv4"
+	"github.com/dtn7/dtn7-go/pkg/discovery"
+	"github.com/dtn7/dtn7-go/pkg/routing"
 )
 
 // tomlConfig describes the TOML-configuration.

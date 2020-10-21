@@ -9,7 +9,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/dtn7/dtn7-go/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
 // showBundle for the "show" CLI options.

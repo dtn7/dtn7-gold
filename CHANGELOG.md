@@ -27,6 +27,7 @@ Types of changes:
 
 ## [Unreleased]
 ### Changed
+- Move all Go packages into the pkg directory.
 - Renamed bundle package to bpv7. This new name better describes that it
   is about bpbis and not just bundles. Furthermore this allows to use
   the obvious variable name "bundle".

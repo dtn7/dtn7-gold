@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/dtn7/dtn7-go/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
 // createBundle for the "create" CLI option.

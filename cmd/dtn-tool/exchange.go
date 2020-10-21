@@ -16,9 +16,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-go/agent"
-	"github.com/dtn7/dtn7-go/bpv7"
 	"github.com/fsnotify/fsnotify"
+
+	"github.com/dtn7/dtn7-go/pkg/agent"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
 // exchange Bundles between an user and a dtnd over the filesystem.
