@@ -75,6 +75,12 @@ func (b *Bundle) ExtensionBlock(blockType uint64) (*CanonicalBlock, error) {
 	return nil, fmt.Errorf("no CanonicalBlock with block type %d was found in Bundle", blockType)
 }
 
+// HasExtensionBlock checks if a CanonicalBlock / ExtensionBlock for some block type number is present.
+func (b *Bundle) HasExtensionBlock(blockType uint64) bool {
+	_, err := b.ExtensionBlock(blockType)
+	return err == nil
+}
+
 // PayloadBlock returns this Bundle's payload block or an error, if it does
 // not exists.
 func (b *Bundle) PayloadBlock() (*CanonicalBlock, error) {
@@ -123,6 +129,19 @@ func (b *Bundle) AddExtensionBlock(block CanonicalBlock) {
 	b.sortBlocks()
 }
 
+// RemoveExtensionBlockByBlockNumber searches and removes a CanonicalBlock / ExtensionBlock with the given block number.
+//
+// If no such block exists, the method will do nothing. Sorting will not be performed, as we assume that the blocks are
+// already in their correct order.
+func (b *Bundle) RemoveExtensionBlockByBlockNumber(blockNumber uint64) {
+	for i := 0; i < len(b.CanonicalBlocks); i++ {
+		if b.CanonicalBlocks[i].BlockNumber == blockNumber {
+			b.CanonicalBlocks = append(b.CanonicalBlocks[:i], b.CanonicalBlocks[i+1:]...)
+			return
+		}
+	}
+}
+
 // SetCRCType sets the given CRCType for each block. To also calculate and set
 // the CRC value, one should also call the CalculateCRC method.
 func (b *Bundle) SetCRCType(crcType CRCType) {
@@ -156,9 +175,15 @@ func (b Bundle) CheckValid() (errs error) {
 		}
 	})
 
+	// Check for CanonicalBlocks
+	if b.CanonicalBlocks == nil || len(b.CanonicalBlocks) == 0 {
+		errs = multierror.Append(errs, fmt.Errorf("Bundle contains no CannonicalBlocks"))
+		// Abort here because the following checks are assuming the presence of CanonicalBlocks
+		return
+	}
+
 	// Check CanonicalBlocks for errors
-	if b.PrimaryBlock.BundleControlFlags.Has(AdministrativeRecordPayload) ||
-		b.PrimaryBlock.SourceNode == DtnNone() {
+	if b.PrimaryBlock.BundleControlFlags.Has(AdministrativeRecordPayload) || b.PrimaryBlock.SourceNode == DtnNone() {
 		for _, cb := range b.CanonicalBlocks {
 			if cb.BlockControlFlags.Has(StatusReportBlock) {
 				errs = multierror.Append(errs,

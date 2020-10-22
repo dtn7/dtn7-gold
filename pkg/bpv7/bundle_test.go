@@ -210,6 +210,40 @@ func TestBundleCheckValid(t *testing.T) {
 	}
 }
 
+func TestBundleAddRemoveExtensionBlocks(t *testing.T) {
+	primary := NewPrimaryBlock(0,
+		MustNewEndpointID("dtn://dst/"),
+		MustNewEndpointID("dtn://src/"),
+		NewCreationTimestamp(DtnTimeEpoch, 0),
+		60*60*1000000)
+	canonicals := []CanonicalBlock{
+		NewCanonicalBlock(2, 0, NewBundleAgeBlock(9001)),
+		NewCanonicalBlock(1, 0, NewPayloadBlock([]byte("hello world"))),
+	}
+
+	b, err := NewBundle(primary, canonicals)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if b.HasExtensionBlock(ExtBlockTypePreviousNodeBlock) {
+		t.Fatalf("previous node block is present")
+	}
+	b.AddExtensionBlock(NewCanonicalBlock(0, 0, NewPreviousNodeBlock(MustNewEndpointID("dtn://prev/"))))
+	if !b.HasExtensionBlock(ExtBlockTypePreviousNodeBlock) {
+		t.Fatalf("previous node block is not present")
+	}
+
+	if previousNodeBlock, err := b.ExtensionBlock(ExtBlockTypePreviousNodeBlock); err != nil {
+		t.Fatal(err)
+	} else {
+		b.RemoveExtensionBlockByBlockNumber(previousNodeBlock.BlockNumber)
+	}
+	if b.HasExtensionBlock(ExtBlockTypePreviousNodeBlock) {
+		t.Fatalf("previous node block is present")
+	}
+}
+
 func BenchmarkBundleSerializationCboring(b *testing.B) {
 	var sizes = []int{0, 1024, 1048576, 10485760, 104857600}
 	var crcs = []CRCType{CRCNo, CRC16, CRC32}
