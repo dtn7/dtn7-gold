@@ -127,6 +127,52 @@ func TestBldrParseLifetime(t *testing.T) {
 	}
 }
 
+func TestBundleBuilderAdministrativeRecord(t *testing.T) {
+	originBundle, err := Builder().
+		CRC(CRC32).
+		Source("dtn://host-a/").
+		Destination("dtn://host-b/").
+		CreationTimestampNow().
+		Lifetime(time.Hour).
+		PayloadBlock([]byte("hello world")).
+		Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reportBundle, err := Builder().
+		CRC(CRC32).
+		Source("dtn://host-b/").
+		Destination(originBundle.PrimaryBlock.ReportTo).
+		CreationTimestampNow().
+		Lifetime(time.Hour).
+		StatusReport(originBundle, DeliveredBundle, NoInformation).
+		Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := reportBundle.AdministrativeRecord()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	statusReport, ok := report.(*StatusReport)
+	if !ok {
+		t.Fatalf("report %v / %T is not an StatusReprot", report, report)
+	}
+
+	if statusReport.RefBundle != originBundle.ID() {
+		t.Fatalf("reference bundle id is %v, not %v", statusReport.RefBundle, originBundle.ID())
+	}
+	if statusReport.ReportReason != NoInformation {
+		t.Fatalf("status reason is %v, not %v", statusReport.ReportReason, NoInformation)
+	}
+	if sr := statusReport.StatusInformations(); len(sr) != 1 || sr[0] != DeliveredBundle {
+		t.Fatalf("status information are invalid: %v", sr)
+	}
+}
+
 func TestBuildFromMap(t *testing.T) {
 	tests := []struct {
 		name     string

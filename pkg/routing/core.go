@@ -250,7 +250,7 @@ func (c *Core) SendStatusReport(descriptor BundleDescriptor, status bpv7.StatusI
 	}).Info("Sending a status report for a bundle")
 
 	var sr = bpv7.NewStatusReport(*bndl, status, reason, bpv7.DtnTimeNow())
-	var ar, arErr = bpv7.AdministrativeRecordToCbor(&sr)
+	var ar, arErr = bpv7.AdministrativeRecordToCbor(sr)
 	if arErr != nil {
 		log.WithFields(log.Fields{
 			"bundle": descriptor.ID(),

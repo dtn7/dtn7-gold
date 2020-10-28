@@ -77,12 +77,12 @@ func TestStatusReportCreation(t *testing.T) {
 
 	// CBOR
 	buff := new(bytes.Buffer)
-	if err := cboring.Marshal(&statusRep, buff); err != nil {
+	if err := cboring.Marshal(statusRep, buff); err != nil {
 		t.Fatal(err)
 	}
 
-	var statusRepDec StatusReport
-	if err := cboring.Unmarshal(&statusRepDec, buff); err != nil {
+	statusRepDec := new(StatusReport)
+	if err := cboring.Unmarshal(statusRepDec, buff); err != nil {
 		t.Fatal(err)
 	}
 
@@ -130,7 +130,7 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 	statusRep := NewStatusReport(
 		bndl, ReceivedBundle, NoInformation, initTime)
 
-	adminRec, adminRecErr := AdministrativeRecordToCbor(&statusRep)
+	adminRec, adminRecErr := AdministrativeRecordToCbor(statusRep)
 	if adminRecErr != nil {
 		t.Fatal(adminRecErr)
 	}

@@ -5,6 +5,7 @@
 package bpv7
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -247,6 +248,23 @@ func (b Bundle) CheckValid() (errs error) {
 // has an administrative record payload.
 func (b Bundle) IsAdministrativeRecord() bool {
 	return b.PrimaryBlock.BundleControlFlags.Has(AdministrativeRecordPayload)
+}
+
+// AdministrativeRecord stored within this Bundle.
+//
+// An error arises if this Bundle is not an AdministrativeRecord, compare IsAdministrativeRecord.
+func (b Bundle) AdministrativeRecord() (AdministrativeRecord, error) {
+	if !b.IsAdministrativeRecord() {
+		return nil, fmt.Errorf("bundle is not an administrative record")
+	}
+
+	payload, err := b.PayloadBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	buff := bytes.NewBuffer(payload.Value.(*PayloadBlock).Data())
+	return GetAdministrativeRecordManager().ReadAdministrativeRecord(buff)
 }
 
 // MarshalCbor writes this Bundle's CBOR representation.

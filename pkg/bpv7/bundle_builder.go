@@ -433,6 +433,73 @@ func (bldr *BundleBuilder) PreviousNodeBlock(args ...interface{}) *BundleBuilder
 	return bldr.Canonical(NewPreviousNodeBlock(eid), flags)
 }
 
+// AdministrativeRecord configures an AdministrativeRecord as the Payload. Furthermore, the AdministrativeRecordPayload
+// BundleControlFlags is set.
+func (bldr *BundleBuilder) AdministrativeRecord(ar AdministrativeRecord) *BundleBuilder {
+	if bldr.err != nil {
+		return bldr
+	}
+
+	buff := new(bytes.Buffer)
+	if bldr.err = GetAdministrativeRecordManager().WriteAdministrativeRecord(ar, buff); bldr.err != nil {
+		return bldr
+	}
+
+	// Enforce the AdministrativeRecordPayload flag and unset all requests.
+	noRequests := ^(StatusRequestReception | StatusRequestForward | StatusRequestDelivery | StatusRequestDeletion)
+	bldr.primary.BundleControlFlags |= AdministrativeRecordPayload
+	bldr.primary.BundleControlFlags &= noRequests
+
+	return bldr.PayloadBlock(buff.Bytes())
+}
+
+// StatusReport configures this BundleBuilder's Bundle to be an AdministrativeRecord, delivering a StatusReport.
+//
+//   Bundle, StatusInformationPos, StatusReportReason[, DtnTime]
+//
+//   Where Bundle is the reference Bundle, StatusInformationPos describes the kind of StatusInformation, and
+//   StatusReportReason is the reason. An optional DtnTime for the record can also be passed. Otherwise the current
+//   time will be used.
+//
+func (bldr *BundleBuilder) StatusReport(args ...interface{}) *BundleBuilder {
+	if bldr.err != nil {
+		return bldr
+	}
+
+	if l := len(args); l != 3 && l != 4 {
+		bldr.err = fmt.Errorf("StatusReport expects three or four arguments, not %d", l)
+		return bldr
+	}
+
+	bundle, ok := args[0].(Bundle)
+	if !ok {
+		bldr.err = fmt.Errorf("StatusReport's first argument is not a Bundle")
+		return bldr
+	}
+	statusItem, ok := args[1].(StatusInformationPos)
+	if !ok {
+		bldr.err = fmt.Errorf("StatusReport's second argument is not an StatusInformationPos")
+		return bldr
+	}
+	reason, ok := args[2].(StatusReportReason)
+	if !ok {
+		bldr.err = fmt.Errorf("StatusReport's third argument is not a StatusReportReason")
+		return bldr
+	}
+
+	var t DtnTime
+	if len(args) == 4 {
+		if t, ok = args[3].(DtnTime); !ok {
+			bldr.err = fmt.Errorf("StatusReport's fourth argument is not a DtnTime")
+			return bldr
+		}
+	} else {
+		t = DtnTimeNow()
+	}
+
+	return bldr.AdministrativeRecord(NewStatusReport(bundle, statusItem, reason, t))
+}
+
 // BuildFromMap creates a Bundle from a map which "calls" the BundleBuilder's methods.
 //
 // This function does not use reflection or other dark magic. So it is safe to be called by unchecked data.

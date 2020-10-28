@@ -26,6 +26,9 @@ Types of changes:
 -->
 
 ## [Unreleased]
+### Added
+- Connect Administrative Records with Bundle and BundleBuilder.
+
 ### Changed
 - Move all Go packages into the pkg directory.
 - Renamed bundle package to bpv7. This new name better describes that it

@@ -241,9 +241,8 @@ type StatusReport struct {
 // StatusInformationPos, which creates the right bundle status item. The
 // bundle status report reason code will be used and the bundle status item
 // gets the given timestamp.
-func NewStatusReport(bndl Bundle, statusItem StatusInformationPos,
-	reason StatusReportReason, time DtnTime) StatusReport {
-	var sr = StatusReport{
+func NewStatusReport(bndl Bundle, statusItem StatusInformationPos, reason StatusReportReason, time DtnTime) (report *StatusReport) {
+	report = &StatusReport{
 		StatusInformation: make([]BundleStatusItem, maxStatusInformationPos),
 		ReportReason:      reason,
 		RefBundle:         bndl.ID(),
@@ -254,17 +253,16 @@ func NewStatusReport(bndl Bundle, statusItem StatusInformationPos,
 
 		switch {
 		case sip == statusItem && bndl.PrimaryBlock.BundleControlFlags.Has(RequestStatusTime):
-			sr.StatusInformation[i] = NewTimeReportingBundleStatusItem(time)
+			report.StatusInformation[i] = NewTimeReportingBundleStatusItem(time)
 
 		case sip == statusItem:
-			sr.StatusInformation[i] = NewBundleStatusItem(true)
+			report.StatusInformation[i] = NewBundleStatusItem(true)
 
 		default:
-			sr.StatusInformation[i] = NewBundleStatusItem(false)
+			report.StatusInformation[i] = NewBundleStatusItem(false)
 		}
 	}
-
-	return sr
+	return
 }
 
 // StatusInformations returns an array of available StatusInformationPos.
