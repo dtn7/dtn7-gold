@@ -22,13 +22,19 @@ func TestNewDtnEndpoint(t *testing.T) {
 		{"dtn://foo/", "foo", "", false, true},
 		{"dtn://foo/bar", "foo", "bar", false, true},
 		{"dtn://foo/bar/buz", "foo", "bar/buz", false, true},
-		{"dtn:foo", "", "", false, false},   // missing slashes
-		{"dtn:/foo/", "", "", false, false}, // only one leading slash
-		{"dtn://foo", "", "", false, false}, // missing trailing slash
-		{"dtn:", "", "", false, false},      // missing SSP
-		{"dtn", "", "", false, false},       // missing SSP and ":"
-		{"uff:uff", "", "", false, false},   // just no
-		{"", "", "", false, false},          // nothing
+		{"dtn://FOO/", "FOO", "", false, true},
+		{"dtn://23/", "23", "", false, true},
+		{"dtn://1a2b3c/", "1a2b3c", "", false, true},
+		{"dtn://a1-b2.c3_d4/", "a1-b2.c3_d4", "", false, true},
+		{"dtn:foo", "", "", false, false},     // missing slashes
+		{"dtn:/foo/", "", "", false, false},   // only one leading slash
+		{"dtn://foo", "", "", false, false},   // missing trailing slash
+		{"dtn:///bar", "", "", false, false},  // empty node name
+		{"dtn://f^oo/", "", "", false, false}, // invalid char (^) in node name
+		{"dtn:", "", "", false, false},        // missing SSP
+		{"dtn", "", "", false, false},         // missing SSP and ":"
+		{"uff:uff", "", "", false, false},     // just no
+		{"", "", "", false, false},            // nothing
 	}
 
 	for _, test := range tests {

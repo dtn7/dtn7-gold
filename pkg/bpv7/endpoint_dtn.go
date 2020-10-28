@@ -14,18 +14,21 @@ import (
 )
 
 const (
-	dtnEndpointSchemeName string = "dtn"
-	dtnEndpointSchemeNo   uint64 = 1
-	dtnEndpointDtnNone    string = "dtn:none"
-	dtnEndpointDtnNoneSsp string = "none"
+	dtnEndpointSchemeName = "dtn"
+	dtnEndpointSchemeNo   = uint64(1)
+	dtnEndpointDtnNone    = "dtn:none"
+	dtnEndpointDtnNoneSsp = "none"
+
+	dtnEndpointRegexpSsp  = `//([\w-._]+)/(.*)`
+	dtnEndpointRegexpFull = "^" + dtnEndpointSchemeName + ":(none|" + dtnEndpointRegexpSsp + ")$"
 )
 
 // DtnEndpoint describes the dtn URI for EndpointIDs, as defined in ietf-dtn-bpbis.
 //
 //   Format of a "normal" dtn URI:
 //   "dtn:" "//" NodeName "/" Demux
-//               ^------^ 1*VCHAR
-//                             ^---^ VCHAR
+//               ^------^ 1*(ALPHA/DIGIT/"-"/"."/"_")
+//                            ^---^ *VCHAR
 //
 //   Format of the null endpoint:
 //   "dtn:none"
@@ -47,7 +50,7 @@ func parseDtnSsp(ssp string) (nodeName, demux string, isDtnNone bool, err error)
 		return
 	}
 
-	re := regexp.MustCompile("^//([^/]+)/(.*)$")
+	re := regexp.MustCompile("^" + dtnEndpointRegexpSsp + "$")
 	if !re.MatchString(ssp) {
 		err = fmt.Errorf("ssp does not match a dtn endpoint")
 		return
@@ -132,8 +135,7 @@ func (e DtnEndpoint) IsSingleton() bool {
 
 // CheckValid returns an error for incorrect data.
 func (e DtnEndpoint) CheckValid() (err error) {
-	re := regexp.MustCompile("^" + dtnEndpointSchemeName + ":(none|//(.+)/(.*))$")
-	if !re.MatchString(e.String()) {
+	if !regexp.MustCompile(dtnEndpointRegexpFull).MatchString(e.String()) {
 		err = fmt.Errorf("dtn URI does not match regexp")
 	}
 	return

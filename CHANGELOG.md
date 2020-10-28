@@ -35,6 +35,7 @@ Types of changes:
   is about bpbis and not just bundles. Furthermore this allows to use
   the obvious variable name "bundle".
 - Unlink discovery from Core.
+- Node name within a dtn URI was restricted to ALPHA/DIGIT/`-./_`.
 
 ### Fixed
 - Include nil-check for EndpointID's internal representation.
