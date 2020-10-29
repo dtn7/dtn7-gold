@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"time"
 
 	"github.com/dtn7/cboring"
 	"github.com/hashicorp/go-multierror"
@@ -167,6 +168,21 @@ func (b Bundle) String() string {
 	return b.ID().String()
 }
 
+// IsLifetimeExceeded of this Bundle by checking an optional Bundle Age Block and the PrimaryBlock's Lifetime.
+func (b Bundle) IsLifetimeExceeded() bool {
+	if b.PrimaryBlock.CreationTimestamp.IsZeroTime() {
+		if bab, err := b.ExtensionBlock(ExtBlockTypeBundleAgeBlock); err != nil {
+			return true
+		} else {
+			return bab.Value.(*BundleAgeBlock).Age() > b.PrimaryBlock.Lifetime
+		}
+	}
+
+	maxTimestamp := b.PrimaryBlock.CreationTimestamp.DtnTime().Time().Add(
+		time.Duration(b.PrimaryBlock.Lifetime) * time.Millisecond)
+	return time.Now().After(maxTimestamp)
+}
+
 // CheckValid returns an array of errors for incorrect data.
 func (b Bundle) CheckValid() (errs error) {
 	// Check blocks for errors
@@ -231,14 +247,9 @@ func (b Bundle) CheckValid() (errs error) {
 		}
 	}
 
-	// Check if Bundle Age Block's time is exceeded.
-	if canBab, err := b.ExtensionBlock(ExtBlockTypeBundleAgeBlock); err == nil {
-		bundleAge := canBab.Value.(*BundleAgeBlock).Age()
-		if bundleAge > b.PrimaryBlock.Lifetime {
-			errs = multierror.Append(errs, fmt.Errorf(
-				"Bundle: Bundle Age Block's value %d exceeded lifetime %d",
-				bundleAge, b.PrimaryBlock.Lifetime))
-		}
+	// Check if the Bundle's lifetime is exceeded
+	if b.IsLifetimeExceeded() {
+		errs = multierror.Append(errs, fmt.Errorf("Bundle: Lifetime is exceeded"))
 	}
 
 	return

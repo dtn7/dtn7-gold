@@ -211,11 +211,11 @@ func (c *Core) forward(bp BundleDescriptor) {
 		}
 	}
 
-	if bp.MustBundle().PrimaryBlock.IsLifetimeExceeded() {
+	if bp.MustBundle().IsLifetimeExceeded() {
 		log.WithFields(log.Fields{
 			"bundle":        bp.ID(),
 			"primary_block": bp.MustBundle().PrimaryBlock,
-		}).Warn("Bundle's primary block's lifetime is exceeded")
+		}).Warn("Bundle's lifetime is exceeded")
 
 		c.bundleDeletion(bp, bpv7.LifetimeExpired)
 		return
