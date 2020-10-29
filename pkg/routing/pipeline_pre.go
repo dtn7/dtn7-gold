@@ -10,7 +10,7 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
-// pipeline_pre contains common Pipeline code for "preprocessing" incoming and outgoing bundles.
+// pipeline_pre contains common Pipeline code for preprocessing incoming and outgoing bundles.
 
 // receiveIncoming is the first action for received / incoming bundles.
 func (pipeline *Pipeline) receiveIncoming(descriptor BundleDescriptor) pipelineFunc {
@@ -69,6 +69,8 @@ func (pipeline *Pipeline) processInitial(descriptor BundleDescriptor) pipelineFu
 
 	for _, checkFunc := range pipeline.Checks {
 		if err := checkFunc(pipeline, descriptor); err != nil {
+			pipeline.log().WithField("bundle", descriptor.ID()).WithError(err).Warn("preprocessing check failed")
+
 			descriptor.AddTag(Faulty)
 			break
 		}
