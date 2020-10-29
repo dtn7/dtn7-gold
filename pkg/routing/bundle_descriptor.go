@@ -23,6 +23,7 @@ type BundleDescriptor struct {
 	Receiver    bpv7.EndpointID
 	Timestamp   time.Time
 	Constraints map[Constraint]bool
+	Tags        map[Tag]struct{}
 
 	bndl  *bpv7.Bundle
 	store *storage.Store
@@ -35,6 +36,7 @@ func NewBundleDescriptor(bid bpv7.BundleID, store *storage.Store) BundleDescript
 		Receiver:    bpv7.DtnNone(),
 		Timestamp:   time.Now(),
 		Constraints: make(map[Constraint]bool),
+		Tags:        make(map[Tag]struct{}),
 
 		bndl:  nil,
 		store: store,
@@ -73,7 +75,7 @@ func (descriptor BundleDescriptor) Sync() error {
 	} else if len(descriptor.Constraints) == 0 {
 		return descriptor.store.Delete(descriptor.Id)
 	} else {
-		bi.Pending = !descriptor.HasConstraint(ReassemblyPending) &&
+		bi.Pending = !descriptor.HasConstraint(ReassemblyPending_) &&
 			(descriptor.HasConstraint(ForwardPending) || descriptor.HasConstraint(Contraindicated))
 
 		bi.Properties["bundlepack/receiver"] = descriptor.Receiver
@@ -157,6 +159,22 @@ func (descriptor *BundleDescriptor) PurgeConstraints() {
 			descriptor.RemoveConstraint(c)
 		}
 	}
+}
+
+// HasTag checks if this BundleDescriptor has a Tag assigned.
+func (descriptor *BundleDescriptor) HasTag(tag Tag) bool {
+	_, ok := descriptor.Tags[tag]
+	return ok
+}
+
+// AddTag to this BundleDescriptor.
+func (descriptor *BundleDescriptor) AddTag(tag Tag) {
+	descriptor.Tags[tag] = struct{}{}
+}
+
+// RemoveTag from this BundleDescriptor.
+func (descriptor *BundleDescriptor) RemoveTag(tag Tag) {
+	delete(descriptor.Tags, tag)
 }
 
 // UpdateBundleAge updates the bundle's Bundle Age block based on its reception

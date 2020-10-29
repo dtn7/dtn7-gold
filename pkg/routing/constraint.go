@@ -14,9 +14,9 @@ const (
 	// ForwardPending is assigned to a bundle if its forwarding is pending.
 	ForwardPending Constraint = iota
 
-	// ReassemblyPending is assigned to a fragmented bundle if its reassembly is
+	// ReassemblyPending_ is assigned to a fragmented bundle if its reassembly is
 	// pending.
-	ReassemblyPending Constraint = iota
+	ReassemblyPending_ Constraint = iota
 
 	// Contraindicated is assigned to a bundle if it could not be delivered and
 	// was moved to the contraindicated stage. This Constraint was not defined
@@ -36,7 +36,7 @@ func (c Constraint) String() string {
 	case ForwardPending:
 		return "forwarding pending"
 
-	case ReassemblyPending:
+	case ReassemblyPending_:
 		return "reassembly pending"
 
 	case Contraindicated:

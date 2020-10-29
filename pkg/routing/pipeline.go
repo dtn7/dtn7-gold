@@ -1,0 +1,85 @@
+// SPDX-FileCopyrightText: 2020 Alvar Penning
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package routing
+
+import (
+	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/storage"
+)
+
+type Pipeline struct {
+	NodeId bpv7.EndpointID
+
+	Store *storage.Store
+	Algo  Algorithm
+
+	// Checks to be passed in the initial processing.
+	Checks []CheckFunc
+
+	// SendReports only for the allowed bpv7.StatusInformationPos.
+	SendReports map[bpv7.StatusInformationPos]bool
+
+	queue chan pipelineMsg
+}
+
+type pipelineMsgType int
+
+const (
+	_ pipelineMsgType = iota
+
+	// sendBundle message with a bpv7.Bundle payload
+	sendBundle
+)
+
+type pipelineMsg struct {
+	t pipelineMsgType
+	v interface{}
+}
+
+type pipelineFunc func(BundleDescriptor) pipelineFunc
+
+func (pipeline *Pipeline) log() *log.Entry {
+	return log.WithField("pipeline", pipeline.NodeId)
+}
+
+func (pipeline *Pipeline) sendReport(descriptor BundleDescriptor, status bpv7.StatusInformationPos, reason bpv7.StatusReportReason) {
+	// Don't report if..
+	// - not enabled for this status information.
+	// - it's an outgoing bundle.
+	// - the bundle is an administrative record itself.
+	if ok, exists := pipeline.SendReports[status]; !ok || !exists {
+		return
+	} else if descriptor.HasTag(Outgoing) {
+		return
+	} else if descriptor.MustBundle().PrimaryBlock.BundleControlFlags.Has(bpv7.AdministrativeRecordPayload) {
+		return
+	}
+
+	pipeline.log().WithFields(log.Fields{
+		"origin": descriptor.ID(), "status": status, "reason": reason,
+	}).Info("creating status report for bundle")
+
+	reportBundle, err := bpv7.Builder().
+		CRC(bpv7.CRC32).
+		Source(pipeline.NodeId).
+		Destination(descriptor.MustBundle().PrimaryBlock.ReportTo).
+		CreationTimestampNow().
+		Lifetime(descriptor.MustBundle().PrimaryBlock.Lifetime).
+		StatusReport(descriptor.MustBundle(), status, reason).
+		Build()
+	if err != nil {
+		pipeline.log().WithField("origin", descriptor.ID()).WithError(err).Warn("status report creation errored")
+	} else {
+		pipeline.queue <- pipelineMsg{t: sendBundle, v: reportBundle}
+	}
+}
+
+func (pipeline *Pipeline) run() {
+	var descriptor BundleDescriptor
+	for f := pipeline.sendOutgoing; !descriptor.HasTag(Faulty) && f != nil; f = f(descriptor) {
+	}
+}
