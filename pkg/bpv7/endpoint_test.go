@@ -152,78 +152,118 @@ func TestEndpointSingleton(t *testing.T) {
 
 func TestEndpointIDSameNode(t *testing.T) {
 	tests := []struct {
-		eid1  EndpointID
-		eid2  EndpointID
-		valid bool
+		eid1     EndpointID
+		eid2     EndpointID
+		sameNode bool
+		equals   bool
 	}{
 		{
-			eid1:  MustNewEndpointID("dtn://foo/"),
-			eid2:  MustNewEndpointID("dtn://foo/"),
-			valid: true,
+			eid1:     MustNewEndpointID("dtn://foo/"),
+			eid2:     MustNewEndpointID("dtn://foo/"),
+			sameNode: true,
+			equals:   true,
 		},
 		{
-			eid1:  MustNewEndpointID("dtn://foo/"),
-			eid2:  MustNewEndpointID("dtn://foo/bar"),
-			valid: true,
+			eid1: MustNewEndpointID("dtn://foo/"),
+			eid2: EndpointID{EndpointType: DtnEndpoint{
+				NodeName: "foo",
+				Demux:    "",
+			}},
+			sameNode: true,
+			equals:   true,
 		},
 		{
-			eid1:  MustNewEndpointID("dtn://foo/bar"),
-			eid2:  MustNewEndpointID("dtn://foo/"),
-			valid: true,
+			eid1: MustNewEndpointID("ipn:23.42"),
+			eid2: EndpointID{EndpointType: IpnEndpoint{
+				Node:    23,
+				Service: 42,
+			}},
+			sameNode: true,
+			equals:   true,
 		},
 		{
-			eid1:  MustNewEndpointID("dtn://foo/bar"),
-			eid2:  MustNewEndpointID("dtn://foo/buz"),
-			valid: true,
+			eid1:     MustNewEndpointID("dtn://foo/"),
+			eid2:     MustNewEndpointID("dtn://foo/bar"),
+			sameNode: true,
+			equals:   false,
 		},
 		{
-			eid1:  MustNewEndpointID("dtn://foo/bar"),
-			eid2:  MustNewEndpointID("dtn://bar/foo"),
-			valid: false,
+			eid1:     MustNewEndpointID("dtn://foo/bar"),
+			eid2:     MustNewEndpointID("dtn://foo/"),
+			sameNode: true,
+			equals:   false,
 		},
 		{
-			eid1:  MustNewEndpointID("ipn:23.42"),
-			eid2:  MustNewEndpointID("dtn://23/42"),
-			valid: false,
+			eid1:     MustNewEndpointID("dtn://foo/bar"),
+			eid2:     MustNewEndpointID("dtn://foo/buz"),
+			sameNode: true,
+			equals:   false,
 		},
 		{
-			eid1:  EndpointID{EndpointType: nil},
-			eid2:  EndpointID{EndpointType: nil},
-			valid: true,
+			eid1:     MustNewEndpointID("dtn://foo/bar"),
+			eid2:     MustNewEndpointID("dtn://bar/foo"),
+			sameNode: false,
+			equals:   false,
 		},
 		{
-			eid1:  EndpointID{EndpointType: nil},
-			eid2:  DtnNone(),
-			valid: true,
+			eid1:     MustNewEndpointID("ipn:23.42"),
+			eid2:     MustNewEndpointID("dtn://23/42"),
+			sameNode: false,
+			equals:   false,
 		},
 		{
-			eid1:  DtnNone(),
-			eid2:  EndpointID{EndpointType: nil},
-			valid: true,
+			eid1:     EndpointID{EndpointType: nil},
+			eid2:     EndpointID{EndpointType: nil},
+			sameNode: true,
+			equals:   true,
 		},
 		{
-			eid1:  DtnNone(),
-			eid2:  DtnNone(),
-			valid: true,
+			eid1:     EndpointID{EndpointType: nil},
+			eid2:     DtnNone(),
+			sameNode: true,
+			equals:   false,
 		},
 		{
-			eid1:  MustNewEndpointID("ipn:23.42"),
-			eid2:  EndpointID{EndpointType: nil},
-			valid: false,
+			eid1:     DtnNone(),
+			eid2:     EndpointID{EndpointType: nil},
+			sameNode: true,
+			equals:   false,
 		},
 		{
-			eid1:  MustNewEndpointID("dtn://foo/bar"),
-			eid2:  EndpointID{EndpointType: nil},
-			valid: false,
+			eid1:     DtnNone(),
+			eid2:     DtnNone(),
+			sameNode: true,
+			equals:   true,
+		},
+		{
+			eid1:     DtnNone(),
+			eid2:     EndpointID{EndpointType: DtnEndpoint{IsDtnNone: true}},
+			sameNode: true,
+			equals:   true,
+		},
+		{
+			eid1:     MustNewEndpointID("ipn:23.42"),
+			eid2:     EndpointID{EndpointType: nil},
+			sameNode: false,
+			equals:   false,
+		},
+		{
+			eid1:     MustNewEndpointID("dtn://foo/bar"),
+			eid2:     EndpointID{EndpointType: nil},
+			sameNode: false,
+			equals:   false,
 		},
 	}
 
 	for _, test := range tests {
-		if res := test.eid1.SameNode(test.eid2); res != test.valid {
+		if res := test.eid1.SameNode(test.eid2); res != test.sameNode {
 			t.Fatalf("%v.IsSameNode(%v) := %t", test.eid1, test.eid2, res)
 		}
-		if res := test.eid2.SameNode(test.eid1); res != test.valid {
+		if res := test.eid2.SameNode(test.eid1); res != test.sameNode {
 			t.Fatalf("%v.IsSameNode(%v) := %t", test.eid2, test.eid1, res)
+		}
+		if res := test.eid1 == test.eid2; res != test.equals {
+			t.Fatalf("(%v == %v) := %t", test.eid1, test.eid2, res)
 		}
 	}
 }
