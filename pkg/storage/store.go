@@ -134,7 +134,7 @@ func (s *Store) Update(bi BundleItem) error {
 	return s.bh.Update(bi.Id, bi)
 }
 
-// Delete a BundleItem, represented by the "scrubed" BundleID.
+// Delete a BundleItem, represented by the "scrubbed" BundleID.
 func (s *Store) Delete(bid bpv7.BundleID) error {
 	if bi, err := s.QueryId(bid); err == nil {
 		log.WithFields(log.Fields{
