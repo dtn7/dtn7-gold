@@ -93,8 +93,8 @@ func TestBundleIDScrub(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if scrubed := test.from.Scrub(); !reflect.DeepEqual(test.to, scrubed) {
-			t.Fatalf("Scrubed BundleID mismatches: %v is not expected %v", test.to, scrubed)
+		if scrubbed := test.from.Scrub(); !reflect.DeepEqual(test.to, scrubbed) {
+			t.Fatalf("Scrubbed BundleID mismatches: %v is not expected %v", test.to, scrubbed)
 		}
 	}
 }
