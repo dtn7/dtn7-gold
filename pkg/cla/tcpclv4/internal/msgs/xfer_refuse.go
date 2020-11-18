@@ -33,6 +33,9 @@ const (
 
 	// RefusalExtensionFailure indicates a failure processing the Transfer Extension Items.
 	RefusalExtensionFailure TransferRefusalCode = 0x05
+
+	// RefusalSessionTerminating indicates the receiving entity is terminating this session.
+	RefusalSessionTerminating TransferRefusalCode = 0x06
 )
 
 func (trc TransferRefusalCode) String() string {
@@ -49,6 +52,8 @@ func (trc TransferRefusalCode) String() string {
 		return "Not Acceptable"
 	case RefusalExtensionFailure:
 		return "Extension Failure"
+	case RefusalSessionTerminating:
+		return "Session Terminating"
 	default:
 		return "INVALID"
 	}
