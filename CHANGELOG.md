@@ -30,13 +30,16 @@ Types of changes:
 - Connect Administrative Records with Bundle and BundleBuilder.
 
 ### Changed
-- Move all Go packages into the pkg directory.
-- Renamed bundle package to bpv7. This new name better describes that it
-  is about bpbis and not just bundles. Furthermore this allows to use
-  the obvious variable name "bundle".
-- Unlink discovery from Core.
+- Structural refactoring:
+    - Move all Go packages into the pkg directory.
+    - Renamed bundle package to bpv7.
+      This new name better describes that it is about bpbis and not just
+      bundles. Furthermore this allows to use the obvious variable name
+      "bundle" for a bpv7.Bundle.
+    - Unlink discovery from Core.
 - Bump draft-ietf-dtn-bpbis version from 26 to 29.
-- Restrict dtn URI node name to `[\w-._]+`, _ietf-dtn-bpbis-27_.
+    - Restrict dtn URI node name to `[\w-._]+`, _ietf-dtn-bpbis-27_.
+- Bump draft-ietf-dtn-tcpclv4 version from 21 to 23.
 
 ### Fixed
 - Include nil-check for EndpointID's internal representation.

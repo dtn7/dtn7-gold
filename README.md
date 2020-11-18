@@ -23,7 +23,7 @@ This software implements the current draft of the Bundle Protocol Version 7.
 ### Convergence Layer
 Bundles might be exchanged between nodes by the following protocols.
 
-- TCP Convergence Layer Protocol Version 4 ([draft-ietf-dtn-tcpclv4-21][dtn-tcpcl-21]), including:
+- TCP Convergence Layer Protocol Version 4 ([draft-ietf-dtn-tcpclv4-23][dtn-tcpcl-23]), including:
     - WebSocket-based variant
 - Minimal TCP Convergence-Layer Protocol ([draft-ietf-dtn-mtcpcl-01][dtn-mtcpcl-01])
 - Bundle Broadcasting Connector, a generic Broadcasting Interface
@@ -153,7 +153,7 @@ To simplify the copyright stuff, the [REUSE][reuse] tool is used.
 [brew]: https://brew.sh
 [dtn-bpbis-29]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-29
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
-[dtn-tcpcl-21]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-21
+[dtn-tcpcl-23]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-23
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
 [godoc]: https://godoc.org/github.com/dtn7/dtn7-go
 [gofmt]: https://blog.golang.org/gofmt
