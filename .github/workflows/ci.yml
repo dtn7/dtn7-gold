@@ -42,9 +42,9 @@ jobs:
       uses: actions/checkout@v2
 
     - name: golangci-lint
-      uses: golangci/golangci-lint-action@6317259e28065ecd33bf7e7e6c67c77db091d8a4  # v2.2.0
+      uses: golangci/golangci-lint-action@e868220d9fd3b523f1a8fcfb69749e8c7521ba14  # v2.3.0
       with:
-        version: v1.30
+        version: v1.32.2
         args: --config contrib/golangci-lint/.golangci.yml
 
 
