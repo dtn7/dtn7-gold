@@ -35,8 +35,8 @@ Types of changes:
   is about bpbis and not just bundles. Furthermore this allows to use
   the obvious variable name "bundle".
 - Unlink discovery from Core.
-- Restrict dtn URI node name to `[\w-._]+`, _ietf-dtn-bpbis-26_.
-- Bump draft-ietf-dtn-bpbis version from 26 to 27.
+- Bump draft-ietf-dtn-bpbis version from 26 to 29.
+- Restrict dtn URI node name to `[\w-._]+`, _ietf-dtn-bpbis-27_.
 
 ### Fixed
 - Include nil-check for EndpointID's internal representation.

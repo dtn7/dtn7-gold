@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Package bpv7 provides a library for interaction with Bundles as defined
-// in the Bundle Protocol Version 7 (draft-ietf-dtn-bpbis-27.txt). This includes
+// in the Bundle Protocol Version 7 (draft-ietf-dtn-bpbis-29.txt). This includes
 // Bundle creation, modification, serialization and deserialization.
 //
 // The easiest way to create new Bundles is to use the BundleBuilder.
