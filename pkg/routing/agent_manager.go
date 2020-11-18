@@ -79,7 +79,7 @@ func (manager *AgentManager) HasEndpoint(eid bpv7.EndpointID) bool {
 	return agent.AppAgentHasEndpoint(manager.mux, eid)
 }
 
-// Deliver an outgoing Bundle to a registered ApplicationAgent, addressed by the Bundle's destination.
+// Deliver a Bundle to a registered ApplicationAgent, addressed by the Bundle's destination.
 func (manager *AgentManager) Deliver(descriptor BundleDescriptor) error {
 	b, bErr := descriptor.Bundle()
 	if bErr != nil {
@@ -87,7 +87,7 @@ func (manager *AgentManager) Deliver(descriptor BundleDescriptor) error {
 	}
 
 	if !manager.HasEndpoint(b.PrimaryBlock.Destination) {
-		log.WithField("bundle", b).Warn("AgentManager has no registered Agent for this outgoing Bundle")
+		log.WithField("bundle", b).Warn("AgentManager has no registered Agent for this Bundle")
 		return fmt.Errorf("no registered ApplicationAgent for this Bundle's destination")
 	}
 

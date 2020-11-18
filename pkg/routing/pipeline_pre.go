@@ -65,7 +65,7 @@ func (pipeline *Pipeline) sendOutgoing(descriptor BundleDescriptor) pipelineFunc
 
 // processInitial checks all BundleDescriptors before deciding to drop, forward or local deliver.
 func (pipeline *Pipeline) processInitial(descriptor BundleDescriptor) pipelineFunc {
-	pipeline.Algo.NotifyNewBundle(descriptor)
+	pipeline.Algorithm.NotifyNewBundle(descriptor)
 
 	for _, checkFunc := range pipeline.Checks {
 		if err := checkFunc(pipeline, descriptor); err != nil {
@@ -76,6 +76,11 @@ func (pipeline *Pipeline) processInitial(descriptor BundleDescriptor) pipelineFu
 		}
 	}
 
-	// TODO
-	return nil
+	if pipeline.NodeId.SameNode(descriptor.Receiver) {
+		// TODO better check if this bundle is addressed to this node
+		return pipeline.localDelivery
+	} else {
+		// TODO implement forwarding logic
+		return nil
+	}
 }

@@ -17,7 +17,7 @@ type CheckFunc func(*Pipeline, BundleDescriptor) error
 
 // CheckRouting wraps the Algorithm.DispatchingAllowed method.
 func CheckRouting(pipeline *Pipeline, descriptor BundleDescriptor) (err error) {
-	if pipeline.Algo.DispatchingAllowed(descriptor) {
+	if pipeline.Algorithm.DispatchingAllowed(descriptor) {
 		err = errors.New("routing algorithm prohibited dispatching")
 	}
 	return

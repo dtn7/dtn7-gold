@@ -371,7 +371,7 @@ func (c *Core) checkAdministrativeRecord(bp BundleDescriptor) bool {
 }
 
 func (c *Core) inspectStatusReport(bp BundleDescriptor, ar bpv7.AdministrativeRecord) {
-	if ar.RecordTypeCode() != bpv7.ARTypeStatusReport {
+	if ar.RecordTypeCode() != bpv7.AdminRecordTypeStatusReport {
 		log.WithFields(log.Fields{
 			"bundle":    bp.ID(),
 			"type_code": ar.RecordTypeCode(),

@@ -12,8 +12,6 @@ import (
 	"github.com/dtn7/cboring"
 )
 
-const ARTypeStatusReport uint64 = 1
-
 // BundleStatusItem represents the a bundle status item, as used as an element
 // in the bundle status information array of each Bundle Status Report.
 type BundleStatusItem struct {
@@ -341,12 +339,12 @@ func (sr *StatusReport) UnmarshalCbor(r io.Reader) error {
 }
 
 func (sr *StatusReport) RecordTypeCode() uint64 {
-	return ARTypeStatusReport
+	return AdminRecordTypeStatusReport
 }
 
 func (sr StatusReport) String() string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "StatusReport([")
+	_, _ = fmt.Fprintf(&b, "StatusReport([")
 
 	for i := 0; i < len(sr.StatusInformation); i++ {
 		si := sr.StatusInformation[i]
@@ -357,14 +355,14 @@ func (sr StatusReport) String() string {
 		}
 
 		if si.Time == DtnTimeEpoch {
-			fmt.Fprintf(&b, "%v,", sip)
+			_, _ = fmt.Fprintf(&b, "%v,", sip)
 		} else {
-			fmt.Fprintf(&b, "%v %v,", sip, si.Time)
+			_, _ = fmt.Fprintf(&b, "%v %v,", sip, si.Time)
 		}
 	}
-	fmt.Fprintf(&b, "], ")
+	_, _ = fmt.Fprintf(&b, "], ")
 
-	fmt.Fprintf(&b, "%v, %v", sr.ReportReason, sr.RefBundle)
+	_, _ = fmt.Fprintf(&b, "%v, %v", sr.ReportReason, sr.RefBundle)
 
 	return b.String()
 }

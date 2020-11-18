@@ -14,6 +14,12 @@ import (
 	"github.com/dtn7/cboring"
 )
 
+// Sorted list of all known administrative record type codes to prevent double usage.
+const (
+	// AdminRecordTypeStatusReport is the administrative record type code for a status report.
+	AdminRecordTypeStatusReport uint64 = 1
+)
+
 // AdministrativeRecord describes an administrative record, e.g., a status report.
 type AdministrativeRecord interface {
 	cboring.CborMarshaler

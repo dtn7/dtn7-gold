@@ -14,8 +14,9 @@ import (
 type Pipeline struct {
 	NodeId bpv7.EndpointID
 
-	Store *storage.Store
-	Algo  Algorithm
+	Store        *storage.Store
+	Algorithm    Algorithm
+	AgentManager AgentManager
 
 	// Checks to be passed in the initial processing.
 	Checks []CheckFunc
