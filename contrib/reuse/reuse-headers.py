@@ -45,6 +45,11 @@ FILE_IGNORE = [
         "contrib/systemd/sysusers/dtn7",
         "contrib/systemd/tmpfiles/dtn7",
         "contrib/ufw/dtn7",
+        "contrib/coreemu/dotcore/nodes.conf",
+        "contrib/coreemu/dotcore/plugins.conf",
+        "contrib/coreemu/dotcore/prefs.conf",
+        "contrib/coreemu/dotcore/servers.conf",
+        "contrib/coreemu/dotcore/widgets.conf",
         ]
 
 

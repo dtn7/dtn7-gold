@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 Jonas Höchst
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 FROM golang:latest AS dtn7-builder
 
 COPY . /dtn7-go
