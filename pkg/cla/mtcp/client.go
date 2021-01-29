@@ -105,7 +105,6 @@ func (client *MTCPClient) handler() {
 				}).Error("MTCPClient: Keepalive errored")
 
 				client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.GetPeerEndpointID())
-				close(client.stopSyn)
 			}
 		}
 	}
@@ -120,7 +119,6 @@ func (client *MTCPClient) Send(bndl bpv7.Bundle) (err error) {
 		// In case of an error, report our failure upstream
 		if err != nil {
 			client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.GetPeerEndpointID())
-			close(client.stopSyn)
 		}
 	}()
 
