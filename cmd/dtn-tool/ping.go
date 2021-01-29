@@ -69,8 +69,9 @@ func (p *pinger) handle() {
 		case <-ticker.C:
 			if b, err := p.pingBundle(); err != nil {
 				log.WithError(err).Error("Cannot create ping bundle")
+			} else if err := p.websocketConn.WriteBundle(b); err != nil {
+				log.WithError(err).Error("Cannot send ping bundle")
 			} else {
-				p.websocketConn.WriteBundle(b)
 				log.Info("Sent ping bundle")
 			}
 
