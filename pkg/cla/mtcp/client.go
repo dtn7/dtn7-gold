@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2019 Markus Sommer
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -48,8 +48,8 @@ func NewMTCPClient(address string, peer bpv7.EndpointID, permanent bool) *MTCPCl
 	}
 }
 
-// NewMTCPClient creates a new MTCPClient, connected to the given address. The
-// permanent flag indicates if this MTCPClient should never be removed from
+// NewAnonymousMTCPClient creates a new MTCPClient, connected to the given address.
+// The permanent flag indicates if this MTCPClient should never be removed from
 // the core.
 func NewAnonymousMTCPClient(address string, permanent bool) *MTCPClient {
 	return NewMTCPClient(address, bpv7.DtnNone(), permanent)
@@ -58,14 +58,9 @@ func NewAnonymousMTCPClient(address string, permanent bool) *MTCPClient {
 func (client *MTCPClient) Start() (err error, retry bool) {
 	retry = true
 
-	conn, connErr := net.DialTimeout("tcp", client.address, time.Second)
+	conn, connErr := dial(client.address)
 	if connErr != nil {
 		err = connErr
-		return
-	}
-
-	if kaErr := setKeepAlive(conn); kaErr != nil {
-		err = kaErr
 		return
 	}
 
@@ -90,12 +85,11 @@ func (client *MTCPClient) handler() {
 		select {
 		case <-client.stopSyn:
 			client.mutex.Lock()
-			defer client.mutex.Unlock()
-
 			_ = client.conn.Close()
-			close(client.reportChan)
 
+			close(client.reportChan)
 			close(client.stopAck)
+			client.mutex.Unlock()
 
 			return
 
@@ -108,9 +102,10 @@ func (client *MTCPClient) handler() {
 				log.WithFields(log.Fields{
 					"client": client.String(),
 					"error":  err,
-				}).Warn("MTCPClient: Keepalive errored")
+				}).Error("MTCPClient: Keepalive errored")
 
 				client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.GetPeerEndpointID())
+				close(client.stopSyn)
 			}
 		}
 	}
@@ -125,6 +120,7 @@ func (client *MTCPClient) Send(bndl bpv7.Bundle) (err error) {
 		// In case of an error, report our failure upstream
 		if err != nil {
 			client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.GetPeerEndpointID())
+			close(client.stopSyn)
 		}
 	}()
 

@@ -9,7 +9,6 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dtn7/cboring v0.1.5
 	github.com/dtn7/rf95modem-go v0.3.1
-	github.com/felixge/tcpkeepalive v0.0.0-20160804073959-5bb0b2dea91e
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/go-cmp v0.5.3 // indirect
@@ -25,7 +24,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/timshannon/badgerhold v1.0.0
 	github.com/ulikunitz/xz v0.5.8
-	golang.org/x/sys v0.0.0-20201117222635-ba5294a509c7 // indirect
+	golang.org/x/sys v0.0.0-20201117222635-ba5294a509c7
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect

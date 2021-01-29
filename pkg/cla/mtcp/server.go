@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -7,6 +7,7 @@ package mtcp
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"time"
 
@@ -71,7 +72,7 @@ func (serv *MTCPServer) Start() (error, bool) {
 					log.WithFields(log.Fields{
 						"cla":   serv,
 						"error": err,
-					}).Warn("MTCPServer failed to set deadline on TCP socket")
+					}).Error("MTCPServer failed to set deadline on TCP socket")
 
 					_ = serv.Close()
 				} else if conn, err := ln.Accept(); err == nil {
@@ -93,7 +94,7 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 				"cla":   serv,
 				"conn":  conn,
 				"error": r,
-			}).Warn("MTCPServer's sender failed")
+			}).Error("MTCPServer's sender failed")
 		}
 	}()
 
@@ -105,11 +106,13 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 	connReader := bufio.NewReader(conn)
 	for {
 		if n, err := cboring.ReadByteStringLen(connReader); err != nil {
-			log.WithFields(log.Fields{
-				"cla":   serv,
-				"conn":  conn,
-				"error": err,
-			}).Warn("MTCP handleServer connection failed to read byte string len")
+			if err != io.EOF {
+				log.WithFields(log.Fields{
+					"cla":   serv,
+					"conn":  conn,
+					"error": err,
+				}).Warn("MTCP handleServer connection failed to read byte string len")
+			}
 
 			// There is no use in sending an PeerDisappeared Message at this point,
 			// because a MTCPServer might hold multiple clients. Furthermore, there
@@ -126,7 +129,7 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 				"cla":   serv,
 				"conn":  conn,
 				"error": err,
-			}).Warn("MTCP handleServer connection failed to read bundle")
+			}).Error("MTCP handleServer connection failed to read bundle")
 
 			return
 		} else {

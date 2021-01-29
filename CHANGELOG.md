@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2020 Alvar Penning
+SPDX-FileCopyrightText: 2020, 2021 Alvar Penning
 SPDX-FileCopyrightText: 2020 Markus Sommer
 
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -40,9 +40,12 @@ Types of changes:
 - Bump draft-ietf-dtn-bpbis version from 26 to 29.
     - Restrict dtn URI node name to `[\w-._]+`, _ietf-dtn-bpbis-27_.
 - Bump draft-ietf-dtn-tcpclv4 version from 21 to 23.
+- Set Linux-specific socket options for a MTCP Client's connection to
+  detect an abrupt connection loss.
 
 ### Fixed
 - Include nil-check for EndpointID's internal representation.
+- Close a MTCP Client after sending a keepalive failed.
 
 
 ## [0.9.0] - 2020-10-08
