@@ -1,0 +1,20 @@
+version: "3.3"
+services:
+    core:
+        image: dtn7-core
+        build: 
+          context: ../../
+          dockerfile: contrib/coreemu/Dockerfile
+        tty: true
+        privileged: true
+        cap_add:
+            - NET_ADMIN
+        ports:
+            - "4038:4038"
+        volumes:
+             - /lib/modules:/lib/modules
+             - ./dotcore:/root/.core
+        restart: always
+        hostname: core
+        environment:
+            - DISPLAY
