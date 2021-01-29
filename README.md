@@ -91,7 +91,7 @@ To exchange bundles, `dtn-tool` might _watch_ a directory and send all new bundl
 In the same way, incoming bundles from `dtnd` are stored in this directory.
 
 ```
-Usage of ./dtn-tool create|show|exchange:
+Usage of ./dtn-tool create|exchange|ping|show:
 
 ./dtn-tool create sender receiver -|filename [-|filename]
   Creates a new Bundle, addressed from sender to receiver with the stdin (-)
@@ -100,14 +100,16 @@ Usage of ./dtn-tool create|show|exchange:
   Otherwise, the Bundle can be written to the stdout (-) or saved
   according to a freely selectable filename.
 
-./dtn-tool show -|filename
-  Prints a JSON version of a Bundle, read from stdin (-) or filename.
-
 ./dtn-tool exchange websocket endpoint-id directory
   ./dtn-tool registeres itself as an agent on the given websocket and writes
   incoming Bundles in the directory. If the user dropps a new Bundle in the
   directory, it will be sent to the server.
 
+./dtn-tool ping websocket sender receiver
+  Send continuously bundles from sender to receiver over a websocket.
+
+./dtn-tool show -|filename
+  Prints a JSON version of a Bundle, read from stdin (-) or filename.
 ```
 
 

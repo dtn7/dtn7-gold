@@ -52,12 +52,19 @@ func (p *PingAgent) handler() {
 }
 
 func (p *PingAgent) ackBundle(b bpv7.Bundle) {
+	hopCount := 64
+	if hc, err := b.ExtensionBlock(bpv7.ExtBlockTypeHopCountBlock); err == nil {
+		hopCount = int(hc.Value.(*bpv7.HopCountBlock).Limit)
+	}
+
 	bndl, err := bpv7.Builder().
+		CRC(bpv7.CRC32).
 		Source(p.endpoint).
 		Destination(b.PrimaryBlock.ReportTo).
+		BundleCtrlFlags(bpv7.MustNotFragmented).
 		CreationTimestampNow().
-		Lifetime("24h").
-		HopCountBlock(64).
+		Lifetime(b.PrimaryBlock.Lifetime).
+		HopCountBlock(hopCount).
 		PayloadBlock([]byte("pong")).
 		Build()
 

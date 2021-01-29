@@ -49,6 +49,9 @@ interval = 30
 
 # Agents are applications or interfaces for sending or receiving bundles.
 [agents]
+# Enable a ping agent to "pong" bundles sent to this endpoint ID.
+ping = "dtn://node-name/ping"
+
 # Web server based agent with an own HTTP server for third party tools.
 [agents.webserver]
 # Address to bind the server to.

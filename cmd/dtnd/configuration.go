@@ -64,6 +64,7 @@ type discoveryConf struct {
 
 // agentsConfig describes the ApplicationAgents/Agent-configuration block.
 type agentsConfig struct {
+	Ping      string
 	Webserver agentsWebserverConfig
 }
 
@@ -197,6 +198,15 @@ func parsePeer(conv convergenceConf, nodeId bpv7.EndpointID) (cla.ConvergenceSen
 
 // parseAgents for the ApplicationAgents.
 func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error) {
+	if conf.Ping != "" {
+		if pingEid, pingEidErr := bpv7.NewEndpointID(conf.Ping); pingEidErr != nil {
+			err = pingEidErr
+			return
+		} else {
+			agents = append(agents, agent.NewPing(pingEid))
+		}
+	}
+
 	if (conf.Webserver != agentsWebserverConfig{}) {
 		if !conf.Webserver.Websocket && !conf.Webserver.Rest {
 			err = fmt.Errorf("webserver agent needs at least one of Websocket or REST")

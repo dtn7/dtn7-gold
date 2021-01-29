@@ -28,6 +28,8 @@ Types of changes:
 ## [Unreleased]
 ### Added
 - Connect Administrative Records with Bundle and BundleBuilder.
+- Make PingAgent configurable as a dtnd Agent.
+- Simple "dtn-tool ping" command to interact with a PingAgent.
 
 ### Changed
 - Structural refactoring:
