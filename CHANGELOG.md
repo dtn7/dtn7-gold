@@ -39,8 +39,10 @@ Types of changes:
       bundles. Furthermore this allows to use the obvious variable name
       "bundle" for a bpv7.Bundle.
     - Unlink discovery from Core.
-- Bump draft-ietf-dtn-bpbis version from 26 to 29.
+- Bump draft-ietf-dtn-bpbis version from 26 to 31.
     - Restrict dtn URI node name to `[\w-._]+`, _ietf-dtn-bpbis-27_.
+    - "Block unintelligible" status report is replaced by new "Block
+      unsupported" status report code for non processable blocks.
 - Bump draft-ietf-dtn-tcpclv4 version from 21 to 23.
 - Set Linux-specific socket options for a MTCP Client's connection to
   detect an abrupt connection loss.

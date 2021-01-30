@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -144,6 +144,14 @@ const (
 	// HopLimitExceeded is the "Hop limit exceeded" bundle status report reason
 	// code.
 	HopLimitExceeded StatusReportReason = 9
+
+	// TrafficPared is the "Traffic pared (e.g., status reports)" bundle status
+	// report reason code.
+	TrafficPared StatusReportReason = 10
+
+	// BlockUnsupported is the "Block unsupported" bundle status report reason
+	// code.
+	BlockUnsupported StatusReportReason = 11
 )
 
 func (srr StatusReportReason) String() string {
@@ -177,6 +185,12 @@ func (srr StatusReportReason) String() string {
 
 	case HopLimitExceeded:
 		return "Hop limit exceeded"
+
+	case TrafficPared:
+		return "Traffic pared"
+
+	case BlockUnsupported:
+		return "Block unsupported"
 
 	default:
 		return "unknown"

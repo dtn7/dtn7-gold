@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2019 Markus Sommer
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -118,7 +118,7 @@ func (c *Core) receive(bp BundleDescriptor) {
 				"type":   cb.TypeCode(),
 			}).Info("Bundle's unknown canonical block requested reporting")
 
-			c.SendStatusReport(bp, bpv7.ReceivedBundle, bpv7.BlockUnintelligible)
+			c.SendStatusReport(bp, bpv7.ReceivedBundle, bpv7.BlockUnsupported)
 		}
 
 		if cb.BlockControlFlags.Has(bpv7.DeleteBundle) {
@@ -128,7 +128,7 @@ func (c *Core) receive(bp BundleDescriptor) {
 				"type":   cb.TypeCode(),
 			}).Info("Bundle's unknown canonical block requested bundle deletion")
 
-			c.bundleDeletion(bp, bpv7.BlockUnintelligible)
+			c.bundleDeletion(bp, bpv7.BlockUnsupported)
 			return
 		}
 

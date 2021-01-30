@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -49,7 +49,7 @@ func (pipeline *Pipeline) receiveCheckBlocks(descriptor BundleDescriptor) pipeli
 	}
 
 	if sendReport {
-		pipeline.sendReport(descriptor, bpv7.ReceivedBundle, bpv7.BlockUnintelligible)
+		pipeline.sendReport(descriptor, bpv7.ReceivedBundle, bpv7.BlockUnsupported)
 	} else if descriptor.MustBundle().PrimaryBlock.BundleControlFlags.Has(bpv7.StatusRequestReception) {
 		pipeline.sendReport(descriptor, bpv7.ReceivedBundle, bpv7.NoInformation)
 	}
