@@ -110,7 +110,7 @@ endpoint = ":4556"
 
 # Specify routing algorithm
 [routing]
-# One of  "epidemic", "spray", "binary_sparay", "dtlsr", "prophet", "sensor-mule"
+# One of  ["epidemic", "spray", "binary_spray", "dtlsr", "prophet", "sensor-mule"]
 algorithm = "epidemic"
 
 
