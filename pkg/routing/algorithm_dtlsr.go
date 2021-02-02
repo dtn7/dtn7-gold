@@ -1,20 +1,17 @@
-// SPDX-FileCopyrightText: 2019 Markus Sommer
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2021 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 package routing
 
 import (
-	"fmt"
-	"io"
 	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/RyanCarrier/dijkstra"
-	"github.com/dtn7/cboring"
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/cla"
@@ -44,11 +41,11 @@ type DTLSR struct {
 	// since we last calculated our routing table/broadcast our peer data
 	peerChange bool
 	// peers is our own peerData
-	peers peerData
+	peers bpv7.DTLSRPeerData
 	// receivedChange denotes whether we received new data since we last computed our routing table
 	receivedChange bool
 	// receivedData is peerData received from other nodes
-	receivedData map[bpv7.EndpointID]peerData
+	receivedData map[bpv7.EndpointID]bpv7.DTLSRPeerData
 	// nodeIndex and index Node are a bidirectional mapping EndpointID <-> uint64
 	// necessary since the dijkstra implementation only accepts integer node identifiers
 	nodeIndex map[bpv7.EndpointID]int
@@ -60,21 +57,6 @@ type DTLSR struct {
 	purgeTime time.Duration
 	// dataMutex is a RW-mutex which protects change operations to the algorithm's metadata
 	dataMutex sync.RWMutex
-}
-
-// peerData contains a peer's connection data
-type peerData struct {
-	// id is the node's endpoint id
-	id bpv7.EndpointID
-	// timestamp is the time the last change occurred
-	// when receiving other node's data, we only update if the timestamp in newer
-	timestamp bpv7.DtnTime
-	// peers is a mapping of previously seen peers and the respective timestamp of the last encounter
-	peers map[bpv7.EndpointID]bpv7.DtnTime
-}
-
-func (pd peerData) isNewerThan(other peerData) bool {
-	return pd.timestamp > other.timestamp
 }
 
 func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
@@ -100,13 +82,13 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 		c:            c,
 		routingTable: make(map[bpv7.EndpointID]bpv7.EndpointID),
 		peerChange:   false,
-		peers: peerData{
-			id:        c.NodeId,
-			timestamp: bpv7.DtnTimeNow(),
-			peers:     make(map[bpv7.EndpointID]bpv7.DtnTime),
+		peers: bpv7.DTLSRPeerData{
+			ID:        c.NodeId,
+			Timestamp: bpv7.DtnTimeNow(),
+			Peers:     make(map[bpv7.EndpointID]bpv7.DtnTime),
 		},
 		receivedChange:   false,
-		receivedData:     make(map[bpv7.EndpointID]peerData),
+		receivedData:     make(map[bpv7.EndpointID]bpv7.DTLSRPeerData),
 		nodeIndex:        map[bpv7.EndpointID]int{c.NodeId: 0},
 		indexNode:        []bpv7.EndpointID{c.NodeId},
 		length:           1,
@@ -153,7 +135,7 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 	extensionBlockManager := bpv7.GetExtensionBlockManager()
 	if !extensionBlockManager.IsKnown(bpv7.ExtBlockTypeDTLSRBlock) {
 		// since we already checked if the block type exists, this really shouldn't ever fail...
-		_ = extensionBlockManager.Register(NewDTLSRBlock(dtlsr.peers))
+		_ = extensionBlockManager.Register(bpv7.NewDTLSRBlock(dtlsr.peers))
 	}
 
 	return &dtlsr
@@ -165,8 +147,8 @@ func (dtlsr *DTLSR) NotifyNewBundle(bp BundleDescriptor) {
 			"peer": bp.MustBundle().PrimaryBlock.SourceNode,
 		}).Debug("Received metadata")
 
-		dtlsrBlock := metaDataBlock.Value.(*DTLSRBlock)
-		data := dtlsrBlock.getPeerData()
+		dtlsrBlock := metaDataBlock.Value.(*bpv7.DTLSRBlock)
+		data := dtlsrBlock.GetPeerData()
 
 		log.WithFields(log.Fields{
 			"peer": bp.MustBundle().PrimaryBlock.SourceNode,
@@ -175,30 +157,30 @@ func (dtlsr *DTLSR) NotifyNewBundle(bp BundleDescriptor) {
 
 		dtlsr.dataMutex.Lock()
 		defer dtlsr.dataMutex.Unlock()
-		storedData, present := dtlsr.receivedData[data.id]
+		storedData, present := dtlsr.receivedData[data.ID]
 
 		if !present {
 			log.Debug("Data for new peer")
 			// if we didn't have any data for that peer, we simply add it
-			dtlsr.receivedData[data.id] = data
+			dtlsr.receivedData[data.ID] = data
 			dtlsr.receivedChange = true
 
 			// track node
-			dtlsr.newNode(data.id)
+			dtlsr.newNode(data.ID)
 
 			// track peers of this node
-			for node := range data.peers {
+			for node := range data.Peers {
 				dtlsr.newNode(node)
 			}
 		} else {
 			// check if the received data is newer and replace it if it is
-			if data.isNewerThan(storedData) {
+			if data.ShouldReplace(storedData) {
 				log.Debug("Updating peer data")
-				dtlsr.receivedData[data.id] = data
+				dtlsr.receivedData[data.ID] = data
 				dtlsr.receivedChange = true
 
 				// track peers of this node
-				for node := range data.peers {
+				for node := range data.Peers {
 					dtlsr.newNode(node)
 				}
 			}
@@ -341,8 +323,8 @@ func (dtlsr *DTLSR) ReportPeerAppeared(peer cla.Convergence) {
 	dtlsr.newNode(peerID)
 
 	// add node to peer list
-	dtlsr.peers.peers[peerID] = 0
-	dtlsr.peers.timestamp = bpv7.DtnTimeNow()
+	dtlsr.peers.Peers[peerID] = 0
+	dtlsr.peers.Timestamp = bpv7.DtnTimeNow()
 	dtlsr.peerChange = true
 
 	log.WithFields(log.Fields{
@@ -371,8 +353,8 @@ func (dtlsr *DTLSR) ReportPeerDisappeared(peer cla.Convergence) {
 	defer dtlsr.dataMutex.Unlock()
 	// set expiration timestamp for peer
 	timestamp := bpv7.DtnTimeNow()
-	dtlsr.peers.peers[peerID] = timestamp
-	dtlsr.peers.timestamp = timestamp
+	dtlsr.peers.Peers[peerID] = timestamp
+	dtlsr.peers.Timestamp = timestamp
 	dtlsr.peerChange = true
 
 	log.WithFields(log.Fields{
@@ -428,7 +410,7 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 	}
 
 	// add edges originating from this node
-	for peer, timestamp := range dtlsr.peers.peers {
+	for peer, timestamp := range dtlsr.peers.Peers {
 		var edgeCost int64
 		if timestamp == 0 {
 			edgeCost = 0
@@ -452,7 +434,7 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 
 	// add edges originating from other nodes
 	for _, data := range dtlsr.receivedData {
-		for peer, timestamp := range data.peers {
+		for peer, timestamp := range data.Peers {
 			var edgeCost int64
 			if timestamp == 0 {
 				edgeCost = 0
@@ -460,7 +442,7 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 				edgeCost = int64(currentTime - timestamp)
 			}
 
-			if err := graph.AddArc(dtlsr.nodeIndex[data.id], dtlsr.nodeIndex[peer], edgeCost); err != nil {
+			if err := graph.AddArc(dtlsr.nodeIndex[data.ID], dtlsr.nodeIndex[peer], edgeCost); err != nil {
 				log.WithFields(log.Fields{
 					"reason": err.Error(),
 				}).Warn("Error computing routing table")
@@ -468,7 +450,7 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 			}
 
 			log.WithFields(log.Fields{
-				"peerA": data.id,
+				"peerA": data.ID,
 				"peerB": peer,
 				"cost":  edgeCost,
 			}).Debug("Added vertex")
@@ -538,7 +520,7 @@ func (dtlsr *DTLSR) broadcast() {
 	dtlsr.dataMutex.RLock()
 	source := dtlsr.c.NodeId
 	destination := dtlsr.broadcastAddress
-	metadataBlock := NewDTLSRBlock(dtlsr.peers)
+	metadataBlock := bpv7.NewDTLSRBlock(dtlsr.peers)
 	dtlsr.dataMutex.RUnlock()
 
 	err := sendMetadataBundle(dtlsr.c, source, destination, metadataBlock)
@@ -581,127 +563,14 @@ func (dtlsr *DTLSR) purgePeers() {
 	dtlsr.dataMutex.Lock()
 	defer dtlsr.dataMutex.Unlock()
 
-	for peerID, timestamp := range dtlsr.peers.peers {
+	for peerID, timestamp := range dtlsr.peers.Peers {
 		if timestamp != 0 && timestamp.Time().Add(dtlsr.purgeTime).Before(currentTime) {
 			log.WithFields(log.Fields{
 				"peer":            peerID,
 				"disconnect_time": timestamp,
 			}).Debug("Removing stale peer")
-			delete(dtlsr.peers.peers, peerID)
+			delete(dtlsr.peers.Peers, peerID)
 			dtlsr.peerChange = true
 		}
 	}
-}
-
-// DTLSRBlock contains routing metadata
-//
-// TODO: Turn this into an administrative record
-type DTLSRBlock peerData
-
-func NewDTLSRBlock(data peerData) *DTLSRBlock {
-	newBlock := DTLSRBlock(data)
-	return &newBlock
-}
-
-func (dtlsrb *DTLSRBlock) getPeerData() peerData {
-	return peerData(*dtlsrb)
-}
-
-func (dtlsrb *DTLSRBlock) BlockTypeCode() uint64 {
-	return bpv7.ExtBlockTypeDTLSRBlock
-}
-
-func (dtlsrb *DTLSRBlock) BlockTypeName() string {
-	return "DTLSR Block"
-}
-
-func (dtlsrb *DTLSRBlock) CheckValid() error {
-	return nil
-}
-
-func (dtlsrb *DTLSRBlock) MarshalCbor(w io.Writer) error {
-	// start with the (apparently) required outer array
-	if err := cboring.WriteArrayLength(3, w); err != nil {
-		return err
-	}
-
-	// write our own endpoint id
-	if err := cboring.Marshal(&dtlsrb.id, w); err != nil {
-		return err
-	}
-
-	// write the timestamp
-	if err := cboring.WriteUInt(uint64(dtlsrb.timestamp), w); err != nil {
-		return err
-	}
-
-	// write the peer data array header
-	if err := cboring.WriteMapPairLength(uint64(len(dtlsrb.peers)), w); err != nil {
-		return err
-	}
-
-	// write the actual data
-	for peerID, timestamp := range dtlsrb.peers {
-		if err := cboring.Marshal(&peerID, w); err != nil {
-			return err
-		}
-		if err := cboring.WriteUInt(uint64(timestamp), w); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
-	// read the (apparently) required outer array
-	if l, err := cboring.ReadArrayLength(r); err != nil {
-		return err
-	} else if l != 3 {
-		return fmt.Errorf("expected 3 fields, got %d", l)
-	}
-
-	// read endpoint id
-	id := bpv7.EndpointID{}
-	if err := cboring.Unmarshal(&id, r); err != nil {
-		return err
-	} else {
-		dtlsrb.id = id
-	}
-
-	// read the timestamp
-	if timestamp, err := cboring.ReadUInt(r); err != nil {
-		return err
-	} else {
-		dtlsrb.timestamp = bpv7.DtnTime(timestamp)
-	}
-
-	var lenData uint64
-
-	// read length of data array
-	lenData, err := cboring.ReadMapPairLength(r)
-	if err != nil {
-		return err
-	}
-
-	// read the actual data
-	peers := make(map[bpv7.EndpointID]bpv7.DtnTime)
-	var i uint64
-	for i = 0; i < lenData; i++ {
-		peerID := bpv7.EndpointID{}
-		if err := cboring.Unmarshal(&peerID, r); err != nil {
-			return err
-		}
-
-		timestamp, err := cboring.ReadUInt(r)
-		if err != nil {
-			return err
-		}
-
-		peers[peerID] = bpv7.DtnTime(timestamp)
-	}
-
-	dtlsrb.peers = peers
-
-	return nil
 }

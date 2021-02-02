@@ -36,9 +36,11 @@ Types of changes:
     - Move all Go packages into the pkg directory.
     - Renamed bundle package to bpv7.
       This new name better describes that it is about bpbis and not just
-      bundles. Furthermore this allows to use the obvious variable name
+      bundles. Furthermore, this allows to use the obvious variable name
       "bundle" for a bpv7.Bundle.
     - Unlink discovery from Core.
+    - Move custom routing-extension block to the bpv7 package,
+      where they shall reside with their brethren.
 - Bump draft-ietf-dtn-bpbis version from 26 to 31.
     - Restrict dtn URI node name to `[\w-._]+`, _ietf-dtn-bpbis-27_.
     - "Block unintelligible" status report is replaced by new "Block
