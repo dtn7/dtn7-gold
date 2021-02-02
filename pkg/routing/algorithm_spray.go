@@ -1,18 +1,15 @@
-// SPDX-FileCopyrightText: 2019 Markus Sommer
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2021 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 package routing
 
 import (
-	"io"
 	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
-
-	"github.com/dtn7/cboring"
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/cla"
@@ -239,7 +236,7 @@ func NewBinarySpray(c *Core, config SprayConfig) *BinarySpray {
 	extensionBlockManager := bpv7.GetExtensionBlockManager()
 	if !extensionBlockManager.IsKnown(bpv7.ExtBlockTypeBinarySprayBlock) {
 		// since we already checked if the block type exists, this really shouldn't ever fail...
-		_ = extensionBlockManager.Register(NewBinarySprayBlock(0))
+		_ = extensionBlockManager.Register(bpv7.NewBinarySprayBlock(0))
 	}
 
 	binarySpray := BinarySpray{
@@ -272,7 +269,7 @@ func (bs *BinarySpray) GarbageCollect() {
 // If not we attempt to ready the routing-metadata-block end get the remaining copies
 func (bs *BinarySpray) NotifyNewBundle(bp BundleDescriptor) {
 	if metadataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeBinarySprayBlock); err == nil {
-		binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
+		binarySprayBlock := metadataBlock.Value.(*bpv7.BinarySprayBlock)
 		metadata := sprayMetaData{
 			sent:            make([]bpv7.EndpointID, 0),
 			remainingCopies: binarySprayBlock.RemainingCopies(),
@@ -353,11 +350,11 @@ func (bs *BinarySpray) SenderForBundle(bp BundleDescriptor) (css []cla.Convergen
 
 			// if the bundle already has a metadata-block
 			if metadataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeBinarySprayBlock); err == nil {
-				binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
+				binarySprayBlock := metadataBlock.Value.(*bpv7.BinarySprayBlock)
 				binarySprayBlock.SetCopies(sendCopies)
 			} else {
 				// if it doesn't, then create one
-				metadataBlock := NewBinarySprayBlock(sendCopies)
+				metadataBlock := bpv7.NewBinarySprayBlock(sendCopies)
 				bp.MustBundle().AddExtensionBlock(bpv7.NewCanonicalBlock(0, 0, metadataBlock))
 			}
 
@@ -395,7 +392,7 @@ func (bs *BinarySpray) ReportFailure(bp BundleDescriptor, sender cla.Convergence
 		return
 	}
 
-	binarySprayBlock := metadataBlock.Value.(*BinarySprayBlock)
+	binarySprayBlock := metadataBlock.Value.(*bpv7.BinarySprayBlock)
 
 	bs.dataMutex.RLock()
 	metadata, ok := bs.bundleData[bp.Id]
@@ -424,44 +421,3 @@ func (bs *BinarySpray) ReportFailure(bp BundleDescriptor, sender cla.Convergence
 func (_ *BinarySpray) ReportPeerAppeared(_ cla.Convergence) {}
 
 func (_ *BinarySpray) ReportPeerDisappeared(_ cla.Convergence) {}
-
-// BinarySprayBlock contains metadata to let the next forwarder know their remaining copies
-type BinarySprayBlock uint64
-
-func NewBinarySprayBlock(copies uint64) *BinarySprayBlock {
-	newBlock := BinarySprayBlock(copies)
-	return &newBlock
-}
-
-func (bsb *BinarySprayBlock) BlockTypeCode() uint64 {
-	return bpv7.ExtBlockTypeBinarySprayBlock
-}
-
-func (bsb *BinarySprayBlock) BlockTypeName() string {
-	return "Binary Spray Routing Block"
-}
-
-func (bsb *BinarySprayBlock) CheckValid() error {
-	return nil
-}
-
-func (bsb *BinarySprayBlock) MarshalCbor(w io.Writer) error {
-	return cboring.WriteUInt(uint64(*bsb), w)
-}
-
-func (bsb *BinarySprayBlock) UnmarshalCbor(r io.Reader) error {
-	if us, err := cboring.ReadUInt(r); err != nil {
-		return err
-	} else {
-		*bsb = BinarySprayBlock(us)
-		return nil
-	}
-}
-
-func (bsb *BinarySprayBlock) RemainingCopies() uint64 {
-	return uint64(*bsb)
-}
-
-func (bsb *BinarySprayBlock) SetCopies(newValue uint64) {
-	*bsb = BinarySprayBlock(newValue)
-}

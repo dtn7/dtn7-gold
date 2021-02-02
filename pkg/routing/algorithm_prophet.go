@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019 Markus Sommer
+// SPDX-FileCopyrightText: 2019, 2021 Markus Sommer
 // SPDX-FileCopyrightText: 2020 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -6,13 +6,10 @@
 package routing
 
 import (
-	"io"
 	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
-
-	"github.com/dtn7/cboring"
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/cla"
@@ -74,7 +71,7 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 	extensionBlockManager := bpv7.GetExtensionBlockManager()
 	if !extensionBlockManager.IsKnown(bpv7.ExtBlockTypeProphetBlock) {
 		// since we already checked if the block type exists, this really shouldn't ever fail...
-		_ = extensionBlockManager.Register(newProphetBlock(prophet.predictabilities))
+		_ = extensionBlockManager.Register(bpv7.NewProphetBlock(prophet.predictabilities))
 	}
 
 	return &prophet
@@ -153,7 +150,7 @@ func (prophet *Prophet) transitivity(peer bpv7.EndpointID) {
 func (prophet *Prophet) sendMetadata(destination bpv7.EndpointID) {
 	prophet.dataMutex.RLock()
 	source := prophet.c.NodeId
-	metadataBlock := newProphetBlock(prophet.predictabilities)
+	metadataBlock := bpv7.NewProphetBlock(prophet.predictabilities)
 	prophet.dataMutex.RUnlock()
 
 	err := sendMetadataBundle(prophet.c, source, destination, metadataBlock)
@@ -181,8 +178,8 @@ func (prophet *Prophet) NotifyNewBundle(bp BundleDescriptor) {
 			return
 		}
 
-		prophetBlock := metaDataBlock.Value.(*ProphetBlock)
-		data := prophetBlock.getPredictabilities()
+		prophetBlock := metaDataBlock.Value.(*bpv7.ProphetBlock)
+		data := prophetBlock.GetPredictabilities()
 		peerID := bp.MustBundle().PrimaryBlock.SourceNode
 
 		log.WithFields(log.Fields{
@@ -266,7 +263,7 @@ func (prophet *Prophet) NotifyNewBundle(bp BundleDescriptor) {
 }
 
 // TODO: dummy implementation
-func (prophet *Prophet) DispatchingAllowed(bp BundleDescriptor) bool {
+func (prophet *Prophet) DispatchingAllowed(_ BundleDescriptor) bool {
 	return true
 }
 
@@ -456,80 +453,4 @@ func (prophet *Prophet) ReportPeerDisappeared(peer cla.Convergence) {
 		"address": peer,
 	}).Debug("Peer disappeared")
 	// there really isn't anything to do upon a peer's disappearance
-}
-
-// ProphetBlock contains routing metadata
-//
-// TODO: Turn this into an administrative record
-type ProphetBlock map[bpv7.EndpointID]float64
-
-func newProphetBlock(data map[bpv7.EndpointID]float64) *ProphetBlock {
-	newBlock := ProphetBlock(data)
-	return &newBlock
-}
-
-func (pBlock *ProphetBlock) getPredictabilities() map[bpv7.EndpointID]float64 {
-	return *pBlock
-}
-
-func (pBlock *ProphetBlock) BlockTypeCode() uint64 {
-	return bpv7.ExtBlockTypeProphetBlock
-}
-
-func (pBlock *ProphetBlock) BlockTypeName() string {
-	return "Prophet Routing Block"
-}
-
-func (pBlock ProphetBlock) CheckValid() error {
-	return nil
-}
-
-func (pBlock *ProphetBlock) MarshalCbor(w io.Writer) error {
-	// write the peer data array header
-	if err := cboring.WriteMapPairLength(uint64(len(*pBlock)), w); err != nil {
-		return err
-	}
-
-	// write the actual data
-	for peerID, pred := range *pBlock {
-		if err := cboring.Marshal(&peerID, w); err != nil {
-			return err
-		}
-		if err := cboring.WriteFloat64(pred, w); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (pBlock *ProphetBlock) UnmarshalCbor(r io.Reader) error {
-	var lenData uint64
-
-	// read length of data array
-	lenData, err := cboring.ReadMapPairLength(r)
-	if err != nil {
-		return err
-	}
-
-	// read the actual data
-	predictability := make(map[bpv7.EndpointID]float64)
-	var i uint64
-	for i = 0; i < lenData; i++ {
-		peerID := bpv7.EndpointID{}
-		if err := cboring.Unmarshal(&peerID, r); err != nil {
-			return err
-		}
-
-		pred, err := cboring.ReadFloat64(r)
-		if err != nil {
-			return err
-		}
-
-		predictability[peerID] = pred
-	}
-
-	*pBlock = predictability
-
-	return nil
 }
