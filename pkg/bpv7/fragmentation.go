@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -102,7 +102,7 @@ func fragmentPrimaryBlock(pb PrimaryBlock, fragmentOffset, totalDataLength int) 
 	fragPb = PrimaryBlock{
 		Version:            pb.Version,
 		BundleControlFlags: pb.BundleControlFlags | IsFragment,
-		CRCType:            CRC32,
+		CRCType:            pb.CRCType,
 		Destination:        pb.Destination,
 		SourceNode:         pb.SourceNode,
 		ReportTo:           pb.ReportTo,

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2018, 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2018, 2019, 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -37,11 +37,12 @@ func TestBundleApplyCRC(t *testing.T) {
 	for _, crcTest := range []CRCType{CRCNo, CRC16, CRC32, CRCNo} {
 		bndle.SetCRCType(crcTest)
 
-		crcExpect := crcTest
-		if crcExpect == CRCNo {
-			crcExpect = CRC32
+		// NOTE: Until BPsec has landed, set a CRC for primary blocks, see PrimaryBlock.SetCRCType.
+		if crcTest == CRCNo {
+			crcTest = CRC32
 		}
-		if ty := bndle.PrimaryBlock.GetCRCType(); ty != crcExpect {
+
+		if ty := bndle.PrimaryBlock.GetCRCType(); ty != crcTest {
 			t.Fatalf("Bundle's primary block has wrong CRCType, %v instead of %v", ty, crcTest)
 		}
 

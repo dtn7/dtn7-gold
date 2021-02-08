@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -74,14 +74,6 @@ func (bldr *BundleBuilder) Build() (bndl Bundle, err error) {
 	if bldr.primary.SourceNode == (EndpointID{}) || bldr.primary.Destination == (EndpointID{}) {
 		err = fmt.Errorf("both Source and Destination must be set")
 		return
-	}
-
-	// Calculate mandatory CRC for the PrimaryBlock.
-	// Do NOT alter the PrimaryBlock after setting its CRC.
-	if bldr.crcType == CRCNo {
-		bldr.primary.SetCRCType(CRC32)
-	} else {
-		bldr.primary.SetCRCType(bldr.crcType)
 	}
 
 	bndl, err = NewBundle(bldr.primary, bldr.canonicals)

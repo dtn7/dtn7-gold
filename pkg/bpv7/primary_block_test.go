@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2018, 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2018, 2019, 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -31,11 +31,11 @@ func TestNewPrimaryBlock(t *testing.T) {
 	pb := setupPrimaryBlock()
 
 	if !pb.HasCRC() {
-		t.Fatal("Primary Block misses CRC")
+		t.Fatal("Primary Block has no CRC")
 	}
 
 	if pb.HasFragmentation() {
-		t.Fatal("Primary Block has no fragmentation, but says so")
+		t.Fatal("Primary Block is fragmented")
 	}
 }
 
@@ -65,9 +65,13 @@ func TestPrimaryBlockCbor(t *testing.T) {
 		pb1 PrimaryBlock
 		len int
 	}{
-		// CRC, No Fragmentation
+		// No CRC, No Fragmentation
+		{PrimaryBlock{7, 0, CRCNo, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 8},
+		// No Fragmentation, CRC
 		{PrimaryBlock{7, 0, CRC16, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 9},
-		// CRC, Fragmentation
+		// Fragmentation, No CRC
+		{PrimaryBlock{7, IsFragment, CRCNo, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 10},
+		// Fragmentation, CRC
 		{PrimaryBlock{7, IsFragment, CRC16, ep, ep, DtnNone(), ts, 1000000, 0, 0, nil}, 11},
 	}
 

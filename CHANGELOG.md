@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2020 Markus Sommer
+SPDX-FileCopyrightText: 2020, 2021 Markus Sommer
 SPDX-FileCopyrightText: 2020, 2021 Alvar Penning
 
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -52,6 +52,9 @@ Types of changes:
 ### Fixed
 - Include nil-check for EndpointID's internal representation.
 - Close a MTCP Client after sending a keepalive failed.
+- Enable parsing of primary blocks without a CRC value. When creating,
+  an attempt is made to enforce a CRC, since this is necessary in the
+  absence of an integrity block (BPSec).
 
 
 ## [0.9.0] - 2020-10-08
