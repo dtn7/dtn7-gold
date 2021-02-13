@@ -22,7 +22,7 @@ import (
 // Manager publishes and receives Announcements.
 type Manager struct {
 	NodeId       bpv7.EndpointID
-	RegisterFunc func(cla.Convergable)
+	RegisterFunc func(cla.Convergable) `json:"-"`
 
 	stopChan4 chan struct{}
 	stopChan6 chan struct{}
@@ -129,15 +129,15 @@ func (manager *Manager) notify(discovered peerdiscovery.Discovered) {
 }
 
 func (manager *Manager) handleDiscovery(announcement Announcement, addr string) {
+	if manager.NodeId.SameNode(announcement.Endpoint) {
+		return
+	}
+
 	log.WithFields(log.Fields{
 		"discovery": manager,
 		"peer":      addr,
 		"message":   announcement,
 	}).Debug("Peer discovery received a message")
-
-	if manager.NodeId.SameNode(announcement.Endpoint) {
-		return
-	}
 
 	var convergable cla.Convergable
 	switch announcement.Type {
@@ -167,4 +167,8 @@ func (manager *Manager) Close() {
 			c <- struct{}{}
 		}
 	}
+}
+
+func (manager *Manager) String() string {
+	return fmt.Sprintf("Manager(%v)", manager.NodeId)
 }

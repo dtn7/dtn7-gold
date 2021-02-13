@@ -55,6 +55,8 @@ Types of changes:
 - Enable parsing of primary blocks without a CRC value. When creating,
   an attempt is made to enforce a CRC, since this is necessary in the
   absence of an integrity block (BPSec).
+- Exclude the peer discovery Manager's function field from the
+  JSONFormatter used by logrus. Otherwise, the struct cannot be encoded.
 
 
 ## [0.9.0] - 2020-10-08
