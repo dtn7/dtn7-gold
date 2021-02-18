@@ -1,5 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2021 Markus Sommer
+SPDX-FileCopyrightText: 2021 Alvar Penning
 
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -31,10 +32,20 @@ If you install the arch-package, we do all of that for you.
 For some select platforms, packages are provided. (Footnote: ''select'' in this case means those platforms that don't make it 
 prohibitively complicated to package for them - looking at you, Debian)
 
-### NixOS
+### Nix / NixOS
 
-If you're the kind of person who uses Nix, I assume you know how to install software on your system.
-Because I most certainl don't.
+Nix is a purely functional package manager for Linux or macOS.
+NixOS is a Linux distribution based on Nix.
+
+There is a [dtn7 Nix User Repository (NUR)](https://github.com/dtn7/nur-packages) which contains two versions of dtn7-go.
+
+- The `dtn7-go` package for the latest release,
+- and the `dtn7-go-unstbale` package which is always the latest `master` branch's `HEAD`.
+
+Both packages are automatically bumped after changes in the dtn7-go repository.
+
+You can import and install one of those dtn7 packages as described in the [dtn7 NUR's README](https://github.com/dtn7/nur-packages).
+Alternatively, all [NURs](https://github.com/nix-community/NUR) can be included and a dtn7-go version installed from those.
 
 ### Arch Linux
 
