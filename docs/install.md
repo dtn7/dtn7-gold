@@ -12,8 +12,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - Install the *Go Programming language*, either through your package manager, or from [here](https://golang.org/dl/).
 - Clone the [source repository](https://github.com/dtn7/dtn7-go).
 - Check out the most recent release tag. Or don't and just build the `HEAD`, but we don't promise that it won't be broken.
-- (Optional) Run `GO111MODULE=on go test ./...` in the repository root to make sur we didn't screw up too badly.
-- Run `GO111MODULE=on go build ./...` in the repositry root to build both `dtnd` and `dtn-tool`
+- (Optional) Run `go test ./...` in the repository root to make sure we didn't screw up too badly.
+- Run `go build ./cmd/dtnd && go build ./cmd/dtn-tool` in the repositry root to build both `dtnd` and `dtn-tool`
 
 If you want to run `dtnd` as a service, you might also want to do the following:
 
@@ -21,7 +21,7 @@ If you want to run `dtnd` as a service, you might also want to do the following:
 - Put the systemd-service (`contrib/systemd/service/dtn7.service`) in `/etc/systemd/system`
 - Probably run `systemctl daemon-reload` for good measure
 - Create the working directory `/var/lib/dtn7`
-- Create a `dtn7` user like this: `sudo useradd -r -s /sbin/nologin -d /var/lib/dtn7 dtn7`
+- Create a `dtn7` user like this: `useradd -r -s /sbin/nologin -d /var/lib/dtn7 dtn7`
 - Set ownership of the working directory `chown dtn7:dtn7 /var/lib/dtn7`
 - Start the service: `systemctl start dtn7`
 
@@ -59,9 +59,9 @@ Start daemon using `systemctl start dtn7`
 ### Other Linux
 
 We would like to provide packages for all distributions, however we're not really sure how.
-Attempts at using the *Open SUSE Build Service* were unsuccessfull, since the build VMs don't have internet access and therefore can't get the dependencies from `go.mod`.
+Attempts at using the *Open SUSE Build Service* were unsuccessful, since the build VMs don't have internet access and therefore can't get the dependencies from `go.mod`.
 
-If you know how to (automatically) build and packe go applications for other distros, please contact us.
+If you know how to (automatically) build and package go applications for other distributions or package managers, please contact us.
 
 ### MacOS
 

@@ -12,17 +12,19 @@ Here, we'll go over the [sample config-file](https://github.com/dtn7/dtn7-go/blo
 
 ### store
 
-Path to the on-disk store used to persis bundles, may be either a relative or absolute path.
+Path to the on-disk store used to persist bundles, may be either a relative or absolute path.
 
 The store consist of a [badgerhold](https://github.com/timshannon/badgerhold) database for metadata, the bundle contents are written directly to disk.
 
 ### inspect-all-bundles
 
-Hell if I know what that does....
+Inspect the Administrative Records from all Bundles, not only those addressed to this very node.
+By doing so, this node can learn about a delivery and clear its store without being told directly.
 
 ### node-id
 
-Public name of the node. Will be set as the default Endoint id for all CLAs, unless a different one has been speified.
+Public name of the node.
+Will be set as the default endpoint ID for all CLAs, unless a different one has been specified.
 
 According to the [standard](https://tools.ietf.org/html/draft-ietf-dtn-bpbis-31#section-4.2.5.1.1), your ID should be:
 
@@ -49,8 +51,8 @@ Select the routing algorithm, you can choose on from the list `["epidemic", "spr
 ### epidemic
 
 *Epidemic Routing* is the simplest delay-tolerant routing algorithm.
-Alls bundles are always sent to all peers, which gives the best delivery probabilty, but also the highest overhead.
-Note that `dtnd` keeps track of peers who have already been sent a specific bundle, so each bundle should nly be forwarded to each peer once.
+All bundles are always sent to all peers, which gives the best delivery probability, but also the highest overhead.
+Note that `dtnd` keeps track of peers who have already been sent a specific bundle, so each bundle should only be forwarded to each peer once.
 
 ### spray
 
