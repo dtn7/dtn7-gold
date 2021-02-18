@@ -63,7 +63,10 @@ Attempts at using the *Open SUSE Build Service* were unsuccessful, since the bui
 
 If you know how to (automatically) build and package go applications for other distributions or package managers, please contact us.
 
-### MacOS
+### macOS
 
-Use [brew](https://github.com/jonashoechst/homebrew-hoechst/blob/master/dtn7.rb), I guess.
-If there's anything special about doing it, someone should probably describe that here.
+We provide a package for macOS through [Homebrew](https://brew.sh). To install from the [provided package](https://github.com/dtn7/homebrew-dtn7): 
+```
+$ brew install dtn7/dtn7/dtn7-gp
+```
+A configuration file (`/usr/local/etc/dtn7-go/configuration.toml`) will be created, as well as a brew services / launchd compatible service file will be created. dtn7-d's store, as well as the runtime logs will appear in `/usr/local/var/dtn7-go/`.
