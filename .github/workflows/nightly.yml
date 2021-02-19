@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 Alvar Penning
+# SPDX-FileCopyrightText: 2020, 2021 Alvar Penning
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        go: [ '1.13', '1.15' ]
+        go: [ '1.13', '1.16' ]
 
     steps:
     - name: Set up Go ${{ matrix.go }}
