@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -29,8 +29,38 @@ type BundleItem struct {
 	Properties map[string]interface{}
 }
 
+// bundleParts is a slice of loaded bundleParts.
+func (bi BundleItem) bundleParts() (bundleParts []bpv7.Bundle, err error) {
+	bundleParts = make([]bpv7.Bundle, len(bi.Parts))
+	for i, part := range bi.Parts {
+		if bundleParts[i], err = part.Load(); err != nil {
+			return
+		}
+	}
+	return
+}
+
+// Load the complete bpv7.Bundle for a BundleItem. If there are multiple fragments, a reassembly will be performed.
+func (bi BundleItem) Load() (b bpv7.Bundle, err error) {
+	var parts []bpv7.Bundle
+	if parts, err = bi.bundleParts(); err == nil {
+		b, err = bpv7.ReassembleFragments(parts)
+	}
+	return
+}
+
+// IsComplete determines if the BundleItem is complete and can be Load()ed.
+func (bi BundleItem) IsComplete() bool {
+	if !bi.Fragmented {
+		return true
+	}
+
+	parts, err := bi.bundleParts()
+	return err == nil && bpv7.IsBundleReassemblable(parts)
+}
+
 // BundlePart links a BundleItem to a Bundle with possible information
-// regarding fragmentations.
+// regarding fragmentation.
 type BundlePart struct {
 	Filename string
 
