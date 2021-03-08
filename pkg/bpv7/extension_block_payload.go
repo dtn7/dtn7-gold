@@ -41,11 +41,16 @@ func (pb *PayloadBlock) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
-// MarshalJSON writes the binary representation of a PayloadBlock.
+// MarshalJSON creates a json formatted representation of the payload.
 //
+// Since you probably don't want megabytes of encoded data ending up in your logs, large payloads will be truncated.
 // If this type does not implement the json.Marshaler, the CBOR encoding would be returned which might be misleading.
 func (pb *PayloadBlock) MarshalJSON() ([]byte, error) {
-	return json.Marshal(pb.Data())
+	payload := pb.Data()
+	if len(payload) > 100 {
+		payload = payload[:100]
+	}
+	return json.Marshal(payload)
 }
 
 // CheckValid returns an array of errors for incorrect data.
