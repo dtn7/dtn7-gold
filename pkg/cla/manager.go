@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
-// SPDX-FileCopyrightText: 2020 Markus Sommer
+// SPDX-FileCopyrightText: 2020, 2021 Markus Sommer
+// SPDX-FileCopyrightText: 2021 Artur Sterz
+// SPDX-FileCopyrightText: 2021 Jonas Höchst
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -13,6 +15,8 @@ import (
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
+
+const ReportChannelBuffer = 100
 
 // Manager monitors and manages the various CLAs, restarts them if necessary,
 // and forwards the ConvergenceStatus messages. The recipient can perform
@@ -62,8 +66,8 @@ func NewManager() *Manager {
 
 		listenerIDs: make(map[CLAType][]bpv7.EndpointID),
 
-		inChnl:  make(chan ConvergenceStatus, 100),
-		outChnl: make(chan ConvergenceStatus),
+		inChnl:  make(chan ConvergenceStatus, ReportChannelBuffer),
+		outChnl: make(chan ConvergenceStatus, ReportChannelBuffer),
 
 		stopSyn: make(chan struct{}),
 		stopAck: make(chan struct{}),
@@ -117,10 +121,21 @@ func (manager *Manager) handler() {
 				}).Info("CLA Manager received Peer Disappeared, restarting CLA")
 
 				manager.Restart(cs.Sender)
-				manager.outChnl <- cs
+
+				select {
+				case manager.outChnl <- cs:
+					continue
+				default:
+					log.Error("outChnl full or no consumer.")
+				}
 
 			default:
-				manager.outChnl <- cs
+				select {
+				case manager.outChnl <- cs:
+					continue
+				default:
+					log.Error("outChnl full or no consumer.")
+				}
 			}
 
 		case <-activateTicker.C:

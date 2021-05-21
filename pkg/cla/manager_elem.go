@@ -1,4 +1,7 @@
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2021 Markus Sommer
+// SPDX-FileCopyrightText: 2021 Artur Sterz
+// SPDX-FileCopyrightText: 2021 Jonas Höchst
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -85,7 +88,12 @@ func (ce *convergenceElem) handler() {
 				"status": cs.String(),
 			}).Debug("Forwarding ConvergenceStatus to Manager")
 
-			ce.convChnl <- cs
+			select {
+			case ce.convChnl <- cs:
+				continue
+			default:
+				log.WithField("cla", ce.conv).Error("convChnl full or no consumer.")
+			}
 		}
 	}
 }
