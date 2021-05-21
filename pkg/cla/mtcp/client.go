@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019 Markus Sommer
+// SPDX-FileCopyrightText: 2019, 2021 Markus Sommer
 // SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -112,11 +112,12 @@ func (client *MTCPClient) handler() {
 
 func (client *MTCPClient) Send(bndl bpv7.Bundle) (err error) {
 	defer func() {
-		if r := recover(); r != nil && err == nil {
+		if r := recover(); r != nil {
 			err = fmt.Errorf("MTCPClient.Send: %v", r)
 		}
+	}()
 
-		// In case of an error, report our failure upstream
+	defer func() {
 		if err != nil {
 			client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.GetPeerEndpointID())
 		}
