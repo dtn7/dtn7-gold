@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2018, 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -96,9 +97,16 @@ func (b *Bundle) sortBlocks() {
 	sort.Sort(canonicalBlockNumberSort(b.CanonicalBlocks))
 }
 
-// AddExtensionBlock adds a new ExtensionBlock to this Bundle. The block number
-// will be calculated and overwritten within this method.
-func (b *Bundle) AddExtensionBlock(block CanonicalBlock) {
+// AddExtensionBlock adds a new ExtensionBlock to this Bundle.
+//
+// The block number will be calculated and overwritten within this method.
+// Will return an error if the Bundle already has an ExtensionBlock with the same type code.
+func (b *Bundle) AddExtensionBlock(block CanonicalBlock) error {
+	blockType := block.Value.BlockTypeCode()
+	if b.HasExtensionBlock(blockType) {
+		return fmt.Errorf("bundle %v already has ExtensionBlock with type code %v", b.ID(), blockType)
+	}
+
 	var blockNumbers []uint64
 	for i := 0; i < len(b.CanonicalBlocks); i++ {
 		blockNumbers = append(blockNumbers, b.CanonicalBlocks[i].BlockNumber)
@@ -129,6 +137,7 @@ func (b *Bundle) AddExtensionBlock(block CanonicalBlock) {
 
 	b.CanonicalBlocks = append(b.CanonicalBlocks, block)
 	b.sortBlocks()
+	return nil
 }
 
 // RemoveExtensionBlockByBlockNumber searches and removes a CanonicalBlock / ExtensionBlock with the given block number.

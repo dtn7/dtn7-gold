@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2018, 2019, 2020, 2021 Alvar Penning
+// SPDX-FileCopyrightText: 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -230,7 +231,10 @@ func TestBundleAddRemoveExtensionBlocks(t *testing.T) {
 	if b.HasExtensionBlock(ExtBlockTypePreviousNodeBlock) {
 		t.Fatalf("previous node block is present")
 	}
-	b.AddExtensionBlock(NewCanonicalBlock(0, 0, NewPreviousNodeBlock(MustNewEndpointID("dtn://prev/"))))
+	err = b.AddExtensionBlock(NewCanonicalBlock(0, 0, NewPreviousNodeBlock(MustNewEndpointID("dtn://prev/"))))
+	if err != nil {
+		t.Fatalf("adding PreviousNodeBlock resulted in error: %v", err)
+	}
 	if !b.HasExtensionBlock(ExtBlockTypePreviousNodeBlock) {
 		t.Fatalf("previous node block is not present")
 	}

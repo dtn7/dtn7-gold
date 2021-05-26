@@ -40,13 +40,18 @@ func (c *Core) sendBundleAttachSignature(bndl *bpv7.Bundle) {
 	cb := bpv7.NewCanonicalBlock(0, bpv7.ReplicateBlock|bpv7.DeleteBundle, sb)
 	cb.SetCRCType(bpv7.CRC32)
 
-	bndl.AddExtensionBlock(cb)
+	if err := bndl.AddExtensionBlock(cb); err != nil {
+		log.WithFields(log.Fields{
+			"bundle": bndl.ID().String(),
+			"error":  err,
+		}).Error("Error attaching signature block")
+	}
 
 	log.WithField("bundle", bndl.ID()).Info("Attached signature to outgoing bundle")
 }
 
-// transmit starts the transmission of an outbounding bundle pack. Therefore
-// the source's endpoint ID must be dtn:none or a member of this node.
+// transmit starts the transmission of an outgoing bundle pack.
+// Therefore, the source's endpoint ID must be dtn:none or a member of this node.
 func (c *Core) transmit(bp BundleDescriptor) {
 	log.WithField("bundle", bp.ID().String()).Info("Transmission of bundle requested")
 
@@ -229,8 +234,13 @@ func (c *Core) forward(bp BundleDescriptor) {
 		}).Debug("Previous Node Block updated")
 	} else {
 		// Append a new PreviousNodeBlock
-		bp.MustBundle().AddExtensionBlock(bpv7.NewCanonicalBlock(
-			0, 0, bpv7.NewPreviousNodeBlock(c.NodeId)))
+		if err := bp.MustBundle().AddExtensionBlock(bpv7.NewCanonicalBlock(
+			0, 0, bpv7.NewPreviousNodeBlock(c.NodeId))); err != nil {
+			log.WithFields(log.Fields{
+				"bundle": bp.ID(),
+				"error":  err,
+			}).Error("Error attaching PreviousNodeBlock")
+		}
 	}
 
 	var nodes []cla.ConvergenceSender

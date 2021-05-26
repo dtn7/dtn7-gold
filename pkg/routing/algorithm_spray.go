@@ -333,22 +333,37 @@ func (bs *BinarySpray) SenderForBundle(bp BundleDescriptor) (css []cla.Convergen
 		}
 
 		if !skip {
-			css = append(css, cs)
-			metadata.sent = append(metadata.sent, cs.GetPeerEndpointID())
-
 			// we send half our remaining copies
 			sendCopies := metadata.remainingCopies / 2
 			metadata.remainingCopies = metadata.remainingCopies - sendCopies
 
+			bndl, err := bp.Bundle()
+			if err != nil {
+				log.WithFields(log.Fields{
+					"bundle": bp.ID(),
+					"error":  err,
+				}).Error("Error getting bundle from identifier")
+				return nil, false
+			}
+
 			// if the bundle already has a metadata-block
-			if metadataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeBinarySprayBlock); err == nil {
+			if metadataBlock, err := bndl.ExtensionBlock(bpv7.ExtBlockTypeBinarySprayBlock); err == nil {
 				binarySprayBlock := metadataBlock.Value.(*bpv7.BinarySprayBlock)
 				binarySprayBlock.SetCopies(sendCopies)
 			} else {
 				// if it doesn't, then create one
 				metadataBlock := bpv7.NewBinarySprayBlock(sendCopies)
-				bp.MustBundle().AddExtensionBlock(bpv7.NewCanonicalBlock(0, 0, metadataBlock))
+				if err := bndl.AddExtensionBlock(bpv7.NewCanonicalBlock(0, 0, metadataBlock)); err != nil {
+					log.WithFields(log.Fields{
+						"bundle": bp.ID(),
+						"error":  err,
+					}).Error("Error adding Spray-block to bundle")
+					return nil, false
+				}
 			}
+
+			css = append(css, cs)
+			metadata.sent = append(metadata.sent, cs.GetPeerEndpointID())
 
 			// we currently only send a bundle to a single peer at once
 			break

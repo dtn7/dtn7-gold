@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
+// SPDX-FileCopyrightText: 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -70,17 +71,21 @@ func (b Bundle) Fragment(mtu int) (bs []Bundle, err error) {
 				continue
 			}
 
-			fragBundle.AddExtensionBlock(cb)
+			if err = fragBundle.AddExtensionBlock(cb); err != nil {
+				return
+			}
 		}
 
 		fragPayloadBlockLen := mtu - overhead
 
 		offset := int(math.Min(float64(i+fragPayloadBlockLen), float64(len(payloadBlock.Value.(*PayloadBlock).Data()))))
-		fragBundle.AddExtensionBlock(CanonicalBlock{
+		if err = fragBundle.AddExtensionBlock(CanonicalBlock{
 			BlockControlFlags: payloadBlock.BlockControlFlags,
 			CRCType:           payloadBlock.CRCType,
 			Value:             NewPayloadBlock(payloadBlock.Value.(*PayloadBlock).Data()[i:offset]),
-		})
+		}); err != nil {
+			return
+		}
 
 		if err = fragBundle.CheckValid(); err != nil {
 			return
@@ -240,7 +245,9 @@ func ReassembleFragments(bs []Bundle) (b Bundle, err error) {
 			continue
 		}
 
-		b.AddExtensionBlock(cb)
+		if err = b.AddExtensionBlock(cb); err != nil {
+			return
+		}
 	}
 
 	if payload, payloadErr := mergeFragmentPayload(bs); payloadErr != nil {
@@ -256,7 +263,9 @@ func ReassembleFragments(bs []Bundle) (b Bundle, err error) {
 		cb := NewCanonicalBlock(1, pb0.BlockControlFlags, NewPayloadBlock(payload))
 		cb.SetCRCType(pb0.CRCType)
 
-		b.AddExtensionBlock(cb)
+		if err = b.AddExtensionBlock(cb); err != nil {
+			return
+		}
 	}
 
 	err = b.CheckValid()

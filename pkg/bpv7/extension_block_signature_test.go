@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -160,7 +161,11 @@ func TestSignatureBlockIntegration(t *testing.T) {
 		t.Fatal(sbErr)
 	}
 
-	b1.AddExtensionBlock(NewCanonicalBlock(0, ReplicateBlock|DeleteBundle, sb))
+	err := b1.AddExtensionBlock(NewCanonicalBlock(0, ReplicateBlock|DeleteBundle, sb))
+	if err != nil {
+		t.Fatalf("Adding ExtensionBlock caused error: %v", err)
+	}
+
 	b1.SetCRCType(CRC32)
 
 	var buff bytes.Buffer
@@ -245,7 +250,10 @@ func TestSignatureBlockFragmentSimple(t *testing.T) {
 
 	cb := NewCanonicalBlock(0, ReplicateBlock|DeleteBundle, sb)
 	cb.SetCRCType(CRC32)
-	b1.AddExtensionBlock(cb)
+	err := b1.AddExtensionBlock(cb)
+	if err != nil {
+		t.Fatalf("Error adding ExtensionBlock: %v", err)
+	}
 
 	bs, bsErr := b1.Fragment(256)
 	if bsErr != nil {
