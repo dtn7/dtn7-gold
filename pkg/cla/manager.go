@@ -20,7 +20,7 @@ import (
 // CLA administration themselves.
 type Manager struct {
 	// queueTtl is the amount of retries for a CLA.
-	queueTtl int
+	queueTtl int32
 
 	// retryTime is the duration between two activation attempts.
 	retryTime time.Duration
