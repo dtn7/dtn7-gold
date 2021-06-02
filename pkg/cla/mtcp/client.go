@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: 2019, 2021 Markus Sommer
 // SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
+// SPDX-FileCopyrightText: 2021 Artur Sterz
+// SPDX-FileCopyrightText: 2021 Jonas Höchst
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -84,12 +86,10 @@ func (client *MTCPClient) handler() {
 	for {
 		select {
 		case <-client.stopSyn:
-			client.mutex.Lock()
 			_ = client.conn.Close()
 
 			close(client.reportChan)
 			close(client.stopAck)
-			client.mutex.Unlock()
 
 			return
 
