@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -31,16 +31,6 @@ type exchange struct {
 
 	closeChan      chan os.Signal
 	bundleReadChan chan bpv7.Bundle
-}
-
-func cleanFilepath(f string) string {
-	const basepath = "."
-	if rel, err := filepath.Rel(basepath, f); err != nil {
-		log.WithField("path", f).WithError(err).Fatal("Failed to clean file path")
-		return ""
-	} else {
-		return rel
-	}
 }
 
 // startExchange to exchange Bundles between client and a dtnd.
@@ -80,6 +70,16 @@ func startExchange(args []string) {
 	ex.handler()
 }
 
+// cleanFilepath creates a relative path from the initial path to a new file's path.
+func (ex *exchange) cleanFilepath(f string) string {
+	if rel, err := filepath.Rel(ex.directory, f); err != nil {
+		log.WithField("path", f).WithError(err).Fatal("Failed to clean file path")
+		return ""
+	} else {
+		return rel
+	}
+}
+
 func (ex *exchange) handler() {
 	defer func() {
 		_ = ex.watcher.Close()
@@ -98,7 +98,7 @@ func (ex *exchange) handler() {
 				return
 			}
 
-			if _, ok := ex.knownFiles.Load(cleanFilepath(e.Name)); ok {
+			if _, ok := ex.knownFiles.Load(ex.cleanFilepath(e.Name)); ok {
 				log.WithField("file", e.Name).Debug("Skipping file; already known")
 				continue
 			}
@@ -128,13 +128,13 @@ func (ex *exchange) handler() {
 				return
 			}
 
-			filepath := path.Join(ex.directory, hex.EncodeToString([]byte(b.ID().String())))
+			filePath := path.Join(ex.directory, hex.EncodeToString([]byte(b.ID().String())))
 			logger := log.WithFields(log.Fields{
 				"bundle": b.ID(),
-				"file":   filepath,
+				"file":   filePath,
 			})
 
-			if f, err := os.Create(filepath); err != nil {
+			if f, err := os.Create(filePath); err != nil {
 				logger.WithError(err).Error("Creating file errored")
 				return
 			} else if err := b.MarshalCbor(f); err != nil {
@@ -143,7 +143,7 @@ func (ex *exchange) handler() {
 				logger.WithError(err).Error("Closing file errored")
 			}
 
-			ex.knownFiles.Store(cleanFilepath(filepath), struct{}{})
+			ex.knownFiles.Store(ex.cleanFilepath(filePath), struct{}{})
 
 			logger.Info("Saved received Bundle")
 		}
