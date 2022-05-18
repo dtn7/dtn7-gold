@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -63,7 +64,7 @@ func (snm *SensorNetworkMuleRouting) SenderForBundle(bp BundleDescriptor) (sende
 	// Filter sender list: Remove sensor nodes iff a bundle is not addressed to it.
 	for i := len(sender) - 1; i >= 0; i-- {
 		logger := log.WithFields(log.Fields{
-			"bundle":             bp.ID(),
+			"bundle":             bp.ID().String(),
 			"convergence-sender": sender[i],
 		})
 

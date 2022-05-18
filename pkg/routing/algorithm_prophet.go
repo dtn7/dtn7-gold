@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2021 Markus Sommer
+// SPDX-FileCopyrightText: 2019, 2021, 2022 Markus Sommer
 // SPDX-FileCopyrightText: 2020 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -250,7 +250,7 @@ func (prophet *Prophet) NotifyNewBundle(bp BundleDescriptor) {
 	}
 
 	log.WithFields(log.Fields{
-		"bundle": bp.ID(),
+		"bundle": bp.ID().String(),
 		"eid":    prevNode,
 	}).Debug("Prophet received an incomming bundle and checked its PreviousNodeBlock")
 
@@ -378,7 +378,7 @@ func (prophet *Prophet) ReportFailure(bp BundleDescriptor, sender cla.Convergenc
 	bundleItem, err := prophet.c.store.QueryId(bp.Id)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
+			"bundle": bp.ID().String(),
 			"error":  err.Error(),
 		}).Warn("Failed to get bundle metadata")
 		return
@@ -388,13 +388,13 @@ func (prophet *Prophet) ReportFailure(bp BundleDescriptor, sender cla.Convergenc
 	if !ok {
 		// this shouldn't really happen, no?
 		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
+			"bundle": bp.ID().String(),
 		}).Warn("Bundle had no stored sender-list")
 		return
 	}
 
 	log.WithFields(log.Fields{
-		"bundle": bp.ID(),
+		"bundle": bp.ID().String(),
 		"peer":   sender,
 	}).Info("Failed to transmit bundle")
 
@@ -409,14 +409,14 @@ func (prophet *Prophet) ReportFailure(bp BundleDescriptor, sender cla.Convergenc
 
 	if err := prophet.c.store.Update(bundleItem); err != nil {
 		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
+			"bundle": bp.ID().String(),
 			"error":  err,
 		}).Warn("Updating BundleItem failed")
 		return
 	}
 
 	log.WithFields(log.Fields{
-		"bundle": bp.ID(),
+		"bundle": bp.ID().String(),
 		"peer":   sender,
 		"clas":   sentEids,
 	}).Debug("Removed peer from sent list")

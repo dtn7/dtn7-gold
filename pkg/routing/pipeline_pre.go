@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2020, 2021 Alvar Penning
+// SPDX-FileCopyrightText: 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -31,14 +32,14 @@ func (pipeline *Pipeline) receiveCheckBlocks(descriptor BundleDescriptor) pipeli
 
 		if canonical.BlockControlFlags.Has(bpv7.DeleteBundle) {
 			pipeline.log().WithFields(log.Fields{
-				"bundle": descriptor.ID(), "block": canonical.BlockNumber,
+				"bundle": descriptor.ID().String(), "block": canonical.BlockNumber,
 			}).Info("deleting bundle because of an unknown block")
 
 			descriptor.AddTag(Faulty)
 			break
 		} else if canonical.BlockControlFlags.Has(bpv7.RemoveBlock) {
 			pipeline.log().WithFields(log.Fields{
-				"bundle": descriptor.ID(), "block": canonical.BlockNumber,
+				"bundle": descriptor.ID().String(), "block": canonical.BlockNumber,
 			}).Info("removing unknown block")
 
 			descriptor.MustBundle().RemoveExtensionBlockByBlockNumber(canonical.BlockNumber)
@@ -69,7 +70,7 @@ func (pipeline *Pipeline) processInitial(descriptor BundleDescriptor) pipelineFu
 
 	for _, checkFunc := range pipeline.Checks {
 		if err := checkFunc(pipeline, descriptor); err != nil {
-			pipeline.log().WithField("bundle", descriptor.ID()).WithError(err).Warn("preprocessing check failed")
+			pipeline.log().WithField("bundle", descriptor.ID().String()).WithError(err).Warn("preprocessing check failed")
 
 			descriptor.AddTag(Faulty)
 			break
