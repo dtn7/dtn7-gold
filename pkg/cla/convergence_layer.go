@@ -58,6 +58,8 @@ type Convergence interface {
 
 	// IsPermanent returns true, if this CLA should not be removed after failures.
 	IsPermanent() bool
+
+	// TODO: String method for address-logging
 }
 
 // ConvergenceReceiver is an interface for types which are able to receive

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019 Markus Sommer
+// SPDX-FileCopyrightText: 2019, 2022 Markus Sommer
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -70,7 +70,7 @@ func (er *EpidemicRouting) NotifyNewBundle(bp BundleDescriptor) {
 	}
 
 	log.WithFields(log.Fields{
-		"bundle": bp.ID(),
+		"bundle": bp.ID().String(),
 		"eid":    prevNode,
 	}).Debug("EpidemicRouting received an incoming bundle and checked its PreviousNodeBlock")
 
@@ -86,7 +86,7 @@ func (er *EpidemicRouting) clasForBundle(bp BundleDescriptor, updateDb bool) (cs
 	bi, biErr := er.c.store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
+			"bundle": bp.ID().String(),
 			"error":  biErr,
 		}).Warn("Failed to proceed a non-stored Bundle")
 		return nil, false
@@ -95,7 +95,7 @@ func (er *EpidemicRouting) clasForBundle(bp BundleDescriptor, updateDb bool) (cs
 	css, sentEids := filterCLAs(bi, er.c.claManager.Sender(), "epidemic")
 
 	log.WithFields(log.Fields{
-		"bundle": bp.ID(),
+		"bundle": bp.ID().String(),
 		"sent":   sentEids,
 	}).Debug("EpidemicRouting is processing an outgoing bundle")
 
@@ -109,7 +109,7 @@ func (er *EpidemicRouting) clasForBundle(bp BundleDescriptor, updateDb bool) (cs
 	}
 
 	log.WithFields(log.Fields{
-		"bundle":              bp.ID(),
+		"bundle":              bp.ID().String(),
 		"sent":                sentEids,
 		"convergence-senders": css,
 	}).Debug("EpidemicRouting selected Convergence Senders for an outbounding bundle")
@@ -124,7 +124,7 @@ func (er *EpidemicRouting) DispatchingAllowed(bp BundleDescriptor) bool {
 	bi, biErr := er.c.store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
+			"bundle": bp.ID().String(),
 			"error":  biErr,
 		}).Warn("Failed to proceed a non-stored Bundle")
 
@@ -169,7 +169,7 @@ func (er *EpidemicRouting) ReportFailure(bp BundleDescriptor, sender cla.Converg
 	}
 
 	log.WithFields(log.Fields{
-		"bundle":  bp.ID(),
+		"bundle":  bp.ID().String(),
 		"bad_cla": sender,
 		"sent":    sentEids,
 	}).Debug("EpidemicRouting failed to transmit to CLA")

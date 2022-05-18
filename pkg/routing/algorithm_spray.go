@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
-// SPDX-FileCopyrightText: 2019, 2021 Markus Sommer
+// SPDX-FileCopyrightText: 2019, 2021, 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -95,7 +95,7 @@ func (sw *SprayAndWait) NotifyNewBundle(bp BundleDescriptor) {
 		sw.dataMutex.Unlock()
 
 		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
+			"bundle": bp.ID().String(),
 		}).Debug("SprayAndWait initialised new bundle from this host")
 	} else {
 		metadata := sprayMetaData{
@@ -113,7 +113,7 @@ func (sw *SprayAndWait) NotifyNewBundle(bp BundleDescriptor) {
 		sw.dataMutex.Unlock()
 
 		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
+			"bundle": bp.ID().String(),
 		}).Debug("SprayAndWait received bundle from foreign host")
 	}
 }
@@ -182,7 +182,7 @@ func (sw *SprayAndWait) SenderForBundle(bp BundleDescriptor) (css []cla.Converge
 // ReportFailure re-increments remaining copies if delivery was unsuccessful.
 func (sw *SprayAndWait) ReportFailure(bp BundleDescriptor, sender cla.ConvergenceSender) {
 	log.WithFields(log.Fields{
-		"bundle":  bp.ID(),
+		"bundle":  bp.ID().String(),
 		"bad_cla": sender,
 	}).Debug("Transmission failure")
 
@@ -190,9 +190,7 @@ func (sw *SprayAndWait) ReportFailure(bp BundleDescriptor, sender cla.Convergenc
 	metadata, ok := sw.bundleData[bp.Id]
 	sw.dataMutex.RUnlock()
 	if !ok {
-		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
-		}).Warn("No metadata")
+		log.WithField("bundle", bp.ID().String()).Warn("Bundle has no metadata")
 		return
 	}
 
@@ -285,7 +283,7 @@ func (bs *BinarySpray) NotifyNewBundle(bp BundleDescriptor) {
 		bs.dataMutex.Unlock()
 
 		log.WithFields(log.Fields{
-			"bundle":           bp.ID(),
+			"bundle":           bp.ID().String(),
 			"remaining_copies": metadata.remainingCopies,
 		}).Debug("SprayAndWait received bundle from foreign host")
 	} else {
@@ -298,9 +296,7 @@ func (bs *BinarySpray) NotifyNewBundle(bp BundleDescriptor) {
 		bs.bundleData[bp.Id] = metadata
 		bs.dataMutex.Unlock()
 
-		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
-		}).Debug("SprayAndWait initialised new bundle from this host")
+		log.WithField("bundle", bp.Id.String()).Debug("SprayAndWait initialised new bundle from this host")
 	}
 }
 
@@ -317,17 +313,13 @@ func (bs *BinarySpray) SenderForBundle(bp BundleDescriptor) (css []cla.Convergen
 	metadata, ok := bs.bundleData[bp.Id]
 	bs.dataMutex.RUnlock()
 	if !ok {
-		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
-		}).Warn("No metadata")
+		log.WithField("bundle", bp.ID().String()).Warn("Bundle has no metadata")
 		return
 	}
 
 	// if there are no copies left, we just wait until we meet the recipient
 	if metadata.remainingCopies < 2 {
-		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
-		}).Debug("Not relaying bundle because there are no copies left")
+		log.WithField("bundle", bp.ID().String()).Debug("Not relaying bundle because there are no copies left")
 		return nil, false
 	}
 
@@ -368,7 +360,7 @@ func (bs *BinarySpray) SenderForBundle(bp BundleDescriptor) (css []cla.Convergen
 	bs.dataMutex.Unlock()
 
 	log.WithFields(log.Fields{
-		"bundle":              bp.ID(),
+		"bundle":              bp.ID().String(),
 		"convergence-senders": css,
 		"remaining copies":    metadata.remainingCopies,
 	}).Debug("BinarySpray selected Convergence Sender for an outgoing bundle")
@@ -380,15 +372,16 @@ func (bs *BinarySpray) SenderForBundle(bp BundleDescriptor) (css []cla.Convergen
 // ReportFailure resets remaining copies if delivery was unsuccessful.
 func (bs *BinarySpray) ReportFailure(bp BundleDescriptor, sender cla.ConvergenceSender) {
 	log.WithFields(log.Fields{
-		"bundle":  bp.ID(),
+		"bundle":  bp.ID().String(),
 		"bad_cla": sender,
 	}).Debug("Transmission failure")
 
 	metadataBlock, err := bp.MustBundle().ExtensionBlock(bpv7.ExtBlockTypeBinarySprayBlock)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"bundle": bp.ID(),
-		}).Warn("Bundle has not metadata Block")
+			"bundle": bp.ID().String(),
+			"error":  err,
+		}).Warn("Error getting bundle metadata Block")
 		return
 	}
 
@@ -399,9 +392,9 @@ func (bs *BinarySpray) ReportFailure(bp BundleDescriptor, sender cla.Convergence
 	bs.dataMutex.RUnlock()
 	if !ok {
 		log.WithFields(log.Fields{
-			"bundle":  bp.ID(),
+			"bundle":  bp.ID().String(),
 			"bad_cla": sender,
-		}).Warn("No metadata")
+		}).Warn("Bundle has no metadata")
 		return
 	}
 	binarySprayBlock.SetCopies(metadata.remainingCopies + binarySprayBlock.RemainingCopies())

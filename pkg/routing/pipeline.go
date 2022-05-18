@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -98,7 +99,7 @@ func (pipeline *Pipeline) sendReport(descriptor BundleDescriptor, status bpv7.St
 	}
 
 	pipeline.log().WithFields(log.Fields{
-		"origin": descriptor.ID(), "status": status, "reason": reason,
+		"origin": descriptor.ID().String(), "status": status, "reason": reason,
 	}).Info("creating status report for bundle")
 
 	reportBundle, err := bpv7.Builder().
@@ -110,7 +111,7 @@ func (pipeline *Pipeline) sendReport(descriptor BundleDescriptor, status bpv7.St
 		StatusReport(descriptor.MustBundle(), status, reason).
 		Build()
 	if err != nil {
-		pipeline.log().WithField("origin", descriptor.ID()).WithError(err).Warn("status report creation errored")
+		pipeline.log().WithField("origin", descriptor.ID().String()).WithError(err).Warn("status report creation errored")
 	} else {
 		pipeline.queue <- pipelineMsg{t: sendBundle, v: reportBundle}
 	}

@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
-// SPDX-FileCopyrightText: 2019, 2020 Markus Sommer
+// SPDX-FileCopyrightText: 2019, 2020, 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -244,7 +244,7 @@ func (c *Core) SendStatusReport(descriptor BundleDescriptor, status bpv7.StatusI
 	}
 
 	log.WithFields(log.Fields{
-		"bundle": descriptor.ID(),
+		"bundle": descriptor.ID().String(),
 		"status": status,
 		"reason": reason,
 	}).Info("Sending a status report for a bundle")
@@ -253,7 +253,7 @@ func (c *Core) SendStatusReport(descriptor BundleDescriptor, status bpv7.StatusI
 	var ar, arErr = bpv7.AdministrativeRecordToCbor(sr)
 	if arErr != nil {
 		log.WithFields(log.Fields{
-			"bundle": descriptor.ID(),
+			"bundle": descriptor.ID().String(),
 			"error":  arErr,
 		}).Warn("Serializing administrative record failed")
 
@@ -267,7 +267,7 @@ func (c *Core) SendStatusReport(descriptor BundleDescriptor, status bpv7.StatusI
 
 	if !c.HasEndpoint(aaEndpoint) && aaEndpoint != c.NodeId {
 		log.WithFields(log.Fields{
-			"bundle":   descriptor.ID(),
+			"bundle":   descriptor.ID().String(),
 			"endpoint": aaEndpoint,
 		}).Warn("Failed to create status report, receiver is not a current endpoint")
 
@@ -285,7 +285,7 @@ func (c *Core) SendStatusReport(descriptor BundleDescriptor, status bpv7.StatusI
 
 	if err != nil {
 		log.WithFields(log.Fields{
-			"bundle": descriptor.ID(),
+			"bundle": descriptor.ID().String(),
 			"error":  err,
 		}).Warn("Creating status report bundle failed")
 

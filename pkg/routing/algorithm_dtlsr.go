@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
-// SPDX-FileCopyrightText: 2019, 2021 Markus Sommer
+// SPDX-FileCopyrightText: 2019, 2021, 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -270,7 +270,7 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundleDescriptor) (sender []cla.Convergen
 	if !present {
 		// we don't know where to forward this bundle
 		log.WithFields(log.Fields{
-			"bundle":    bp.ID(),
+			"bundle":    bp.ID().String(),
 			"recipient": recipient,
 		}).Debug("DTLSR could not find a node to forward to")
 		return
@@ -294,7 +294,7 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundleDescriptor) (sender []cla.Convergen
 	}
 
 	log.WithFields(log.Fields{
-		"bundle":    bp.ID(),
+		"bundle":    bp.ID().String(),
 		"recipient": recipient,
 	}).Debug("DTLSR could not find forwarder amongst connected nodes")
 	return

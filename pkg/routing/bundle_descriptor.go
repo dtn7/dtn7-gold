@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019 Markus Sommer
+// SPDX-FileCopyrightText: 2019, 2022 Markus Sommer
 // SPDX-FileCopyrightText: 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -122,8 +122,8 @@ func (descriptor *BundleDescriptor) MustBundle() *bpv7.Bundle {
 }
 
 // ID returns the wrapped Bundle's ID.
-func (descriptor BundleDescriptor) ID() string {
-	return descriptor.Id.String()
+func (descriptor BundleDescriptor) ID() bpv7.BundleID {
+	return descriptor.Id
 }
 
 // HasReceiver returns true if this BundleDescriptor has a Receiver value.
@@ -197,7 +197,7 @@ func (descriptor *BundleDescriptor) UpdateBundleAge() (uint64, error) {
 func (descriptor BundleDescriptor) String() string {
 	var b strings.Builder
 
-	_, _ = fmt.Fprintf(&b, "BundleDescriptor(%v,", descriptor.ID())
+	_, _ = fmt.Fprintf(&b, "BundleDescriptor(%v,", descriptor.ID().String())
 	for c := range descriptor.Constraints {
 		_, _ = fmt.Fprintf(&b, " %v", c)
 	}
