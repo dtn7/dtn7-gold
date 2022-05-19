@@ -413,9 +413,9 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 	for peer, timestamp := range dtlsr.peers.Peers {
 		var edgeCost int64
 		if timestamp == 0 {
-			edgeCost = 0
+			edgeCost = 1
 		} else {
-			edgeCost = int64(currentTime - timestamp)
+			edgeCost = 1 + int64(currentTime-timestamp)
 		}
 
 		if err := graph.AddArc(0, dtlsr.nodeIndex[peer], edgeCost); err != nil {
@@ -437,9 +437,9 @@ func (dtlsr *DTLSR) computeRoutingTable() {
 		for peer, timestamp := range data.Peers {
 			var edgeCost int64
 			if timestamp == 0 {
-				edgeCost = 0
+				edgeCost = 1
 			} else {
-				edgeCost = int64(currentTime - timestamp)
+				edgeCost = 1 + int64(currentTime-timestamp)
 			}
 
 			if err := graph.AddArc(dtlsr.nodeIndex[data.ID], dtlsr.nodeIndex[peer], edgeCost); err != nil {
