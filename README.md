@@ -2,13 +2,14 @@
 SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
 SPDX-FileCopyrightText: 2020 Jonas Höchst
 SPDX-FileCopyrightText: 2020 Matthias Axel Kröll
+SPDX-FileCopyrightText: 2022 Markus Sommer
 
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 # dtn7-go
 [![Release](https://img.shields.io/github/v/tag/dtn7/dtn7-go?label=version)](https://github.com/dtn7/dtn7-go/releases)
-[![GoDoc](https://godoc.org/github.com/dtn7/dtn7-go?status.svg)](https://godoc.org/github.com/dtn7/dtn7-go)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/dtn7/dtn7-go)](https://pkg.go.dev/github.com/dtn7/dtn7-go)
 [![CI](https://github.com/dtn7/dtn7-go/workflows/CI/badge.svg)](https://github.com/dtn7/dtn7-go/actions)
 [![REUSE status](https://api.reuse.software/badge/github.com/dtn7/dtn7-go)](https://api.reuse.software/info/github.com/dtn7/dtn7-go)
 
@@ -21,22 +22,25 @@ This software implements the current draft of the Bundle Protocol Version 7.
 - Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-31][dtn-bpbis-31])
 
 ### Convergence Layer
-Bundles might be exchanged between nodes by the following protocols.
+A *convergence layer* in bundle protocol parlance is the abstraction for peer-to-peer communication.
+We have implemented the following protocols:
 
-- TCP Convergence Layer Protocol Version 4 ([draft-ietf-dtn-tcpclv4-23][dtn-tcpcl-23]), including:
-    - WebSocket-based variant
-- Minimal TCP Convergence-Layer Protocol ([draft-ietf-dtn-mtcpcl-01][dtn-mtcpcl-01])
+- Minimal TCP Convergence-Layer Protocol (`mtcp`) ([draft-ietf-dtn-mtcpcl-01][dtn-mtcpcl-01])
+- TCP Convergence Layer Protocol Version 4 (`tcpcl`) ([draft-ietf-dtn-tcpclv4-23][dtn-tcpcl-23]), including:
+  - WebSocket-based variant
 - Bundle Broadcasting Connector, a generic Broadcasting Interface
-    - [rf95modem] based CLA for LoRa PHY by [rf95modem-go]
+  - [rf95modem] based CLA for LoRa PHY by [rf95modem-go]
+
+At this point, `mtcp` is probably your best bet for reliable data transfer.
 
 ### Routing
-One of the following routing protocols might be used.
+We have implemented the following routing algorithms:
 
-- Delay-Tolerant Link State Routing (DTLSR)
 - Epidemic Routing
-- Probabilistic Routing Protocol using History of Encounters and Transitivity (PRoPHET)
-- Sensor Network specific routing algorithm for Data Mules, [documentation][sensor-network-mule-documentation]
 - Spray and Wait, vanilla and binary
+- Delay-Tolerant Link State Routing (DTLSR)
+- Probabilistic Routing Protocol using History of Encounters and Transitivity (PRoPHET)
+- Sensor Network-specific routing algorithm for Data Mules, [documentation][sensor-network-mule-documentation]
 
 
 ## Software
@@ -51,7 +55,7 @@ One of the following routing protocols might be used.
 
 #### From Source
 
-Install the [Go programming language][golang], version 1.13 or later.
+Install the [Go programming language][golang], version 1.16 or later.
 
 ```bash
 git clone https://github.com/dtn7/dtn7-go.git
@@ -64,30 +68,29 @@ go build ./cmd/dtnd
 
 ### dtnd
 `dtnd` is a delay-tolerant networking daemon.
-It represents a node inside the network and is able to transmit, receive and forward bundles to other nodes.
-A node's neighbors may be specified in the configuration or detected within the local network through a peer discovery.
+It acts as a node in the network and can transmit, receive and forward bundles to other nodes.
+A node's neighbours may be specified in the configuration or detected within the local network through a peer discovery.
 Bundles might be sent and received through a REST-like web interface.
-The features and their configuration is described inside the provided example [`configuration.toml`][dtnd-configuration].
+The features and configuration are described inside the provided example [`configuration.toml`][dtnd-configuration].
 
 #### REST API / WebSocket API
-Different interfaces are provided to allow communication from external programs with `dtnd`.
+We provide different interfaces to allow communication from external programs with `dtnd`.
 More precisely: a REST API and a WebSocket API.
 
-The simpler REST API allows a client to register itself with an address, receive bundles and create / dispatch new ones.
-This is made by POSTing JSON objects to `dtnd`'s RESTful HTTP server.
-The endpoints and structure of the JSON objects are described in the [documentation][godoc] for the `github.com/dtn7/dtn7-go/agent.RestAgent` type.
+The simpler REST API allows a client to register itself with an address, receive bundles and create/dispatch new ones simply by POSTing JSON objects to `dtnd`'s RESTful HTTP server.
+The endpoints and structure of the JSON objects are described in the [documentation][PkgGoDev] for the `github.com/dtn7/dtn7-go/agent.RestAgent` type.
 
-However, a bidirectional communication is possible via the WebSocket API.
+If you need bidirectional communication, you can use the WebSocket API.
 This API sends CBOR-encoded messages.
-The details can be found in the `ws_agent`-files of the `agent` package.
+For details, see the `ws_agent`-files of the `agent` package.
 But one can also simply use it with the `github.com/dtn7/dtn7-go/agent.WebSocketAgentConnector`, which implements a client.
 
 ### dtn-tool
-A ready-to-use program that utilizes the WebSocket API mentioned above is `dtn-tool`, a _swiss army knife_ for bundles.
+`dtn-tool` is a _swiss army knife_ for bundles and uses the WebSockets API.
 
 It allows the simple creation of new bundles, written to a file or the stdout.
-Furthermore, one can print out bundles as a human / script readable JSON object.
-To exchange bundles, `dtn-tool` might _watch_ a directory and send all new bundle files to the corresponding `dtnd` instance.
+Furthermore, one can print out bundles as a human/machine-readable JSON object.
+To exchange bundles, `dtn-tool` may _watch_ a directory and send all new bundle files to the corresponding `dtnd` instance.
 In the same way, incoming bundles from `dtnd` are stored in this directory.
 
 ```
@@ -114,28 +117,28 @@ Usage of ./dtn-tool create|exchange|ping|show:
 
 
 ## Go Library
-Multiple parts of this software are usable as a Go library.
-Those libraries are available within the `pkg` directory.
+Most components of this software are usable as a Go library.
+Those libraries are available within the `pkg`-directory.
 
-For example, the `bpv7` package contains code for bundle modification, serialization and deserialization and would most likely the most interesting part.
-If you are interested in working with this code, check out the [documentation][godoc].
+For example, the `bpv7`-package contains code for bundle modification, serialization and deserialization and would most likely be the most interesting part.
+If you are interested in working with this code, check out the [documentation][PkgGoDev].
 
 
 ## Contributing
-Contributions will receive warmhearted welcome.
+We warmly welcome any contribution.
 
-[Gofmt][gofmt] must be used for formatting the source.
-Further inspection of the code via [golangci-lint][golangci-lint] is highly recommended.
+Please format your code using [Gofmt][gofmt].
+Further inspection of the code via [golangci-lint][golangci-lint] is highly recommended, our CI-pipeline includes a `golangci-lint`-action.
 
-As a development environment you may, of course, use whatever you personally like best.
-However, we have had good experience with [GoLand][goland], especially because of the size of the project.
+As a development environment, you may, of course, use whatever you personally like best.
+However, we have had a good experience with [GoLand][goland], especially because of the size of the project.
 
 Assuming you have a supported version of the [Go programming language][golang] installed, just clone the repository and install the dependencies as documented in the _Installation, From Source_ section above.
 
-Please document your changes both in good commit messages and within the [CHANGELOG.md][CHANGELOG.md] file.
+Please document your changes in your commit messages and the [CHANGELOG.md][CHANGELOG.md] file.
 
-Also, an attempt is made to be [REUSE][reuse] compliant.
-For automatic copyright header generation, the `contrib/reuse/reuse-headers.py` script exists.
+Also, we attempt to be [REUSE][reuse] compliant.
+You can use the `contrib/reuse/reuse-headers.py`-script for automatic copyright header generation.
 
 ### OS-specific
 #### macOS
@@ -145,7 +148,7 @@ Installing the [Go programming language][golang] via [brew][brew], should solve 
 ## License
 
 This project's code is licensed under the [GNU General Public License version 3 (_GPL-3.0-or-later_)][license-gpl3].
-To simplify the copyright stuff, the [REUSE][reuse] tool is used.
+We use the [REUSE][reuse]-tool to simplify the copyright stuff.
 
 
 [CHANGELOG.md]: CHANGELOG.md
@@ -157,7 +160,7 @@ To simplify the copyright stuff, the [REUSE][reuse] tool is used.
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
 [dtn-tcpcl-23]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-23
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
-[godoc]: https://godoc.org/github.com/dtn7/dtn7-go
+[PkgGoDev]: https://pkg.go.dev/github.com/dtn7/dtn7-go
 [gofmt]: https://blog.golang.org/gofmt
 [goland]: https://www.jetbrains.com/go/
 [golang]: https://golang.org/

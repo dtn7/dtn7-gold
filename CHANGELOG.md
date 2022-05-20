@@ -1,6 +1,6 @@
 <!--
-SPDX-FileCopyrightText: 2020, 2021 Markus Sommer
 SPDX-FileCopyrightText: 2020, 2021 Alvar Penning
+SPDX-FileCopyrightText: 2020, 2021, 2022 Markus Sommer
 
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -25,7 +25,7 @@ Types of changes:
 - Security    in case of vulnerabilities
 -->
 
-## [Unreleased]
+## [0.9.1] - 2022-05-20
 ### Added
 - Connect Administrative Records with Bundle and BundleBuilder.
 - Make PingAgent configurable as a dtnd Agent.
@@ -45,10 +45,14 @@ Types of changes:
 - Bump draft-ietf-dtn-bpbis version from 26 to 31.
     - Restrict dtn URI node name to `[\w-._]+`, _ietf-dtn-bpbis-27_.
     - "Block unintelligible" status report is replaced by new "Block
-      unsupported" status report code for non processable blocks.
+      unsupported" status report code for non-processable blocks.
 - Bump draft-ietf-dtn-tcpclv4 version from 21 to 23.
+- Bump `go`-dependencies
 - Set Linux-specific socket options for a MTCP Client's connection to
   detect an abrupt connection loss.
+- Check for existence of `ExtensionBlock` before adding a new one.
+- Have `Bundle` and `BundleDescriptor` return the same type 
+  when calling `ID`-method.
 
 ### Fixed
 - Include nil-check for EndpointID's internal representation.
@@ -58,6 +62,7 @@ Types of changes:
   absence of an integrity block (BPSec).
 - Exclude the peer discovery Manager's function field from the
   JSONFormatter used by logrus. Otherwise, the struct cannot be encoded.
+- Set the default `DTLSR` edge-cost > 0
 
 
 ## [0.9.0] - 2020-10-08
@@ -316,7 +321,8 @@ First, unstable release
 [0.7.1]: https://github.com/dtn7/dtn7-go/compare/v0.7.0...v0.7.1
 [0.8.0]: https://github.com/dtn7/dtn7-go/compare/v0.7.1...v0.8.0
 [0.9.0]: https://github.com/dtn7/dtn7-go/compare/v0.8.0...v0.9.0
-[Unreleased]: https://github.com/dtn7/dtn7-go/compare/v0.9.0...master
+[0.9.1]: https://github.com/dtn7/dtn7-go/compare/v0.9.0...v0.9.1
+[Unreleased]: https://github.com/dtn7/dtn7-go/compare/v0.9.1...master
 
 
 <!-- vim: set tw=72 colorcolumn=72 ts=2 ft=markdown spell: -->
