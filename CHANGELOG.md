@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2020, 2021 Alvar Penning
+SPDX-FileCopyrightText: 2020, 2021, 2022 Alvar Penning
 SPDX-FileCopyrightText: 2020, 2021, 2022 Markus Sommer
 
 SPDX-License-Identifier: GPL-3.0-or-later
@@ -24,6 +24,11 @@ Types of changes:
 - Fixed       for any bug fixes.
 - Security    in case of vulnerabilities
 -->
+
+## [Unreleased]
+### Fixed
+- Allow Bundles to hold more than one Extension Block of the same Block
+  Type Code, as specified in RFC 9171.
 
 ## [0.9.1] - 2022-05-20
 ### Added
@@ -51,7 +56,7 @@ Types of changes:
 - Set Linux-specific socket options for a MTCP Client's connection to
   detect an abrupt connection loss.
 - Check for existence of `ExtensionBlock` before adding a new one.
-- Have `Bundle` and `BundleDescriptor` return the same type 
+- Have `Bundle` and `BundleDescriptor` return the same type
   when calling `ID`-method.
 
 ### Fixed

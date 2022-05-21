@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2018, 2019, 2020, 2021 Alvar Penning
+// SPDX-FileCopyrightText: 2018, 2019, 2020, 2021, 2022 Alvar Penning
 // SPDX-FileCopyrightText: 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -175,16 +175,6 @@ func TestBundleCheckValid(t *testing.T) {
 				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 0), 3600),
 			[]CanonicalBlock{
 				NewCanonicalBlock(1, 0, NewPayloadBlock(nil)),
-				NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
-			false},
-
-		// Two Hop Count blocks
-		{createNewBundle(
-			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 0), 3600),
-			[]CanonicalBlock{
-				NewCanonicalBlock(23, 0, NewHopCountBlock(23)),
-				NewCanonicalBlock(24, 0, NewHopCountBlock(23)),
 				NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
 			false},
 

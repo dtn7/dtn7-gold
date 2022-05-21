@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2018, 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2018, 2019, 2020, 2022 Alvar Penning
 // SPDX-FileCopyrightText: 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -64,23 +64,42 @@ func (b *Bundle) forEachBlock(f func(block)) {
 	}
 }
 
-// ExtensionBlock returns this Bundle's canonical block/extension block
+// ExtensionBlocks returns all this Bundle's canonical block/extension blocks
 // matching the requested block type code. If no such block was found,
 // an error will be returned.
-func (b *Bundle) ExtensionBlock(blockType uint64) (*CanonicalBlock, error) {
+func (b *Bundle) ExtensionBlocks(blockType uint64) (cbs []*CanonicalBlock, err error) {
 	for i := 0; i < len(b.CanonicalBlocks); i++ {
 		cb := &b.CanonicalBlocks[i]
 		if cb.TypeCode() == blockType {
-			return cb, nil
+			cbs = append(cbs, cb)
 		}
 	}
 
-	return nil, fmt.Errorf("no CanonicalBlock with block type %d was found in Bundle", blockType)
+	if len(cbs) == 0 {
+		cbs = nil
+		err = fmt.Errorf("no CanonicalBlock with block type %d was found in Bundle", blockType)
+	}
+	return
+}
+
+// ExtensionBlock returns a Canonical Block for the requested type code.
+//
+// If there is no such Block or more than exactly one Block, an error will be returned.
+func (b *Bundle) ExtensionBlock(blockType uint64) (*CanonicalBlock, error) {
+	cbs, err := b.ExtensionBlocks(blockType)
+
+	if err != nil {
+		return nil, err
+	} else if l := len(cbs); l != 1 {
+		return nil, fmt.Errorf("there are %d Extension Blocks for type code %d", l, blockType)
+	} else {
+		return cbs[0], nil
+	}
 }
 
 // HasExtensionBlock checks if a CanonicalBlock / ExtensionBlock for some block type number is present.
 func (b *Bundle) HasExtensionBlock(blockType uint64) bool {
-	_, err := b.ExtensionBlock(blockType)
+	_, err := b.ExtensionBlocks(blockType)
 	return err == nil
 }
 
@@ -100,13 +119,7 @@ func (b *Bundle) sortBlocks() {
 // AddExtensionBlock adds a new ExtensionBlock to this Bundle.
 //
 // The block number will be calculated and overwritten within this method.
-// Will return an error if the Bundle already has an ExtensionBlock with the same type code.
 func (b *Bundle) AddExtensionBlock(block CanonicalBlock) error {
-	blockType := block.Value.BlockTypeCode()
-	if b.HasExtensionBlock(blockType) {
-		return fmt.Errorf("bundle %v already has ExtensionBlock with type code %v", b.ID(), blockType)
-	}
-
 	var blockNumbers []uint64
 	for i := 0; i < len(b.CanonicalBlocks); i++ {
 		blockNumbers = append(blockNumbers, b.CanonicalBlocks[i].BlockNumber)
@@ -224,8 +237,6 @@ func (b Bundle) CheckValid() (errs error) {
 
 	// Check uniqueness of block numbers
 	var cbBlockNumbers = make(map[uint64]bool)
-	// Check max 1 occurrence of extension blocks
-	var cbBlockTypes = make(map[uint64]bool)
 
 	for _, cb := range b.CanonicalBlocks {
 		if _, ok := cbBlockNumbers[cb.BlockNumber]; ok {
@@ -233,13 +244,6 @@ func (b Bundle) CheckValid() (errs error) {
 				fmt.Errorf("Bundle: Block number %d occurred multiple times", cb.BlockNumber))
 		}
 		cbBlockNumbers[cb.BlockNumber] = true
-
-		blockType := cb.Value.BlockTypeCode()
-		if _, ok := cbBlockTypes[blockType]; ok {
-			errs = multierror.Append(errs,
-				fmt.Errorf("Bundle: Block type %d occurred multiple times", blockType))
-		}
-		cbBlockTypes[blockType] = true
 	}
 
 	// Check if the PayloadBlock is the last block.
@@ -250,9 +254,9 @@ func (b Bundle) CheckValid() (errs error) {
 
 	// Check existence of a Bundle Age Block if the CreationTimestamp is zero.
 	if b.PrimaryBlock.CreationTimestamp.IsZeroTime() {
-		if _, err := b.ExtensionBlock(ExtBlockTypeBundleAgeBlock); err != nil {
+		if !b.HasExtensionBlock(ExtBlockTypeBundleAgeBlock) {
 			errs = multierror.Append(errs, fmt.Errorf(
-				"Bundle: Creation Timestamp is zero, but fetching Bundle Age block errored: %v", err))
+				"Bundle: Creation Timestamp is zero, but no Bundle Age block exists"))
 		}
 	}
 
