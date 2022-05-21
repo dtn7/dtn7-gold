@@ -17,19 +17,18 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
-	github.com/kr/text v0.2.0 // indirect
-	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/schollz/peerdiscovery v1.6.11
 	github.com/sirupsen/logrus v1.8.1
 	github.com/timshannon/badgerhold v1.0.0
 	github.com/ulikunitz/xz v0.5.10
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/sys v0.0.0-20220517195934-5e4e11fc645e
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )
 
 go 1.16
+
+// https://github.com/schollz/peerdiscovery/pull/31
+replace github.com/schollz/peerdiscovery => github.com/oxzi/peerdiscovery v1.6.11-0.20220521165802-080b7430db85

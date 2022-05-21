@@ -34,6 +34,7 @@ Types of changes:
 ### Fixed
 - Allow Bundles to hold more than one Extension Block of the same Block
   Type Code, as specified in RFC 9171.
+- Reintroduce loopback device support for the peer discovery.
 
 ## [0.9.1] - 2022-05-20
 ### Added
