@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
+SPDX-FileCopyrightText: 2019, 2020, 2021, 2022 Alvar Penning
 SPDX-FileCopyrightText: 2020 Jonas Höchst
 SPDX-FileCopyrightText: 2020 Matthias Axel Kröll
 SPDX-FileCopyrightText: 2022 Markus Sommer
@@ -19,14 +19,14 @@ Delay-Tolerant Networking software suite and library based on the Bundle Protoco
 ## Protocols
 This software implements the current draft of the Bundle Protocol Version 7.
 
-- Bundle Protocol Version 7 ([draft-ietf-dtn-bpbis-31][dtn-bpbis-31])
+- Bundle Protocol Version 7 ([RFC 9171][rfc9171])
 
 ### Convergence Layer
 A *convergence layer* in bundle protocol parlance is the abstraction for peer-to-peer communication.
 We have implemented the following protocols:
 
 - Minimal TCP Convergence-Layer Protocol (`mtcp`) ([draft-ietf-dtn-mtcpcl-01][dtn-mtcpcl-01])
-- TCP Convergence Layer Protocol Version 4 (`tcpcl`) ([draft-ietf-dtn-tcpclv4-23][dtn-tcpcl-23]), including:
+- Delay-Tolerant Networking TCP Convergence-Layer Protocol Version 4 (`tcpcl`) ([RFC 9174][rfc9174]), including:
   - WebSocket-based variant
 - Bundle Broadcasting Connector, a generic Broadcasting Interface
   - [rf95modem] based CLA for LoRa PHY by [rf95modem-go]
@@ -152,15 +152,13 @@ We use the [REUSE][reuse]-tool to simplify the copyright stuff.
 
 
 [CHANGELOG.md]: CHANGELOG.md
+[PkgGoDev]: https://pkg.go.dev/github.com/dtn7/dtn7-go
 [arch-aur]: https://wiki.archlinux.org/index.php/Arch_User_Repository
 [aur-dtn7]: https://aur.archlinux.org/packages/dtn7/
 [brew-dtn7]: https://github.com/jonashoechst/homebrew-hoechst/blob/master/dtn7.rb
 [brew]: https://brew.sh
-[dtn-bpbis-31]: https://tools.ietf.org/html/draft-ietf-dtn-bpbis-31
 [dtn-mtcpcl-01]: https://tools.ietf.org/html/draft-ietf-dtn-mtcpcl-01
-[dtn-tcpcl-23]: https://tools.ietf.org/html/draft-ietf-dtn-tcpclv4-23
 [dtnd-configuration]: https://github.com/dtn7/dtn7-go/blob/master/cmd/dtnd/configuration.toml
-[PkgGoDev]: https://pkg.go.dev/github.com/dtn7/dtn7-go
 [gofmt]: https://blog.golang.org/gofmt
 [goland]: https://www.jetbrains.com/go/
 [golang]: https://golang.org/
@@ -171,6 +169,8 @@ We use the [REUSE][reuse]-tool to simplify the copyright stuff.
 [reuse]: https://reuse.software/
 [rf95modem-go]: https://github.com/dtn7/rf95modem-go
 [rf95modem]: https://github.com/gh0st42/rf95modem
+[rfc9171]: https://datatracker.ietf.org/doc/html/rfc9171
+[rfc9174]: https://datatracker.ietf.org/doc/html/rfc9174
 [sensor-network-mule-documentation]: https://godoc.org/github.com/dtn7/dtn7-go/core#SensorNetworkMuleRouting
 
 
