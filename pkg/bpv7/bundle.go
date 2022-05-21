@@ -239,11 +239,17 @@ func (b Bundle) CheckValid() (errs error) {
 	var cbBlockNumbers = make(map[uint64]bool)
 
 	for _, cb := range b.CanonicalBlocks {
+		// Check block numbers
 		if _, ok := cbBlockNumbers[cb.BlockNumber]; ok {
 			errs = multierror.Append(errs,
 				fmt.Errorf("Bundle: Block number %d occurred multiple times", cb.BlockNumber))
 		}
 		cbBlockNumbers[cb.BlockNumber] = true
+
+		// Context aware block self-check
+		if blckErr := cb.Value.CheckContextValid(&b); blckErr != nil {
+			errs = multierror.Append(errs, blckErr)
+		}
 	}
 
 	// Check if the PayloadBlock is the last block.

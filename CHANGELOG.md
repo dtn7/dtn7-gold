@@ -26,6 +26,11 @@ Types of changes:
 -->
 
 ## [Unreleased]
+### Changed
+- Add the new method `CheckContextValid(*Bundle) error` to the
+  `ExtensionBlock` interface in the bpv7 package to allow context aware
+  Block checks against the whole Bundle.
+
 ### Fixed
 - Allow Bundles to hold more than one Extension Block of the same Block
   Type Code, as specified in RFC 9171.

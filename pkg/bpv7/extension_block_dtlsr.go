@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2022 Alvar Penning
 // SPDX-FileCopyrightText: 2019, 2021 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -63,6 +63,10 @@ func (dtlsrb *DTLSRBlock) BlockTypeName() string {
 }
 
 func (dtlsrb *DTLSRBlock) CheckValid() error {
+	return nil
+}
+
+func (dtlsrb *DTLSRBlock) CheckContextValid(*Bundle) error {
 	return nil
 }
 

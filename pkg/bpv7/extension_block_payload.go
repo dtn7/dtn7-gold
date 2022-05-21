@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2022 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -50,5 +50,10 @@ func (pb *PayloadBlock) MarshalJSON() ([]byte, error) {
 
 // CheckValid returns an array of errors for incorrect data.
 func (pb *PayloadBlock) CheckValid() error {
+	return nil
+}
+
+// CheckContextValid has no implementation for a Payload Block.
+func (pb *PayloadBlock) CheckContextValid(*Bundle) error {
 	return nil
 }

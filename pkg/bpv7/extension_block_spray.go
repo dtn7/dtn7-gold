@@ -40,6 +40,10 @@ func (bsb *BinarySprayBlock) CheckValid() error {
 	return nil
 }
 
+func (bsb *BinarySprayBlock) CheckContextValid(*Bundle) error {
+	return nil
+}
+
 func (bsb *BinarySprayBlock) MarshalCbor(w io.Writer) error {
 	return cboring.WriteUInt(uint64(*bsb), w)
 }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2022 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -66,4 +66,17 @@ func (bab *BundleAgeBlock) MarshalJSON() ([]byte, error) {
 // CheckValid returns an array of errors for incorrect data.
 func (bab *BundleAgeBlock) CheckValid() error {
 	return nil
+}
+
+// CheckContextValid that there is at most one Bundle Age Block.
+func (bab *BundleAgeBlock) CheckContextValid(b *Bundle) error {
+	cb, err := b.ExtensionBlock(ExtBlockTypeBundleAgeBlock)
+
+	if err != nil {
+		return err
+	} else if cb.Value != bab {
+		return fmt.Errorf("BundleAgeBlock's pointer differs, %p != %p", cb.Value, bab)
+	} else {
+		return nil
+	}
 }

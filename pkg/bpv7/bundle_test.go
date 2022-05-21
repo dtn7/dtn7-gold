@@ -178,6 +178,16 @@ func TestBundleCheckValid(t *testing.T) {
 				NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
 			false},
 
+		// Two Hop Count blocks
+		{createNewBundle(
+			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
+				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 0), 3600),
+			[]CanonicalBlock{
+				NewCanonicalBlock(23, 0, NewHopCountBlock(23)),
+				NewCanonicalBlock(24, 0, NewHopCountBlock(23)),
+				NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
+			false},
+
 		// Creation Time = 0, no Bundle Age block
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,

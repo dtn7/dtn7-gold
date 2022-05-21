@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2020, 2022 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -112,6 +112,20 @@ func (s *SignatureBlock) CheckValid() (err error) {
 	}
 
 	return
+}
+
+// CheckContextValid against its signature.
+func (s *SignatureBlock) CheckContextValid(b *Bundle) error {
+	// Cannot verify fragmented Bundles.
+	if b.PrimaryBlock.BundleControlFlags.Has(IsFragment) {
+		return nil
+	}
+
+	if !s.Verify(*b) {
+		return fmt.Errorf("block verification failed")
+	}
+
+	return nil
 }
 
 // Verify the signature against a Bundle.

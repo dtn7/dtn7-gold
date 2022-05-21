@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2022 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -6,6 +6,7 @@ package bpv7
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/dtn7/cboring"
@@ -60,4 +61,17 @@ func (pnb *PreviousNodeBlock) MarshalJSON() ([]byte, error) {
 // CheckValid returns an array of errors for incorrect data.
 func (pnb *PreviousNodeBlock) CheckValid() error {
 	return EndpointID(*pnb).CheckValid()
+}
+
+// CheckContextValid that there is at most one Previous Node Block.
+func (pnb *PreviousNodeBlock) CheckContextValid(b *Bundle) error {
+	cb, err := b.ExtensionBlock(ExtBlockTypePreviousNodeBlock)
+
+	if err != nil {
+		return err
+	} else if cb.Value != pnb {
+		return fmt.Errorf("PreviousNodeBlock's pointer differs, %p != %p", cb.Value, pnb)
+	} else {
+		return nil
+	}
 }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2022 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -105,4 +105,17 @@ func (hcb *HopCountBlock) CheckValid() error {
 		return fmt.Errorf("HopCountBlock is exceeded")
 	}
 	return nil
+}
+
+// CheckContextValid that there is at most one Hop Count Block.
+func (hcb *HopCountBlock) CheckContextValid(b *Bundle) error {
+	cb, err := b.ExtensionBlock(ExtBlockTypeHopCountBlock)
+
+	if err != nil {
+		return err
+	} else if cb.Value != hcb {
+		return fmt.Errorf("HopCountBlock's pointer differs, %p != %p", cb.Value, hcb)
+	} else {
+		return nil
+	}
 }

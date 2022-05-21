@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2022 Alvar Penning
 // SPDX-FileCopyrightText: 2021 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -52,6 +52,10 @@ const (
 // Furthermore, an ExtensionBlock can implement the json.Marshaler for a more human-readable representation.
 type ExtensionBlock interface {
 	Valid
+
+	// CheckContextValid performs a self-check like CheckValid, but also passing
+	// a reference to the surrounding Bundle, allowing, e.g., uniqueness checks.
+	CheckContextValid(*Bundle) error
 
 	// BlockTypeCode must return a constant integer, indicating the block type code.
 	BlockTypeCode() uint64

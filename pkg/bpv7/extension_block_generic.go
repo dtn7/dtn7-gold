@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2019, 2020, 2022 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -33,6 +33,11 @@ func (geb *GenericExtensionBlock) UnmarshalBinary(data []byte) error {
 func (geb *GenericExtensionBlock) CheckValid() error {
 	// We have zero knowledge about this block.
 	// Thus, who are we to judge someone else's block?
+	return nil
+}
+
+// CheckContextValid has no implementation for a GenericExtensionBlock.
+func (geb *GenericExtensionBlock) CheckContextValid(*Bundle) error {
 	return nil
 }
 
