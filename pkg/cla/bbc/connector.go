@@ -139,7 +139,7 @@ func (c *Connector) handleIncomingFragment(frag Fragment) (err error) {
 	return
 }
 
-// handleIncomingNewTransmission creates a new Transmission for a Fragment with an unknown Transmission ID.
+// handleIncomingNewTransmission creates a new Transmission for a Fragment with an unknown Transmission iD.
 func (c *Connector) handleIncomingNewTransmission(frag Fragment) (trans *IncomingTransmission, err error) {
 	if trans, err = NewIncomingTransmission(frag); err == nil {
 		c.transmissions[trans.TransmissionID] = trans

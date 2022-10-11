@@ -76,7 +76,7 @@ func (dtlsrb *DTLSRBlock) MarshalCbor(w io.Writer) error {
 		return err
 	}
 
-	// write our own endpoint ID
+	// write our own endpoint iD
 	if err := cboring.Marshal(&dtlsrb.ID, w); err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (dtlsrb *DTLSRBlock) UnmarshalCbor(r io.Reader) error {
 		return fmt.Errorf("expected 3 fields, got %d", l)
 	}
 
-	// read endpoint ID
+	// read endpoint iD
 	id := EndpointID{}
 	if err := cboring.Unmarshal(&id, r); err != nil {
 		return err

@@ -122,7 +122,7 @@ func TestBldrParseLifetime(t *testing.T) {
 		}
 
 		if test.ms != ms {
-			t.Fatalf("Value for %v was unexpected: %v != %v", test.val, test.ms, ms)
+			t.Fatalf("value for %v was unexpected: %v != %v", test.val, test.ms, ms)
 		}
 	}
 }

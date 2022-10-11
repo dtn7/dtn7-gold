@@ -28,7 +28,7 @@ type Configuration struct {
 	// TransferMru is the largest allowed total-bundle payload to be received in bytes.
 	TransferMru uint64
 
-	// NodeId is this node's ID.
+	// NodeId is this node's iD.
 	NodeId bpv7.EndpointID
 }
 
@@ -65,7 +65,7 @@ type State struct {
 	SegmentMtu uint64
 	// TransferMtu is the peer's transfer MTU.
 	TransferMtu uint64
-	// PeerNodeId is the peer's node ID.
+	// PeerNodeId is the peer's node iD.
 	PeerNodeId bpv7.EndpointID
 	// SESS INIT STAGE END
 }

@@ -21,7 +21,7 @@ type IncomingTransfer struct {
 	buf     *bytes.Buffer
 }
 
-// NewIncomingTransfer creates a new IncomingTransfer for the given Transfer ID.
+// NewIncomingTransfer creates a new IncomingTransfer for the given Transfer iD.
 func NewIncomingTransfer(id uint64) *IncomingTransfer {
 	return &IncomingTransfer{
 		Id:  id,
@@ -46,7 +46,7 @@ func (t *IncomingTransfer) NextSegment(dtm *msgs.DataTransmissionMessage) (dam *
 	}
 
 	if t.Id != dtm.TransferId {
-		err = fmt.Errorf("XFER_SEGMENT's Transfer ID %d mismatches %d", dtm.TransferId, t.Id)
+		err = fmt.Errorf("XFER_SEGMENT's Transfer iD %d mismatches %d", dtm.TransferId, t.Id)
 		return
 	}
 

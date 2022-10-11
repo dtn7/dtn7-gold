@@ -17,8 +17,8 @@ import (
 //
 // Due to the maximum transmission unit (MTU), most Transmissions are likely to be fragmented. This results
 // in Fragments. In order to keep the Fragments apart and to associate them with their Transmission, a
-// transmission ID exists. Since the data size is very limited, the transmission ID is reduced to a byte.
-// In order to avoid collisions, the transmission ID should be chosen as randomly or cleverly as possible.
+// transmission iD exists. Since the data size is very limited, the transmission iD is reduced to a byte.
+// In order to avoid collisions, the transmission iD should be chosen as randomly or cleverly as possible.
 //
 // In the following, a distinction is made between incoming and outgoing Transmissions: IncomingTransmission
 // and OutgoingTransmission.
@@ -70,7 +70,7 @@ func (t *IncomingTransmission) ReadFragment(f Fragment) (finished bool, err erro
 	}
 
 	if f.TransmissionID() != t.TransmissionID {
-		err = fmt.Errorf("transmission ID mismatches: Fragment got %x, expected %x",
+		err = fmt.Errorf("transmission iD mismatches: Fragment got %x, expected %x",
 			f.TransmissionID(), t.TransmissionID)
 		return
 	}

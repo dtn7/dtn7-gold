@@ -36,7 +36,7 @@ func NewSessionInitMessage(keepaliveInterval uint16, segmentMru, transferMru uin
 }
 
 func (si SessionInitMessage) String() string {
-	return fmt.Sprintf("SESS_INIT(Keepalive Interval=%d, Segment MRU=%d, Transfer MRU=%d, Node ID=%s)",
+	return fmt.Sprintf("SESS_INIT(Keepalive Interval=%d, Segment MRU=%d, Transfer MRU=%d, Node iD=%s)",
 		si.KeepaliveInterval, si.SegmentMru, si.TransferMru, si.NodeId)
 }
 
@@ -57,7 +57,7 @@ func (si SessionInitMessage) Marshal(w io.Writer) error {
 	if n, err := io.WriteString(w, si.NodeId); err != nil {
 		return err
 	} else if n != len(si.NodeId) {
-		return fmt.Errorf("SESS_INIT Node ID's length is %d, but only wrote %d bytes", len(si.NodeId), n)
+		return fmt.Errorf("SESS_INIT Node iD's length is %d, but only wrote %d bytes", len(si.NodeId), n)
 	}
 
 	// TODO: Session Extension Items

@@ -44,7 +44,7 @@ func TestEndpointCheckValid(t *testing.T) {
 
 	for _, test := range tests {
 		if err := test.ep.CheckValid(); (err == nil) != test.valid {
-			t.Fatalf("Endpoint ID %v resulted in error: %v", test.ep, err)
+			t.Fatalf("Endpoint iD %v resulted in error: %v", test.ep, err)
 		}
 	}
 }

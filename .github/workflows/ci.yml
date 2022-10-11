@@ -5,7 +5,7 @@
 
 name: CI
 
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 jobs:
   golang:
@@ -18,19 +18,19 @@ jobs:
         go: [ '1.16', '1.17', '1.18' ]
 
     steps:
-    - name: Set up Go ${{ matrix.go }}
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go }}
+      - name: Set up Go ${{ matrix.go }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
 
-    - name: Check out code
-      uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v2
 
-    - name: Build on Go ${{ matrix.go }}
-      run: go build ./...
+      - name: Build on Go ${{ matrix.go }}
+        run: go build ./...
 
-    - name: Test
-      run: go test -race ./...
+      - name: Test
+        run: go test -race ./...
 
 
   golangci:
@@ -39,14 +39,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v2
 
+<<<<<<< HEAD
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3.2.0
+        with:
+          version: v1.46.2
+          args: --config contrib/golangci-lint/.golangci.yml
+=======
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v3.2.0
       with:
         version: v1.46.2
         args: --config contrib/golangci-lint/.golangci.yml
+>>>>>>> master
 
 
   reuse:
@@ -55,8 +63,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v2
 
+<<<<<<< HEAD
+      - name: REUSE Compliance Check
+        uses: fsfe/reuse-action@v1.1.1
+=======
     - name: REUSE Compliance Check
       uses: fsfe/reuse-action@v1.1.1
+>>>>>>> master

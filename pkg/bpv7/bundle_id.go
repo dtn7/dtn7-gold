@@ -61,7 +61,7 @@ func (bid BundleID) Scrub() BundleID {
 	}
 }
 
-// MarshalCbor writes the Bundle ID's CBOR representation.
+// MarshalCbor writes the Bundle iD's CBOR representation.
 func (bid *BundleID) MarshalCbor(w io.Writer) error {
 	if err := cboring.Marshal(&bid.SourceNode, w); err != nil {
 		return fmt.Errorf("marshalling source node failed: %v", err)
@@ -83,7 +83,7 @@ func (bid *BundleID) MarshalCbor(w io.Writer) error {
 	return nil
 }
 
-// UnmarshalCbor creates this Bundle ID based on a CBOR representation.
+// UnmarshalCbor creates this Bundle iD based on a CBOR representation.
 func (bid *BundleID) UnmarshalCbor(r io.Reader) error {
 	if err := cboring.Unmarshal(&bid.SourceNode, r); err != nil {
 		return fmt.Errorf("unmarshalling source node failed: %v", err)

@@ -10,7 +10,7 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
-// idTuple is a tuple struct for looking up a bundle's ID - based on it's source
+// idTuple is a tuple struct for looking up a bundle's iD - based on it's source
 // node and DTN time part of the creation timestamp.
 type idTuple struct {
 	source bpv7.EndpointID

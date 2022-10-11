@@ -38,6 +38,7 @@ type tomlConfig struct {
 	Listen    []convergenceConf
 	Peer      []convergenceConf
 	Routing   routing.RoutingConf
+	// TODO: Security Config
 }
 
 // coreConf describes the Core-configuration block.
@@ -108,7 +109,7 @@ func parseListen(conv convergenceConf, nodeId bpv7.EndpointID) (cla.Convergable,
 			return nil, nodeId, 0, discovery.Announcement{}, err
 		} else {
 			log.WithFields(log.Fields{
-				"listener ID": conv.Node,
+				"listener iD": conv.Node,
 			}).Debug("Using alternative configured endpoint id for listener")
 			nodeId = parsedId
 		}
@@ -155,8 +156,9 @@ func parseListen(conv convergenceConf, nodeId bpv7.EndpointID) (cla.Convergable,
 		httpMux := http.NewServeMux()
 		httpMux.Handle("/tcpclv4", listener)
 		httpServer := &http.Server{
-			Addr:    conv.Endpoint,
-			Handler: httpMux,
+			Addr:              conv.Endpoint,
+			Handler:           httpMux,
+			ReadHeaderTimeout: time.Minute,
 		}
 
 		errChan := make(chan error)
@@ -230,8 +232,9 @@ func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error)
 		}
 
 		httpServer := &http.Server{
-			Addr:    conf.Webserver.Address,
-			Handler: r,
+			Addr:              conf.Webserver.Address,
+			Handler:           r,
+			ReadHeaderTimeout: time.Minute,
 		}
 
 		errChan := make(chan error)

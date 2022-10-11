@@ -68,7 +68,7 @@ type Convergence interface {
 type ConvergenceReceiver interface {
 	Convergence
 
-	// GetEndpointID returns the endpoint ID assigned to this CLA.
+	// GetEndpointID returns the endpoint iD assigned to this CLA.
 	GetEndpointID() bpv7.EndpointID
 }
 
@@ -82,7 +82,7 @@ type ConvergenceSender interface {
 	// next. This could be achieved by using a mutex or the like.
 	Send(bpv7.Bundle) error
 
-	// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
+	// GetPeerEndpointID returns the endpoint iD assigned to this CLA's peer,
 	// if it's known. Otherwise the zero endpoint will be returned.
 	GetPeerEndpointID() bpv7.EndpointID
 }

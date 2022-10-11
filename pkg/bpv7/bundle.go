@@ -153,8 +153,19 @@ func (b *Bundle) AddExtensionBlock(block CanonicalBlock) error {
 	return nil
 }
 
+// GetExtensionBlockByBlockNumber  searches and returns a CanonicalBlock / ExtensionBlock with the given block number.
+// If no such block exists, the method will return an error. Sorting will not be performed, as we assume that the blocks are
+// already in their correct order.
+func (b *Bundle) GetExtensionBlockByBlockNumber(blockNumber uint64) (blockFound *CanonicalBlock, err error) {
+	for i := 0; i < len(b.CanonicalBlocks); i++ {
+		if b.CanonicalBlocks[i].BlockNumber == blockNumber {
+			return &b.CanonicalBlocks[i], nil
+		}
+	}
+	return nil, fmt.Errorf("block with number %d not found", blockNumber)
+}
+
 // RemoveExtensionBlockByBlockNumber searches and removes a CanonicalBlock / ExtensionBlock with the given block number.
-//
 // If no such block exists, the method will do nothing. Sorting will not be performed, as we assume that the blocks are
 // already in their correct order.
 func (b *Bundle) RemoveExtensionBlockByBlockNumber(blockNumber uint64) {

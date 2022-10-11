@@ -83,7 +83,7 @@ func getEndpointManager() *endpointManager {
 	return endpointMngr
 }
 
-// EndpointID represents an Endpoint ID as defined in section 4.1.5.1.
+// EndpointID represents an Endpoint iD as defined in section 4.1.5.1.
 // Its form is specified in an EndpointType, e.g., DtnEndpoint.
 type EndpointID struct {
 	EndpointType EndpointType
@@ -119,7 +119,7 @@ func MustNewEndpointID(uri string) EndpointID {
 	}
 }
 
-// MarshalCbor writes the CBOR representation of this Endpoint ID.
+// MarshalCbor writes the CBOR representation of this Endpoint iD.
 func (eid *EndpointID) MarshalCbor(w io.Writer) error {
 	if err := eid.CheckValid(); err != nil {
 		return err
@@ -142,7 +142,7 @@ func (eid *EndpointID) MarshalCbor(w io.Writer) error {
 	return nil
 }
 
-// UnmarshalCbor creates this Endpoint ID based on a CBOR representation.
+// UnmarshalCbor creates this Endpoint iD based on a CBOR representation.
 func (eid *EndpointID) UnmarshalCbor(r io.Reader) error {
 	if l, err := cboring.ReadArrayLength(r); err != nil {
 		return err

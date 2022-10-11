@@ -34,17 +34,19 @@ type Core struct {
 
 	store *storage.Store
 
+	// TODO: Add BP-Sec Struct
+
 	stopSyn chan struct{}
 	stopAck chan struct{}
 }
 
 // NewCore will be created according to the parameters.
 //
-// 	storePath: path for the bundle and metadata storage
-// 	nodeId: singleton Endpoint ID/Node ID
-// 	inspectAllBundles: inspect all administrative records, not only those addressed to this node
-// 	routingConf: selected routing algorithm and its configuration
-// 	signPriv: optional ed25519 private key (64 bytes long) to sign all outgoing bundles; or nil to not use this feature
+//	storePath: path for the bundle and metadata storage
+//	nodeId: singleton Endpoint iD/Node iD
+//	inspectAllBundles: inspect all administrative records, not only those addressed to this node
+//	routingConf: selected routing algorithm and its configuration
+//	signPriv: optional ed25519 private key (64 bytes long) to sign all outgoing bundles; or nil to not use this feature
 func NewCore(storePath string, nodeId bpv7.EndpointID, inspectAllBundles bool, routingConf RoutingConf, signPriv ed25519.PrivateKey) (*Core, error) {
 	var c = new(Core)
 
@@ -57,7 +59,7 @@ func NewCore(storePath string, nodeId bpv7.EndpointID, inspectAllBundles bool, r
 	gob.Register(time.Time{})
 
 	if !nodeId.IsSingleton() {
-		return nil, fmt.Errorf("passed Node ID MUST be a singleton; %s is not", nodeId)
+		return nil, fmt.Errorf("passed Node iD MUST be a singleton; %s is not", nodeId)
 	}
 	c.InspectAllBundles = inspectAllBundles
 	c.NodeId = nodeId
@@ -193,9 +195,9 @@ func (c *Core) RegisterApplicationAgent(app agent.ApplicationAgent) {
 	c.agentManager.Register(app)
 }
 
-// senderForDestination returns an array of ConvergenceSenders whose endpoint ID
+// senderForDestination returns an array of ConvergenceSenders whose endpoint iD
 // equals the requested one. This is used for direct delivery, comparing the
-// PrimaryBlock's destination to the assigned endpoint ID of each CLA.
+// PrimaryBlock's destination to the assigned endpoint iD of each CLA.
 func (c *Core) senderForDestination(endpoint bpv7.EndpointID) (css []cla.ConvergenceSender) {
 	for _, cs := range c.claManager.Sender() {
 		if cs.GetPeerEndpointID().SameNode(endpoint) {
@@ -205,7 +207,7 @@ func (c *Core) senderForDestination(endpoint bpv7.EndpointID) (css []cla.Converg
 	return
 }
 
-// HasEndpoint checks if the given endpoint ID is assigned either to an
+// HasEndpoint checks if the given endpoint iD is assigned either to an
 // application or a CLA governed by this Application Agent.
 func (c *Core) HasEndpoint(endpoint bpv7.EndpointID) bool {
 	if c.NodeId.SameNode(endpoint) {

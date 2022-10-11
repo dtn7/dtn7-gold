@@ -125,7 +125,7 @@ const (
 	// DepletedStorage is the "Depleted storage" bundle status report reason code.
 	DepletedStorage StatusReportReason = 4
 
-	// DestEndpointUnintelligible is the "Destination endpoint ID unintelligible"
+	// DestEndpointUnintelligible is the "Destination endpoint iD unintelligible"
 	// bundle status report reason code.
 	DestEndpointUnintelligible StatusReportReason = 5
 
@@ -144,6 +144,8 @@ const (
 	// HopLimitExceeded is the "Hop limit exceeded" bundle status report reason
 	// code.
 	HopLimitExceeded StatusReportReason = 9
+
+	// TODO: ADD BPSEC STATUS STUFF BPSec 11.2
 
 	// TrafficPared is the "Traffic pared (e.g., status reports)" bundle status
 	// report reason code.
@@ -172,7 +174,7 @@ func (srr StatusReportReason) String() string {
 		return "Depleted storage"
 
 	case DestEndpointUnintelligible:
-		return "Destination endpoint ID unintelligible"
+		return "Destination endpoint iD unintelligible"
 
 	case NoRouteToDestination:
 		return "No known route to destination from here"
@@ -185,12 +187,13 @@ func (srr StatusReportReason) String() string {
 
 	case HopLimitExceeded:
 		return "Hop limit exceeded"
-
 	case TrafficPared:
 		return "Traffic pared"
 
 	case BlockUnsupported:
 		return "Block unsupported"
+
+		// TODO: ADD BPSEC STATUS STUFF BPSec 11.2
 
 	default:
 		return "unknown"

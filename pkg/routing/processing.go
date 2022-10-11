@@ -139,6 +139,7 @@ func (c *Core) receive(bp BundleDescriptor) {
 			bp.MustBundle().CanonicalBlocks = append(
 				bp.MustBundle().CanonicalBlocks[:i], bp.MustBundle().CanonicalBlocks[i+1:]...)
 		}
+
 	}
 
 	c.routing.NotifyNewBundle(bp)

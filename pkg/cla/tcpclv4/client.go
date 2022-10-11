@@ -247,12 +247,12 @@ func (client *Client) IsPermanent() bool {
 	return client.permanent
 }
 
-// GetEndpointID returns the endpoint ID assigned to this CLA.
+// GetEndpointID returns the endpoint iD assigned to this CLA.
 func (client *Client) GetEndpointID() bpv7.EndpointID {
 	return client.nodeId
 }
 
-// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer, if it's known. Otherwise the zero endpoint
+// GetPeerEndpointID returns the endpoint iD assigned to this CLA's peer, if it's known. Otherwise the zero endpoint
 // will be returned.
 func (client *Client) GetPeerEndpointID() bpv7.EndpointID {
 	return client.peerNodeId

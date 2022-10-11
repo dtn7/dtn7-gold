@@ -11,12 +11,12 @@ import (
 
 // printUsage of dtn-tool and exit with an error code afterwards.
 func printUsage() {
-	_, _ = fmt.Fprintf(os.Stderr, "Usage of %s create|exchange|ping|show:\n\n", os.Args[0])
+	_, _ = fmt.Fprintf(os.Stderr, "Usage of %s create|exchange|sign|verify|encrypt|decrypt|ping|show:\n\n", os.Args[0])
 
 	_, _ = fmt.Fprintf(os.Stderr, "%s create sender receiver -|filename [-|filename]\n", os.Args[0])
 	_, _ = fmt.Fprintf(os.Stderr, "  Creates a new Bundle, addressed from sender to receiver with the stdin (-)\n")
 	_, _ = fmt.Fprintf(os.Stderr, "  or the given file (filename) as payload. If no further specified, the\n")
-	_, _ = fmt.Fprintf(os.Stderr, "  Bundle is stored locally named after the hex representation of its ID.\n")
+	_, _ = fmt.Fprintf(os.Stderr, "  Bundle is stored locally named after the hex representation of its iD.\n")
 	_, _ = fmt.Fprintf(os.Stderr, "  Otherwise, the Bundle can be written to the stdout (-) or saved\n")
 	_, _ = fmt.Fprintf(os.Stderr, "  according to a freely selectable filename.\n\n")
 
@@ -24,6 +24,18 @@ func printUsage() {
 	_, _ = fmt.Fprintf(os.Stderr, "  %s registeres itself as an agent on the given websocket and writes\n", os.Args[0])
 	_, _ = fmt.Fprintf(os.Stderr, "  incoming Bundles in the directory. If the user dropps a new Bundle in the\n")
 	_, _ = fmt.Fprintf(os.Stderr, "  directory, it will be sent to the server.\n\n")
+
+	_, _ = fmt.Fprintf(os.Stderr, "%s sign bundle key filename\n", os.Args[0])
+	_, _ = fmt.Fprintf(os.Stderr, "  signs a bundle with the given key and writes the signed bundle to the given filename.\n")
+
+	_, _ = fmt.Fprintf(os.Stderr, "%s verify bundle key\n", os.Args[0])
+	_, _ = fmt.Fprintf(os.Stderr, "  verifies the signature of a bundle against the given key.\n")
+
+	_, _ = fmt.Fprintf(os.Stderr, "%s encrypt bundle key filename\n", os.Args[0])
+	_, _ = fmt.Fprintf(os.Stderr, "  encrypts a bundle with the given key and writes the encrypted bundle to the given filename.\n")
+
+	_, _ = fmt.Fprintf(os.Stderr, "%s decrypt bundle key filename\n", os.Args[0])
+	_, _ = fmt.Fprintf(os.Stderr, "  decrypts a bundle with the given key and writes the decrypted bundle to the given filename.\n")
 
 	_, _ = fmt.Fprintf(os.Stderr, "%s ping websocket sender receiver\n", os.Args[0])
 	_, _ = fmt.Fprintf(os.Stderr, "  Send continuously bundles from sender to receiver over a websocket.\n\n")
@@ -48,6 +60,18 @@ func main() {
 	switch os.Args[1] {
 	case "create":
 		createBundle(os.Args[2:])
+
+	case "sign":
+		signBundle(os.Args[2:])
+
+	case "verify":
+		verifyBundle(os.Args[2:])
+
+	case "encrypt":
+		encryptBundle(os.Args[2:])
+
+	case "decrypt":
+		decryptBundle(os.Args[2:])
 
 	case "exchange":
 		startExchange(os.Args[2:])

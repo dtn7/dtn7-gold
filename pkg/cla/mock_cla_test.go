@@ -23,7 +23,7 @@ type mockConvRec struct {
 	// permanent defines if this mockConvRec is handled as permanent.
 	permanent bool
 
-	// address is the unique address and endpointId this mockConvRec's Endpoint ID.
+	// address is the unique address and endpointId this mockConvRec's Endpoint iD.
 	address    string
 	endpointId bpv7.EndpointID
 }
@@ -72,7 +72,7 @@ type mockConvSender struct {
 	// permanent defines if this mockConvRec is handled as permanent.
 	permanent bool
 
-	// address is the unique address and peerEndpointId the peer's Endpoint ID.
+	// address is the unique address and peerEndpointId the peer's Endpoint iD.
 	address        string
 	peerEndpointId bpv7.EndpointID
 

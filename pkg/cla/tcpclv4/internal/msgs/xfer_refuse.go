@@ -82,7 +82,7 @@ func NewTransferRefusalMessage(reason TransferRefusalCode, tid uint64) *Transfer
 }
 
 func (trm TransferRefusalMessage) String() string {
-	return fmt.Sprintf("XFER_REFUSE(Reason Code=%v, Transfer ID=%d)", trm.ReasonCode, trm.TransferId)
+	return fmt.Sprintf("XFER_REFUSE(Reason Code=%v, Transfer iD=%d)", trm.ReasonCode, trm.TransferId)
 }
 
 func (trm TransferRefusalMessage) Marshal(w io.Writer) error {

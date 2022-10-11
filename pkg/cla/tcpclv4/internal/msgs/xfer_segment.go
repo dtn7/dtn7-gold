@@ -59,7 +59,7 @@ func NewDataTransmissionMessage(flags SegmentFlags, tid uint64, data []byte) *Da
 }
 
 func (dtm DataTransmissionMessage) String() string {
-	return fmt.Sprintf("XFER_SEGMENT(Message Flags=%v, Transfer ID=%d)", dtm.Flags, dtm.TransferId)
+	return fmt.Sprintf("XFER_SEGMENT(Message Flags=%v, Transfer iD=%d)", dtm.Flags, dtm.TransferId)
 }
 
 func (dtm DataTransmissionMessage) Marshal(w io.Writer) error {

@@ -28,7 +28,7 @@ type TCPListener struct {
 	stopAck chan struct{}
 }
 
-// ListenTCP creates a new TCPListener which should be bound to the given address and advertises the endpoint ID as
+// ListenTCP creates a new TCPListener which should be bound to the given address and advertises the endpoint iD as
 // its own node identifier.
 func ListenTCP(listenAddress string, endpointID bpv7.EndpointID) *TCPListener {
 	return &TCPListener{

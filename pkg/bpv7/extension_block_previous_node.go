@@ -25,13 +25,13 @@ func (pnb *PreviousNodeBlock) BlockTypeName() string {
 	return "Previous Node Block"
 }
 
-// NewPreviousNodeBlock creates a new Previous Node Block for an Endpoint ID.
+// NewPreviousNodeBlock creates a new Previous Node Block for an Endpoint iD.
 func NewPreviousNodeBlock(prev EndpointID) *PreviousNodeBlock {
 	pnb := PreviousNodeBlock(prev)
 	return &pnb
 }
 
-// Endpoint returns this Previous Node Block's Endpoint ID.
+// Endpoint returns this Previous Node Block's Endpoint iD.
 func (pnb *PreviousNodeBlock) Endpoint() EndpointID {
 	return EndpointID(*pnb)
 }

@@ -85,9 +85,9 @@ func TestSessInitStage(t *testing.T) {
 	}
 
 	if nodeId := passiveState.Configuration.NodeId; activeState.PeerNodeId != nodeId {
-		t.Fatalf("active node ID %v != %v", activeState.PeerNodeId, nodeId)
+		t.Fatalf("active node iD %v != %v", activeState.PeerNodeId, nodeId)
 	}
 	if nodeId := activeState.Configuration.NodeId; passiveState.PeerNodeId != nodeId {
-		t.Fatalf("passive node ID %v != %v", passiveState.PeerNodeId, nodeId)
+		t.Fatalf("passive node iD %v != %v", passiveState.PeerNodeId, nodeId)
 	}
 }

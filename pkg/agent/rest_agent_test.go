@@ -31,8 +31,9 @@ func TestRestAgentCycle(t *testing.T) {
 	r := mux.NewRouter()
 	restRouter := r.PathPrefix("/rest").Subrouter()
 	httpServer := &http.Server{
-		Addr:    addr,
-		Handler: r,
+		Addr:              addr,
+		Handler:           r,
+		ReadHeaderTimeout: time.Minute,
 	}
 	go func() { _ = httpServer.ListenAndServe() }()
 

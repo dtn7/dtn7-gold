@@ -40,7 +40,7 @@ type MTCPClient struct {
 }
 
 // NewMTCPClient creates a new MTCPClient, connected to the given address for
-// the registered endpoint ID. The permanent flag indicates if this MTCPClient
+// the registered endpoint iD. The permanent flag indicates if this MTCPClient
 // should never be removed from the core.
 func NewMTCPClient(address string, peer bpv7.EndpointID, permanent bool) *MTCPClient {
 	return &MTCPClient{

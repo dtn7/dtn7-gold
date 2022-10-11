@@ -147,7 +147,7 @@ func (client *webAgentClient) handleIncomingRegister(m *wamRegister) error {
 
 	if client.endpoint == (bpv7.EndpointID{}) {
 		if eid, err := bpv7.NewEndpointID(m.endpoint); err != nil {
-			logger.WithError(err).Warn("Parsing endpoint ID errored")
+			logger.WithError(err).Warn("Parsing endpoint iD errored")
 			return err
 		} else {
 			logger.WithField("endpoint", eid).Debug("Setting endpoint id")
@@ -155,7 +155,7 @@ func (client *webAgentClient) handleIncomingRegister(m *wamRegister) error {
 			return nil
 		}
 	} else {
-		msg := "register errored, an endpoint ID is already present"
+		msg := "register errored, an endpoint iD is already present"
 		logger.Warn(msg)
 		return fmt.Errorf(msg)
 	}

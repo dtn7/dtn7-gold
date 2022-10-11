@@ -38,7 +38,7 @@ type SensorNetworkMuleConfig struct {
 	SensorNodeRegex string       `toml:"sensor-node-regex"`
 }
 
-// NewSensorNetworkMuleRouting based on an underlying algorithm and a regex to identify sensor nodes by their Node ID.
+// NewSensorNetworkMuleRouting based on an underlying algorithm and a regex to identify sensor nodes by their Node iD.
 func NewSensorNetworkMuleRouting(algorithm Algorithm, sensorNode *regexp.Regexp) *SensorNetworkMuleRouting {
 	return &SensorNetworkMuleRouting{
 		algorithm:  algorithm,
@@ -70,7 +70,7 @@ func (snm *SensorNetworkMuleRouting) SenderForBundle(bp BundleDescriptor) (sende
 
 		// If this ConvergenceSender is not a sensor, do not exclude it.
 		if !snm.sensorNode.MatchString(sender[i].GetPeerEndpointID().String()) {
-			logger.Debug("Convergence Sender's Node ID does not match a Sensor Mule's sensor mask")
+			logger.Debug("Convergence Sender's Node iD does not match a Sensor Mule's sensor mask")
 			continue
 		}
 

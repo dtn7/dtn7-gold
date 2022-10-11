@@ -209,7 +209,7 @@ func (manager *Manager) registerConvergence(conv Convergence) {
 				log.WithFields(log.Fields{
 					"cla":     conv,
 					"address": conv.Address(),
-				}).Debug("CLA registration aborted, because of a known Endpoint ID")
+				}).Debug("CLA registration aborted, because of a known Endpoint iD")
 
 				return
 			}

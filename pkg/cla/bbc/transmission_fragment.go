@@ -14,12 +14,12 @@ import (
 
 // Fragment is a part of a Transmission. Multiple Fragments represent an entire Transmission.
 //
-// For identification, a tuple consisting of a transmission ID, a sequence number, a start bit, an end bit,
+// For identification, a tuple consisting of a transmission iD, a sequence number, a start bit, an end bit,
 // and a fail bit is used. Because of memory reasons, the whole header has a size of two bytes. First the
-// transmission ID with a length of one byte is given, followed by the two five long sequence number and
+// transmission iD with a length of one byte is given, followed by the two five long sequence number and
 // the three flags, the start, end and fail bits.
 //
-// The transmission ID is taken from the respective Transmission. If this Fragment is the first of a
+// The transmission iD is taken from the respective Transmission. If this Fragment is the first of a
 // Transmission, the start bit is set to one. The same applies to the end bit for the last Fragment.
 //
 // The five bit sequence number represents a simple binary counter, which is incremented for each Fragment.
@@ -27,16 +27,15 @@ import (
 //
 // The header is followed by the payload. The total data can be as long as the particular MTU allows.
 //
-//     0   1   2   3   4   5   6   7
-//   +---+---+---+---+---+---+---+---+
-//   |Transmission ID                |
-//   +---+---+---+---+---+---+---+---+
-//   |Seq. No            |SB |EB |FB |
-//   +---+---+---+---+---+---+---+---+
-//   |                               |
-//   +            Payload            +
-//   |                               |
-//
+//	  0   1   2   3   4   5   6   7
+//	+---+---+---+---+---+---+---+---+
+//	|Transmission iD                |
+//	+---+---+---+---+---+---+---+---+
+//	|Seq. No            |SB |EB |FB |
+//	+---+---+---+---+---+---+---+---+
+//	|                               |
+//	+            Payload            +
+//	|                               |
 type Fragment struct {
 	transmissionId byte
 	identifier     byte
@@ -85,7 +84,7 @@ func (f Fragment) String() string {
 		f.TransmissionID(), f.SequenceNumber(), f.StartBit(), f.EndBit(), f.FailBit())
 }
 
-// TransmissionID returns the four bit transmission ID.
+// TransmissionID returns the four bit transmission iD.
 func (f Fragment) TransmissionID() byte {
 	return f.transmissionId
 }
@@ -125,13 +124,13 @@ func (f Fragment) ReportFailure() Fragment {
 	return NewFragment(f.TransmissionID(), f.SequenceNumber(), false, false, true, []byte{})
 }
 
-// randomTransmissionId creates a pseudorandom transmission ID.
+// randomTransmissionId creates a pseudorandom transmission iD.
 func randomTransmissionId() byte {
 	randInt, _ := rand.Int(rand.Reader, big.NewInt(256))
 	return byte(randInt.Int64())
 }
 
-// nextTransmissionId returns the succeeding transmission ID.
+// nextTransmissionId returns the succeeding transmission iD.
 func nextTransmissionId(tid byte) byte {
 	return tid + 1
 }

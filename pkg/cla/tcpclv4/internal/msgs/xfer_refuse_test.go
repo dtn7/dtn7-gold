@@ -16,7 +16,7 @@ func TestTransferRefusalMessage(t *testing.T) {
 		0x03,
 		// Reason Code:
 		0x00,
-		// Transfer ID:
+		// Transfer iD:
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 	}
 	t1message := NewTransferRefusalMessage(RefusalUnknown, 1)
@@ -26,7 +26,7 @@ func TestTransferRefusalMessage(t *testing.T) {
 		0x05,
 		// Reason Code:
 		0x00,
-		// Transfer ID:
+		// Transfer iD:
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	}
 
@@ -35,7 +35,7 @@ func TestTransferRefusalMessage(t *testing.T) {
 		0x03,
 		// Reason Code:
 		0xFF,
-		// Transfer ID:
+		// Transfer iD:
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 	}
 	t3message := NewTransferRefusalMessage(RefusalUnknown, 1)

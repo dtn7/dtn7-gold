@@ -35,7 +35,7 @@ func TestFragmentBitMask(t *testing.T) {
 
 		f2 := Fragment{transmissionId: test.transmissionId, identifier: test.mask}
 		if tid := f2.TransmissionID(); tid != test.transmissionId {
-			t.Fatalf("Fragment %v has transmission ID of %x instead of %x", test, tid, test.transmissionId)
+			t.Fatalf("Fragment %v has transmission iD of %x instead of %x", test, tid, test.transmissionId)
 		}
 		if s := f2.SequenceNumber(); s != test.sequenceNo {
 			t.Fatalf("Fragment %v has sequence no of %x instead of %x", test, s, test.sequenceNo)
@@ -108,7 +108,7 @@ func TestNextTransmissionId(t *testing.T) {
 
 	for _, test := range tests {
 		if succ := nextTransmissionId(test.tid); succ != test.succ {
-			t.Fatalf("Succeeding transmission ID of %d is %d, not %d", test.tid, succ, test.succ)
+			t.Fatalf("Succeeding transmission iD of %d is %d, not %d", test.tid, succ, test.succ)
 		}
 	}
 }

@@ -75,7 +75,7 @@ func (s *Store) Push(b bpv7.Bundle) error {
 	if biStore, err := s.QueryId(b.ID()); err != nil {
 		log.WithFields(log.Fields{
 			"bundle": b.ID().String(),
-		}).Info("Bundle ID is unknown, inserting BundleItem")
+		}).Info("Bundle iD is unknown, inserting BundleItem")
 
 		if err := bi.Parts[0].storeBundle(b); err != nil {
 			return err
@@ -120,7 +120,7 @@ func (s *Store) Push(b bpv7.Bundle) error {
 	} else {
 		log.WithFields(log.Fields{
 			"bundle": b.ID().String(),
-		}).Debug("Bundle ID is known, ignoring push")
+		}).Debug("Bundle iD is known, ignoring push")
 
 		return nil
 	}

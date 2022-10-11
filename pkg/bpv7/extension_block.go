@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2019, 2020, 2022 Alvar Penning
+// SPDX-FileCopyrightText: 2020, 2021, 2022 Matthias Axel Kröll
 // SPDX-FileCopyrightText: 2021 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -20,6 +21,12 @@ import (
 const (
 	// ExtBlockTypePayloadBlock is the block type code for a Payload Block, bpv7/extension_block_payload.go
 	ExtBlockTypePayloadBlock uint64 = 1
+
+	// ExtBlockTypeBlockIntegrityBlock is the block type code for a Integrity Block, bpv7/extension_block_bib_iop_hmac_sha2.go
+	ExtBlockTypeBlockIntegrityBlock uint64 = 3
+
+	// ExtBlockTypeBlockConfidentialityBlock is the block type code for a Confidentiality Block, bpv7/extenstion_block_bcb_iop_aes_gcm.go
+	ExtBlockTypeBlockConfidentialityBlock uint64 = 4
 
 	// ExtBlockTypePreviousNodeBlock is the block type code for a Previous Node Block, bpv7/extension_block_previous_node.go
 	ExtBlockTypePreviousNodeBlock uint64 = 6
@@ -199,6 +206,8 @@ func GetExtensionBlockManager() *ExtensionBlockManager {
 		_ = extensionBlockManager.Register(NewPreviousNodeBlock(DtnNone()))
 		_ = extensionBlockManager.Register(NewBundleAgeBlock(0))
 		_ = extensionBlockManager.Register(NewHopCountBlock(0))
+		_ = extensionBlockManager.Register(new(BIBIOPHMACSHA2))
+		_ = extensionBlockManager.Register(new(BCBIOPAESGCM))
 	}
 
 	return extensionBlockManager

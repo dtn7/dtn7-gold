@@ -24,9 +24,9 @@ import (
 // To create a SignatureBlock, a Bundle with a PayloadBlock needs to exist first. Afterwards, one needs to create a
 // SignatureBlock for this Bundle and attach it to the Bundle.
 //
-// 	b, bErr := bpv7.Builder()./* ... */.Build()
-// 	sb, sbErr := bpv7.NewSignatureBlock(b, priv)
-// 	b.AddExtensionBlock(bpv7.NewCanonicalBlock(0, bpv7.ReplicateBlock|bpv7.DeleteBundle, sb))
+//	b, bErr := bpv7.Builder()./* ... */.Build()
+//	sb, sbErr := bpv7.NewSignatureBlock(b, priv)
+//	b.AddExtensionBlock(bpv7.NewCanonicalBlock(0, bpv7.ReplicateBlock|bpv7.DeleteBundle, sb))
 //
 // The block-type-specific data in a SignatureBlock MUST be represented as a CBOR array comprising two elements. These
 // elements are firstly the PublicKey and secondly the Signature, both represented as a CBOR byte string. Both the array

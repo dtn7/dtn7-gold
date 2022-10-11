@@ -30,7 +30,7 @@ func NewDataAcknowledgementMessage(flags SegmentFlags, tid, ackLen uint64) *Data
 }
 
 func (dam DataAcknowledgementMessage) String() string {
-	return fmt.Sprintf("XFER_ACK(Message Flags=%v, Transfer ID=%d, Acknowledged length=%d)",
+	return fmt.Sprintf("XFER_ACK(Message Flags=%v, Transfer iD=%d, Acknowledged length=%d)",
 		dam.Flags, dam.TransferId, dam.AckLen)
 }
 

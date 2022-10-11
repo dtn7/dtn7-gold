@@ -30,8 +30,9 @@ func TestWebAgentNew(t *testing.T) {
 	httpMux := http.NewServeMux()
 	httpMux.HandleFunc("/ws", ws.ServeHTTP)
 	httpServer := &http.Server{
-		Addr:    addr,
-		Handler: httpMux,
+		Addr:              addr,
+		Handler:           httpMux,
+		ReadHeaderTimeout: time.Minute,
 	}
 	go func() { _ = httpServer.ListenAndServe() }()
 
@@ -174,8 +175,9 @@ func TestWebAgentIllegalEndpoint(t *testing.T) {
 	httpMux := http.NewServeMux()
 	httpMux.HandleFunc("/ws", ws.ServeHTTP)
 	httpServer := &http.Server{
-		Addr:    addr,
-		Handler: httpMux,
+		Addr:              addr,
+		Handler:           httpMux,
+		ReadHeaderTimeout: time.Minute,
 	}
 	go func() { _ = httpServer.ListenAndServe() }()
 
@@ -201,7 +203,7 @@ func TestWebAgentIllegalEndpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Register client with an illegal endpoint ID
+	// Register client with an illegal endpoint iD
 	if w, err := wsClient.NextWriter(websocket.BinaryMessage); err != nil {
 		t.Fatal(err)
 	} else if err := marshalCbor(newRegisterMessage("uff"), w); err != nil {
@@ -220,7 +222,7 @@ func TestWebAgentIllegalEndpoint(t *testing.T) {
 	} else if msg.typeCode() != wamStatusCode {
 		t.Fatalf("expected status code %d, got %d", wamStatusCode, msg.typeCode())
 	} else if msg := msg.(*wamStatus); msg.errorMsg == "" {
-		t.Fatal("Expected error due to illegal endpoint ID")
+		t.Fatal("Expected error due to illegal endpoint iD")
 	}
 
 	// Shutdown WebSocketAgent
