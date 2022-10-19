@@ -17,16 +17,16 @@ jobs:
 
     strategy:
       matrix:
-        go: [ '1.16', '1.17', '1.18' ]
+        go: [ '1.18', '1.19' ]
 
     steps:
     - name: Set up Go ${{ matrix.go }}
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go }}
 
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Build on Go ${{ matrix.go }}
       run: go build  ./...

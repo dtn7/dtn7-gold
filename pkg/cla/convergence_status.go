@@ -64,6 +64,7 @@ type ConvergenceReceivedBundle struct {
 // NewConvergenceReceivedBundle creates a new ConvergenceStatus for a
 // ReceivedBundle type, transmitting both EndpointID and Bundle pointer.
 func NewConvergenceReceivedBundle(sender Convergence, eid bpv7.EndpointID, bndl *bpv7.Bundle) ConvergenceStatus {
+	// TODO: is "sender" a good name? Because it's actually the receiving cla and the name sender implies it's information about the sending node
 	return ConvergenceStatus{
 		Sender:      sender,
 		MessageType: ReceivedBundle,

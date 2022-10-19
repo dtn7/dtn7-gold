@@ -15,16 +15,16 @@ jobs:
 
     strategy:
       matrix:
-        go: [ '1.16', '1.17', '1.18' ]
+        go: [ '1.18', '1.19' ]
 
     steps:
     - name: Set up Go ${{ matrix.go }}
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go }}
 
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Build on Go ${{ matrix.go }}
       run: go build ./...
@@ -39,13 +39,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Setup linter
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: golangci-lint
-      uses: golangci/golangci-lint-action@v3.2.0
+      uses: golangci/golangci-lint-action@v3
       with:
-        version: v1.46.2
+        version: v1.50.1
         args: --config contrib/golangci-lint/.golangci.yml
 
 
@@ -56,7 +60,7 @@ jobs:
 
     steps:
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: REUSE Compliance Check
       uses: fsfe/reuse-action@v1.1.1

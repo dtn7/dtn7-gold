@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2020 Alvar Penning
-// SPDX-FileCopyrightText: 2020 Markus Sommer
+// SPDX-FileCopyrightText: 2020, 2022 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -26,6 +26,8 @@ const (
 	// Only here for completeness
 	BBC CLAType = 20
 
+	QUICL CLAType = 30
+
 	unknownClaTypeString string = "unknown CLA type"
 )
 
@@ -50,6 +52,9 @@ func (claType CLAType) String() string {
 
 	case BBC:
 		return "BBC"
+
+	case QUICL:
+		return "QUICL"
 
 	default:
 		return unknownClaTypeString

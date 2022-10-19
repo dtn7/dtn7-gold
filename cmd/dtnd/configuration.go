@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019, 2020 Markus Sommer
+// SPDX-FileCopyrightText: 2019, 2020, 2022 Markus Sommer
 // SPDX-FileCopyrightText: 2019, 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/dtn7/dtn7-go/pkg/cla/quicl"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -171,6 +173,22 @@ func parseListen(conv convergenceConf, nodeId bpv7.EndpointID) (cla.Convergable,
 			return listener, nodeId, cla.TCPCLv4WebSocket, discovery.Announcement{}, nil
 		}
 
+	case "quicl":
+		portInt, err := parseListenPort(conv.Endpoint)
+		if err != nil {
+			return nil, nodeId, cla.QUICL, discovery.Announcement{}, err
+		}
+
+		listener := quicl.NewQUICListener(conv.Endpoint, nodeId)
+
+		msg := discovery.Announcement{
+			Type:     cla.QUICL,
+			Endpoint: nodeId,
+			Port:     uint(portInt),
+		}
+
+		return listener, nodeId, cla.QUICL, msg, nil
+
 	default:
 		return nil, nodeId, 0, discovery.Announcement{}, fmt.Errorf("unknown listen.protocol \"%s\"", conv.Protocol)
 	}
@@ -191,6 +209,9 @@ func parsePeer(conv convergenceConf, nodeId bpv7.EndpointID) (cla.ConvergenceSen
 
 	case "tcpclv4-ws":
 		return tcpclv4.DialWebSocket(conv.Endpoint, nodeId, true), nil
+
+	case "quicl":
+		return quicl.NewDialerEndpoint(conv.Endpoint, nodeId, true), nil
 
 	default:
 		return nil, fmt.Errorf("unknown peer.protocol \"%s\"", conv.Protocol)

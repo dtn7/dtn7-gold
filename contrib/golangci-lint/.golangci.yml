@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2020 Alvar Penning
+# SPDX-FileCopyrightText: 2022 Markus Sommer
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -17,6 +18,10 @@ issues:
     - linters:
         - gosec
       text: "G107:"
+    # Since we don't implement a PKI infrastructure, we don't verify certificates (at this point)
+    - linters:
+        - gosec
+      text: "G402: TLS InsecureSkipVerify set true."
 
 linters:
   # In addition to the default
