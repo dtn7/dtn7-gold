@@ -76,7 +76,6 @@ func signBundle(args []string) {
 
 	if f, err := os.Create(output); err != nil {
 		logger.WithError(err).Error("Creating file erred")
-		return
 	} else if err := b.MarshalCbor(f); err != nil {
 		logger.WithError(err).Error("Marshalling Bundle erred")
 	} else if err := f.Close(); err != nil {
@@ -179,7 +178,7 @@ func encryptBundle(args []string) {
 
 	err = bcbBlockAdded.Value.(*bpv7.BCBIOPAESGCM).EncryptTarget(b, bcbBlockAdded.BlockNumber, []byte(psk))
 	if err != nil {
-		return
+		printFatal(err, "Encrypting Target erred")
 	}
 
 	logger := log.WithFields(log.Fields{
@@ -189,7 +188,6 @@ func encryptBundle(args []string) {
 
 	if f, err := os.Create(output); err != nil {
 		logger.WithError(err).Error("Creating file erred")
-		return
 	} else if err := b.MarshalCbor(f); err != nil {
 		logger.WithError(err).Error("Marshalling Bundle erred")
 	} else if err := f.Close(); err != nil {
@@ -245,7 +243,6 @@ func decryptBundle(args []string) {
 
 	if f, err := os.Create(output); err != nil {
 		logger.WithError(err).Error("Creating file erred")
-		return
 	} else if err := b.MarshalCbor(f); err != nil {
 		logger.WithError(err).Error("Marshalling Bundle erred")
 	} else if err := f.Close(); err != nil {
