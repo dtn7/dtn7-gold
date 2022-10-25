@@ -245,7 +245,7 @@ func decryptBundle(args []string) {
 	if output == "-" {
 		fOutput = os.Stdout
 	} else if fOutput, err = os.Create(output); err != nil {
-		printFatal(err, "Creating file errored")
+		logger.WithError(err).Error("Creating file errored")
 	} else if err := b.MarshalCbor(fOutput); err != nil {
 		logger.WithError(err).Error("Marshalling Bundle erred")
 	} else if err := fOutput.Close(); err != nil {
