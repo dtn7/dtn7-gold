@@ -66,7 +66,7 @@ func signBundle(args []string) {
 
 	err = bibBlockAdded.Value.(*bpv7.BIBIOPHMACSHA2).SignTargets(b, bibBlockAdded.BlockNumber, []byte(psk))
 	if err != nil {
-		return
+		printFatal(err, "Signing Targets erred")
 	}
 
 	logger := log.WithFields(log.Fields{
