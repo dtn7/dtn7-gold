@@ -131,6 +131,6 @@ func TestTransmissionMissingFragment(t *testing.T) {
 	if f, _, fErr := out.WriteFragment(); fErr != nil {
 		t.Fatal(fErr)
 	} else if _, fErr := in.ReadFragment(f); fErr == nil {
-		t.Fatalf("Reading skipped Fragment did not errored")
+		t.Fatalf("Reading skipped Fragment did not erred")
 	}
 }

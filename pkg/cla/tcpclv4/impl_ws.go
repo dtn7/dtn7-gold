@@ -62,7 +62,7 @@ func (listener *WebSocketListener) ServeHTTP(writer http.ResponseWriter, request
 	}
 
 	if conn, err := listener.upgrader.Upgrade(writer, request, nil); err != nil {
-		log.WithField("cla", listener).WithError(err).Warn("Upgrading connection errored")
+		log.WithField("cla", listener).WithError(err).Warn("Upgrading connection erred")
 	} else {
 		client := newClientWebSocket(conn, listener.endpointID)
 		listener.manager.Register(client)

@@ -93,7 +93,7 @@ func (manager *AgentManager) Deliver(descriptor BundleDescriptor) error {
 
 	descriptor.RemoveConstraint(LocalEndpoint)
 	if err := descriptor.Sync(); err != nil {
-		log.WithField("bundle", b).WithError(err).Warn("AgentManager errored while synchronizing BundleDescriptor")
+		log.WithField("bundle", b).WithError(err).Warn("AgentManager erred while synchronizing BundleDescriptor")
 		return err
 	}
 

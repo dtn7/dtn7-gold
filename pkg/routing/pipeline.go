@@ -111,7 +111,7 @@ func (pipeline *Pipeline) sendReport(descriptor BundleDescriptor, status bpv7.St
 		StatusReport(descriptor.MustBundle(), status, reason).
 		Build()
 	if err != nil {
-		pipeline.log().WithField("origin", descriptor.ID().String()).WithError(err).Warn("status report creation errored")
+		pipeline.log().WithField("origin", descriptor.ID().String()).WithError(err).Warn("status report creation erred")
 	} else {
 		pipeline.queue <- pipelineMsg{t: sendBundle, v: reportBundle}
 	}

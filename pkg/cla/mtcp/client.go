@@ -102,7 +102,7 @@ func (client *MTCPClient) handler() {
 				log.WithFields(log.Fields{
 					"client": client.String(),
 					"error":  err,
-				}).Error("MTCPClient: Keepalive errored")
+				}).Error("MTCPClient: Keepalive erred")
 
 				client.reportChan <- cla.NewConvergencePeerDisappeared(client, client.GetPeerEndpointID())
 			}

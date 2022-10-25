@@ -69,7 +69,7 @@ func (p *PingAgent) ackBundle(b bpv7.Bundle) {
 		Build()
 
 	if err != nil {
-		p.log().WithError(err).Warn("Building ACK Bundle errored")
+		p.log().WithError(err).Warn("Building ACK Bundle erred")
 	} else {
 		p.log().WithField("bundle", bndl).Info("Sending ACK Bundle")
 		p.sender <- BundleMessage{bndl}

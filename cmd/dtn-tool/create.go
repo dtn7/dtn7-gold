@@ -37,7 +37,7 @@ func createBundle(args []string) {
 		data, err = ioutil.ReadFile(dataInput)
 	}
 	if err != nil {
-		printFatal(err, "Reading input errored")
+		printFatal(err, "Reading input erred")
 	}
 
 	b, err = bpv7.Builder().
@@ -50,7 +50,7 @@ func createBundle(args []string) {
 		PayloadBlock(data).
 		Build()
 	if err != nil {
-		printFatal(err, "Building Bundle errored")
+		printFatal(err, "Building Bundle erred")
 	}
 
 	if len(args) == 4 {
@@ -62,13 +62,13 @@ func createBundle(args []string) {
 	if outName == "-" {
 		f = os.Stdout
 	} else if f, err = os.Create(outName); err != nil {
-		printFatal(err, "Creating file errored")
+		printFatal(err, "Creating file erred")
 	}
 
 	if err = b.MarshalCbor(f); err != nil {
-		printFatal(err, "Writing Bundle errored")
+		printFatal(err, "Writing Bundle erred")
 	}
 	if err = f.Close(); err != nil {
-		printFatal(err, "Closing file errored")
+		printFatal(err, "Closing file erred")
 	}
 }

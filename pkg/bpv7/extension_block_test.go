@@ -18,7 +18,7 @@ func TestExtensionBlockManager(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := ebm.Register(payloadBlock); err == nil {
-		t.Fatal("Registering the PayloadBlock twice did not errored")
+		t.Fatal("Registering the PayloadBlock twice did not erred")
 	}
 
 	if !ebm.IsKnown(payloadBlock.BlockTypeCode()) {
@@ -83,6 +83,6 @@ func TestExtensionBlockManagerGenericRegister(t *testing.T) {
 	var geb = NewGenericExtensionBlock([]byte("nope"), 192)
 
 	if err := ebm.Register(geb); err == nil {
-		t.Fatalf("Registering a GenericExtensionBlock did not errored")
+		t.Fatalf("Registering a GenericExtensionBlock did not erred")
 	}
 }

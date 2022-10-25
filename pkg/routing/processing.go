@@ -33,7 +33,7 @@ func (c *Core) sendBundleAttachSignature(bndl *bpv7.Bundle) {
 
 	sb, sbErr := bpv7.NewSignatureBlock(*bndl, c.signPriv)
 	if sbErr != nil {
-		log.WithField("bundle", bndl.ID()).WithError(sbErr).Error("Creating signature errored, proceeding without")
+		log.WithField("bundle", bndl.ID()).WithError(sbErr).Error("Creating signature erred, proceeding without")
 		return
 	}
 
@@ -449,7 +449,7 @@ func (c *Core) localDelivery(bp BundleDescriptor) {
 	_ = bp.Sync()
 
 	if err := c.agentManager.Deliver(bp); err != nil {
-		log.WithField("bundle", bp.ID().String()).WithError(err).Warn("Delivering local bundle errored")
+		log.WithField("bundle", bp.ID().String()).WithError(err).Warn("Delivering local bundle erred")
 	}
 
 	if bp.MustBundle().PrimaryBlock.BundleControlFlags.Has(bpv7.StatusRequestDelivery) {

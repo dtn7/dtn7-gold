@@ -142,7 +142,7 @@ func (ebm *ExtensionBlockManager) WriteBlock(b ExtensionBlock, w io.Writer) erro
 	switch b := b.(type) {
 	case encoding.BinaryMarshaler:
 		if data, err := b.MarshalBinary(); err != nil {
-			return fmt.Errorf("marshalling binary for Block errored: %v", err)
+			return fmt.Errorf("marshalling binary for Block erred: %v", err)
 		} else {
 			return cboring.WriteByteString(data, w)
 		}
@@ -150,7 +150,7 @@ func (ebm *ExtensionBlockManager) WriteBlock(b ExtensionBlock, w io.Writer) erro
 	case cboring.CborMarshaler:
 		var buff bytes.Buffer
 		if err := cboring.Marshal(b, &buff); err != nil {
-			return fmt.Errorf("marshalling CBOR for Block errored: %v", err)
+			return fmt.Errorf("marshalling CBOR for Block erred: %v", err)
 		}
 		return cboring.WriteByteString(buff.Bytes(), w)
 

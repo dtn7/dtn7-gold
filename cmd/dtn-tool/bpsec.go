@@ -30,14 +30,14 @@ func signBundle(args []string) {
 	if input == "-" {
 		f = os.Stdin
 	} else if f, err = os.Open(input); err != nil {
-		printFatal(err, "Opening file for reading errored")
+		printFatal(err, "Opening file for reading erred")
 	}
 
 	if err = b.UnmarshalCbor(f); err != nil {
-		printFatal(err, "Unmarshaling Bundle errored")
+		printFatal(err, "Unmarshaling Bundle erred")
 	}
 	if err = f.Close(); err != nil {
-		printFatal(err, "Closing file errored")
+		printFatal(err, "Closing file erred")
 	}
 
 	payloadSecurityTarget, _ := b.ExtensionBlock(bpv7.ExtBlockTypePayloadBlock)
@@ -75,12 +75,12 @@ func signBundle(args []string) {
 	})
 
 	if f, err := os.Create(output); err != nil {
-		logger.WithError(err).Error("Creating file errored")
+		logger.WithError(err).Error("Creating file erred")
 		return
 	} else if err := b.MarshalCbor(f); err != nil {
-		logger.WithError(err).Error("Marshalling Bundle errored")
+		logger.WithError(err).Error("Marshalling Bundle erred")
 	} else if err := f.Close(); err != nil {
-		logger.WithError(err).Error("Closing file errored")
+		logger.WithError(err).Error("Closing file erred")
 	}
 
 }
@@ -103,14 +103,14 @@ func verifyBundle(args []string) {
 	if input == "-" {
 		f = os.Stdin
 	} else if f, err = os.Open(input); err != nil {
-		printFatal(err, "Opening file for reading errored")
+		printFatal(err, "Opening file for reading erred")
 	}
 
 	if err = b.UnmarshalCbor(f); err != nil {
-		printFatal(err, "Unmarshaling Bundle errored")
+		printFatal(err, "Unmarshaling Bundle erred")
 	}
 	if err = f.Close(); err != nil {
-		printFatal(err, "Closing file errored")
+		printFatal(err, "Closing file erred")
 	}
 
 	bibBlock, err = b.ExtensionBlock(bpv7.ExtBlockTypeBlockIntegrityBlock)
@@ -145,14 +145,14 @@ func encryptBundle(args []string) {
 	if input == "-" {
 		f = os.Stdin
 	} else if f, err = os.Open(input); err != nil {
-		printFatal(err, "Opening file for reading errored")
+		printFatal(err, "Opening file for reading erred")
 	}
 
 	if err = b.UnmarshalCbor(f); err != nil {
-		printFatal(err, "Unmarshaling Bundle errored")
+		printFatal(err, "Unmarshaling Bundle erred")
 	}
 	if err = f.Close(); err != nil {
-		printFatal(err, "Closing file errored")
+		printFatal(err, "Closing file erred")
 	}
 
 	payloadSecurityTarget, _ := b.ExtensionBlock(bpv7.ExtBlockTypePayloadBlock)
@@ -188,12 +188,12 @@ func encryptBundle(args []string) {
 	})
 
 	if f, err := os.Create(output); err != nil {
-		logger.WithError(err).Error("Creating file errored")
+		logger.WithError(err).Error("Creating file erred")
 		return
 	} else if err := b.MarshalCbor(f); err != nil {
-		logger.WithError(err).Error("Marshalling Bundle errored")
+		logger.WithError(err).Error("Marshalling Bundle erred")
 	} else if err := f.Close(); err != nil {
-		logger.WithError(err).Error("Closing file errored")
+		logger.WithError(err).Error("Closing file erred")
 	}
 
 }
@@ -216,14 +216,14 @@ func decryptBundle(args []string) {
 	if input == "-" {
 		f = os.Stdin
 	} else if f, err = os.Open(input); err != nil {
-		printFatal(err, "Opening file for reading errored")
+		printFatal(err, "Opening file for reading erred")
 	}
 
 	if err = b.UnmarshalCbor(f); err != nil {
-		printFatal(err, "Unmarshaling Encrypted Bundle errored")
+		printFatal(err, "Unmarshaling Encrypted Bundle erred")
 	}
 	if err = f.Close(); err != nil {
-		printFatal(err, "Closing file errored")
+		printFatal(err, "Closing file erred")
 	}
 
 	bcbBlock, err := b.ExtensionBlock(bpv7.ExtBlockTypeBlockConfidentialityBlock)
@@ -244,12 +244,12 @@ func decryptBundle(args []string) {
 	})
 
 	if f, err := os.Create(output); err != nil {
-		logger.WithError(err).Error("Creating file errored")
+		logger.WithError(err).Error("Creating file erred")
 		return
 	} else if err := b.MarshalCbor(f); err != nil {
-		logger.WithError(err).Error("Marshalling Bundle errored")
+		logger.WithError(err).Error("Marshalling Bundle erred")
 	} else if err := f.Close(); err != nil {
-		logger.WithError(err).Error("Closing file errored")
+		logger.WithError(err).Error("Closing file erred")
 	}
 
 }

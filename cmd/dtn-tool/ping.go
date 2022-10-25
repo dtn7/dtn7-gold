@@ -44,7 +44,7 @@ func (p *pinger) pingBundle() (bpv7.Bundle, error) {
 func (p *pinger) handleBundleRead() {
 	for {
 		if b, err := p.websocketConn.ReadBundle(); err != nil {
-			log.WithError(err).Error("Reading Bundle errored")
+			log.WithError(err).Error("Reading Bundle erred")
 
 			close(p.bundleReadChan)
 			return
@@ -101,7 +101,7 @@ func ping(args []string) {
 
 	var err error
 	if p.websocketConn, err = agent.NewWebSocketAgentConnector(args[0], p.sender); err != nil {
-		printFatal(err, "Starting WebSocketAgentConnector errored")
+		printFatal(err, "Starting WebSocketAgentConnector erred")
 	}
 
 	signal.Notify(p.closeChan, os.Interrupt)

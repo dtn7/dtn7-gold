@@ -75,7 +75,7 @@ func (arm *AdministrativeRecordManager) WriteAdministrativeRecord(ar Administrat
 	if err = cboring.WriteUInt(ar.RecordTypeCode(), w); err != nil {
 		return
 	} else if cborErr := cboring.Marshal(ar, w); cborErr != nil {
-		err = fmt.Errorf("marshalling AdministrativeRecord errored: %v", cborErr)
+		err = fmt.Errorf("marshalling AdministrativeRecord erred: %v", cborErr)
 		return
 	}
 

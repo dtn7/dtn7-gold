@@ -25,7 +25,7 @@ func TestBundleBuilderSimple(t *testing.T) {
 		Build()
 
 	if err != nil {
-		t.Fatalf("Builder errored: %v", err)
+		t.Fatalf("Builder erred: %v", err)
 	}
 
 	buff := new(bytes.Buffer)

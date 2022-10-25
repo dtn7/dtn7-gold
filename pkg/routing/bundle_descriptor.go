@@ -90,7 +90,7 @@ func (descriptor BundleDescriptor) Sync() error {
 
 		updateErr := descriptor.store.Update(bi)
 		if updateErr != nil {
-			log.WithError(updateErr).Warn("Synchronizing errored")
+			log.WithError(updateErr).Warn("Synchronizing erred")
 		}
 		return updateErr
 	}

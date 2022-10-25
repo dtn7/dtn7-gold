@@ -36,7 +36,7 @@ func TestDtnTime(t *testing.T) {
 	dur, _ := time.ParseDuration("48h30m")
 	ttime = ttime.Add(dur)
 	if expected := epoch + DtnTime((48*60+30)*60*milliToSec); expected != DtnTimeFromTime(ttime) {
-		t.Fatalf("Adding duration errored: expected %v; got %v", expected, DtnTimeFromTime(ttime))
+		t.Fatalf("Adding duration erred: expected %v; got %v", expected, DtnTimeFromTime(ttime))
 	}
 }
 

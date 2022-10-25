@@ -90,7 +90,7 @@ func TestBundleFragmentMustNotFragment(t *testing.T) {
 	}
 
 	if _, err := bndl.Fragment(23); err == nil {
-		t.Fatal("Bundle with Must-Not-Fragmented Bundle Control Flags did not errored")
+		t.Fatal("Bundle with Must-Not-Fragmented Bundle Control Flags did not erred")
 	}
 }
 
