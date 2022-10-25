@@ -203,24 +203,25 @@ func decryptBundle(args []string) {
 	}
 
 	var (
-		input  = args[0]
-		psk    = args[1]
-		output = args[2]
-		err    error
-		f      io.ReadCloser
-		b      bpv7.Bundle
+		input   = args[0]
+		psk     = args[1]
+		output  = args[2]
+		err     error
+		fInput  io.ReadCloser
+		fOutput io.WriteCloser
+		b       bpv7.Bundle
 	)
 
 	if input == "-" {
-		f = os.Stdin
-	} else if f, err = os.Open(input); err != nil {
+		fInput = os.Stdin
+	} else if fInput, err = os.Open(input); err != nil {
 		printFatal(err, "Opening file for reading erred")
 	}
 
-	if err = b.UnmarshalCbor(f); err != nil {
+	if err = b.UnmarshalCbor(fInput); err != nil {
 		printFatal(err, "Unmarshaling Encrypted Bundle erred")
 	}
-	if err = f.Close(); err != nil {
+	if err = fInput.Close(); err != nil {
 		printFatal(err, "Closing file erred")
 	}
 
@@ -241,12 +242,13 @@ func decryptBundle(args []string) {
 		"file":   output,
 	})
 
-	if f, err := os.Create(output); err != nil {
-		logger.WithError(err).Error("Creating file erred")
-	} else if err := b.MarshalCbor(f); err != nil {
+	if output == "-" {
+		fOutput = os.Stdout
+	} else if fOutput, err = os.Create(output); err != nil {
+		printFatal(err, "Creating file errored")
+	} else if err := b.MarshalCbor(fOutput); err != nil {
 		logger.WithError(err).Error("Marshalling Bundle erred")
-	} else if err := f.Close(); err != nil {
+	} else if err := fOutput.Close(); err != nil {
 		logger.WithError(err).Error("Closing file erred")
 	}
-
 }
