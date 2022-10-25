@@ -48,7 +48,7 @@ func printUsage() {
 
 // printFatal of an error with a short context description and exits afterwards.
 func printFatal(err error, msg string) {
-	_, _ = fmt.Fprintf(os.Stderr, "%s errored: %s\n  %v\n", os.Args[0], msg, err)
+	_, _ = fmt.Fprintf(os.Stderr, "%s erred: %s\n  %v\n", os.Args[0], msg, err)
 	os.Exit(1)
 }
 

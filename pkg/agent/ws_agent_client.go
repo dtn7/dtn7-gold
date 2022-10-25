@@ -63,7 +63,7 @@ func (client *webAgentClient) handleReceiver() {
 
 		case BundleMessage:
 			if err := client.writeMessage(newBundleMessage(msg.Bundle)); err != nil {
-				logger.WithError(err).Warn("Sending outgoing Bundle errored")
+				logger.WithError(err).Warn("Sending outgoing Bundle erred")
 				return
 			} else {
 				logger.WithField("bundle", msg.Bundle).Info("Sent Bundle to client")
@@ -71,7 +71,7 @@ func (client *webAgentClient) handleReceiver() {
 
 		case SyscallResponseMessage:
 			if err := client.writeMessage(newSyscallResponseMessage(msg.Request, msg.Response)); err != nil {
-				logger.WithError(err).Warn("Sending syscall response errored")
+				logger.WithError(err).Warn("Sending syscall response erred")
 				return
 			} else {
 				logger.WithField("syscall", msg.Request).Info("Sent syscall response to client")
@@ -91,16 +91,16 @@ func (client *webAgentClient) handleConn() {
 	for {
 		if messageType, reader, err := client.conn.NextReader(); err != nil {
 			if netErr, ok := err.(*net.OpError); ok && netErr.Err.Error() == "use of closed network connection" {
-				logger.WithError(err).Debug("Reader errored due to closed network connection")
+				logger.WithError(err).Debug("Reader erred due to closed network connection")
 			} else {
-				logger.WithError(err).Warn("Opening next Websocket Reader errored")
+				logger.WithError(err).Warn("Opening next Websocket Reader erred")
 			}
 			return
 		} else if messageType != websocket.BinaryMessage {
 			logger.WithField("message type", messageType).Warn("Websocket Reader's type is not binary")
 			return
 		} else if msg, err := unmarshalCbor(reader); err != nil {
-			logger.WithError(err).Warn("Unmarshal CBOR errored")
+			logger.WithError(err).Warn("Unmarshal CBOR erred")
 			return
 		} else {
 			var err error
@@ -109,7 +109,7 @@ func (client *webAgentClient) handleConn() {
 			case *wamRegister:
 				err := client.handleIncomingRegister(msg)
 				if err = client.acknowledgeIncoming(err); err != nil {
-					logger.WithError(err).Warn("Handling registration errored")
+					logger.WithError(err).Warn("Handling registration erred")
 					return
 				}
 
@@ -129,7 +129,7 @@ func (client *webAgentClient) handleConn() {
 			}
 
 			if err != nil {
-				logger.WithField("message", msg).WithError(err).Warn("Handling message errored")
+				logger.WithField("message", msg).WithError(err).Warn("Handling message erred")
 				return
 			}
 		}
@@ -147,7 +147,7 @@ func (client *webAgentClient) handleIncomingRegister(m *wamRegister) error {
 
 	if client.endpoint == (bpv7.EndpointID{}) {
 		if eid, err := bpv7.NewEndpointID(m.endpoint); err != nil {
-			logger.WithError(err).Warn("Parsing endpoint ID errored")
+			logger.WithError(err).Warn("Parsing endpoint ID erred")
 			return err
 		} else {
 			logger.WithField("endpoint", eid).Debug("Setting endpoint id")
@@ -155,7 +155,7 @@ func (client *webAgentClient) handleIncomingRegister(m *wamRegister) error {
 			return nil
 		}
 	} else {
-		msg := "register errored, an endpoint ID is already present"
+		msg := "register erred, an endpoint ID is already present"
 		logger.Warn(msg)
 		return fmt.Errorf(msg)
 	}

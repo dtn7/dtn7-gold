@@ -74,9 +74,9 @@ func (c *Connector) handlerRead() {
 				logger.Info("Read EOF, stopping handlerRead")
 				return
 			} else if err != nil {
-				logger.WithError(err).Warn("Receiving Fragments from Modem errored")
+				logger.WithError(err).Warn("Receiving Fragments from Modem erred")
 			} else if err = c.handleIncomingFragment(frag); err != nil {
-				logger.WithError(err).Warn("Handling incoming Fragment errored")
+				logger.WithError(err).Warn("Handling incoming Fragment erred")
 			}
 		}
 	}
@@ -113,7 +113,7 @@ func (c *Connector) handleIncomingFragment(frag Fragment) (err error) {
 	}
 	if err != nil {
 		logger.WithError(err).WithField("transmission", transmission).Warn(
-			"Fetching or creating Transmission errored")
+			"Fetching or creating Transmission erred")
 
 		return
 	}
@@ -131,7 +131,7 @@ func (c *Connector) handleIncomingFragment(frag Fragment) (err error) {
 		} else {
 			// Returning error variable err keeps its value and cleanup code follows. That's why we don't return here.
 			logger.WithError(err).WithField("transmission", transmission).Warn(
-				"Extracting Bundle from Transmission errored")
+				"Extracting Bundle from Transmission erred")
 		}
 
 		delete(c.transmissions, transmission.TransmissionID)
@@ -169,7 +169,7 @@ func (c *Connector) handlerWrite() {
 
 		case f := <-c.fragmentOut:
 			if err := c.modem.Send(f); err != nil {
-				logger.WithField("fragment", f).WithError(err).Warn("Transmitting Fragment errored")
+				logger.WithField("fragment", f).WithError(err).Warn("Transmitting Fragment erred")
 			}
 		}
 	}
@@ -180,7 +180,7 @@ func (c *Connector) Close() (err error) {
 	close(c.closedWSyn)
 
 	if err = c.modem.Close(); err != nil {
-		log.WithField("bbc", c.Address()).WithError(err).Warn("Closing Modem errored")
+		log.WithField("bbc", c.Address()).WithError(err).Warn("Closing Modem erred")
 	}
 
 	<-c.closedRAck
@@ -225,7 +225,7 @@ func (c *Connector) Send(bndl bpv7.Bundle) error {
 			})
 
 			if err != nil {
-				logger.WithError(err).Warn("Creating Fragment errored")
+				logger.WithError(err).Warn("Creating Fragment erred")
 				return err
 			}
 

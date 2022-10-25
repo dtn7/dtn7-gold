@@ -30,18 +30,18 @@ func showBundle(args []string) {
 	if input == "-" {
 		f = os.Stdin
 	} else if f, err = os.Open(input); err != nil {
-		printFatal(err, "Opening file for reading errored")
+		printFatal(err, "Opening file for reading erred")
 	}
 
 	if err = b.UnmarshalCbor(f); err != nil {
-		printFatal(err, "Unmarshaling Bundle errored")
+		printFatal(err, "Unmarshaling Bundle erred")
 	}
 	if err = f.Close(); err != nil {
-		printFatal(err, "Closing file errored")
+		printFatal(err, "Closing file erred")
 	}
 
 	if bMsg, err = b.MarshalJSON(); err != nil {
-		printFatal(err, "Marshaling JSON errored")
+		printFatal(err, "Marshaling JSON erred")
 	}
 	fmt.Println(string(bMsg))
 }

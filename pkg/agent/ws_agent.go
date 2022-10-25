@@ -53,7 +53,7 @@ func (w *WebSocketAgent) handler() {
 func (w *WebSocketAgent) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	conn, connErr := w.upgrader.Upgrade(rw, r, nil)
 	if connErr != nil {
-		log.WithError(connErr).Warn("Upgrading HTTP request to WebSocket errored")
+		log.WithError(connErr).Warn("Upgrading HTTP request to WebSocket erred")
 		return
 	}
 

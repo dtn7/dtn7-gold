@@ -89,7 +89,7 @@ func NewCore(storePath string, nodeId bpv7.EndpointID, inspectAllBundles bool, r
 		c.signPriv = signPriv
 
 		if err := bpv7.GetExtensionBlockManager().Register(&bpv7.SignatureBlock{}); err != nil {
-			return nil, fmt.Errorf("SignatureBlock registration errored: %v", err)
+			return nil, fmt.Errorf("SignatureBlock registration erred: %v", err)
 		}
 	}
 
@@ -141,11 +141,11 @@ func (c *Core) handler() {
 			c.cron.Stop()
 
 			if err := c.claManager.Close(); err != nil {
-				log.WithError(err).Warn("Closing CLA Manager while shutting down errored")
+				log.WithError(err).Warn("Closing CLA Manager while shutting down erred")
 			}
 
 			if err := c.store.Close(); err != nil {
-				log.WithError(err).Warn("Closing store while shutting down errored")
+				log.WithError(err).Warn("Closing store while shutting down erred")
 			}
 
 			close(c.stopAck)

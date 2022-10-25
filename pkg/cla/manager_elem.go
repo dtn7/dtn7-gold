@@ -71,7 +71,7 @@ func (ce *convergenceElem) handler() {
 			}).Debug("Closing CLA's handler")
 
 			if err := ce.conv.Close(); err != nil {
-				log.WithField("cla", ce.conv).WithError(err).Warn("Closing CLA errored")
+				log.WithField("cla", ce.conv).WithError(err).Warn("Closing CLA erred")
 			}
 			close(ce.stopAck)
 

@@ -31,7 +31,7 @@ func TestAppAgentContainsEndpoint(t *testing.T) {
 	for _, test := range tests {
 		contains := AppAgentContainsEndpoint(appAgent, test.eids)
 		if contains != test.valid {
-			t.Fatalf("errored for %v", test.eids)
+			t.Fatalf("erred for %v", test.eids)
 		}
 	}
 }

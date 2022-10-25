@@ -56,14 +56,14 @@ func startExchange(args []string) {
 	signal.Notify(ex.closeChan, os.Interrupt)
 
 	if ex.websocketConn, err = agent.NewWebSocketAgentConnector(websocketAddr, endpointId); err != nil {
-		printFatal(err, "Starting WebSocketAgentConnector errored")
+		printFatal(err, "Starting WebSocketAgentConnector erred")
 	}
 
 	if ex.watcher, err = fsnotify.NewWatcher(); err != nil {
-		printFatal(err, "Starting file watcher errored")
+		printFatal(err, "Starting file watcher erred")
 	}
 	if err = ex.watcher.Add(directory); err != nil {
-		printFatal(err, "Adding directory to file watcher errored")
+		printFatal(err, "Adding directory to file watcher erred")
 	}
 
 	go ex.handleBundleRead()
@@ -119,7 +119,7 @@ func (ex *exchange) handler() {
 				return
 			}
 
-			log.WithError(err).Error("fsnotify errored")
+			log.WithError(err).Error("fsnotify erred")
 			return
 
 		case b, ok := <-ex.bundleReadChan:
@@ -135,12 +135,12 @@ func (ex *exchange) handler() {
 			})
 
 			if f, err := os.Create(filePath); err != nil {
-				logger.WithError(err).Error("Creating file errored")
+				logger.WithError(err).Error("Creating file erred")
 				return
 			} else if err := b.MarshalCbor(f); err != nil {
-				logger.WithError(err).Error("Marshalling Bundle errored")
+				logger.WithError(err).Error("Marshalling Bundle erred")
 			} else if err := f.Close(); err != nil {
-				logger.WithError(err).Error("Closing file errored")
+				logger.WithError(err).Error("Closing file erred")
 			}
 
 			ex.knownFiles.Store(ex.cleanFilepath(filePath), struct{}{})
@@ -155,16 +155,16 @@ func (ex *exchange) readNewFile(e fsnotify.Event) {
 		var b bpv7.Bundle
 
 		if f, err := os.Open(e.Name); err != nil {
-			log.WithError(err).WithField("file", e.Name).Warn("Opening file errored, retrying..")
+			log.WithError(err).WithField("file", e.Name).Warn("Opening file erred, retrying..")
 		} else if err := b.UnmarshalCbor(f); err != nil {
-			log.WithError(err).WithField("file", e.Name).Warn("Unmarshalling Bundle errored, retrying..")
+			log.WithError(err).WithField("file", e.Name).Warn("Unmarshalling Bundle erred, retrying..")
 		} else if err := f.Close(); err != nil {
-			log.WithError(err).WithField("file", e.Name).Warn("Closing file errored, retrying..")
+			log.WithError(err).WithField("file", e.Name).Warn("Closing file erred, retrying..")
 		} else if err := ex.websocketConn.WriteBundle(b); err != nil {
 			log.WithError(err).WithFields(log.Fields{
 				"file":   e.Name,
 				"bundle": b.ID().String(),
-			}).Error("Sending Bundle errored")
+			}).Error("Sending Bundle erred")
 			return
 		} else {
 			log.WithError(err).WithFields(log.Fields{
@@ -183,7 +183,7 @@ func (ex *exchange) readNewFile(e fsnotify.Event) {
 func (ex *exchange) handleBundleRead() {
 	for {
 		if b, err := ex.websocketConn.ReadBundle(); err != nil {
-			log.WithError(err).Error("Reading Bundle errored")
+			log.WithError(err).Error("Reading Bundle erred")
 
 			close(ex.bundleReadChan)
 			return

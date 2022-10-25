@@ -242,7 +242,7 @@ func (manager *Manager) registerProvider(conv ConvergenceProvider) {
 	conv.RegisterManager(manager)
 
 	if err := conv.Start(); err != nil {
-		log.WithError(err).WithField("provider", conv).Warn("Starting Provider errored")
+		log.WithError(err).WithField("provider", conv).Warn("Starting Provider erred")
 	}
 }
 
