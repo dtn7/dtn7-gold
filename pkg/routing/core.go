@@ -40,11 +40,11 @@ type Core struct {
 
 // NewCore will be created according to the parameters.
 //
-// 	storePath: path for the bundle and metadata storage
-// 	nodeId: singleton Endpoint ID/Node ID
-// 	inspectAllBundles: inspect all administrative records, not only those addressed to this node
-// 	routingConf: selected routing algorithm and its configuration
-// 	signPriv: optional ed25519 private key (64 bytes long) to sign all outgoing bundles; or nil to not use this feature
+//	storePath: path for the bundle and metadata storage
+//	nodeId: singleton Endpoint ID/Node ID
+//	inspectAllBundles: inspect all administrative records, not only those addressed to this node
+//	routingConf: selected routing algorithm and its configuration
+//	signPriv: optional ed25519 private key (64 bytes long) to sign all outgoing bundles; or nil to not use this feature
 func NewCore(storePath string, nodeId bpv7.EndpointID, inspectAllBundles bool, routingConf RoutingConf, signPriv ed25519.PrivateKey) (*Core, error) {
 	var c = new(Core)
 

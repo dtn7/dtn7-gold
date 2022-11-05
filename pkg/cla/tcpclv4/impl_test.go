@@ -208,8 +208,9 @@ func TestImplNetwork(t *testing.T) {
 		httpMux := http.NewServeMux()
 		httpMux.Handle("/tcpclv4", listener)
 		httpServer := &http.Server{
-			Addr:    addr,
-			Handler: httpMux,
+			Addr:              addr,
+			Handler:           httpMux,
+			ReadHeaderTimeout: 60 * time.Second,
 		}
 		go func() { _ = httpServer.ListenAndServe() }()
 

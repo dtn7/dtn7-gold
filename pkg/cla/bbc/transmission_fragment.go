@@ -27,16 +27,15 @@ import (
 //
 // The header is followed by the payload. The total data can be as long as the particular MTU allows.
 //
-//     0   1   2   3   4   5   6   7
-//   +---+---+---+---+---+---+---+---+
-//   |Transmission ID                |
-//   +---+---+---+---+---+---+---+---+
-//   |Seq. No            |SB |EB |FB |
-//   +---+---+---+---+---+---+---+---+
-//   |                               |
-//   +            Payload            +
-//   |                               |
-//
+//	  0   1   2   3   4   5   6   7
+//	+---+---+---+---+---+---+---+---+
+//	|Transmission ID                |
+//	+---+---+---+---+---+---+---+---+
+//	|Seq. No            |SB |EB |FB |
+//	+---+---+---+---+---+---+---+---+
+//	|                               |
+//	+            Payload            +
+//	|                               |
 type Fragment struct {
 	transmissionId byte
 	identifier     byte

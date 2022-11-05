@@ -13,16 +13,15 @@ import (
 
 // BundleBuilder is a simple framework to create bundles by method chaining.
 //
-//   bndl, err := bpv7.Builder().
-//     CRC(bpv7.CRC32).
-//     Source("dtn://src/").
-//     Destination("dtn://dest/").
-//     CreationTimestampNow().
-//     Lifetime("30m").
-//     HopCountBlock(64).
-//     PayloadBlock([]byte("hello world!")).
-//     Build()
-//
+//	bndl, err := bpv7.Builder().
+//	  CRC(bpv7.CRC32).
+//	  Source("dtn://src/").
+//	  Destination("dtn://dest/").
+//	  CreationTimestampNow().
+//	  Lifetime("30m").
+//	  HopCountBlock(64).
+//	  PayloadBlock([]byte("hello world!")).
+//	  Build()
 type BundleBuilder struct {
 	err error
 
@@ -221,11 +220,10 @@ func (bldr *BundleBuilder) CreationTimestampTime(t time.Time) *BundleBuilder {
 // values are an uint/int, representing the lifetime in milliseconds, a format
 // string (compare time.ParseDuration) for the duration or a time.Duration.
 //
-//   Lifetime(1000)             // Lifetime of 1000ms
-//   Lifetime("1000ms")         // Lifetime of 1000ms
-//   Lifetime("10m")            // Lifetime of 10min
-//   Lifetime(10 * time.Minute) // Lifetime of 10min
-//
+//	Lifetime(1000)             // Lifetime of 1000ms
+//	Lifetime("1000ms")         // Lifetime of 1000ms
+//	Lifetime("10m")            // Lifetime of 10min
+//	Lifetime(10 * time.Minute) // Lifetime of 10min
 func (bldr *BundleBuilder) Lifetime(duration interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -253,13 +251,12 @@ func (bldr *BundleBuilder) BundleCtrlFlags(bcf BundleControlFlags) *BundleBuilde
 
 // Canonical adds a canonical block to this bundle. The parameters are:
 //
-//   ExtensionBlock[, BlockControlFlags] or
-//   CanonicalBlock
+//	ExtensionBlock[, BlockControlFlags] or
+//	CanonicalBlock
 //
-//   where ExtensionBlock is a bpv7.ExtensionBlock and
-//   BlockControlFlags are _optional_ block processing control flags or
-//   CanonicalBlock is a CanonicalBlock
-//
+//	where ExtensionBlock is a bpv7.ExtensionBlock and
+//	BlockControlFlags are _optional_ block processing control flags or
+//	CanonicalBlock is a CanonicalBlock
 func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -342,11 +339,10 @@ func (bldr *BundleBuilder) canonicalParseFlags(args ...interface{}) (flags Block
 
 // BundleAgeBlock adds a bundle age block to this bundle. The parameters are:
 //
-//   Age[, BlockControlFlags]
+//	Age[, BlockControlFlags]
 //
-//   where Age is the age as an uint in milliseconds, a format string or a time.Duration
-//   and BlockControlFlags are _optional_ block processing control flags
-//
+//	where Age is the age as an uint in milliseconds, a format string or a time.Duration
+//	and BlockControlFlags are _optional_ block processing control flags
 func (bldr *BundleBuilder) BundleAgeBlock(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -364,11 +360,10 @@ func (bldr *BundleBuilder) BundleAgeBlock(args ...interface{}) *BundleBuilder {
 
 // HopCountBlock adds a hop count block to this bundle. The parameters are:
 //
-//   Limit[, BlockControlFlags]
+//	Limit[, BlockControlFlags]
 //
-//   where Limit is the limit of this Hop Count Block and
-//   BlockControlFlags are _optional_ block processing control flags
-//
+//	where Limit is the limit of this Hop Count Block and
+//	BlockControlFlags are _optional_ block processing control flags
 func (bldr *BundleBuilder) HopCountBlock(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -386,10 +381,10 @@ func (bldr *BundleBuilder) HopCountBlock(args ...interface{}) *BundleBuilder {
 
 // PayloadBlock adds a payload block to this bundle. The parameters are:
 //
-//   Data[, BlockControlFlags]
+//	Data[, BlockControlFlags]
 //
-//   where Data is the payload's data and
-//   BlockControlFlags are _optional_ block processing control flags
+//	where Data is the payload's data and
+//	BlockControlFlags are _optional_ block processing control flags
 func (bldr *BundleBuilder) PayloadBlock(args ...interface{}) *BundleBuilder {
 	var buf bytes.Buffer
 	if err := binary.Write(&buf, binary.LittleEndian, args[0]); err != nil {
@@ -405,11 +400,10 @@ func (bldr *BundleBuilder) PayloadBlock(args ...interface{}) *BundleBuilder {
 // PreviousNodeBlock adds a previous node block to this bundle. The parameters
 // are:
 //
-//   PrevNode[, BlockControlFlags]
+//	PrevNode[, BlockControlFlags]
 //
-//   where PrevNode is an EndpointID or a string describing an endpoint and
-//   BlockControlFlags are _optional_ block processing control flags
-//
+//	where PrevNode is an EndpointID or a string describing an endpoint and
+//	BlockControlFlags are _optional_ block processing control flags
 func (bldr *BundleBuilder) PreviousNodeBlock(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -447,12 +441,11 @@ func (bldr *BundleBuilder) AdministrativeRecord(ar AdministrativeRecord) *Bundle
 
 // StatusReport configures this BundleBuilder's Bundle to be an AdministrativeRecord, delivering a StatusReport.
 //
-//   Bundle, StatusInformationPos, StatusReportReason[, DtnTime]
+//	Bundle, StatusInformationPos, StatusReportReason[, DtnTime]
 //
-//   Where Bundle is the reference Bundle, StatusInformationPos describes the kind of StatusInformation, and
-//   StatusReportReason is the reason. An optional DtnTime for the record can also be passed. Otherwise the current
-//   time will be used.
-//
+//	Where Bundle is the reference Bundle, StatusInformationPos describes the kind of StatusInformation, and
+//	StatusReportReason is the reason. An optional DtnTime for the record can also be passed. Otherwise the current
+//	time will be used.
 func (bldr *BundleBuilder) StatusReport(args ...interface{}) *BundleBuilder {
 	if bldr.err != nil {
 		return bldr
@@ -496,15 +489,14 @@ func (bldr *BundleBuilder) StatusReport(args ...interface{}) *BundleBuilder {
 //
 // This function does not use reflection or other dark magic. So it is safe to be called by unchecked data.
 //
-//   args := map[string]interface{}{
-//     "destination":            "dtn://dst/",
-//     "source":                 "dtn://src/",
-//     "creation_timestamp_now": true,
-//     "lifetime":               "24h",
-//     "payload_block":          "hello world",
-//   }
-//   b, err := BuildFromMap(args)
-//
+//	args := map[string]interface{}{
+//	  "destination":            "dtn://dst/",
+//	  "source":                 "dtn://src/",
+//	  "creation_timestamp_now": true,
+//	  "lifetime":               "24h",
+//	  "payload_block":          "hello world",
+//	}
+//	b, err := BuildFromMap(args)
 func BuildFromMap(m map[string]interface{}) (bndl Bundle, err error) {
 	bldr := Builder()
 
