@@ -279,10 +279,14 @@ func (asb *AbstractSecurityBlock) MarshalCbor(w io.Writer) error {
 
 // UnmarshalCbor creates this AbstractSecurityBlock based on a CBOR representation.
 func (asb *AbstractSecurityBlock) UnmarshalCbor(r io.Reader) error {
+	blength := uint64(0)
+
 	if bl, err := cboring.ReadArrayLength(r); err != nil {
 		return err
-	} else if bl != 5 && bl != 6 {
+	} else if bl != 5  && bl != 6 {
 		return fmt.Errorf("expected array with length 5 or 6, got %d", bl)
+	} else {
+		blength = bl
 	}
 
 	// SecurityTargets
@@ -320,6 +324,10 @@ func (asb *AbstractSecurityBlock) UnmarshalCbor(r io.Reader) error {
 	// SecurityContextParameters (Optional)
 	// Check if SecurityContextFlag is set
 	if asb.HasSecurityContextParametersPresentContextFlag() {
+		if blength != 6 {
+			return fmt.Errorf("expected array with length 6, got %d", blength)
+		}
+
 		var err error
 		r, err = asb.UnmarshalCborSecurityParameters(r)
 		if err != nil {
