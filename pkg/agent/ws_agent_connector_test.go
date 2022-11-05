@@ -26,8 +26,9 @@ func TestWebAgentConnector(t *testing.T) {
 	httpMux := http.NewServeMux()
 	httpMux.HandleFunc("/ws", ws.ServeHTTP)
 	httpServer := &http.Server{
-		Addr:    addr,
-		Handler: httpMux,
+		Addr:              addr,
+		Handler:           httpMux,
+		ReadHeaderTimeout: 60 * time.Second,
 	}
 	go func() { _ = httpServer.ListenAndServe() }()
 

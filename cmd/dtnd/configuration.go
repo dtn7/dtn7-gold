@@ -155,8 +155,9 @@ func parseListen(conv convergenceConf, nodeId bpv7.EndpointID) (cla.Convergable,
 		httpMux := http.NewServeMux()
 		httpMux.Handle("/tcpclv4", listener)
 		httpServer := &http.Server{
-			Addr:    conv.Endpoint,
-			Handler: httpMux,
+			Addr:              conv.Endpoint,
+			Handler:           httpMux,
+			ReadHeaderTimeout: 60 * time.Second,
 		}
 
 		errChan := make(chan error)
@@ -230,8 +231,9 @@ func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error)
 		}
 
 		httpServer := &http.Server{
-			Addr:    conf.Webserver.Address,
-			Handler: r,
+			Addr:              conf.Webserver.Address,
+			Handler:           r,
+			ReadHeaderTimeout: 60 * time.Second,
 		}
 
 		errChan := make(chan error)

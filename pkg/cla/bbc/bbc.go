@@ -20,7 +20,6 @@ import (
 //   - bbc://rf95modem/dev/ttyUSB0?frequency=865.4 would open a rf95modem at 865.4 MHz.
 //   - bbc://rf95modem/dev/ttyUSB0?mode=fast-short-range would open a rf95modem with the FAST+SHORT RANGE mode.
 //   - bbc://rf95modem/dev/ttyUSB0?frequency=865.23&mode=fast-short-range would be all together.
-//
 func NewBundleBroadcastingConnector(addr string, permanent bool) (c *Connector, err error) {
 	uri, uriErr := url.Parse(addr)
 	if uriErr != nil {

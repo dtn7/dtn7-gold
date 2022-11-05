@@ -283,7 +283,7 @@ func (asb *AbstractSecurityBlock) UnmarshalCbor(r io.Reader) error {
 
 	if bl, err := cboring.ReadArrayLength(r); err != nil {
 		return err
-	} else if bl != 5  && bl != 6 {
+	} else if bl != 5 && bl != 6 {
 		return fmt.Errorf("expected array with length 5 or 6, got %d", bl)
 	} else {
 		blength = bl

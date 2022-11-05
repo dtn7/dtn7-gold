@@ -25,14 +25,13 @@ const (
 
 // DtnEndpoint describes the dtn URI for EndpointIDs, as defined in ietf-dtn-bpbis.
 //
-//   Format of a "normal" dtn URI:
-//   "dtn:" "//" NodeName "/" Demux
-//               ^------^ 1*(ALPHA/DIGIT/"-"/"."/"_")
-//                            ^---^ *VCHAR
+//	Format of a "normal" dtn URI:
+//	"dtn:" "//" NodeName "/" Demux
+//	            ^------^ 1*(ALPHA/DIGIT/"-"/"."/"_")
+//	                         ^---^ *VCHAR
 //
-//   Format of the null endpoint:
-//   "dtn:none"
-//
+//	Format of the null endpoint:
+//	"dtn:none"
 type DtnEndpoint struct {
 	NodeName string
 	Demux    string
