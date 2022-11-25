@@ -23,15 +23,25 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// TODO: is this a reasonable value? I don't know...
 const handshakeTimeout = 500 * time.Millisecond
 
 type Endpoint struct {
-	id          bpv7.EndpointID
-	peerId      bpv7.EndpointID
+	// id is the bundle protocol endpoint id which this CLA is exposing
+	id bpv7.EndpointID
+	// peerId is the bundle protocol endpoint id of the connected peer
+	// This field may be nil until the initial handshake has happened
+	peerId bpv7.EndpointID
+	// The address in HOST:PORT format of the remote peer
 	peerAddress string
-	peerHost    string
-	connection  quic.Connection
+	// Only the HOST part of the peer's address
+	// We need this because QUICL is bidirectional, and we don't want to open another connection to the same peer
+	// on a different port
+	peerHost string
+	// The actual QUIC connection which transceives data
+	connection quic.Connection
 
+	// Channel over which the CLA communicated information to the CLA manager (unidirectional)
 	reportingChannel chan cla.ConvergenceStatus
 
 	permanent bool
@@ -92,7 +102,7 @@ Methods for Convergence interface
 func (endpoint *Endpoint) Start() (error, bool) {
 	// if we are on the dialer-side we need to first initiate the quic-connection
 	if endpoint.dialer {
-		session, err := quic.DialAddr(endpoint.peerAddress, internal.GenerateDialerTLSConfig(), internal.GenerateQUICConfig())
+		session, err := quic.DialAddr(endpoint.peerAddress, internal.GenerateSimpleDialerTLSConfig(), internal.GenerateQUICConfig())
 		endpoint.connection = session
 		if err != nil {
 			return err, endpoint.permanent
@@ -201,6 +211,10 @@ func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
 Non-interface methods
 */
 
+// handleConnection continuously listens on the connection and accepts incoming streams
+// This method is meant to be run in its own goroutine.
+// When a new stream is opened, i.e. when the peer wants to send us a bundle, we spawn a new goroutine
+// to handle the incoming data.
 func (endpoint *Endpoint) handleConnection() {
 	for {
 		stream, err := endpoint.connection.AcceptStream(context.Background())
@@ -245,6 +259,8 @@ func (endpoint *Endpoint) handleConnection() {
 	}
 }
 
+// handleStream hadles incoming bundles
+// A single stream will always carry a single bundle, and will be closed once the bundle has been transmitted
 func (endpoint *Endpoint) handleStream(stream quic.Stream) {
 	log.WithField("cla", endpoint).Debug("Receiving bundle via quicl")
 
@@ -269,6 +285,10 @@ func (endpoint *Endpoint) handleStream(stream quic.Stream) {
 	log.WithField("cla", endpoint).Debug("Finished handling stream")
 }
 
+// handshakeListener performs the dialer-portion of the protocol handshake
+// Since communication is initiated by the dialer, we listen on the connection for a new stream
+// TODO: prevent the peer from sending bundles on the connection before the handshake is complete
+// We then receive the dialer's EndpointID and finish by sending them ours
 func (endpoint *Endpoint) handshakeListener() error {
 	log.WithField("cla", endpoint.peerAddress).Debug("Performing handshake")
 
@@ -288,6 +308,7 @@ func (endpoint *Endpoint) handshakeListener() error {
 
 	// the listener first receives the dialer's id
 	if err = endpoint.receiveEndpointID(stream); err != nil {
+		// TODO: close connection with error
 		return err
 	}
 
@@ -304,6 +325,9 @@ func (endpoint *Endpoint) handshakeListener() error {
 	return nil
 }
 
+// handshakeDialer performs the dialer-portion of the protocol handshake
+// We first open a new bidirectional data stream inside the QUIC connection
+// We then send our own EndpointID over this stream, and finish by receiving the listener's id
 func (endpoint *Endpoint) handshakeDialer() error {
 	log.WithField("cla", endpoint.peerAddress).Debug("Performing handshake")
 
@@ -318,12 +342,16 @@ func (endpoint *Endpoint) handshakeDialer() error {
 		return err
 	}
 
-	// wait for our peer's ID
+	// wait for the listener's ID
 	err = endpoint.receiveEndpointID(stream)
+	// TODO: if error, close stream
 
 	return err
 }
 
+// sendEndpointID sends this CLA's EndpointID (the one which is sored in the id-field) over a given QUIC stream
+// The EndpointID is first marshaled into a buffer using its builtin cboring marshaler
+// We then send the length of the buffer (using cboring ByteStringLen) followed by the id itself
 func (endpoint *Endpoint) sendEndpointID(stream quic.Stream) error {
 	log.WithField("cla", endpoint).Debug("Sending own endpoint id")
 
@@ -349,6 +377,9 @@ func (endpoint *Endpoint) sendEndpointID(stream quic.Stream) error {
 	return nil
 }
 
+// receiveEndpointID receives a remote CLA's EndpointID over a given QUIC stream
+// The serialised form consists of the cbor representation of the EndpointID,
+// wrapped in a cbor byte-string
 func (endpoint *Endpoint) receiveEndpointID(stream quic.Stream) error {
 	log.WithField("cla", endpoint).Debug("Receiving peer's endpoint id")
 	reader := bufio.NewReader(stream)

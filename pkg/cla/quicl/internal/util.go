@@ -18,7 +18,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// GenerateSimpleListenerTLSConfig sets up a bare-bones TLS config for the listener
+// GenerateSimpleListenerTLSConfig generates a bare-bones TLS config for the listener
+// This uses a self-signed certificate, so the dialer will have to ignore verification issues
 func GenerateSimpleListenerTLSConfig() *tls.Config {
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -43,7 +44,9 @@ func GenerateSimpleListenerTLSConfig() *tls.Config {
 	}
 }
 
-func GenerateDialerTLSConfig() *tls.Config {
+// GenerateSimpleDialerTLSConfig generates a bare-bones TLS config for the dialer
+// This configuration assumes that the listener is using a self-signed certificate and thus does not verify it
+func GenerateSimpleDialerTLSConfig() *tls.Config {
 	return &tls.Config{
 		InsecureSkipVerify: true,
 		NextProtos:         []string{"bpv7-quicl"},
