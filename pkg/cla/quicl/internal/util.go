@@ -55,8 +55,9 @@ func GenerateSimpleDialerTLSConfig() *tls.Config {
 
 func GenerateQUICConfig() *quic.Config {
 	return &quic.Config{
-		KeepAlivePeriod: 1 * time.Second,
-		MaxIdleTimeout:  5 * time.Second,
-		EnableDatagrams: false,
+		KeepAlivePeriod:    1 * time.Second,
+		MaxIdleTimeout:     5 * time.Second,
+		EnableDatagrams:    false,
+		MaxIncomingStreams: 2048,
 	}
 }

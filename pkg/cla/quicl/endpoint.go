@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/dtn7/cboring"
@@ -46,6 +47,9 @@ type Endpoint struct {
 
 	permanent bool
 	dialer    bool
+
+	// Whether the protocol handshake has been completed
+	handshake *uint32
 }
 
 func NewListenerEndpoint(id bpv7.EndpointID, session quic.Connection) *Endpoint {
@@ -59,6 +63,7 @@ func NewListenerEndpoint(id bpv7.EndpointID, session quic.Connection) *Endpoint 
 		reportingChannel: make(chan cla.ConvergenceStatus),
 		permanent:        false,
 		dialer:           false,
+		handshake:        new(uint32),
 	}
 }
 
@@ -78,6 +83,7 @@ func NewDialerEndpoint(peerAddress string, id bpv7.EndpointID, permanent bool) *
 		reportingChannel: make(chan cla.ConvergenceStatus),
 		permanent:        permanent,
 		dialer:           true,
+		handshake:        new(uint32),
 	}
 }
 
@@ -150,9 +156,13 @@ func (endpoint *Endpoint) Channel() chan cla.ConvergenceStatus {
 }
 
 func (endpoint *Endpoint) Address() string {
-	// we return only the host, since connections are bidirectional
-	// ,and we don't want to open a new connection on a different port to the same peer
-	return endpoint.peerHost
+	// we return only the host, since connections are bidirectional,
+	// and we don't want to open a new connection on a different port to the same peer
+	//return endpoint.peerHost
+
+	// as it turns out, that does not work - at least with our test-suite, since all the instances run on localhost
+	// TODO: find a better way to do this (might require modifications to the manager)
+	return endpoint.peerAddress
 }
 
 func (endpoint *Endpoint) IsPermanent() bool {
@@ -176,6 +186,16 @@ func (endpoint *Endpoint) GetPeerEndpointID() bpv7.EndpointID {
 }
 
 func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
+	log.WithFields(log.Fields{
+		"peer":   endpoint.peerId,
+		"bundle": bndl.ID(),
+	}).Debug("Sending bundle")
+
+	handshake := atomic.LoadUint32(endpoint.handshake)
+	if handshake == 0 {
+		return internal.NewInitialisationError("Handshake not yet completed")
+	}
+
 	stream, err := endpoint.connection.OpenStream()
 	if err != nil {
 		// TODO: understand possible error cases
@@ -204,6 +224,12 @@ func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
 	}
 
 	_ = stream.Close()
+
+	log.WithFields(log.Fields{
+		"peer":   endpoint.peerId,
+		"bundle": bndl.ID(),
+	}).Debug("Bundle sent")
+
 	return nil
 }
 
@@ -216,8 +242,12 @@ Non-interface methods
 // When a new stream is opened, i.e. when the peer wants to send us a bundle, we spawn a new goroutine
 // to handle the incoming data.
 func (endpoint *Endpoint) handleConnection() {
+	log.WithFields(log.Fields{"endpoint": endpoint.GetEndpointID(), "peer": endpoint.GetPeerEndpointID()}).Debug("CLA Started")
+	endpoint.reportingChannel <- cla.NewConvergencePeerAppeared(endpoint, endpoint.GetPeerEndpointID())
+
 	for {
 		stream, err := endpoint.connection.AcceptStream(context.Background())
+		log.WithField("CLA", endpoint).Debug("New incoming stream")
 		if err != nil {
 			var netErr net.Error
 			var appErr *quic.ApplicationError
@@ -322,6 +352,8 @@ func (endpoint *Endpoint) handshakeListener() error {
 		return internal.NewHandshakeError("error closing handshake stream", internal.ConnectionError, err)
 	}
 
+	atomic.StoreUint32(endpoint.handshake, 1)
+
 	return nil
 }
 
@@ -345,6 +377,8 @@ func (endpoint *Endpoint) handshakeDialer() error {
 	// wait for the listener's ID
 	err = endpoint.receiveEndpointID(stream)
 	// TODO: if error, close stream
+
+	atomic.StoreUint32(endpoint.handshake, 1)
 
 	return err
 }
