@@ -35,10 +35,6 @@ type Endpoint struct {
 	peerId bpv7.EndpointID
 	// The address in HOST:PORT format of the remote peer
 	peerAddress string
-	// Only the HOST part of the peer's address
-	// We need this because QUICL is bidirectional, and we don't want to open another connection to the same peer
-	// on a different port
-	peerHost string
 	// The actual QUIC connection which transceives data
 	connection quic.Connection
 
@@ -53,12 +49,9 @@ type Endpoint struct {
 }
 
 func NewListenerEndpoint(id bpv7.EndpointID, session quic.Connection) *Endpoint {
-	peerHost, _, _ := net.SplitHostPort(session.RemoteAddr().String())
-
 	return &Endpoint{
 		id:               id,
 		peerAddress:      session.RemoteAddr().String(),
-		peerHost:         peerHost,
 		connection:       session,
 		reportingChannel: make(chan cla.ConvergenceStatus),
 		permanent:        false,
@@ -68,18 +61,9 @@ func NewListenerEndpoint(id bpv7.EndpointID, session quic.Connection) *Endpoint 
 }
 
 func NewDialerEndpoint(peerAddress string, id bpv7.EndpointID, permanent bool) *Endpoint {
-	peerHost, _, err := net.SplitHostPort(peerAddress)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"address": peerAddress,
-			"error":   err,
-		}).Fatal("Invalid peer address")
-	}
-
 	return &Endpoint{
 		id:               id,
 		peerAddress:      peerAddress,
-		peerHost:         peerHost,
 		reportingChannel: make(chan cla.ConvergenceStatus),
 		permanent:        permanent,
 		dialer:           true,
@@ -156,12 +140,6 @@ func (endpoint *Endpoint) Channel() chan cla.ConvergenceStatus {
 }
 
 func (endpoint *Endpoint) Address() string {
-	// we return only the host, since connections are bidirectional,
-	// and we don't want to open a new connection on a different port to the same peer
-	//return endpoint.peerHost
-
-	// as it turns out, that does not work - at least with our test-suite, since all the instances run on localhost
-	// TODO: find a better way to do this (might require modifications to the manager)
 	return endpoint.peerAddress
 }
 

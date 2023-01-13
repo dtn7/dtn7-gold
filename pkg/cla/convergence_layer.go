@@ -54,6 +54,14 @@ type Convergence interface {
 
 	// Address should return a unique address string to both identify this
 	// Convergence{Receiver,Sender} and ensure it will not opened twice.
+
+	// TODO: The way this works right now does have some problems.
+	// If you're using host:port to identify a CLA you might end up with multiple connections
+	// between two nodes. If both are sending neighbour-discovery announcements, they will include
+	// their listener-port which will be different from the client-port of an existing connection.
+	// For mtcp, you actually need that, since the CLA pretends to be unidirectional, but if you have
+	// full duplex communication it's unnecessary to have to CLAs for each node-pair.
+	// But fixing this would probably require some major changes to the manager.
 	Address() string
 
 	// IsPermanent returns true, if this CLA should not be removed after failures.
