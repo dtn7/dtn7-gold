@@ -336,7 +336,7 @@ func (endpoint *Endpoint) handshakeListener() error {
 		}
 	}
 
-	// the listener first receives the dialer's id
+	// The listener first receives the dialer's ID
 	if err = endpoint.receiveEndpointID(stream); err != nil {
 		// TODO: close connection with error
 		return err
@@ -383,9 +383,9 @@ func (endpoint *Endpoint) handshakeDialer() error {
 	return err
 }
 
-// sendEndpointID sends this CLA's EndpointID (the one which is sored in the id-field) over a given QUIC stream
-// The EndpointID is first marshaled into a buffer using its builtin cboring marshaler
-// We then send the length of the buffer (using cboring ByteStringLen) followed by the id itself
+// sendEndpointID sends this CLA's EndpointID (the one which is stored in the id-field) over a given QUIC stream.
+// The EndpointID is first marshalled into a buffer using its builtin cboring marshaller.
+// We then send the length of the buffer (using cboring ByteStringLen) followed by the ID itself.
 func (endpoint *Endpoint) sendEndpointID(stream quic.Stream) error {
 	log.WithField("cla", endpoint).Debug("Sending own endpoint id")
 
