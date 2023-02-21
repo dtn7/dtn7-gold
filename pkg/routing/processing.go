@@ -55,7 +55,7 @@ func (c *Core) sendBundleAttachSignature(bndl *bpv7.Bundle) {
 func (c *Core) transmit(bp BundleDescriptor) {
 	log.WithField("bundle", bp.ID().String()).Info("Transmission of bundle requested")
 
-	c.idKeeper.update(bp.MustBundle())
+	c.idKeeper.update(&bp)
 
 	bp.AddConstraint(DispatchPending)
 	_ = bp.Sync()

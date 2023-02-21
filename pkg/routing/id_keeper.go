@@ -43,7 +43,8 @@ func NewIdKeeper() IdKeeper {
 
 // update updates the IdKeeper's state regarding this bundle and sets this
 // bundle's sequence number.
-func (idk *IdKeeper) update(bndl *bpv7.Bundle) {
+func (idk *IdKeeper) update(bp *BundleDescriptor) {
+	bndl := bp.MustBundle()
 	var tpl = newIdTuple(bndl)
 
 	idk.mutex.Lock()
@@ -54,6 +55,7 @@ func (idk *IdKeeper) update(bndl *bpv7.Bundle) {
 	}
 
 	bndl.PrimaryBlock.CreationTimestamp[1] = idk.data[tpl]
+	bp.Id.Timestamp[1] = idk.data[tpl]
 	idk.mutex.Unlock()
 
 	if idk.autoClean {
