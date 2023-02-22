@@ -53,9 +53,9 @@ func (c *Core) sendBundleAttachSignature(bndl *bpv7.Bundle) {
 // transmit starts the transmission of an outgoing bundle pack.
 // Therefore, the source's endpoint ID must be dtn:none or a member of this node.
 func (c *Core) transmit(bp BundleDescriptor) {
-	log.WithField("bundle", bp.ID().String()).Info("Transmission of bundle requested")
-
 	c.idKeeper.update(&bp)
+
+	log.WithField("bundle", bp.ID().String()).Info("Transmission of bundle requested")
 
 	bp.AddConstraint(DispatchPending)
 	_ = bp.Sync()
