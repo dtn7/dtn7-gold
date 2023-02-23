@@ -96,7 +96,7 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 		purgeTime:        purgeTime,
 	}
 
-	err = c.cron.Register("dtlsr_purge", dtlsr.purgePeers, purgeTime)
+	err = c.Cron.Register("dtlsr_purge", dtlsr.purgePeers, purgeTime)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err.Error(),
@@ -110,7 +110,7 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 		}).Fatal("Unable to parse duration")
 	}
 
-	err = c.cron.Register("dtlsr_recompute", dtlsr.recomputeCron, recomputeTime)
+	err = c.Cron.Register("dtlsr_recompute", dtlsr.recomputeCron, recomputeTime)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err.Error(),
@@ -124,7 +124,7 @@ func NewDTLSR(c *Core, config DTLSRConfig) *DTLSR {
 		}).Fatal("Unable to parse duration")
 	}
 
-	err = c.cron.Register("dtlsr_broadcast", dtlsr.broadcastCron, broadcastTime)
+	err = c.Cron.Register("dtlsr_broadcast", dtlsr.broadcastCron, broadcastTime)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err.Error(),
@@ -188,7 +188,7 @@ func (dtlsr *DTLSR) NotifyNewBundle(bp BundleDescriptor) {
 	}
 
 	// store cla from which we received this bundle so that we don't always bounce bundles between nodes
-	bundleItem, err := dtlsr.c.store.QueryId(bp.Id)
+	bundleItem, err := dtlsr.c.Store.QueryId(bp.Id)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -207,7 +207,7 @@ func (dtlsr *DTLSR) NotifyNewBundle(bp BundleDescriptor) {
 		}
 
 		bundleItem.Properties["routing/dtlsr/sent"] = append(sentEids, prevNode)
-		if err := dtlsr.c.store.Update(bundleItem); err != nil {
+		if err := dtlsr.c.Store.Update(bundleItem); err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Warn("Updating BundleItem failed")
@@ -231,7 +231,7 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundleDescriptor) (sender []cla.Convergen
 	}
 
 	if bndl.PrimaryBlock.Destination == dtlsr.broadcastAddress {
-		bundleItem, err := dtlsr.c.store.QueryId(bp.Id)
+		bundleItem, err := dtlsr.c.Store.QueryId(bp.Id)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error": err.Error(),
@@ -249,7 +249,7 @@ func (dtlsr *DTLSR) SenderForBundle(bp BundleDescriptor) (sender []cla.Convergen
 		}).Debug("Relaying broadcast bundle")
 
 		bundleItem.Properties["routing/dtlsr/sent"] = sentEids
-		if err := dtlsr.c.store.Update(bundleItem); err != nil {
+		if err := dtlsr.c.Store.Update(bundleItem); err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Warn("Updating BundleItem failed")

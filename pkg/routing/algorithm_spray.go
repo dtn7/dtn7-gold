@@ -44,7 +44,7 @@ type sprayMetaData struct {
 // and deletes metadata for expired bundles
 func cleanupMetaData(c *Core, metadata *map[bpv7.BundleID]sprayMetaData) {
 	for bundleId := range *metadata {
-		if !c.store.KnowsBundle(bundleId) {
+		if !c.Store.KnowsBundle(bundleId) {
 			delete(*metadata, bundleId)
 		}
 	}
@@ -62,7 +62,7 @@ func NewSprayAndWait(c *Core, config SprayConfig) *SprayAndWait {
 		bundleData: make(map[bpv7.BundleID]sprayMetaData),
 	}
 
-	err := c.cron.Register("spray_and_wait_gc", sprayAndWait.GarbageCollect, time.Second*60)
+	err := c.Cron.Register("spray_and_wait_gc", sprayAndWait.GarbageCollect, time.Second*60)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -243,7 +243,7 @@ func NewBinarySpray(c *Core, config SprayConfig) *BinarySpray {
 		bundleData: make(map[bpv7.BundleID]sprayMetaData),
 	}
 
-	err := c.cron.Register("binary_spray_gc", binarySpray.GarbageCollect, time.Second*60)
+	err := c.Cron.Register("binary_spray_gc", binarySpray.GarbageCollect, time.Second*60)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,

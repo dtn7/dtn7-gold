@@ -23,6 +23,15 @@ node-id = "dtn://node-name/"
 # Please DO NOT use the following key or a variation of it. I am serious.
 # signature-private = "2d5b59df9e860636ee392fc7833d957543cd7e47e95b8a2800224408840242a8edff1aafc10af23ae32a6868e2c31cbbcf3157a706accae2eb7faa7a1d7ee84e"
 
+# DTN7-Go contains various cron jobs for book keeping and cleaning up various states.
+[cron]
+# How often a bundle in the store should be checkt for re-subsmussion
+check-bundles = "10s"
+# How often to cleanup the store and remove old bundles
+clean-store = "10m"
+# How often to reset the internal bundle id book keeping
+clean-id = "1h"
+
 
 # Configure the format and verbosity of dtnd's logging.
 [logging]

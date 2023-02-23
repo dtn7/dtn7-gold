@@ -28,16 +28,14 @@ func newIdTuple(bndl *bpv7.Bundle) idTuple {
 // IdKeeper keeps track of the creation timestamp's sequence number for
 // outbounding bundles.
 type IdKeeper struct {
-	data      map[idTuple]uint64
-	mutex     sync.Mutex
-	autoClean bool
+	data  map[idTuple]uint64
+	mutex sync.Mutex
 }
 
 // NewIdKeeper creates a new, empty IdKeeper.
 func NewIdKeeper() IdKeeper {
 	return IdKeeper{
-		data:      make(map[idTuple]uint64),
-		autoClean: true,
+		data: make(map[idTuple]uint64),
 	}
 }
 
@@ -57,20 +55,16 @@ func (idk *IdKeeper) update(bp *BundleDescriptor) {
 	bndl.PrimaryBlock.CreationTimestamp[1] = idk.data[tpl]
 	bp.Id.Timestamp[1] = idk.data[tpl]
 	idk.mutex.Unlock()
-
-	if idk.autoClean {
-		idk.clean()
-	}
 }
 
-// clean removes states which are older an hour and aren't the epoch time.
-func (idk *IdKeeper) clean() {
+// Clean removes states which are older an hour and aren't the epoch time.
+func (idk *IdKeeper) Clean() {
 	idk.mutex.Lock()
 
-	var threshold = bpv7.DtnTimeNow() - 60*60*24
+	var threshold = bpv7.DtnTimeNow() - 60
 
 	for tpl := range idk.data {
-		if tpl.time < threshold && tpl.time != bpv7.DtnTimeEpoch {
+		if tpl.time < threshold {
 			delete(idk.data, tpl)
 		}
 	}

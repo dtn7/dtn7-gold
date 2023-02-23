@@ -26,13 +26,13 @@ type Core struct {
 	NodeId            bpv7.EndpointID
 
 	agentManager *AgentManager
-	cron         *Cron
+	Cron         *Cron
 	claManager   *cla.Manager
-	idKeeper     IdKeeper
+	IdKeeper     IdKeeper
 	routing      Algorithm
 	signPriv     ed25519.PrivateKey
 
-	store *storage.Store
+	Store *storage.Store
 
 	stopSyn chan struct{}
 	stopAck chan struct{}
@@ -62,19 +62,17 @@ func NewCore(storePath string, nodeId bpv7.EndpointID, inspectAllBundles bool, r
 	c.InspectAllBundles = inspectAllBundles
 	c.NodeId = nodeId
 
-	c.cron = NewCron()
-
 	if store, err := storage.NewStore(storePath); err != nil {
 		return nil, err
 	} else {
-		c.store = store
+		c.Store = store
 	}
 
 	c.agentManager = NewAgentManager(c)
 
 	c.claManager = cla.NewManager()
 
-	c.idKeeper = NewIdKeeper()
+	c.IdKeeper = NewIdKeeper()
 
 	if ra, raErr := routingConf.RoutingAlgorithm(c); raErr != nil {
 		return nil, raErr
@@ -96,13 +94,6 @@ func NewCore(storePath string, nodeId bpv7.EndpointID, inspectAllBundles bool, r
 	c.stopSyn = make(chan struct{})
 	c.stopAck = make(chan struct{})
 
-	if err := c.cron.Register("pending_bundles", c.checkPendingBundles, 10*time.Second); err != nil {
-		log.WithError(err).Warn("Failed to register pending_bundles at cron")
-	}
-	if err := c.cron.Register("clean_store", c.store.DeleteExpired, 10*time.Minute); err != nil {
-		log.WithError(err).Warn("Failed to register clean_store at cron")
-	}
-
 	go c.handler()
 
 	return c, nil
@@ -114,10 +105,10 @@ func (c *Core) SetRoutingAlgorithm(routing Algorithm) {
 	c.routing = routing
 }
 
-// checkPendingBundles queries pending bundle (packs) from the store and
+// CheckPendingBundles queries pending bundle (packs) from the store and
 // tries to dispatch them.
-func (c *Core) checkPendingBundles() {
-	if bis, err := c.store.QueryPending(); err != nil {
+func (c *Core) CheckPendingBundles() {
+	if bis, err := c.Store.QueryPending(); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Warn("Failed to fetch pending bundle packs")
@@ -127,7 +118,7 @@ func (c *Core) checkPendingBundles() {
 				"bundle": bi.Id,
 			}).Info("Retrying bundle from store")
 
-			c.dispatching(NewBundleDescriptor(bi.BId, c.store))
+			c.dispatching(NewBundleDescriptor(bi.BId, c.Store))
 		}
 	}
 }
@@ -138,13 +129,13 @@ func (c *Core) handler() {
 		select {
 		// Invoked by Close(), shuts down
 		case <-c.stopSyn:
-			c.cron.Stop()
+			c.Cron.Stop()
 
 			if err := c.claManager.Close(); err != nil {
 				log.WithError(err).Warn("Closing CLA Manager while shutting down erred")
 			}
 
-			if err := c.store.Close(); err != nil {
+			if err := c.Store.Close(); err != nil {
 				log.WithError(err).Warn("Closing store while shutting down erred")
 			}
 
@@ -157,7 +148,7 @@ func (c *Core) handler() {
 			case cla.ReceivedBundle:
 				crb := cs.Message.(cla.ConvergenceReceivedBundle)
 
-				bp := NewBundleDescriptorFromBundle(*crb.Bundle, c.store)
+				bp := NewBundleDescriptorFromBundle(*crb.Bundle, c.Store)
 				bp.Receiver = crb.Endpoint
 				_ = bp.Sync()
 
@@ -165,7 +156,7 @@ func (c *Core) handler() {
 
 			case cla.PeerAppeared:
 				c.routing.ReportPeerAppeared(cs.Sender)
-				c.checkPendingBundles()
+				c.CheckPendingBundles()
 
 			case cla.PeerDisappeared:
 				c.routing.ReportPeerDisappeared(cs.Sender)

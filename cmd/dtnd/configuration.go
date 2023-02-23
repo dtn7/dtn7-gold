@@ -31,9 +31,25 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/routing"
 )
 
+type ConfigError struct {
+	message string
+	cause   error
+}
+
+func NewConfigError(message string, cause error) *ConfigError {
+	return &ConfigError{message: message, cause: cause}
+}
+
+func (e *ConfigError) Error() string {
+	return fmt.Sprintf("Error during config parsing: %v", e.message)
+}
+
+func (e *ConfigError) Unwrap() error { return e.cause }
+
 // tomlConfig describes the TOML-configuration.
 type tomlConfig struct {
 	Core      coreConf
+	Cron      cronConf
 	Logging   logConf
 	Discovery discoveryConf
 	Agents    agentsConfig
@@ -48,6 +64,12 @@ type coreConf struct {
 	InspectAllBundles bool   `toml:"inspect-all-bundles"`
 	NodeId            string `toml:"node-id"`
 	SignPriv          string `toml:"signature-private"`
+}
+
+type cronConf struct {
+	CheckBundles string `toml:"check-bundles"`
+	CleanStore   string `toml:"clean-store"`
+	CleanID      string `toml:"clean-id"`
 }
 
 // logConf describes the Logging-configuration block.
@@ -272,6 +294,36 @@ func parseAgents(conf agentsConfig) (agents []agent.ApplicationAgent, err error)
 	return
 }
 
+func parseCron(config cronConf, c *routing.Core) (*routing.Cron, error) {
+	cron := routing.NewCron()
+
+	interval, err := time.ParseDuration(config.CheckBundles)
+	if err != nil {
+		return nil, NewConfigError(fmt.Sprintf("Error parsing duration: %v", config.CheckBundles), err)
+	}
+	if err := cron.Register("pending_bundles", c.CheckPendingBundles, interval); err != nil {
+		return nil, NewConfigError("Failed to register pending_bundles at cron", err)
+	}
+
+	interval, err = time.ParseDuration(config.CleanStore)
+	if err != nil {
+		return nil, NewConfigError(fmt.Sprintf("Error parsing duration: %v", config.CleanStore), err)
+	}
+	if err := cron.Register("clean_store", c.Store.DeleteExpired, 10*time.Minute); err != nil {
+		return nil, NewConfigError("Failed to register clean_store at cron", err)
+	}
+
+	interval, err = time.ParseDuration(config.CleanID)
+	if err != nil {
+		return nil, NewConfigError(fmt.Sprintf("Error parsing duration: %v", config.CleanID), err)
+	}
+	if err := cron.Register("clean_ids", c.IdKeeper.Clean, 10*time.Minute); err != nil {
+		return nil, NewConfigError("Failed to register clean_ids at cron", err)
+	}
+
+	return cron, nil
+}
+
 // parseCore creates the Core based on the given TOML configuration.
 func parseCore(filename string) (c *routing.Core, ds *discovery.Manager, err error) {
 	var conf tomlConfig
@@ -338,6 +390,12 @@ func parseCore(filename string) (c *routing.Core, ds *discovery.Manager, err err
 	if c, err = routing.NewCore(conf.Core.Store, nodeId, conf.Core.InspectAllBundles, conf.Routing, signPriv); err != nil {
 		return
 	}
+
+	cron, err := parseCron(conf.Cron, c)
+	if err != nil {
+		return
+	}
+	c.Cron = cron
 
 	// Agents
 	if conf.Agents != (agentsConfig{}) {

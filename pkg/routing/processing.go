@@ -19,7 +19,7 @@ func (c *Core) SendBundle(bndl *bpv7.Bundle) {
 	if c.signPriv != nil && bndl.IsAdministrativeRecord() {
 		c.sendBundleAttachSignature(bndl)
 	}
-	bp := NewBundleDescriptorFromBundle(*bndl, c.store)
+	bp := NewBundleDescriptorFromBundle(*bndl, c.Store)
 
 	c.routing.NotifyNewBundle(bp)
 	c.transmit(bp)
@@ -53,7 +53,7 @@ func (c *Core) sendBundleAttachSignature(bndl *bpv7.Bundle) {
 // transmit starts the transmission of an outgoing bundle pack.
 // Therefore, the source's endpoint ID must be dtn:none or a member of this node.
 func (c *Core) transmit(bp BundleDescriptor) {
-	c.idKeeper.update(&bp)
+	c.IdKeeper.update(&bp)
 
 	log.WithField("bundle", bp.ID().String()).Info("Transmission of bundle requested")
 
@@ -382,7 +382,7 @@ func (c *Core) inspectStatusReport(bp BundleDescriptor, ar bpv7.AdministrativeRe
 		return
 	}
 
-	var bpStore, err = c.store.QueryId(status.RefBundle)
+	var bpStore, err = c.Store.QueryId(status.RefBundle)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle":     bp.ID().String(),
@@ -416,7 +416,7 @@ func (c *Core) inspectStatusReport(bp BundleDescriptor, ar bpv7.AdministrativeRe
 				"status_bundle": bpStore.Id,
 			})
 
-			if err := c.store.Delete(bpStore.BId); err != nil {
+			if err := c.Store.Delete(bpStore.BId); err != nil {
 				logger.WithError(err).Warn("Failed to delete delivered bundle")
 			} else {
 				logger.Info("Status report indicates delivered bundle, deleting bundle")

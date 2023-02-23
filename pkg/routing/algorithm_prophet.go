@@ -60,7 +60,7 @@ func NewProphet(c *Core, config ProphetConfig) *Prophet {
 		}).Fatal("Unable to parse duration")
 	}
 
-	err = c.cron.Register("dtlsr_recompute", prophet.ageCron, ageInterval)
+	err = c.Cron.Register("dtlsr_recompute", prophet.ageCron, ageInterval)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"reason": err.Error(),
@@ -213,7 +213,7 @@ func (prophet *Prophet) NotifyNewBundle(bp BundleDescriptor) {
 	// handle non-metadata bundles
 	// TODO: this is basically copy-pasted from routing_epidemic - extract this code into a reusable function
 
-	bundleItem, err := prophet.c.store.QueryId(bp.Id)
+	bundleItem, err := prophet.c.Store.QueryId(bp.Id)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -255,7 +255,7 @@ func (prophet *Prophet) NotifyNewBundle(bp BundleDescriptor) {
 	}).Debug("Prophet received an incomming bundle and checked its PreviousNodeBlock")
 
 	bundleItem.Properties["routing/prophet/sent"] = append(sentEids, prevNode)
-	if err := prophet.c.store.Update(bundleItem); err != nil {
+	if err := prophet.c.Store.Update(bundleItem); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Warn("Updating BundleItem failed")
@@ -286,7 +286,7 @@ func (prophet *Prophet) SenderForBundle(bp BundleDescriptor) (sender []cla.Conve
 
 	delete = false
 
-	bundleItem, err := prophet.c.store.QueryId(bp.Id)
+	bundleItem, err := prophet.c.Store.QueryId(bp.Id)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -359,7 +359,7 @@ func (prophet *Prophet) SenderForBundle(bp BundleDescriptor) (sender []cla.Conve
 	}
 
 	bundleItem.Properties["routing/prophet/sent"] = sentEids
-	if err := prophet.c.store.Update(bundleItem); err != nil {
+	if err := prophet.c.Store.Update(bundleItem); err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
 		}).Warn("Updating BundleItem failed")
@@ -375,7 +375,7 @@ func (prophet *Prophet) SenderForBundle(bp BundleDescriptor) (sender []cla.Conve
 }
 
 func (prophet *Prophet) ReportFailure(bp BundleDescriptor, sender cla.ConvergenceSender) {
-	bundleItem, err := prophet.c.store.QueryId(bp.Id)
+	bundleItem, err := prophet.c.Store.QueryId(bp.Id)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID().String(),
@@ -407,7 +407,7 @@ func (prophet *Prophet) ReportFailure(bp BundleDescriptor, sender cla.Convergenc
 
 	bundleItem.Properties["routing/prophet/sent"] = sentEids
 
-	if err := prophet.c.store.Update(bundleItem); err != nil {
+	if err := prophet.c.Store.Update(bundleItem); err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID().String(),
 			"error":  err,

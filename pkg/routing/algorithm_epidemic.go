@@ -30,7 +30,7 @@ func NewEpidemicRouting(c *Core) *EpidemicRouting {
 //
 // In our case, the PreviousNodeBlock will be inspected.
 func (er *EpidemicRouting) NotifyNewBundle(bp BundleDescriptor) {
-	bi, biErr := er.c.store.QueryId(bp.Id)
+	bi, biErr := er.c.Store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
 			"error": biErr,
@@ -42,7 +42,7 @@ func (er *EpidemicRouting) NotifyNewBundle(bp BundleDescriptor) {
 
 	if _, ok := bi.Properties["routing/epidemic/destination"]; !ok {
 		bi.Properties["routing/epidemic/destination"] = bndl.PrimaryBlock.Destination
-		if err := er.c.store.Update(bi); err != nil {
+		if err := er.c.Store.Update(bi); err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Warn("Updating BundleItem failed")
@@ -75,7 +75,7 @@ func (er *EpidemicRouting) NotifyNewBundle(bp BundleDescriptor) {
 	}).Debug("EpidemicRouting received an incoming bundle and checked its PreviousNodeBlock")
 
 	bi.Properties["routing/epidemic/sent"] = append(sentEids, prevNode)
-	if err := er.c.store.Update(bi); err != nil {
+	if err := er.c.Store.Update(bi); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Warn("Updating BundleItem failed")
@@ -83,7 +83,7 @@ func (er *EpidemicRouting) NotifyNewBundle(bp BundleDescriptor) {
 }
 
 func (er *EpidemicRouting) clasForBundle(bp BundleDescriptor, updateDb bool) (css []cla.ConvergenceSender, del bool) {
-	bi, biErr := er.c.store.QueryId(bp.Id)
+	bi, biErr := er.c.Store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID().String(),
@@ -101,7 +101,7 @@ func (er *EpidemicRouting) clasForBundle(bp BundleDescriptor, updateDb bool) (cs
 
 	if updateDb {
 		bi.Properties["routing/epidemic/sent"] = sentEids
-		if err := er.c.store.Update(bi); err != nil {
+		if err := er.c.Store.Update(bi); err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Warn("Updating BundleItem failed")
@@ -121,7 +121,7 @@ func (er *EpidemicRouting) clasForBundle(bp BundleDescriptor, updateDb bool) (cs
 // DispatchingAllowed only allows dispatching, iff the bundle is addressed to
 // this Node or if any known CLA without having received this bundle exists.
 func (er *EpidemicRouting) DispatchingAllowed(bp BundleDescriptor) bool {
-	bi, biErr := er.c.store.QueryId(bp.Id)
+	bi, biErr := er.c.Store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
 			"bundle": bp.ID().String(),
@@ -139,7 +139,7 @@ func (er *EpidemicRouting) DispatchingAllowed(bp BundleDescriptor) bool {
 
 	if len(css) == 0 {
 		bi.Pending = true
-		if err := er.c.store.Update(bi); err != nil {
+		if err := er.c.Store.Update(bi); err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Warn("Updating BundleItem failed")
@@ -155,7 +155,7 @@ func (er *EpidemicRouting) SenderForBundle(bp BundleDescriptor) (css []cla.Conve
 }
 
 func (er *EpidemicRouting) ReportFailure(bp BundleDescriptor, sender cla.ConvergenceSender) {
-	bi, biErr := er.c.store.QueryId(bp.Id)
+	bi, biErr := er.c.Store.QueryId(bp.Id)
 	if biErr != nil {
 		log.WithFields(log.Fields{
 			"error": biErr,
@@ -182,7 +182,7 @@ func (er *EpidemicRouting) ReportFailure(bp BundleDescriptor, sender cla.Converg
 	}
 
 	bi.Properties["routing/epidemic/sent"] = sentEids
-	if err := er.c.store.Update(bi); err != nil {
+	if err := er.c.Store.Update(bi); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Warn("Updating BundleItem failed")
