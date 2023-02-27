@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2023 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -76,14 +77,16 @@ type RestAgent struct {
 	sender   chan Message
 
 	// map UUIDs to EIDs and received bundles
-	clients sync.Map // uuid[string] -> bpv7.EndpointID
-	mailbox sync.Map // uuid[string] -> []bpv7.Bundle
+	clients      sync.Map // uuid[string] -> bpv7.EndpointID
+	mailboxes    map[string]map[bpv7.BundleID]bpv7.Bundle
+	mailboxMutex sync.Mutex
 }
 
 // NewRestAgent creates a new RESTful Application Agent.
 func NewRestAgent(router *mux.Router) (ra *RestAgent) {
 	ra = &RestAgent{
-		router: router,
+		router:    router,
+		mailboxes: make(map[string]map[bpv7.BundleID]bpv7.Bundle),
 
 		receiver: make(chan Message),
 		sender:   make(chan Message),
@@ -128,24 +131,36 @@ func (ra *RestAgent) receiveBundleMessage(msg BundleMessage) {
 		return false // multiple clients might be registered for some endpoint
 	})
 
+	ra.mailboxMutex.Lock()
 	for _, uuid := range uuids {
-		var bundles []bpv7.Bundle
-		if val, ok := ra.mailbox.Load(uuid); !ok {
-			bundles = []bpv7.Bundle{msg.Bundle}
+		mailbox, exists := ra.mailboxes[uuid]
+		if !exists {
+			mailbox = map[bpv7.BundleID]bpv7.Bundle{msg.Bundle.ID(): msg.Bundle}
+			ra.mailboxes[uuid] = mailbox
+			log.WithFields(log.Fields{
+				"bundle": msg.Bundle.ID().String(),
+				"uuid":   uuid,
+			}).Info("REST Application Agent delivering message to a client's inbox")
 		} else {
-			bundles = append(val.([]bpv7.Bundle), msg.Bundle)
+			_, exists = mailbox[msg.Bundle.ID()]
+			if !exists {
+				mailbox[msg.Bundle.ID()] = msg.Bundle
+				log.WithFields(log.Fields{
+					"bundle": msg.Bundle.ID().String(),
+					"uuid":   uuid,
+				}).Info("REST Application Agent delivering message to a client's inbox")
+			} else {
+				log.WithFields(log.Fields{
+					"bundle": msg.Bundle.ID().String(),
+					"uuid":   uuid,
+				}).Info("REST Application Agent not delivering message to a client's inbox. Message already present.")
+			}
 		}
-
-		ra.mailbox.Store(uuid, bundles)
-
-		log.WithFields(log.Fields{
-			"bundle": msg.Bundle.ID().String(),
-			"uuid":   uuid,
-		}).Info("REST Application Agent delivering message to a client's inbox")
 	}
+	ra.mailboxMutex.Unlock()
 }
 
-// randomUuid to be used for authentication. UUID does not complain RFC 4122.
+// randomUuid to be used for authentication. UUID not compliant with RFC 4122.
 func (_ *RestAgent) randomUuid() (uuid string, err error) {
 	uuidBytes := make([]byte, 16)
 	if _, err = rand.Read(uuidBytes); err == nil {
@@ -196,7 +211,10 @@ func (ra *RestAgent) handleUnregister(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.WithField("uuid", unregisterRequest.UUID).Info("Unregister REST client")
 		ra.clients.Delete(unregisterRequest.UUID)
-		ra.mailbox.Delete(unregisterRequest.UUID)
+
+		ra.mailboxMutex.Lock()
+		delete(ra.mailboxes, unregisterRequest.UUID)
+		ra.mailboxMutex.Unlock()
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -215,11 +233,19 @@ func (ra *RestAgent) handleFetch(w http.ResponseWriter, r *http.Request) {
 	if jsonErr := json.NewDecoder(r.Body).Decode(&fetchRequest); jsonErr != nil {
 		log.WithError(jsonErr).Warn("Failed to parse REST fetch request")
 		fetchResponse.Error = jsonErr.Error()
-	} else if val, ok := ra.mailbox.Load(fetchRequest.UUID); ok {
+	} else if mailbox, ok := ra.mailboxes[fetchRequest.UUID]; ok {
 		log.WithField("uuid", fetchRequest.UUID).Info("REST client fetches bundles")
-		fetchResponse.Bundles = val.([]bpv7.Bundle)
 
-		ra.mailbox.Delete(fetchRequest.UUID)
+		ra.mailboxMutex.Lock()
+		bundles := make([]bpv7.Bundle, 0, len(mailbox))
+		for _, bundle := range mailbox {
+			bundles = append(bundles, bundle)
+		}
+
+		fetchResponse.Bundles = bundles
+
+		delete(ra.mailboxes, fetchRequest.UUID)
+		ra.mailboxMutex.Unlock()
 	} else if !ok {
 		log.WithField("uuid", fetchRequest.UUID).Debug("REST client has no new bundles to fetch")
 		fetchResponse.Bundles = make([]bpv7.Bundle, 0)
