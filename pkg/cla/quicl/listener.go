@@ -11,7 +11,7 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/cla"
 	"github.com/dtn7/dtn7-go/pkg/cla/quicl/internal"
-	"github.com/lucas-clemente/quic-go"
+	"github.com/quic-go/quic-go"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -4,7 +4,7 @@
 
 package internal
 
-import "github.com/lucas-clemente/quic-go"
+import "github.com/quic-go/quic-go"
 
 const (
 	// UnknownError is the catchall error code for things I didn't foresee
