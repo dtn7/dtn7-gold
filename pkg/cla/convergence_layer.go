@@ -54,14 +54,6 @@ type Convergence interface {
 
 	// Address should return a unique address string to both identify this
 	// Convergence{Receiver,Sender} and ensure it will not opened twice.
-
-	// TODO: The way this works right now does have some problems.
-	// If you're using host:port to identify a CLA you might end up with multiple connections
-	// between two nodes. If both are sending neighbour-discovery announcements, they will include
-	// their listener-port which will be different from the client-port of an existing connection.
-	// For mtcp, you actually need that, since the CLA pretends to be unidirectional, but if you have
-	// full duplex communication it's unnecessary to have to CLAs for each node-pair.
-	// But fixing this would probably require some major changes to the manager.
 	Address() string
 
 	// IsPermanent returns true, if this CLA should not be removed after failures.
@@ -90,9 +82,11 @@ type ConvergenceSender interface {
 	// next. This could be achieved by using a mutex or the like.
 	Send(bpv7.Bundle) error
 
-	// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
-	// if it's known. Otherwise the zero endpoint will be returned.
+	// GetPeerEndpointID returns the endpoint ID of this CLA's peer,
+	// if it's known. Otherwise, the zero endpoint will be returned.
 	GetPeerEndpointID() bpv7.EndpointID
+
+	GetIdentifier() ConvergenceIdentifier
 }
 
 // ConvergenceProvider is a more general kind of CLA service which does not

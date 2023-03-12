@@ -169,3 +169,7 @@ func (serv MTCPServer) IsPermanent() bool {
 func (serv MTCPServer) String() string {
 	return serv.Address()
 }
+
+func (serv *MTCPServer) Type() cla.CLAType {
+	return cla.MTCP
+}

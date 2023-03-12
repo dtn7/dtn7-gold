@@ -20,7 +20,7 @@ func testStore(t *testing.T, scenario func(store *Store)) {
 	filePath, err := ioutil.TempFile("", "store")
 	if err != nil {
 		t.Fatal(err)
-	} else if err = os.Remove(filePath.Name()); err != nil {
+	} else if err = os.RemoveAll(filePath.Name()); err != nil {
 		t.Fatal(err)
 	}
 

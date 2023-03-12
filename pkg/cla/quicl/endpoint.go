@@ -35,6 +35,7 @@ type Endpoint struct {
 	peerId bpv7.EndpointID
 	// The address in HOST:PORT format of the remote peer
 	peerAddress string
+	peerHost    string
 	// The actual QUIC connection which transceives data
 	connection quic.Connection
 
@@ -72,7 +73,7 @@ func NewDialerEndpoint(peerAddress string, id bpv7.EndpointID, permanent bool) *
 }
 
 func (endpoint *Endpoint) String() string {
-	return fmt.Sprintf("QUICLEndpoint{Peer ID: %v, Peer Address: %v, Dialer: %v, Permanent: %v}", endpoint.peerId, endpoint.peerAddress, endpoint.dialer, endpoint.permanent)
+	return fmt.Sprintf("QUICLEndpoint{Peer ID: %v, Peer PeerAddress: %v, Dialer: %v, Permanent: %v}", endpoint.peerId, endpoint.peerAddress, endpoint.dialer, endpoint.permanent)
 }
 
 /**
@@ -147,6 +148,10 @@ func (endpoint *Endpoint) IsPermanent() bool {
 	return endpoint.permanent
 }
 
+func (endpoint *Endpoint) Type() cla.CLAType {
+	return cla.QUICL
+}
+
 /**
 Methods for ConvergenceReceiver interface
 */
@@ -161,6 +166,10 @@ Methods for ConvergenceSender interface
 
 func (endpoint *Endpoint) GetPeerEndpointID() bpv7.EndpointID {
 	return endpoint.peerId
+}
+
+func (endpoint *Endpoint) GetPeerHost() string {
+	return endpoint.peerHost
 }
 
 func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
@@ -421,4 +430,8 @@ func (endpoint *Endpoint) receiveEndpointID(stream quic.Stream) error {
 
 func (endpoint *Endpoint) reportPeerDisappeared() {
 	endpoint.reportingChannel <- cla.NewConvergencePeerDisappeared(endpoint, endpoint.peerId)
+}
+
+func (endpoint *Endpoint) GetIdentifier() cla.ConvergenceIdentifier {
+	return cla.ConvergenceIdentifier{PeerHost: endpoint.peerHost, PeerEndpointID: endpoint.peerId, Type: cla.QUICL}
 }

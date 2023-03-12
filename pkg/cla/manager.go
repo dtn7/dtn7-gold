@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
-// SPDX-FileCopyrightText: 2020, 2021 Markus Sommer
+// SPDX-FileCopyrightText: 2020, 2021, 2023 Markus Sommer
 // SPDX-FileCopyrightText: 2021 Artur Sterz
 // SPDX-FileCopyrightText: 2021 Jonas Höchst
 //
@@ -31,6 +31,11 @@ type Manager struct {
 	// convs: Map[string]*convergenceElem
 	convs *sync.Map
 
+	convMutex       sync.Mutex
+	activeSenders   map[ConvergenceIdentifier]*convergenceElem
+	incativeSenders map[string]*convergenceElem
+	receivers       map[string]*convergenceElem
+
 	listenerIDs map[CLAType][]bpv7.EndpointID
 
 	// providers is an array of ConvergenceProvider. Those will report their
@@ -61,6 +66,10 @@ func NewManager() *Manager {
 		retryTime: 10 * time.Second,
 
 		convs: new(sync.Map),
+
+		activeSenders:   make(map[ConvergenceIdentifier]*convergenceElem),
+		incativeSenders: make(map[string]*convergenceElem),
+		receivers:       make(map[string]*convergenceElem),
 
 		listenerIDs: make(map[CLAType][]bpv7.EndpointID),
 
@@ -187,42 +196,112 @@ func (manager *Manager) Register(conv Convergable) {
 
 func (manager *Manager) registerConvergence(conv Convergence) {
 	// Check if this CLA is already known. Re-activate a deactivated CLA or abort.
-	var ce *convergenceElem
-	if convElem, exists := manager.convs.Load(conv.Address()); exists {
-		ce = convElem.(*convergenceElem)
-		if ce.isActive() {
+	log.WithField("cla", conv).Debug("Staring CLA registration")
+	keep := false
+	exists := false
+	var receiver *convergenceElem
+	var sender *convergenceElem
+
+	// check if it's a receiver
+	if _, isReceiver := conv.(ConvergenceReceiver); isReceiver {
+		manager.convMutex.Lock()
+		receiver, exists = manager.receivers[conv.Address()]
+		if exists {
+			if receiver.isActive() {
+				log.WithFields(log.Fields{
+					"cla":     conv,
+					"address": conv.Address(),
+				}).Debug("Receiver registration failed, because this address does already exists")
+			}
+		} else {
+			receiver = newConvergenceElement(conv, manager.inChnl, manager.queueTtl)
+		}
+		manager.convMutex.Unlock()
+
+		successful, retry := receiver.activate()
+		if !successful && !retry {
 			log.WithFields(log.Fields{
 				"cla":     conv,
 				"address": conv.Address(),
-			}).Debug("CLA registration failed, because this address does already exists")
-
-			return
+			}).Warn("Startup of CLA  failed, a retry should not be made")
+			keep = false
+		} else {
+			manager.convMutex.Lock()
+			manager.receivers[conv.Address()] = receiver
+			manager.convMutex.Unlock()
+			keep = true
 		}
-	} else {
-		ce = newConvergenceElement(conv, manager.inChnl, manager.queueTtl)
 	}
 
-	// Check if this CLA is a sender to a registered receiver.
-	if cs, ok := ce.asSender(); ok {
+	// check if it's a sender
+	if cs, isSender := conv.(ConvergenceSender); isSender {
+		// Check if this CLA is a sender to a registered receiver.
+		// TODO: "Registered receiver" means that it's ourselves, right?
 		for _, cr := range manager.Receiver() {
 			if cr.GetEndpointID() == cs.GetPeerEndpointID() {
 				log.WithFields(log.Fields{
 					"cla":     conv,
 					"address": conv.Address(),
 				}).Debug("CLA registration aborted, because of a known Endpoint ID")
-
+				conv.Close()
 				return
 			}
 		}
+
+		manager.convMutex.Lock()
+		if sndr, exists := manager.incativeSenders[cs.Address()]; exists {
+			sender = sndr
+		} else if receiver != nil {
+			sender = receiver
+		} else {
+			sender = newConvergenceElement(conv, manager.inChnl, manager.queueTtl)
+		}
+		manager.convMutex.Unlock()
+
+		// in order to know the peer's EndpointID, we might need to activate the CLA
+		// so that it can perform its handshake
+		if !sender.isActive() {
+			successful, retry := sender.activate()
+			if !successful {
+				if !retry {
+					log.WithFields(log.Fields{
+						"cla":     conv,
+						"address": conv.Address(),
+					}).Warn("Startup of CLA  failed, a retry should not be made")
+					keep = false
+				} else {
+					manager.convMutex.Lock()
+					manager.incativeSenders[cs.Address()] = sender
+					manager.convMutex.Unlock()
+					keep = true
+					log.WithFields(log.Fields{
+						"sender":          sender,
+						"inactiveSenders": manager.incativeSenders,
+					}).Debug("Sender added to inactive senders")
+				}
+			}
+		}
+
+		if sender.isActive() {
+			identifier := cs.GetIdentifier()
+
+			manager.convMutex.Lock()
+			delete(manager.incativeSenders, cs.Address())
+			_, exists = manager.activeSenders[identifier]
+			if !exists {
+				manager.activeSenders[identifier] = sender
+				keep = true
+				log.WithField("sender", sender).Debug("Sender added to senders")
+			}
+			log.WithField("senders", manager.activeSenders).Debug("Active Senders")
+			manager.convMutex.Unlock()
+		}
 	}
 
-	if successful, retry := ce.activate(); !successful && !retry {
-		log.WithFields(log.Fields{
-			"cla":     conv,
-			"address": conv.Address(),
-		}).Warn("Startup of CLA  failed, a retry should not be made")
+	if !keep {
+		conv.Close()
 	} else {
-		manager.convs.Store(conv.Address(), ce)
+		log.WithField("cla", conv).Info("Registered CLA")
 	}
 }
 
@@ -302,34 +381,31 @@ func (manager *Manager) Restart(conv Convergable) {
 }
 
 // Sender returns an array of all active ConvergenceSenders.
-func (manager *Manager) Sender() (css []ConvergenceSender) {
-	manager.convs.Range(func(_, convElem interface{}) bool {
-		ce := convElem.(*convergenceElem)
-		if !ce.isActive() {
-			return true
+func (manager *Manager) Sender() (senders []ConvergenceSender) {
+	manager.convMutex.Lock()
+	log.WithField("senders", manager.activeSenders).Debug("Current active senders")
+	defer manager.convMutex.Unlock()
+	senders = make([]ConvergenceSender, 0, len(manager.activeSenders))
+	for _, sndElem := range manager.activeSenders {
+		sender, ok := sndElem.asSender()
+		if ok {
+			senders = append(senders, sender)
 		}
-
-		if cs, ok := ce.asSender(); ok {
-			css = append(css, cs)
-		}
-		return true
-	})
+	}
 	return
 }
 
 // Receiver returns an array of all active ConvergenceReceivers.
-func (manager *Manager) Receiver() (crs []ConvergenceReceiver) {
-	manager.convs.Range(func(_, convElem interface{}) bool {
-		ce := convElem.(*convergenceElem)
-		if !ce.isActive() {
-			return true
+func (manager *Manager) Receiver() (receivers []ConvergenceReceiver) {
+	manager.convMutex.Lock()
+	defer manager.convMutex.Unlock()
+	receivers = make([]ConvergenceReceiver, 0, len(manager.receivers))
+	for _, recvElem := range manager.receivers {
+		receiver, ok := recvElem.asReceiver()
+		if ok {
+			receivers = append(receivers, receiver)
 		}
-
-		if cr, ok := ce.asReceiver(); ok {
-			crs = append(crs, cr)
-		}
-		return true
-	})
+	}
 	return
 }
 

@@ -1,15 +1,25 @@
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2023 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 package cla
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+
 	log "github.com/sirupsen/logrus"
 )
+
+type ConvergenceIdentifier struct {
+	PeerHost       string
+	PeerEndpointID bpv7.EndpointID
+	Type           CLAType
+}
 
 // convergenceElem is a wrapper around a Convergence to assign a status,
 // supervised by a Manager.
@@ -40,6 +50,10 @@ func newConvergenceElement(conv Convergence, convChnl chan ConvergenceStatus, tt
 		convChnl: convChnl,
 		ttl:      ttl,
 	}
+}
+
+func (ce *convergenceElem) String() string {
+	return fmt.Sprintf("ConvergenceElement: CLA: %v, ttl: %v", ce.conv, ce.ttl)
 }
 
 // asReceiver returns a ConvergenceReceiver, if one is available, as indicated
@@ -111,7 +125,7 @@ func (ce *convergenceElem) activate() (successful, retry bool) {
 	if claErr == nil {
 		log.WithFields(log.Fields{
 			"cla": ce.conv,
-		}).Info("Started CLA")
+		}).Debug("Started CLA")
 
 		atomic.StoreInt32(&ce.ttl, -1)
 

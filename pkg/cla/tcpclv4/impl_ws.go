@@ -71,7 +71,7 @@ func (listener *WebSocketListener) ServeHTTP(writer http.ResponseWriter, request
 
 // webSocketClientStart is the Client's customStartFunc for WebSockets.
 func webSocketClientStart(client *Client) error {
-	if conn, _, err := websocket.DefaultDialer.Dial(client.address, nil); err != nil {
+	if conn, _, err := websocket.DefaultDialer.Dial(client.peerAddress, nil); err != nil {
 		return err
 	} else {
 		client.connCloser = conn
@@ -85,22 +85,24 @@ func webSocketClientStart(client *Client) error {
 // newClientWebSocket creates a new Client on a new *websocket.Conn. This function is called from the WebSocketListener.
 func newClientWebSocket(conn *websocket.Conn, endpointID bpv7.EndpointID) *Client {
 	return &Client{
-		address:         conn.RemoteAddr().String(),
+		peerAddress:     conn.RemoteAddr().String(),
 		activePeer:      false,
 		customStartFunc: webSocketClientStart,
 		connCloser:      conn,
 		messageSwitch:   utils.NewMessageSwitchWebSocket(conn),
 		nodeId:          endpointID,
+		claType:         cla.TCPCLv4WebSocket,
 	}
 }
 
 // DialWebSocket tries to establish a new TCPCLv4 Client to a remote WebSocketListener.
 func DialWebSocket(address string, endpointID bpv7.EndpointID, permanent bool) *Client {
 	return &Client{
-		address:         address,
+		peerAddress:     address,
 		permanent:       permanent,
 		activePeer:      true,
 		customStartFunc: webSocketClientStart,
 		nodeId:          endpointID,
+		claType:         cla.TCPCLv4WebSocket,
 	}
 }

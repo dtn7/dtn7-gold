@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
 	github.com/quic-go/quic-go v0.33.0
-	github.com/schollz/peerdiscovery v1.6.11
+	github.com/schollz/peerdiscovery v1.7.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/timshannon/badgerhold v1.0.0
 	github.com/ulikunitz/xz v0.5.10
@@ -44,4 +44,4 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 )
 
-go 1.18
+go 1.19

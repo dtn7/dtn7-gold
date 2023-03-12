@@ -25,9 +25,11 @@ import (
 // A Client can be created by a Listener, e.g., a TCPListener, for incoming connections or dialed for outgoing
 // connections, e.g., via DialTCP.
 type Client struct {
-	address    string
-	permanent  bool
-	activePeer bool
+	peerAddress string
+	peerHost    string
+	permanent   bool
+	activePeer  bool
+	claType     cla.CLAType
 
 	customStartFunc func(*Client) error
 
@@ -239,7 +241,7 @@ func (client *Client) Channel() chan cla.ConvergenceStatus {
 
 // Address should return a unique address string to both identify this Client and ensure it will not opened twice.
 func (client *Client) Address() string {
-	return client.address
+	return client.peerAddress
 }
 
 // IsPermanent returns true, if this CLA should not be removed after failures.
@@ -256,4 +258,8 @@ func (client *Client) GetEndpointID() bpv7.EndpointID {
 // will be returned.
 func (client *Client) GetPeerEndpointID() bpv7.EndpointID {
 	return client.peerNodeId
+}
+
+func (client *Client) GetIdentifier() cla.ConvergenceIdentifier {
+	return cla.ConvergenceIdentifier{PeerHost: client.peerHost, PeerEndpointID: client.peerNodeId, Type: client.claType}
 }

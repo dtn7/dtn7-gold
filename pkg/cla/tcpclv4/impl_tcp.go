@@ -98,7 +98,7 @@ func (listener TCPListener) String() string {
 
 // tcpClientStart is the Client's customStartFunc for TCP.
 func tcpClientStart(client *Client) error {
-	if conn, connErr := net.DialTimeout("tcp", client.address, time.Second); connErr != nil {
+	if conn, connErr := net.DialTimeout("tcp", client.peerAddress, time.Second); connErr != nil {
 		return connErr
 	} else {
 		client.connCloser = conn
@@ -112,22 +112,24 @@ func tcpClientStart(client *Client) error {
 // newClientTCP creates a new Client on an existing connection. This function is used from the TCPListener.
 func newClientTCP(conn net.Conn, endpointID bpv7.EndpointID) *Client {
 	return &Client{
-		address:         conn.RemoteAddr().String(),
+		peerAddress:     conn.RemoteAddr().String(),
 		activePeer:      false,
 		customStartFunc: tcpClientStart,
 		connCloser:      conn,
 		messageSwitch:   utils.NewMessageSwitchReaderWriter(conn, conn),
 		nodeId:          endpointID,
+		claType:         cla.TCPCLv4,
 	}
 }
 
 // DialTCP tries to establish a new TCPCLv4 Client to a remote TCPListener.
 func DialTCP(address string, endpointID bpv7.EndpointID, permanent bool) *Client {
 	return &Client{
-		address:         address,
+		peerAddress:     address,
 		permanent:       permanent,
 		activePeer:      true,
 		customStartFunc: tcpClientStart,
 		nodeId:          endpointID,
+		claType:         cla.TCPCLv4,
 	}
 }

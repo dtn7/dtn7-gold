@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2023 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -59,6 +60,10 @@ func (m *mockConvRec) Address() string { return m.address }
 func (m *mockConvRec) IsPermanent() bool { return m.permanent }
 
 func (m *mockConvRec) GetEndpointID() bpv7.EndpointID { return m.endpointId }
+
+func (m *mockConvRec) String() string {
+	return fmt.Sprintf("mockConvSender: Addr: %v, eid: %v", m.address, m.endpointId)
+}
 
 // mockConvSender mocks a ConvergenceSender where all fields are directly editable.
 type mockConvSender struct {
@@ -128,4 +133,12 @@ func (m *mockConvSender) Send(bndl bpv7.Bundle) error {
 
 	m.sentBndls = append(m.sentBndls, bndl)
 	return nil
+}
+
+func (m *mockConvSender) GetIdentifier() ConvergenceIdentifier {
+	return ConvergenceIdentifier{PeerHost: m.address, PeerEndpointID: m.peerEndpointId, Type: MTCP}
+}
+
+func (m *mockConvSender) String() string {
+	return fmt.Sprintf("mockConvSender: Addr: %v, eid: %v", m.address, m.peerEndpointId)
 }

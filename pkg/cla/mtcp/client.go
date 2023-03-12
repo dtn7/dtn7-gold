@@ -28,29 +28,30 @@ import (
 // a ConvergenceSender.
 type MTCPClient struct {
 	conn       net.Conn
-	peer       bpv7.EndpointID
+	peerID     bpv7.EndpointID
 	mutex      sync.Mutex
 	reportChan chan cla.ConvergenceStatus
 
-	permanent bool
-	address   string
+	permanent   bool
+	peerAddress string
+	peerHost    string
 
 	stopSyn chan struct{}
 	stopAck chan struct{}
 }
 
-// NewMTCPClient creates a new MTCPClient, connected to the given address for
+// NewMTCPClient creates a new MTCPClient, connected to the given peerAddress for
 // the registered endpoint ID. The permanent flag indicates if this MTCPClient
 // should never be removed from the core.
 func NewMTCPClient(address string, peer bpv7.EndpointID, permanent bool) *MTCPClient {
 	return &MTCPClient{
-		peer:      peer,
-		permanent: permanent,
-		address:   address,
+		peerID:      peer,
+		permanent:   permanent,
+		peerAddress: address,
 	}
 }
 
-// NewAnonymousMTCPClient creates a new MTCPClient, connected to the given address.
+// NewAnonymousMTCPClient creates a new MTCPClient, connected to the given peerAddress.
 // The permanent flag indicates if this MTCPClient should never be removed from
 // the core.
 func NewAnonymousMTCPClient(address string, permanent bool) *MTCPClient {
@@ -60,7 +61,7 @@ func NewAnonymousMTCPClient(address string, permanent bool) *MTCPClient {
 func (client *MTCPClient) Start() (err error, retry bool) {
 	retry = true
 
-	conn, connErr := dial(client.address)
+	conn, connErr := dial(client.peerAddress)
 	if connErr != nil {
 		err = connErr
 		return
@@ -170,11 +171,11 @@ func (client *MTCPClient) Close() error {
 }
 
 func (client *MTCPClient) GetPeerEndpointID() bpv7.EndpointID {
-	return client.peer
+	return client.peerID
 }
 
 func (client *MTCPClient) Address() string {
-	return client.address
+	return client.peerAddress
 }
 
 func (client *MTCPClient) IsPermanent() bool {
@@ -185,6 +186,10 @@ func (client *MTCPClient) String() string {
 	if client.conn != nil {
 		return fmt.Sprintf("mtcp://%v", client.conn.RemoteAddr())
 	} else {
-		return fmt.Sprintf("mtcp://%s", client.address)
+		return fmt.Sprintf("mtcp://%s", client.peerAddress)
 	}
+}
+
+func (client *MTCPClient) GetIdentifier() cla.ConvergenceIdentifier {
+	return cla.ConvergenceIdentifier{PeerHost: client.peerHost, PeerEndpointID: client.peerID, Type: cla.MTCP}
 }
