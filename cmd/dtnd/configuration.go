@@ -309,7 +309,7 @@ func parseCron(config cronConf, c *routing.Core) (*routing.Cron, error) {
 	if err != nil {
 		return nil, NewConfigError(fmt.Sprintf("Error parsing duration: %v", config.CleanStore), err)
 	}
-	if err := cron.Register("clean_store", c.Store.DeleteExpired, 10*time.Minute); err != nil {
+	if err := cron.Register("clean_store", c.Store.DeleteExpired, interval); err != nil {
 		return nil, NewConfigError("Failed to register clean_store at cron", err)
 	}
 
@@ -317,7 +317,7 @@ func parseCron(config cronConf, c *routing.Core) (*routing.Cron, error) {
 	if err != nil {
 		return nil, NewConfigError(fmt.Sprintf("Error parsing duration: %v", config.CleanID), err)
 	}
-	if err := cron.Register("clean_ids", c.IdKeeper.Clean, 10*time.Minute); err != nil {
+	if err := cron.Register("clean_ids", c.IdKeeper.Clean, interval); err != nil {
 		return nil, NewConfigError("Failed to register clean_ids at cron", err)
 	}
 
