@@ -140,7 +140,7 @@ func (ra *RestAgent) receiveBundleMessage(msg BundleMessage) {
 			log.WithFields(log.Fields{
 				"bundle": msg.Bundle.ID().String(),
 				"uuid":   uuid,
-			}).Info("REST Application Agent delivering message to a client's inbox")
+			}).Debug("REST Application Agent delivering message to a client's inbox")
 		} else {
 			_, exists = mailbox[msg.Bundle.ID()]
 			if !exists {
@@ -148,12 +148,12 @@ func (ra *RestAgent) receiveBundleMessage(msg BundleMessage) {
 				log.WithFields(log.Fields{
 					"bundle": msg.Bundle.ID().String(),
 					"uuid":   uuid,
-				}).Info("REST Application Agent delivering message to a client's inbox")
+				}).Debug("REST Application Agent delivering message to a client's inbox")
 			} else {
 				log.WithFields(log.Fields{
 					"bundle": msg.Bundle.ID().String(),
 					"uuid":   uuid,
-				}).Info("REST Application Agent not delivering message to a client's inbox. Message already present.")
+				}).Debug("REST Application Agent not delivering message to a client's inbox. Message already present.")
 			}
 		}
 	}
